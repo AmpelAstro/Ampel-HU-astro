@@ -12,8 +12,7 @@ setup(name='ampel-contrib-hu',
       package_data = {'': ['*.json']},
       entry_points = {
           'ampel.channels' : [
-              'nuclear_transient_charlotte = ampel.contrib.ztfbh.config:charlotte',
-              'nuclear_transient_sjoert = ampel.contrib.ztfbh.config:sjoert',
+              'hu = ampel.contrib.hu.channels:load',
           ],
           'ampel.pipeline.t0' : [
               'DecentFilter = ampel.contrib.hu.t0.DecentFilter:DecentFilter',
