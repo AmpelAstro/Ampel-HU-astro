@@ -4,8 +4,8 @@
 # License           : BSD-3-Clause
 # Author            : m. giomi <matteo.giomi@desy.de>
 # Date              : 04.27.2018
-# Last Modified Date: 11.05.2018
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# Last Modified Date: 08.06.2018
+# Last Modified By  : m. giomi <matteo.giomi@desy.de>
 
 
 import numpy as np
@@ -35,23 +35,17 @@ class LensedTransientFilter(AbsAlertFilter):
 			'castleqso': run_config['CaslteQSOSearchRadius']
 		}
 		
-		# init the catalog query objects
+		# init the catalog query objects for the different lens catalogs
 		catq_kwargs = {
 			'logger': logger, 
 			'dbclient': MongoClient(get_resource('extcats')['uri'])
 		}
-
-		# TODO: add comment
 		cluslist_query = CatalogQuery.CatalogQuery(
 			"cluslist", ra_key = 'ra_deg', dec_key = 'dec_deg', **catq_kwargs
 		)
-
-		# TODO: add comment
 		mlens_query = CatalogQuery.CatalogQuery(
 			"masterlens", ra_key = 'ra_coord', dec_key = 'dec_coord', **catq_kwargs
 		)
-
-		# TODO: add comment
 		castle_query = CatalogQuery.CatalogQuery(
 			"castleqso", ra_key = 'ra', dec_key = 'dec', **catq_kwargs
 		)

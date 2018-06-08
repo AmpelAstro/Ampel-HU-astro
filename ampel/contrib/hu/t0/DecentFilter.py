@@ -10,7 +10,7 @@
 import numpy as np
 import logging
 from catsHTM import cone_search
-from ampel.pipeline.common.expandvars import expandvars
+from ampel.pipeline.config.resources import get_resource
 
 class DecentFilter():
 	"""
@@ -88,7 +88,7 @@ class DecentFilter():
 
 		# then we also search in GAIA
 		self.search_radius 			= run_config['GaiaSearchRadius']
-		self.catshtm_path 			= base_config['CatsHtmPath']
+		self.catshtm_path 			= get_resource('catsHTM')['path']
 		self.logger.info("using catsHTM files in %s"%self.catshtm_path)
 		self.logger.info(
 			"Serach radius for vetoing sources in GAIA DR2: %.2f arcsec" % 
@@ -223,7 +223,11 @@ class DecentFilter():
 						(ips1, distps, srmag, sgscore))
 				return None
 		
-		# search within GAIA sources. 
+		# --------------------------------------------------------------------- #
+		#																		#
+		#						CROSSMATCH WITH GAIA DR2						#
+		#																		#
+		# --------------------------------------------------------------------- #
 		# some files are corrupted, we have to catch the exception
 		try:
 			srcs, colnames, colunits = cone_search(
