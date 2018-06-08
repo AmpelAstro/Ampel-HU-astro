@@ -75,11 +75,11 @@ class LensedTransientFilter(AbsAlertFilter):
 		if len(alert.pps) < self.min_ndet:
 			return None
 		
-		# now match with the catalogs
-		mean_ra, mean_dec = np.mean(alert.get_ntuples(["ra", "dec"]), axis = 0)
+		# now match with the catalogs using position of latest photopoint
+		latest = alert.pps[0]
 		for cat, catquery in self.catqueries.items():
 			rs = self.search_radiuses[cat]
-			if catquery.binaryserach(mean_ra, mean_dec, rs):
+			if catquery.binaryserach(latest["ra"], latest["dec"], rs):
 				self.logger.debug("searching matches in %s within %.2f arcsec"%(cat, rs))
 				return self.on_match_t2_units 
 
