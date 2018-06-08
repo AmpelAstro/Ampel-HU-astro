@@ -26,7 +26,11 @@ class LensedTransientFilter(AbsAlertFilter):
 		"""
 		"""
 		
+		if run_config is None or len(run_config) == 0:
+			raise ValueError("Please check you run configurtion")
+		
 		self.logger = LoggingUtils.get_logger() if logger is None else logger
+		
 		self.on_match_t2_units = on_match_t2_units
 		self.min_ndet = run_config['MinNdet']
 		self.search_radiuses = {

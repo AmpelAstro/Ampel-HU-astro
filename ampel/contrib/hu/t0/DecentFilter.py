@@ -36,9 +36,6 @@ class DecentFilter(AbsAlertFilter):
 		if run_config is None or len(run_config) == 0:
 			raise ValueError("Please check you run configuration")
 
-		if base_config is None or len(base_config) == 0:
-			raise ValueError("Please check you base configuration")
-
 		self.on_match_t2_units = on_match_t2_units
 		self.logger = logger if logger is not None else logging.getLogger()
 #		self.logger.setLevel(logging.DEBUG)
