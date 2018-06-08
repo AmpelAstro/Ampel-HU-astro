@@ -11,8 +11,9 @@ import numpy as np
 import logging
 from catsHTM import cone_search
 from ampel.pipeline.config.resources import get_resource
+from ampel.abstract.AbsAlertFilter import AbsAlertFilter
 
-class DecentFilter():
+class DecentFilter(AbsAlertFilter):
 	"""
 		Filter to make a decent selection of candidates. Partially based on the 
 		Redshift completeness prorgam filter on the marshal.
