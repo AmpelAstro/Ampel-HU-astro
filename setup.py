@@ -23,6 +23,10 @@ setup(name='ampel-contrib-hu',
               'SEDmTargetFilter = ampel.contrib.hu.t0.SEDmTargetFilter:SEDmTargetFilter',
               'SNFilter = ampel.contrib.hu.t0.SNFilter:SNFilter',
               'TransientInEllipticalFilter = ampel.contrib.hu.t0.TransientInEllipticalFilter:TransientInEllipticalFilter',
+          ],
+          'ampel.pipeline.resources' : [
+              'extcats = ampel.contrib.hu.resources:extcatsURI',
+              'catsHTM = ampel.contrib.hu.resources:catsHTMPath',
           ]
       }
 )
