@@ -21,6 +21,7 @@ class LensedTransientFilter(AbsAlertFilter):
 
 	# Static version info
 	version = 0.1
+	resources = ('extcats',)
 
 	def __init__(self, on_match_t2_units, base_config=None, run_config=None, logger=None):
 		"""
@@ -43,9 +44,10 @@ class LensedTransientFilter(AbsAlertFilter):
 		}
 		
 		# init the catalog query objects for the different lens catalogs
+		print(base_config['extcats']())
 		catq_kwargs = {
 			'logger': logger, 
-			'dbclient': MongoClient(get_resource('extcats')['uri'])
+			'dbclient': MongoClient(base_config['extcats']())
 		}
 		cluslist_query = CatalogQuery.CatalogQuery(
 			"cluslist", ra_key = 'ra_deg', dec_key = 'dec_deg', **catq_kwargs
