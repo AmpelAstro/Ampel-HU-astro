@@ -29,6 +29,7 @@ class DecentFilter(AbsAlertFilter):
 
 	# Static version info
 	version = 1.0
+	resources = ('catsHTM',)
 
 	def __init__(self, on_match_t2_units, base_config=None, run_config=None, logger=None):
 		"""
@@ -86,7 +87,7 @@ class DecentFilter(AbsAlertFilter):
 
 		# then we also search in GAIA
 		self.search_radius 			= run_config['GaiaSearchRadius']
-		self.catshtm_path 			= get_resource('catsHTM')['path']
+		self.catshtm_path 			= base_config['catsHTM']()
 		self.logger.info("using catsHTM files in %s"%self.catshtm_path)
 		self.logger.info(
 			"Serach radius for vetoing sources in GAIA DR2: %.2f arcsec" % 
