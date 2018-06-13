@@ -18,19 +18,29 @@ class TransientInfoPrinter(AbsT3Unit):
 	version = 0.1
 
 
-	def __init__(self, logger, base_config=None):
+	def __init__(self, logger, run_config=None, base_config=None):
 		"""
 		"""
 		self.logger = logger
+		self.count = 0
 
 
-	def run(self, run_config, transients=None):
+	def add(self, transients):
 		"""
 		"""
 
-		self.logger.info("run(...) called")
+		if transients is not None and len(transients) > 0:
+			self.logger.info("Adding new transient(s)")
+			for tran_view in transients:
+				TransientView._print_info(tran_view, self.logger)
+				self.count += 1
+		else:
+			self.logger.info("No transient provided")
 
-		for tran_view in transients:
-			TransientView._print_info(tran_view, self.logger)
 
-		self.logger.info("end of run(...)")
+	def run(self):
+		"""
+		"""
+		self.logger.info("Total number of transient printed: %i" % self.count)
+
+
