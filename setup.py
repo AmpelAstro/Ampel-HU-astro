@@ -34,6 +34,12 @@ setup(name='ampel-contrib-hu',
               'SNCOSMO = ampel.contrib.hu.t2.T2SNCosmo:T2SNCosmo',
               'POLYFIT = ampel.contrib.hu.examples.t2.T2ExamplePolyFit:T2ExamplePolyFit',
           ],
+          'ampel.pipeline.t3.jobs' : [
+              'hu = ampel.contrib.hu.channels:load_t3_jobs',
+          ],
+          'ampel.pipeline.t3.units' : [
+              'TransientInfoPrinter = ampel.contrib.hu.t3.TransientInfoPrinter:TransientInfoPrinter',
+          ],
           'ampel.pipeline.resources' : [
               'extcats = ampel.contrib.hu.resources:extcatsURI',
               'catsHTM = ampel.contrib.hu.resources:catsHTMPath',
