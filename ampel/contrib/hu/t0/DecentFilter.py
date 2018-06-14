@@ -10,7 +10,6 @@
 import numpy as np
 import logging
 from catsHTM import cone_search
-from ampel.pipeline.config.resources import get_resource
 from ampel.abstract.AbsAlertFilter import AbsAlertFilter
 
 class DecentFilter(AbsAlertFilter):

@@ -12,7 +12,13 @@ setup(name='ampel-contrib-hu',
       package_data = {'': ['*.json']},
       entry_points = {
           'ampel.channels' : [
-              'hu = ampel.contrib.hu.channels:load',
+              'hu = ampel.contrib.hu.channels:load_channels',
+          ],
+          'ampel.t2_run_configs' : [
+              'hu = ampel.contrib.hu.channels:load_t2_run_configs',
+          ],
+          'ampel.t3_run_configs' : [
+              'hu = ampel.contrib.hu.channels:load_t3_run_configs',
           ],
           'ampel.pipeline.t0' : [
               'DecentFilter = ampel.contrib.hu.t0.DecentFilter:DecentFilter',
@@ -23,6 +29,14 @@ setup(name='ampel-contrib-hu',
               'SEDmTargetFilter = ampel.contrib.hu.t0.SEDmTargetFilter:SEDmTargetFilter',
               'SNFilter = ampel.contrib.hu.t0.SNFilter:SNFilter',
               'TransientInEllipticalFilter = ampel.contrib.hu.t0.TransientInEllipticalFilter:TransientInEllipticalFilter',
+          ],
+          'ampel.pipeline.t2' : [
+              'SNCOSMO = ampel.contrib.hu.t2.T2SNCosmo:T2SNCosmo',
+              'POLYFIT = ampel.contrib.hu.examples.t2.T2ExamplePolyFit:T2ExamplePolyFit',
+          ],
+          'ampel.pipeline.resources' : [
+              'extcats = ampel.contrib.hu.resources:extcatsURI',
+              'catsHTM = ampel.contrib.hu.resources:catsHTMPath',
           ]
       }
 )
