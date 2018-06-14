@@ -18,7 +18,7 @@ class TransientInfoPrinter(AbsT3Unit):
 	version = 0.1
 
 
-	def __init__(self, logger, run_config=None, base_config=None):
+	def __init__(self, logger, run_config=None, base_config=None, global_info=None):
 		"""
 		"""
 		self.logger = logger
@@ -28,7 +28,6 @@ class TransientInfoPrinter(AbsT3Unit):
 	def add(self, transients):
 		"""
 		"""
-
 		if transients is not None:
 
 			batch_count = len(transients)
