@@ -13,7 +13,6 @@ from extcats import CatalogQuery
 from pymongo import MongoClient
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.abstract.AbsAlertFilter import AbsAlertFilter
-from ampel.pipeline.config.resources import get_resource
 
 class LensedTransientFilter(AbsAlertFilter):
 	"""
