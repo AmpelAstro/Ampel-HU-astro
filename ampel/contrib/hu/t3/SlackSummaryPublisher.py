@@ -9,49 +9,50 @@
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from slackclient import SlackClient
-from datetime import datetime, timedelta
-from astropy import time
-import os
+from datetime import datetime
 import requests
 import datetime
-import time as t
-from ampel.pipeline.db.DBUtils import DBUtils
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 import pandas as pd
 import numpy as np
+import io
 
 
 class SlackSummaryPublisher(AbsT3Unit):
     """
     """
 
-    version = 2.0
+    version = 2.2
 
-    def __init__(self, logger, base_config=None):
+    def __init__(self, logger, base_config=None, run_config=None, global_info=None):
         """
         """
         self.logger = LoggingUtils.get_logger() if logger is None else logger
+        self.base_config = base_config
+        self.run_config = run_config
+        self.frames = []
 
-    def run(self, run_config, raw_transients=None):
+    def add(self, transients):
+        self.frames += self.combine_transients(transients)
 
-        if raw_transients is not None:
-            transients = combine_transients(raw_transients, run_config)
-        else:
-            return
+    def run(self):
+
+        df = pd.concat(self.frames)
 
         try:
-            date = run_config["date"]
+            date = self.run_config["date"]
         except KeyError:
             date = str(datetime.date.today())
 
-        sc = SlackClient(run_config["Slack_token"])
+        sc = SlackClient(self.run_config["Slack_token"])
 
-        m = calculate_excitement(len(transients), date=date,
-                                 thresholds=run_config["excitement_levels"],
+        m = calculate_excitement(len(df), date=date,
+                                 thresholds=self.run_config["excitement_levels"]
                                  )
 
         api = sc.api_call(
                     "chat.postMessage",
-                    channel=run_config["Slack_channel"],
+                    channel=self.run_config["Slack_channel"],
                     text=m,
                     username="AMPEL-live",
                     as_user=False
@@ -59,31 +60,55 @@ class SlackSummaryPublisher(AbsT3Unit):
 
         self.logger.info(api)
 
-        tmp_dir = "/Users/avocado/Ampel_output/"
+        filename = "Summary_" + date + ".csv"
 
-        filename = run_config["name"] + "_" + date + ".csv"
+        buffer = io.StringIO(filename)
+        df.to_csv(buffer)
 
-        path = tmp_dir + filename
+        param = {
+            'token': self.run_config["Slack_token"],
+            'channels': self.run_config["Slack_channel"],
+            'title': 'Summary: ' + date,
+            "username": "AMPEL-live",
+            "as_user": "false",
+            "filename": filename
 
-        transients.to_csv(path, index=False)
+        }
 
-        with open(path, 'rb') as f:
-            param = {
-                'token': run_config["Slack_token"],
-                'channels': run_config["Slack_channel"],
-                'title': 'Summary: ' + date,
-                "username": "AMPEL-live",
-                "as_user": "false"
+        r = requests.post(
+            "https://slack.com/api/files.upload",
+            params=param,
+            files={"file": buffer.getvalue()}
+        )
+        self.logger.info(r.text)
 
-            }
-            r = requests.post(
-                "https://slack.com/api/files.upload",
-                params=param,
-                files={'file': f}
-            )
-            self.logger.info(r.text)
+    def combine_transients(self, transients):
 
-        os.remove(path)
+        mycols = list(self.run_config["mycols"]) + self.run_config["channel(s)"]
+
+        frames = []
+
+        for transient in transients:
+
+            tdf = pd.DataFrame(
+                [x.content for x in transient.photopoints])
+
+            # compute ZTF name
+            tdf['ztf_name'] = tdf['tranId'].apply(AmpelUtils.get_ztf_name)
+            tdf["most_recent_detection"] = max(tdf["jd"])
+            tdf["first_detection"] = min(tdf["jd"])
+            tdf["n_detections"] = len(tdf["jd"])
+
+            for channel in self.run_config["channel(s)"]:
+                if channel in transient.channel:
+                    tdf[channel] = True
+                else:
+                    tdf[channel] = False
+
+            # remove stupid columns and save to table
+            frames.append(tdf[mycols][:1])
+
+        return frames
 
 
 def calculate_excitement(n_transients, date, thresholds, n_alerts=np.nan):
@@ -141,32 +166,3 @@ def calculate_excitement(n_transients, date, thresholds, n_alerts=np.nan):
         message += "\n The results are summarised below. "
 
     return message
-
-
-def combine_transients(transients, t3_run_config):
-    mycols = list(t3_run_config["mycols"])
-
-    frames = []
-    all_transients = []
-
-    for transient in transients:
-
-        if transient not in all_transients:
-            all_transients.append(transient)
-            tdf = pd.DataFrame([x.content for x in transient.get_photopoints()])
-
-            # compute ZTF name
-            tdf['ztf_name'] = tdf['tranId'].apply(DBUtils.get_ztf_name)
-            tdf["most_recent_detection"] = max(tdf["jd"])
-            tdf["first_detection"] = min(tdf["jd"])
-            tdf["n_detections"] = len(tdf["jd"])
-
-            # remove stupid columns and save to table
-            frames.append(tdf[mycols][:1])
-
-    #         else:
-    #             index = all_transients.index(transient)
-    #             frames[index][channel] = True
-
-    df = pd.concat(frames)
-    return df
