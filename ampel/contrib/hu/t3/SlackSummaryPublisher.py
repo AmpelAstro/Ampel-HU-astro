@@ -84,7 +84,7 @@ class SlackSummaryPublisher(AbsT3Unit):
 
     def combine_transients(self, transients):
 
-        mycols = list(self.run_config["mycols"]) + self.run_config["channel(s)"]
+        mycols = list(self.run_config["mycols"]) + list(self.run_config["channel(s)"])
 
         frames = []
 
