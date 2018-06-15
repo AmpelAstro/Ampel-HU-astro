@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # File              : ampel/contrib/hu/t0/RandFilter.py
@@ -9,12 +10,12 @@
 
 
 from ampel.abstract.AbsAlertFilter import AbsAlertFilter
-from random import randint
+from random import uniform
 
 class RandFilter(AbsAlertFilter):
 
 
-	version = 0.1
+	version = 0.2
 
 
 	def __init__(self, on_match_t2_units, base_config=None, run_config=None, logger=None):
@@ -25,16 +26,16 @@ class RandFilter(AbsAlertFilter):
 		if run_config is None:
 			raise ValueError("run config required (threshold defined there)")
 
-		self.threshold = run_config['threshold']
+		self.passing_rate = run_config['passing_rate']
 
 		if logger is not None:
-			logger.info("RandFilter instantiated")
+			logger.info("RandFilter with passing rate {}".format(self.passing_rate))
 
 
 	def apply(self, ampel_alert):
 		"""
 		"""
-		if randint(0, 99) > self.threshold:
+		if uniform(0,1) < self.passing_rate:
 			return self.on_match_default_t2_units
 		else:
 			return None
