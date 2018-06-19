@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t0/SEDmTargetFilter.py
+# File              : ampel/contrib/hu/t0/DecentFilter.py
 # License           : BSD-3-Clause
 # Author            : m. giomi <matteo.giomi@desy.de>
 # Date              : 06.06.2018
 # Last Modified Date: 06.06.2018
 # Last Modified By  : m. giomi <matteo.giomi@desy.de>
 
-import numpy as np
+from math import radians
 import logging
 from catsHTM import cone_search
 from ampel.abstract.AbsAlertFilter import AbsAlertFilter
@@ -230,8 +230,8 @@ class DecentFilter(AbsAlertFilter):
 		try:
 			srcs, colnames, colunits = cone_search(
 											'GAIADR2',
-											latest['ra'],
-											latest['dec'],
+											radians(latest['ra']),
+											radians(latest['dec']),
 											self.search_radius,
 											catalogs_dir=self.catshtm_path)
 			if len(srcs) > 0:
