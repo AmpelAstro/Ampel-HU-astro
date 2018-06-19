@@ -11,6 +11,7 @@ from math import radians
 import logging
 from catsHTM import cone_search
 from ampel.abstract.AbsAlertFilter import AbsAlertFilter
+from urllib.parse import urlparse
 
 class DecentFilter(AbsAlertFilter):
 	"""
@@ -86,7 +87,7 @@ class DecentFilter(AbsAlertFilter):
 
 		# then we also search in GAIA
 		self.search_radius 			= run_config['GaiaSearchRadius']
-		self.catshtm_path 			= base_config['catsHTM']()
+		self.catshtm_path 			= urlparse(base_config['catsHTM']).path
 		self.logger.info("using catsHTM files in %s"%self.catshtm_path)
 		self.logger.info(
 			"Serach radius for vetoing sources in GAIA DR2: %.2f arcsec" % 

@@ -37,7 +37,7 @@ class SlackSummaryPublisher(AbsT3Unit):
 
     def run(self):
 
-        df = pd.concat(self.frames)
+        df = pd.concat(self.frames, sort=False)
 
         try:
             date = self.run_config["date"]
@@ -84,11 +84,13 @@ class SlackSummaryPublisher(AbsT3Unit):
 
     def combine_transients(self, transients):
 
-        mycols = list(self.run_config["mycols"]) + self.run_config["channel(s)"]
+        mycols = list(self.run_config["mycols"]) + list(self.run_config["channel(s)"])
 
         frames = []
 
         for transient in transients:
+            if transient.photopoints is None:
+                continue
 
             tdf = pd.DataFrame(
                 [x.content for x in transient.photopoints])
@@ -106,7 +108,8 @@ class SlackSummaryPublisher(AbsT3Unit):
                     tdf[channel] = False
 
             # remove stupid columns and save to table
-            frames.append(tdf[mycols][:1])
+            existing = set(tdf.keys())
+            frames.append(tdf[[k for k in mycols if k in existing]][:1])
 
         return frames
 

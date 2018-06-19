@@ -2,7 +2,7 @@
 from distutils.core import setup
 
 setup(name='ampel-contrib-hu',
-      version='0.1',
+      version='0.2.0',
       packages=['ampel.contrib.hu',
                 'ampel.contrib.hu.examples.t0',
                 'ampel.contrib.hu.examples.t2',
@@ -17,9 +17,6 @@ setup(name='ampel-contrib-hu',
           'ampel.t2_run_configs' : [
               'hu = ampel.contrib.hu.channels:load_t2_run_configs',
           ],
-          'ampel.t3_run_configs' : [
-              'hu = ampel.contrib.hu.channels:load_t3_run_configs',
-          ],
           'ampel.pipeline.t0' : [
               'DecentFilter = ampel.contrib.hu.t0.DecentFilter:DecentFilter',
               'LensedTransientFilter = ampel.contrib.hu.t0.LensedTransientFilter:LensedTransientFilter',
@@ -33,6 +30,16 @@ setup(name='ampel-contrib-hu',
           'ampel.pipeline.t2' : [
               'SNCOSMO = ampel.contrib.hu.t2.T2SNCosmo:T2SNCosmo',
               'POLYFIT = ampel.contrib.hu.examples.t2.T2ExamplePolyFit:T2ExamplePolyFit',
+          ],
+          'ampel.pipeline.t3.jobs' : [
+              'hu = ampel.contrib.hu.channels:load_t3_jobs',
+          ],
+          'ampel.pipeline.t3.units' : [
+              'TransientInfoPrinter = ampel.contrib.hu.t3.TransientInfoPrinter:TransientInfoPrinter',
+              'SlackSummaryPublisher = ampel.contrib.hu.t3.SlackSummaryPublisher:SlackSummaryPublisher',
+          ],
+          'ampel.pipeline.t3.configs' : [
+              'hu = ampel.contrib.hu.channels:load_t3_run_configs',
           ],
           'ampel.pipeline.resources' : [
               'extcats = ampel.contrib.hu.resources:extcatsURI',
