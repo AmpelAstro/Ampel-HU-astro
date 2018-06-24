@@ -16,6 +16,7 @@ from ampel.pipeline.common.AmpelUtils import AmpelUtils
 import pandas as pd
 import numpy as np
 import io
+import pickle
 
 
 class SlackSummaryPublisher(AbsT3Unit):
@@ -30,14 +31,21 @@ class SlackSummaryPublisher(AbsT3Unit):
         self.logger = LoggingUtils.get_logger() if logger is None else logger
         self.base_config = base_config
         self.run_config = run_config
+
+        print(run_config)
+
         self.frames = []
+        self.photometry = []
 
     def add(self, transients):
-        self.frames += self.combine_transients(transients)
+        summary, full = self.combine_transients(transients)
+        self.frames += summary
+        self.photometry += full
 
     def run(self):
 
-        df = pd.concat(self.frames, sort=False)
+        df = pd.concat(self.frames)
+        photometry = pd.concat(self.photometry)
 
         try:
             date = self.run_config["date"]
@@ -82,18 +90,43 @@ class SlackSummaryPublisher(AbsT3Unit):
         )
         self.logger.info(r.text)
 
+        if self.run_config["full_photometry"]:
+
+            filename = "Photometry_" + date + ".csv"
+
+            buffer = io.StringIO(filename)
+            photometry.to_csv(buffer)
+
+            param = {
+                'token': self.run_config["Slack_token"],
+                'channels': self.run_config["Slack_channel"],
+                'title': 'Full Photometry: ' + date,
+                "username": "AMPEL-live",
+                "as_user": "false",
+                "filename": filename
+            }
+
+            r = requests.post(
+                "https://slack.com/api/files.upload",
+                params=param,
+                files={"file": buffer.getvalue()}
+            )
+            self.logger.info(r.text)
+
     def combine_transients(self, transients):
 
-        mycols = list(self.run_config["mycols"]) + list(self.run_config["channel(s)"])
+        mycols = list(self.run_config["mycols"]) + list(
+            self.run_config["channel(s)"])
 
         frames = []
+        photometry = []
 
         for transient in transients:
-            if transient.photopoints is None:
-                continue
 
             tdf = pd.DataFrame(
                 [x.content for x in transient.photopoints])
+
+            print(tdf.columns.values)
 
             # compute ZTF name
             tdf['ztf_name'] = tdf['tranId'].apply(AmpelUtils.get_ztf_name)
@@ -108,10 +141,11 @@ class SlackSummaryPublisher(AbsT3Unit):
                     tdf[channel] = False
 
             # remove stupid columns and save to table
-            existing = set(tdf.keys())
-            frames.append(tdf[[k for k in mycols if k in existing]][:1])
+            frames.append(tdf[mycols][:1])
+            photometry.append(tdf)
+            # frames.append(tdf[:1])
 
-        return frames
+        return frames, photometry
 
 
 def calculate_excitement(n_transients, date, thresholds, n_alerts=np.nan):
