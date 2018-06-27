@@ -4,27 +4,31 @@
 # License           : BSD-3-Clause
 # Author            : m. giomi <matteo.giomi@desy.de>
 # Date              : 06.06.2018
-# Last Modified Date: 06.06.2018
+# Last Modified Date: 27.06.2018
 # Last Modified By  : m. giomi <matteo.giomi@desy.de>
 
-from math import radians
+
 import logging
+from urllib.parse import urlparse
+from astropy.coordinates import SkyCoord
+from astropy.table import Table
 from catsHTM import cone_search
 from ampel.abstract.AbsAlertFilter import AbsAlertFilter
-from urllib.parse import urlparse
+
 
 class DecentFilter(AbsAlertFilter):
 	"""
-		Filter to make a decent selection of candidates. Partially based on the 
-		Redshift completeness prorgam filter on the marshal.
-		Apply cuts on:
-			* magniture
-			* numper of detections
-			* real bogus
-			* sgscore of closest PS1 if close enough
-			* presence of brihgt starlike PS1 neightbours
-			* image parameters such as fwhm, elongation, bad pixels, and the
-			difference between PSF and aperture magnitude.
+		General-purpose filter with ~ 0.6% acceptance. It selects alerts based on:
+			* numper of previous detections
+			* positive subtraction flag
+			* loose cuts on image quality (fwhm, elongation, number of bad pixels, and the
+			difference between PSF and aperture magnitude)
+			* distance to known SS objects
+			* real-bogus
+			* detection of proper-motion and paralax for coincidence sources in GAIA DR2
+		
+		The filter has a very weak dependence on the real-bogus score and it is independent
+		on the provided PS1 star-galaxy classification.
 	"""
 
 	# Static version info
@@ -39,23 +43,18 @@ class DecentFilter(AbsAlertFilter):
 
 		self.on_match_t2_units = on_match_t2_units
 		self.logger = logger if logger is not None else logging.getLogger()
-#		self.logger.setLevel(logging.DEBUG)
 		
-		# Robustness and feedback
 		config_params = (
-			'magTh',
-			'realBogusTh',
-			'minNDet',
-			'clostestPS1_MinDist',
-			'clostestPS1_MinDist',
-			'nearbyPS1_SgTh',
-			'nearbyPS1_MinDist',
-			'neabyPS1_rMagTh',
-			'GaiaSearchRadius',
-			'maxFwhm',
-			'maxElong',
-			'maxNBadPixels',
-			'maxMagDiff'
+			'MIN_NDET',					# number of previous detections
+			'MIN_RB',					# real bogus score
+			'MAX_FWHM',					# sexctrator FWHM (assume Gaussian) [pix]
+			'MAX_ELONG',				# Axis ratio of image: aimage / bimage 
+			'MAX_MAGDIFF',				# Difference: magap - magpsf [mag]
+			'MAX_NBAD',					# number of bad pixels in a 5 x 5 pixel stamp
+			'MIN_DIST_TO_SSO',			# distance to nearest solar system object [arcsec]
+			'GAIA_RS',					# search radius for GAIA DR2 matching [arcsec]
+			'GAIA_PM_SIGNIF',			# significance of proper motion detection of GAIA counterpart [sigma]
+			'GAIA_PLX_SIGNIF'			# significance of parallax detection of GAIA counterpart [sigma]
 			)
 		for el in config_params:
 			if el not in run_config:
@@ -63,45 +62,83 @@ class DecentFilter(AbsAlertFilter):
 			if run_config[el] is None:
 				raise ValueError("Parameter %s is None, please check your channel config" % el)
 			self.logger.info("Using %s=%s" % (el, run_config[el]))
+		
+		
+		# ----- set filter proerties ----- #
+		
+		# history
+		self.min_ndet 					= run_config['MIN_NDET'] 
+		
+		# Image quality
+		self.max_fwhm					= run_config['MAX_FWHM']
+		self.max_elong					= run_config['MAX_ELONG']
+		self.max_magdiff				= run_config['MAX_MAGDIFF']
+		self.max_nbad					= run_config['MAX_NBAD']
+		self.min_rb						= run_config['MIN_RB']
+		
+		# astro
+		self.min_ssdistnr	 			= run_config['MIN_DIST_TO_SSO']
+		self.gaia_rs					= run_config['GAIA_RS']
+		self.gaia_pm_signif				= run_config['GAIA_PM_SIGNIF']
+		self.gaia_plx_signif			= run_config['GAIA_PLX_SIGNIF']
 
-		# parse filter parameters
-		self.mag_th					= run_config['magTh']
-		self.rb_th					= run_config['realBogusTh']
-		self.min_ndet				= run_config['minNDet']
-		
-		# if there is a closeby PS1 source with relatively high sgscore, the alert is rejected.
-		self.closesPS1_sg_th		= run_config['closestPS1_SgTh']	# valery is going to appreaciate the syntax
-		self.closestPS1_min_dist	= run_config['clostestPS1_MinDist']
-		
-		# if there is any neaby PS1 star with decent sgscore and bright enough
-		# the alert is rejected as well.
-		self.nearbyPS1_sg_th		= run_config['nearbyPS1_SgTh']
-		self.nearbyPS1_min_dist		= run_config['nearbyPS1_MinDist']
-		self.nearbyPS1_rmag_th		= run_config['neabyPS1_rMagTh']
-		
-		# image and pixel cuts
-		self.max_nbad				= run_config['maxNBadPixels']
-		self.max_fwhm 				= run_config['maxFwhm']
-		self.max_elong				= run_config['maxElong']
-		self.max_magdiff			= run_config['maxMagDiff']
-
-		# then we also search in GAIA
-		self.search_radius 			= run_config['GaiaSearchRadius']
+		# technical
 		self.catshtm_path 			= urlparse(base_config['catsHTM']).path
 		self.logger.info("using catsHTM files in %s"%self.catshtm_path)
-		self.logger.info(
-			"Serach radius for vetoing sources in GAIA DR2: %.2f arcsec" % 
-			self.search_radius
-		)
-
-		# Robustness
 		self.keys_to_check = (
-			'nbad', 'fwhm', 'elong', 'isdiffpos',
-			'sgscore1', 'distpsnr1', 'srmag1',
-			'sgscore2', 'distpsnr2', 'srmag2',
-			'sgscore3', 'distpsnr3', 'srmag3',
-			'rb', 'magpsf', 'magdiff'
-			)
+			'fwhm', 'elong', 'magdiff', 'nbad', 
+			'isdiffpos', 'ra', 'dec', 'rb', 'ssdistnr')
+
+
+	def _alert_has_keys(self, photop):
+		"""
+			check that given photopoint contains all the keys needed to filter
+		"""
+		
+		for el in self.keys_to_check:
+			if el not in photop:
+				self.logger.debug("rejected: '%s' missing" % el)
+				return False
+			if photop[el] is None:
+				self.logger.debug("rejected: '%s' is None" % el)
+				return False
+		return True
+
+
+	def is_star_in_gaia(self, transient):
+		"""
+			match tranient position with GAIA DR2 and uses parallax 
+			and proper motion to evaluate star-likeliness
+			
+			returns: True (is a star) or False otehrwise.
+		"""
+		transient_coords = SkyCoord(transient['ra'], transient['dec'], unit='deg')
+		srcs, colnames, colunits = cone_search(
+											'GAIADR2',
+											transient_coords.ra.rad, transient_coords.dec.rad,
+											self.gaia_rs,
+											catalogs_dir=self.catshtm_path)
+		my_keys = ['RA', 'Dec', 'Mag_G', 'PMRA', 'ErrPMRA', 'PMDec', 'ErrPMDec', 'Plx', 'ErrPlx']
+		if len(srcs) > 0:
+			gaia_tab					= Table(srcs, names=colnames)
+			gaia_tab					= gaia_tab[my_keys]
+			gaia_coords					= SkyCoord(gaia_tab['RA'], gaia_tab['Dec'], unit='rad')
+			
+			# compute distance
+			gaia_tab['DISTANCE']		= transient_coords.separation(gaia_coords).arcsec
+			gaia_tab['DISTANCE_NORM']	= (
+				1.8 + 0.6 * np.exp( (20 - gaia_tab['Mag_G']) / 2.05) > gaia_tab['DISTANCE'])
+			gaia_tab['FLAG_PROX']		= [True if x['DISTANCE_NORM'] == True and 11 <= x['Mag_G'] <= 19 else False for x in gaia_tab]
+
+			# check for proper motion and parallax conditioned to distance
+			gaia_tab['FLAG_PMRA']		= abs(gaia_tab['PMRA']  / gaia_tab['ErrPMRA']) > self.gaia_pm_signif
+			gaia_tab['FLAG_PMDec']		= abs(gaia_tab['PMDec'] / gaia_tab['ErrPMDec']) > self.gaia_pm_signif
+			gaia_tab['FLAG_Plx']		= abs(gaia_tab['Plx']   / gaia_tab['ErrPlx']) > self.gaia_plx_signif
+			if (any(gaia_tab['FLAG_PMRA'] == True) or 
+				any(gaia_tab['FLAG_PMDec'] == True) or
+				any(gaia_tab['FLAG_Plx'] == True)) and any(gaia_tab['FLAG_PROX'] == True):
+				return True
+		return False
 
 
 	def apply(self, alert):
@@ -113,137 +150,65 @@ class DecentFilter(AbsAlertFilter):
 			* or a custom combination of T2 unit names
 		"""
 		
+		# --------------------------------------------------------------------- #
+		#					CUT ON THE HISTORY OF THE ALERT						#
+		# --------------------------------------------------------------------- #
 		
-		# get the lates photo-point and check that the relevant keys are present
+		npp = len(alert.pps)
+		if npp < self.min_ndet:
+			self.logger.debug("rejected: %d photopoints in alert (minimum required %d)"% 
+				(npp, self.min_ndet))
+			return None
+		
+		# --------------------------------------------------------------------- #
+		#							IMAGE QUALITY CUTS							#
+		# --------------------------------------------------------------------- #
+		
 		latest = alert.pps[0]
-		for el in self.keys_to_check:
-			if el not in latest:
-				self.logger.debug("rejected: '%s' missing" % el)
-				return None
-			if latest[el] is None:
-				self.logger.debug("rejected: '%s' is None" % el)
-				return None
-		
-		# --------------------------------------------------------------------- #
-		#																		#
-		#						CUTS ON IMAGE PROPERTIES						#
-		#																		#
-		# --------------------------------------------------------------------- #
-		
-		# check on the number of bad pixels.
-		if latest['nbad'] > self.max_nbad:
-			self.logger.debug(
-				"rejected: found %d bad pixels around transient (max allowed: %d)."%
-				(latest['nbad'], self.max_nbad)
-			)
+		if not self._alert_has_keys(latest):
 			return None
 		
-		# cut on image fwhm
-		if latest['fwhm'] > self.max_fwhm:
-			self.logger.debug(
-				"rejected: fwhm %.2f above threshod (%.2f)" % 
-				(latest['fwhm'], self.max_fwhm)
-			)
-			return None
-		
-		# now on elongation
-		if latest['elong'] > self.max_elong:
-			self.logger.debug(
-				"rejected: elongation %.2f above threshod (%.2f)" % 
-				(latest['elong'], self.max_elong)
-			)
-			return None
-		
-		# on the difference between psf and aperture magnitudes
-		if abs(latest['magdiff']) > self.max_magdiff:
-			self.logger.debug(
-				"rejected: difference between PSF and apert. mag %.2f above threshod (%.2f)" % 
-				(latest['magdiff'], self.max_magdiff)
-			)
-			return None
-		
-		# cut on RB (1 is real, 0 is bogus)
-		if latest['rb'] < self.rb_th:
-			self.logger.debug("rejected: RB score %.2f below threshod (%.2f)" %
-				(latest['rb'], self.rb_th))
-			return None
-		
-		# check if it a positive subtraction
-		if not (latest['isdiffpos'] and (latest['isdiffpos'] == 't' or latest['isdiffpos'] == '1')):
+		# ---- image quality cuts ----- #
+		if (latest['isdiffpos'] == 'f' or latest['isdiffpos'] == '0'):
 			self.logger.debug("rejected: 'isdiffpos' is %s", latest['isdiffpos'])
 			return None
 		
-		# --------------------------------------------------------------------- #
-		#																		#
-		#						CUTS ON ASTRO PROPERTIES						#
-		#																		#
-		# --------------------------------------------------------------------- #
-		
-		# check if the alert is bright enough
-		if latest['magpsf'] > self.mag_th:
-			self.logger.debug(
-				"rejected: magnitude %.2f above threshod (%.2f)" % 
-				(latest['magpsf'], self.mag_th)
-			)
+		if latest['rb'] < self.min_rb:
+			self.logger.debug("rejected: RB score %.2f below threshod (%.2f)"%
+				(latest['rb'], self.min_rb))
 			return None
 		
-		# check that you have multiple detections
-		npp = len(alert.pps)
-		if npp < self.min_ndet:
-			self.logger.debug(
-				"rejected: only %d photopoints in alert (minimum required %d)" % 
-				(npp, self.min_ndet)
-			)
+		if latest['fwhm'] > self.max_fwhm:
+			self.logger.debug("rejected: fwhm %.2f above threshod (%.2f)"%
+				(latest['fwhm'], self.max_fwhm))
 			return None
 		
-		# if there is a PS1 source very close by, cut on it's SG score
-		if (latest['sgscore1'] and latest['distpsnr1'] and 
-			latest['sgscore1'] > self.closesPS1_sg_th and 
-			latest['distpsnr1'] < self.closestPS1_min_dist):
-			self.logger.debug(
-				"rejected: closest PS1 cp at %.2f arcsec with and sgscore of %.2f" %
-				(latest['distpsnr1'], latest['sgscore1']))
+		if latest['elong'] > self.max_elong:
+			self.logger.debug("rejected: elongation %.2f above threshod (%.2f)"%
+				(latest['elong'], self.max_elong))
 			return None
 		
-		# check that there is no bright PS1 source nearby. 
-		conditions = []
-		for ips1 in range(1, 3):
-			distps = latest['distpsnr%d'%ips1]
-			srmag = latest['srmag%d'%ips1]
-			sgscore = latest['sgscore%d'%ips1]
-			isbrightstar = 	(
-								( distps and distps < self.nearbyPS1_min_dist) and
-								( srmag and srmag > 0 and srmag < self.nearbyPS1_rmag_th) and
-								( sgscore and sgscore > self.nearbyPS1_sg_th)
-							)
-			if isbrightstar:
-				self.logger.debug(
-					"rejected: nearby PS1 source nr. %d is likely a bright star. dist: %.2f, rmag: %.2f, sg: %.2f"%
-						(ips1, distps, srmag, sgscore))
-				return None
+		if abs(latest['magdiff']) > self.max_magdiff:
+			self.logger.debug("rejected: magdiff (AP-PSF) %.2f above threshod (%.2f)"% 
+				(latest['magdiff'], self.max_magdiff))
+			return None
 		
 		# --------------------------------------------------------------------- #
-		#																		#
-		#						CROSSMATCH WITH GAIA DR2						#
-		#																		#
+		#								ASTRONOMY								#
 		# --------------------------------------------------------------------- #
-		# some files are corrupted, we have to catch the exception
-		try:
-			srcs, colnames, colunits = cone_search(
-											'GAIADR2',
-											radians(latest['ra']),
-											radians(latest['dec']),
-											self.search_radius,
-											catalogs_dir=self.catshtm_path)
-			if len(srcs) > 0:
-				self.logger.debug(
-					"rejected: within %.2f arcsec from a GAIA DR2 source" % 
-					(self.search_radius)
-				)
-				return None
-		except OSError as ose:
-			self.logger.debug("rejected: OSError from catsHTM %s"%str(ose))
+		
+		# check for closeby ss objects
+		if (0 < latest['ssdistnr'] < self.min_ssdistnr):
+			self.logger.debug("rejected: solar-system object close to transient (max allowed: %d)."%
+				(self.min_ssdistnr))
 			return None
 		
-		# contratulations alert, you made it! welcome in the Ampel database!
+		# check with gaia
+		if self.is_star_in_gaia(latest):
+			self.logger.debug("rejected: within %.2f arcsec from a GAIA start (PM of PLX)" % 
+				(self.gaia_rs))
+			return None
+		
+		# congratulation alert! you made it!
 		return self.on_match_t2_units
+	
