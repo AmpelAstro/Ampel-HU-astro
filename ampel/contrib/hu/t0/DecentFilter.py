@@ -55,7 +55,7 @@ class DecentFilter(AbsAlertFilter):
 			'MIN_DIST_TO_SSO',			# distance to nearest solar system object [arcsec]
 			'GAIA_RS',					# search radius for GAIA DR2 matching [arcsec]
 			'GAIA_PM_SIGNIF',			# significance of proper motion detection of GAIA counterpart [sigma]
-			'GAIA_PLX_SIGNIF'			# significance of parallax detection of GAIA counterpart [sigma]
+			'GAIA_PLX_SIGNIF',			# significance of parallax detection of GAIA counterpart [sigma]
 			'PS1_SGVETO_RAD',			# maximum distance to closest PS1 source for SG score veto [arcsec]
 			'PS1_SGVETO_SGTH'			# maximum allowed SG score for PS1 source within PS1_SGVETO_RAD
 			)
