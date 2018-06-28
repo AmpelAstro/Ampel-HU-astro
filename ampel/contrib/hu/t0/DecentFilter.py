@@ -8,6 +8,7 @@
 # Last Modified By  : m. giomi <matteo.giomi@desy.de>
 
 
+import numpy as np
 import logging
 from urllib.parse import urlparse
 from astropy.coordinates import SkyCoord
