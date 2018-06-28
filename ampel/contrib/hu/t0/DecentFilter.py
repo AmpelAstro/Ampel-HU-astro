@@ -91,7 +91,7 @@ class DecentFilter(AbsAlertFilter):
 		self.catshtm_path 			= urlparse(base_config['catsHTM']).path
 		self.logger.info("using catsHTM files in %s"%self.catshtm_path)
 		self.keys_to_check = (
-			'fwhm', 'elong', 'magdiff', 'nbad', 'distpsnr1', 'sgscore1'
+			'fwhm', 'elong', 'magdiff', 'nbad', 'distpsnr1', 'sgscore1',
 			'isdiffpos', 'ra', 'dec', 'rb', 'ssdistnr')
 
 
@@ -110,7 +110,7 @@ class DecentFilter(AbsAlertFilter):
 		return True
 
 
-	def is_start_in_PS1(self, transient):
+	def is_star_in_PS1(self, transient):
 		"""
 			apply combined cut on sgscore1 and distpsnr1 to reject the transient if
 			there is a PS1 star-like object in it's immediate vicinity
@@ -130,6 +130,7 @@ class DecentFilter(AbsAlertFilter):
 			
 			returns: True (is a star) or False otehrwise.
 		"""
+		
 		transient_coords = SkyCoord(transient['ra'], transient['dec'], unit='deg')
 		srcs, colnames, colunits = cone_search(
 											'GAIADR2',
@@ -222,8 +223,8 @@ class DecentFilter(AbsAlertFilter):
 			return None
 		
 		# check ps1 star-galaxy score
-		if self.is_start_in_PS1(latest):
-			self.logger.debug("rejected: closest PS1 source %.2 arcsec away with sgscore of %.2f"%
+		if self.is_star_in_PS1(latest):
+			self.logger.debug("rejected: closest PS1 source %.2f arcsec away with sgscore of %.2f"%
 				(latest['distpsnr1'], latest['sgscore1']))
 			return None
 		
