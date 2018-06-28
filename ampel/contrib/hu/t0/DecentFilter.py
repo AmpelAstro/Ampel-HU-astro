@@ -56,6 +56,8 @@ class DecentFilter(AbsAlertFilter):
 			'GAIA_RS',					# search radius for GAIA DR2 matching [arcsec]
 			'GAIA_PM_SIGNIF',			# significance of proper motion detection of GAIA counterpart [sigma]
 			'GAIA_PLX_SIGNIF'			# significance of parallax detection of GAIA counterpart [sigma]
+			'PS1_SGVETO_RAD',			# maximum distance to closest PS1 source for SG score veto [arcsec]
+			'PS1_SGVETO_SGTH'			# maximum allowed SG score for PS1 source within PS1_SGVETO_RAD
 			)
 		for el in config_params:
 			if el not in run_config:
@@ -82,12 +84,14 @@ class DecentFilter(AbsAlertFilter):
 		self.gaia_rs					= run_config['GAIA_RS']
 		self.gaia_pm_signif				= run_config['GAIA_PM_SIGNIF']
 		self.gaia_plx_signif			= run_config['GAIA_PLX_SIGNIF']
+		self.ps1_sgveto_rad				= run_config['PS1_SGVETO_RAD']
+		self.ps1_sgveto_th				= run_config['PS1_SGVETO_SGTH']
 
 		# technical
 		self.catshtm_path 			= urlparse(base_config['catsHTM']).path
 		self.logger.info("using catsHTM files in %s"%self.catshtm_path)
 		self.keys_to_check = (
-			'fwhm', 'elong', 'magdiff', 'nbad', 
+			'fwhm', 'elong', 'magdiff', 'nbad', 'distpsnr1', 'sgscore1'
 			'isdiffpos', 'ra', 'dec', 'rb', 'ssdistnr')
 
 
@@ -105,6 +109,19 @@ class DecentFilter(AbsAlertFilter):
 				return False
 		return True
 
+
+	def is_start_in_PS1(self, transient):
+		"""
+			apply combined cut on sgscore1 and distpsnr1 to reject the transient if
+			there is a PS1 star-like object in it's immediate vicinity
+		"""
+		
+		if (transient['distpsnr1'] < self.ps1_sgveto_rad and
+				transient['sgscore1'] > self.ps1_sgveto_th):
+			return True
+		else:
+			return False
+			
 
 	def is_star_in_gaia(self, transient):
 		"""
@@ -202,6 +219,12 @@ class DecentFilter(AbsAlertFilter):
 		if (0 < latest['ssdistnr'] < self.min_ssdistnr):
 			self.logger.debug("rejected: solar-system object close to transient (max allowed: %d)."%
 				(self.min_ssdistnr))
+			return None
+		
+		# check ps1 star-galaxy score
+		if self.is_start_in_PS1(latest):
+			self.logger.debug("rejected: closest PS1 source %.2 arcsec away with sgscore of %.2f"%
+				(latest['distpsnr1'], latest['sgscore1']))
 			return None
 		
 		# check with gaia
