@@ -57,7 +57,8 @@ class DecentFilter(AbsAlertFilter):
 			'GAIA_PM_SIGNIF',			# significance of proper motion detection of GAIA counterpart [sigma]
 			'GAIA_PLX_SIGNIF',			# significance of parallax detection of GAIA counterpart [sigma]
 			'PS1_SGVETO_RAD',			# maximum distance to closest PS1 source for SG score veto [arcsec]
-			'PS1_SGVETO_SGTH'			# maximum allowed SG score for PS1 source within PS1_SGVETO_RAD
+			'PS1_SGVETO_SGTH',			# maximum allowed SG score for PS1 source within PS1_SGVETO_RAD
+			'PS1_CONFUSION_RAD'			# reject alerts if the three PS1 sources are all within this radius [arcsec]
 			)
 		for el in config_params:
 			if el not in run_config:
@@ -86,6 +87,7 @@ class DecentFilter(AbsAlertFilter):
 		self.gaia_plx_signif			= run_config['GAIA_PLX_SIGNIF']
 		self.ps1_sgveto_rad				= run_config['PS1_SGVETO_RAD']
 		self.ps1_sgveto_th				= run_config['PS1_SGVETO_SGTH']
+		self.ps1_confusion_rad			= run_config['PS1_CONFUSION_RAD']
 
 		# technical
 		self.catshtm_path 			= urlparse(base_config['catsHTM']).path
@@ -99,7 +101,6 @@ class DecentFilter(AbsAlertFilter):
 		"""
 			check that given photopoint contains all the keys needed to filter
 		"""
-		
 		for el in self.keys_to_check:
 			if el not in photop:
 				self.logger.debug("rejected: '%s' missing" % el)
@@ -115,13 +116,26 @@ class DecentFilter(AbsAlertFilter):
 			apply combined cut on sgscore1 and distpsnr1 to reject the transient if
 			there is a PS1 star-like object in it's immediate vicinity
 		"""
-		
 		if (transient['distpsnr1'] < self.ps1_sgveto_rad and
 				transient['sgscore1'] > self.ps1_sgveto_th):
 			return True
 		else:
 			return False
-			
+
+
+	def is_confused_in_PS1(self, transient):
+		"""
+			check in PS1 for source confusion, which can induce subtraction artifatcs. 
+			These cases are selected requiring that all three PS1 cps are in the imediate
+			vicinity of the transient and their sgscore to be exactly 0.5
+		"""
+		sg1, sg2, sg3 = transient['sgscore1'], transient['sgscore2'], transient['sgscore3']
+		d1, d2, d3 = transient['distpsnr1'], transient['distpsnr2'], transient['distpsnr3']
+		if (sg1 == sg2 == sg3 == 0.5) and max([d1, d2, d3])<self.ps1_confusion_rad:
+			return True
+		else:
+			return False
+
 
 	def is_star_in_gaia(self, transient):
 		"""
@@ -228,6 +242,11 @@ class DecentFilter(AbsAlertFilter):
 				(latest['distpsnr1'], latest['sgscore1']))
 			return None
 		
+		if self.is_confused_in_PS1(latest):
+			self.logger.debug("rejected: three confused PS1 sources within %.2f arcsec from alert."%
+				(self.ps1_confusion_rad))
+			return None
+			
 		# check with gaia
 		if self.is_star_in_gaia(latest):
 			self.logger.debug("rejected: within %.2f arcsec from a GAIA start (PM of PLX)" % 
