@@ -2,7 +2,7 @@
 from distutils.core import setup
 
 setup(name='ampel-contrib-hu',
-      version='0.2.0',
+      version='0.2.1',
       packages=['ampel.contrib.hu',
                 'ampel.contrib.hu.examples.t0',
                 'ampel.contrib.hu.examples.t2',
@@ -37,6 +37,7 @@ setup(name='ampel-contrib-hu',
           'ampel.pipeline.t3.units' : [
               'TransientInfoPrinter = ampel.contrib.hu.t3.TransientInfoPrinter:TransientInfoPrinter',
               'SlackSummaryPublisher = ampel.contrib.hu.t3.SlackSummaryPublisher:SlackSummaryPublisher',
+              'MarshalPublisher = ampel.contrib.hu.t3.MarshalPublisher:MarshalPublisher',
           ],
           'ampel.pipeline.t3.configs' : [
               'hu = ampel.contrib.hu.channels:load_t3_run_configs',
