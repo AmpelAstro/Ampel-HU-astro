@@ -29,8 +29,6 @@ class SlackSummaryPublisher(AbsT3Unit):
         self.base_config = base_config
         self.run_config = run_config
 
-        print(run_config)
-
         self.frames = []
         self.photometry = []
 
@@ -129,10 +127,11 @@ class SlackSummaryPublisher(AbsT3Unit):
 
         for transient in transients:
 
+            if len(transient.photopoints) == 0:
+                continue
+
             tdf = pd.DataFrame(
                 [x.content for x in transient.photopoints])
-
-            print(tdf.columns.values)
 
             # compute ZTF name
             tdf['ztf_name'] = tdf['tranId'].apply(AmpelUtils.get_ztf_name)
