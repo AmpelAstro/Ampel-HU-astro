@@ -20,7 +20,6 @@ setup(name='ampel-contrib-hu',
           'ampel.pipeline.t0' : [
               'DecentFilter = ampel.contrib.hu.t0.DecentFilter:DecentFilter',
               'LensedTransientFilter = ampel.contrib.hu.t0.LensedTransientFilter:LensedTransientFilter',
-              'NeutrinoFilter = ampel.contrib.hu.t0.NeutrinoFilter:NeutrinoFilter',
               'NoFilter = ampel.contrib.hu.t0.NoFilter:NoFilter',
               'RandFilter = ampel.contrib.hu.t0.RandFilter:RandFilter',
               'SEDmTargetFilter = ampel.contrib.hu.t0.SEDmTargetFilter:SEDmTargetFilter',

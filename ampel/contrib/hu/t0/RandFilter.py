@@ -1,15 +1,14 @@
-
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # File              : ampel/contrib/hu/t0/RandFilter.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 07.06.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 
-from ampel.abstract.AbsAlertFilter import AbsAlertFilter
+from ampel.base.abstract.AbsAlertFilter import AbsAlertFilter
 from random import uniform
 
 class RandFilter(AbsAlertFilter):

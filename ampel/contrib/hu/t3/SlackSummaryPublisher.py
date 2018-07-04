@@ -2,22 +2,19 @@
 # -*- coding: utf-8 -*-
 # File              : ampel/contrib/hu/t3/SlackPublisher.py
 # License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
+# Author            : robert stein
 # Date              : 11.03.2018
 # Last Modified Date: 17.03.2018
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
-from ampel.abstract.AbsT3Unit import AbsT3Unit
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
-from slackclient import SlackClient
-from datetime import datetime
-import requests
-import datetime
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
+# Last Modified By  : robert stein
+
 import pandas as pd
 import numpy as np
-import io
-import pickle
+import io, pickle, datetime, requests
+from slackclient import SlackClient
 
+from ampel.base.abstract.AbsT3Unit import AbsT3Unit
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
+from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
 class SlackSummaryPublisher(AbsT3Unit):
     """
@@ -37,12 +34,18 @@ class SlackSummaryPublisher(AbsT3Unit):
         self.frames = []
         self.photometry = []
 
+
     def add(self, transients):
+        """
+        """
         summary, full = self.combine_transients(transients)
         self.frames += summary
         self.photometry += full
 
-    def run(self):
+
+    def done(self):
+        """
+        """
 
         df = pd.concat(self.frames)
         photometry = pd.concat(self.photometry)
@@ -113,7 +116,10 @@ class SlackSummaryPublisher(AbsT3Unit):
             )
             self.logger.info(r.text)
 
+
     def combine_transients(self, transients):
+        """
+        """
 
         mycols = list(self.run_config["mycols"]) + list(
             self.run_config["channel(s)"])
@@ -149,6 +155,9 @@ class SlackSummaryPublisher(AbsT3Unit):
 
 
 def calculate_excitement(n_transients, date, thresholds, n_alerts=np.nan):
+    """
+    """
+
     message = "UPDATE! Alert summary for " + date + ". "
 
     if n_alerts == 0:

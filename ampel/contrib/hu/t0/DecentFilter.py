@@ -7,15 +7,13 @@
 # Last Modified Date: 27.06.2018
 # Last Modified By  : m. giomi <matteo.giomi@desy.de>
 
-
 import numpy as np
 import logging
 from urllib.parse import urlparse
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
 from catsHTM import cone_search
-from ampel.abstract.AbsAlertFilter import AbsAlertFilter
-
+from ampel.base.abstract.AbsAlertFilter import AbsAlertFilter
 
 class DecentFilter(AbsAlertFilter):
 	"""

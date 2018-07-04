@@ -4,10 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 08.03.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.abstract.AbsAlertFilter import AbsAlertFilter
+from ampel.base.abstract.AbsAlertFilter import AbsAlertFilter
 
 class NoFilter(AbsAlertFilter):
 	

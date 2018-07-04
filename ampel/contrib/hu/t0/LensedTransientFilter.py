@@ -7,12 +7,12 @@
 # Last Modified Date: 08.06.2018
 # Last Modified By  : m. giomi <matteo.giomi@desy.de>
 
-
 import numpy as np
 from extcats import CatalogQuery
 from pymongo import MongoClient
+
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
-from ampel.abstract.AbsAlertFilter import AbsAlertFilter
+from ampel.base.abstract.AbsAlertFilter import AbsAlertFilter
 
 class LensedTransientFilter(AbsAlertFilter):
 	"""

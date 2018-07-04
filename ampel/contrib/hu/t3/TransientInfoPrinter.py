@@ -4,12 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 11.06.2018
-# Last Modified Date: 11.06.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.base.TransientView import TransientView
-from ampel.abstract.AbsT3Unit import AbsT3Unit
-
+from ampel.base.abstract.AbsT3Unit import AbsT3Unit
 
 class TransientInfoPrinter(AbsT3Unit):
 	"""
@@ -24,6 +23,7 @@ class TransientInfoPrinter(AbsT3Unit):
 		self.logger = logger
 		self.count = 0
 		self.printed_ids = []
+
 
 	def add(self, transients):
 		"""
@@ -42,10 +42,8 @@ class TransientInfoPrinter(AbsT3Unit):
 			self.logger.info("No transient provided")
 
 
-	def run(self):
+	def done(self):
 		"""
 		"""
 		self.logger.info("Total number of transient printed: %i" % self.count)
 		return self.printed_ids
-
-
