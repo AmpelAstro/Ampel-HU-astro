@@ -45,7 +45,7 @@ def test_slacksummary(t3_transient_views, mocker):
 	mocker.patch('slackclient.SlackClient.api_call')
 
 	t3.add(t3_transient_views)
-	t3.run()
+	t3.done()
 	
 	api_call = slackclient.SlackClient.api_call
 	api_call.assert_called_once()
