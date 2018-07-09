@@ -44,6 +44,7 @@ setup(name='ampel-contrib-hu',
           'ampel.pipeline.resources' : [
               'extcats = ampel.contrib.hu.resources:extcatsURI',
               'catsHTM = ampel.contrib.hu.resources:catsHTMPath',
+              'desycloud = ampel.contrib.hu.resources:desyCloudURI',
           ]
       }
 )
