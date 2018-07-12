@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 11.06.2018
-# Last Modified Date: 04.07.2018
+# Last Modified Date: 13.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.base.TransientView import TransientView
@@ -23,6 +23,9 @@ class TransientInfoPrinter(AbsT3Unit):
 		self.logger = logger
 		self.count = 0
 		self.printed_ids = []
+
+		if global_info is not None:
+			self.logger.info("Provided global info: %s" % global_info)
 
 
 	def add(self, transients):
