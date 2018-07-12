@@ -14,7 +14,7 @@ setup(name='ampel-contrib-hu',
           'ampel.channels' : [
               'hu = ampel.contrib.hu.channels:load_channels',
           ],
-          'ampel.t2_run_configs' : [
+          'ampel.pipeline.t2.configs' : [
               'hu = ampel.contrib.hu.channels:load_t2_run_configs',
           ],
           'ampel.pipeline.t0' : [
@@ -26,7 +26,7 @@ setup(name='ampel-contrib-hu',
               'SNFilter = ampel.contrib.hu.t0.SNFilter:SNFilter',
               'TransientInEllipticalFilter = ampel.contrib.hu.t0.TransientInEllipticalFilter:TransientInEllipticalFilter',
           ],
-          'ampel.pipeline.t2' : [
+          'ampel.pipeline.t2.units' : [
               'SNCOSMO = ampel.contrib.hu.t2.T2SNCosmo:T2SNCosmo',
               'POLYFIT = ampel.contrib.hu.examples.t2.T2ExamplePolyFit:T2ExamplePolyFit',
           ],
