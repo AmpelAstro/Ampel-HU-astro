@@ -35,7 +35,7 @@ def test_slacksummary(t3_transient_views, mocker):
 		"Slack_channel": "#ampel-live",
 		"full_photometry": True
 	}
-
+	
 	assert len(t3_transient_views) < run_config['excitement_levels']['Low'], 'Small number passed'
 
 	t3 = SlackSummaryPublisher(None, run_config=run_config)
