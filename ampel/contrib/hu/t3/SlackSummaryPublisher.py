@@ -46,6 +46,8 @@ class SlackSummaryPublisher(AbsT3Unit):
         """
 
         df = pd.concat(self.frames)
+
+
         photometry = pd.concat(self.photometry)
 
         try:
@@ -119,13 +121,13 @@ class SlackSummaryPublisher(AbsT3Unit):
         """
         """
 
-        mycols = list(self.run_config["mycols"]) + list(
-            self.run_config["channel(s)"])
-
         frames = []
         photometry = []
 
         for transient in transients:
+            mycols = list(self.run_config["mycols"]) + list(
+                self.run_config["channel(s)"])
+
 
             if len(transient.photopoints) == 0:
                 continue
@@ -138,13 +140,22 @@ class SlackSummaryPublisher(AbsT3Unit):
             tdf["most_recent_detection"] = max(tdf["jd"])
             tdf["first_detection"] = min(tdf["jd"])
             tdf["n_detections"] = len(tdf["jd"])
+            for j, t2record in enumerate(transient.t2records):
+                for k, res in enumerate(t2record.results):    
+                    for key, value  in res.items():
+                        new_key = "T2-" + str(j) + "-"+ str(k) + "-" + key
+                        try:
+                            tdf[new_key] = value
+                            mycols.append(new_key)
+                        except ValueError:
+                            pass
+                    
 
             for channel in self.run_config["channel(s)"]:
                 if channel in transient.channel:
                     tdf[channel] = True
                 else:
                     tdf[channel] = False
-
             # remove stupid columns and save to table
             frames.append(tdf[mycols][:1])
             photometry.append(tdf)
