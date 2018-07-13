@@ -44,6 +44,8 @@ class SlackSummaryPublisher(AbsT3Unit):
     def done(self):
         """
         """
+        if len(self.frames) == 0 and run_config.get('quiet', False):
+            return
 
         df = pd.concat(self.frames)
 

@@ -14,6 +14,9 @@ setup(name='ampel-contrib-hu',
           'ampel.channels' : [
               'hu = ampel.contrib.hu.channels:load_channels',
           ],
+          'ampel.target_sources' : [
+              'TargetSourceListener = ampel.contrib.hu.TargetSourceListener:TargetSourceListener',
+          ],
           'ampel.pipeline.t2.configs' : [
               'hu = ampel.contrib.hu.channels:load_t2_run_configs',
           ],
@@ -22,6 +25,7 @@ setup(name='ampel-contrib-hu',
               'LensedTransientFilter = ampel.contrib.hu.t0.LensedTransientFilter:LensedTransientFilter',
               'NoFilter = ampel.contrib.hu.t0.NoFilter:NoFilter',
               'RandFilter = ampel.contrib.hu.t0.RandFilter:RandFilter',
+              'ToOFilter = ampel.contrib.hu.t0.ToOFilter:ToOFilter',
               'SEDmTargetFilter = ampel.contrib.hu.t0.SEDmTargetFilter:SEDmTargetFilter',
               'SNFilter = ampel.contrib.hu.t0.SNFilter:SNFilter',
               'TransientInEllipticalFilter = ampel.contrib.hu.t0.TransientInEllipticalFilter:TransientInEllipticalFilter',
