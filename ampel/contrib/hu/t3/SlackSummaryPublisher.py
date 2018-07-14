@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t3/SlackPublisher.py
+# File              : ampel/contrib/hu/t3/SlackSummaryPublisher.py
 # License           : BSD-3-Clause
 # Author            : robert stein
 # Date              : 11.03.2018
-# Last Modified Date: 17.03.2018
-# Last Modified By  : robert stein
+# Last Modified Date: 14.07.2018
+# Last Modified By  : rs
 
 import pandas as pd
 import numpy as np
@@ -44,7 +44,7 @@ class SlackSummaryPublisher(AbsT3Unit):
     def done(self):
         """
         """
-        if len(self.frames) == 0 and run_config.get('quiet', False):
+        if len(self.frames) == 0 and self.run_config.get('quiet', False):
             return
 
         df = pd.concat(self.frames)
@@ -142,15 +142,18 @@ class SlackSummaryPublisher(AbsT3Unit):
             tdf["most_recent_detection"] = max(tdf["jd"])
             tdf["first_detection"] = min(tdf["jd"])
             tdf["n_detections"] = len(tdf["jd"])
-            for j, t2record in enumerate(transient.t2records):
-                for k, res in enumerate(t2record.results):    
-                    for key, value  in res.items():
-                        new_key = "T2-" + str(j) + "-"+ str(k) + "-" + key
-                        try:
-                            tdf[new_key] = value
-                            mycols.append(new_key)
-                        except ValueError:
-                            pass
+
+
+            if transient.t2records is not None:
+                for j, t2record in enumerate(transient.t2records):
+                    for k, res in enumerate(t2record.results):    
+                        for key, value  in res.items():
+                            new_key = "T2-" + str(j) + "-"+ str(k) + "-" + key
+                            try:
+                                tdf[new_key] = value
+                                mycols.append(new_key)
+                            except ValueError:
+                                pass
                     
 
             for channel in self.run_config["channel(s)"]:
