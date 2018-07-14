@@ -129,8 +129,7 @@ class SlackSummaryPublisher(AbsT3Unit):
         for transient in transients:
             mycols = list(self.run_config["mycols"]) + list(
                 self.run_config["channel(s)"])
-
-
+            
             if len(transient.photopoints) == 0:
                 continue
 
@@ -143,8 +142,7 @@ class SlackSummaryPublisher(AbsT3Unit):
             tdf["first_detection"] = min(tdf["jd"])
             tdf["n_detections"] = len(tdf["jd"])
 
-
-            if transient.t2records is not None:
+            try:
                 for j, t2record in enumerate(transient.t2records):
                     for k, res in enumerate(t2record.results):    
                         for key, value  in res.items():
@@ -154,13 +152,23 @@ class SlackSummaryPublisher(AbsT3Unit):
                                 mycols.append(new_key)
                             except ValueError:
                                 pass
-                    
+            except TypeError:
+                pass
 
             for channel in self.run_config["channel(s)"]:
                 if channel in transient.channel:
                     tdf[channel] = True
                 else:
                     tdf[channel] = False
+
+            dfcols = list(tdf.columns.values)
+            missing = [x for x in mycols if x not in dfcols]
+
+            print(dfcols, missing)
+
+            for col in missing:
+                tdf[col] = "MISSING"
+
             # remove stupid columns and save to table
             frames.append(tdf[mycols][:1])
             photometry.append(tdf)
