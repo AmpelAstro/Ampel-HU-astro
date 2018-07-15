@@ -129,8 +129,8 @@ class SlackSummaryPublisher(AbsT3Unit):
         for transient in transients:
             mycols = list(self.run_config["mycols"]) + list(
                 self.run_config["channel(s)"])
-            
-            if len(transient.photopoints) == 0:
+
+            if transient.photopoints is None or len(transient.photopoints) == 0:
                 continue
 
             tdf = pd.DataFrame(
