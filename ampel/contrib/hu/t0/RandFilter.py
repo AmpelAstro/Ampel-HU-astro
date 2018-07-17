@@ -25,7 +25,7 @@ class RandFilter(AbsAlertFilter):
 		if run_config is None:
 			raise ValueError("run config required (threshold defined there)")
 
-		self.passing_rate = run_config['passing_rate']
+		self.passing_rate = run_config['passingRate']
 
 		if logger is not None:
 			logger.info("RandFilter with passing rate {}".format(self.passing_rate))
