@@ -46,12 +46,7 @@ class SlackSummaryPublisher(AbsT3Unit):
         """
         if len(self.frames) == 0 and self.run_config.get('quiet', False):
             return
-
-        df = pd.concat(self.frames)
-
-
-        photometry = pd.concat(self.photometry)
-
+   
         try:
             date = self.run_config["date"]
         except KeyError:
@@ -59,7 +54,7 @@ class SlackSummaryPublisher(AbsT3Unit):
 
         sc = SlackClient(self.run_config["Slack_token"])
 
-        m = calculate_excitement(len(df), date=date,
+        m = calculate_excitement(len(self.frames), date=date,
                                  thresholds=self.run_config["excitement_levels"]
                                  )
 
@@ -72,43 +67,25 @@ class SlackSummaryPublisher(AbsT3Unit):
                 )
 
         self.logger.info(api)
+        
+        if len(self.frames) > 0:
 
-        filename = "Summary_" + date + ".csv"
+            df = pd.concat(self.frames)
+            photometry = pd.concat(self.photometry)
 
-        buffer = io.StringIO(filename)
-        df.to_csv(buffer)
-
-        param = {
-            'token': self.run_config["Slack_token"],
-            'channels': self.run_config["Slack_channel"],
-            'title': 'Summary: ' + date,
-            "username": "AMPEL-live",
-            "as_user": "false",
-            "filename": filename
-
-        }
-
-        r = requests.post(
-            "https://slack.com/api/files.upload",
-            params=param,
-            files={"file": buffer.getvalue()}
-        )
-        self.logger.info(r.text)
-
-        if self.run_config["full_photometry"]:
-
-            filename = "Photometry_" + date + ".csv"
+            filename = "Summary_" + date + ".csv"
 
             buffer = io.StringIO(filename)
-            photometry.to_csv(buffer)
+            df.to_csv(buffer)
 
             param = {
                 'token': self.run_config["Slack_token"],
                 'channels': self.run_config["Slack_channel"],
-                'title': 'Full Photometry: ' + date,
+                'title': 'Summary: ' + date,
                 "username": "AMPEL-live",
                 "as_user": "false",
                 "filename": filename
+
             }
 
             r = requests.post(
@@ -117,6 +94,29 @@ class SlackSummaryPublisher(AbsT3Unit):
                 files={"file": buffer.getvalue()}
             )
             self.logger.info(r.text)
+
+            if self.run_config["full_photometry"]:
+
+                filename = "Photometry_" + date + ".csv"
+
+                buffer = io.StringIO(filename)
+                photometry.to_csv(buffer)
+
+                param = {
+                    'token': self.run_config["Slack_token"],
+                    'channels': self.run_config["Slack_channel"],
+                    'title': 'Full Photometry: ' + date,
+                    "username": "AMPEL-live",
+                    "as_user": "false",
+                    "filename": filename
+                }
+
+                r = requests.post(
+                    "https://slack.com/api/files.upload",
+                    params=param,
+                    files={"file": buffer.getvalue()}
+                )
+                self.logger.info(r.text)
 
 
     def combine_transients(self, transients):
