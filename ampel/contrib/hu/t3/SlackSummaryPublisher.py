@@ -164,8 +164,6 @@ class SlackSummaryPublisher(AbsT3Unit):
             dfcols = list(tdf.columns.values)
             missing = [x for x in mycols if x not in dfcols]
 
-            print(dfcols, missing)
-
             for col in missing:
                 tdf[col] = "MISSING"
 
