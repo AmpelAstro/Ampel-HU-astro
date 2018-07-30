@@ -142,18 +142,21 @@ class SlackSummaryPublisher(AbsT3Unit):
             tdf["first_detection"] = min(tdf["jd"])
             tdf["n_detections"] = len(tdf["jd"])
 
-            try:
+            if transient.t2records is not None:
                 for j, t2record in enumerate(transient.t2records):
-                    for k, res in enumerate(t2record.results):    
-                        for key, value  in res.items():
-                            new_key = "T2-" + str(j) + "-"+ str(k) + "-" + key
-                            try:
-                                tdf[new_key] = value
-                                mycols.append(new_key)
-                            except ValueError:
-                                pass
-            except TypeError:
-                pass
+                    if len(t2record.results) == 0:
+                        continue
+                    res = (t2record.results[-1])
+                    if not "results" in res:
+                        continue
+                    for key, value in res['results'].items():
+                        new_key = "T2-{}".format(key)
+                        try:
+                            tdf[new_key] = value
+                            mycols.append(new_key)
+                        except ValueError:
+                            raise
+                            pass
 
             for channel in self.run_config["channel(s)"]:
                 if channel in transient.channel:

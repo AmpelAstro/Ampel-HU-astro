@@ -57,11 +57,17 @@ def test_slacksummary(t3_transient_views, mocker):
 	# Verify summary
 	content = requests.post.call_args_list[0][1]['files']['file']
 	with StringIO(content) as f:
-		rows = list(csv.reader(f))
-	assert len(rows) == len(t3_transient_views)+1, '1 row per transient'
+		reader = csv.DictReader(f)
+		rows = list(reader)
+	for key in "T2-foo","T2-bar":
+		assert key in reader.fieldnames
+
+	assert len(rows) == len(t3_transient_views), '1 row per transient'
 
 	# Verify photometry dump
 	content = requests.post.call_args_list[1][1]['files']['file']
 	with StringIO(content) as f:
 		rows = list(csv.reader(f))
 	assert len(rows) == sum(len(v.photopoints) for v in t3_transient_views)+1, '1 row per photopoint'
+
+
