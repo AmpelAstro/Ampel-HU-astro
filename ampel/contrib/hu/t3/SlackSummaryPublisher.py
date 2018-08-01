@@ -70,8 +70,8 @@ class SlackSummaryPublisher(AbsT3Unit):
         
         if len(self.frames) > 0:
 
-            df = pd.concat(self.frames)
-            photometry = pd.concat(self.photometry)
+            df = pd.concat(self.frames, sort=True)
+            photometry = pd.concat(self.photometry, sort=True)
 
             filename = "Summary_" + date + ".csv"
 
