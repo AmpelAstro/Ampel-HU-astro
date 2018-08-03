@@ -144,7 +144,7 @@ class SlackSummaryPublisher(AbsT3Unit):
 
             if transient.t2records is not None:
                 for j, t2record in enumerate(transient.t2records):
-                    if len(t2record.results) == 0:
+                    if not t2record.get('results'):
                         continue
                     res = (t2record.results[-1])
                     if not "results" in res:
