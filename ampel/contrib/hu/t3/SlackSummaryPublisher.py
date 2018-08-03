@@ -55,16 +55,16 @@ class SlackSummaryPublisher(AbsT3Unit):
         sc = SlackClient(self.run_config["Slack_token"])
 
         m = calculate_excitement(len(self.frames), date=date,
-                                 thresholds=self.run_config["excitement_levels"]
-                                 )
+            thresholds=self.run_config["excitement_levels"]
+        )
 
         api = sc.api_call(
-                    "chat.postMessage",
-                    channel=self.run_config["Slack_channel"],
-                    text=m,
-                    username="AMPEL-live",
-                    as_user=False
-                )
+            "chat.postMessage",
+            channel=self.run_config["Slack_channel"],
+            text=m,
+            username="AMPEL-live",
+            as_user=False
+        )
 
         self.logger.info(api)
         
@@ -73,7 +73,7 @@ class SlackSummaryPublisher(AbsT3Unit):
             df = pd.concat(self.frames, sort=True)
             photometry = pd.concat(self.photometry, sort=True)
 
-            filename = "Summary_" + date + ".csv"
+            filename = "Summary_%s.csv" % date
 
             buffer = io.StringIO(filename)
             df.to_csv(buffer)
@@ -93,11 +93,12 @@ class SlackSummaryPublisher(AbsT3Unit):
                 params=param,
                 files={"file": buffer.getvalue()}
             )
+
             self.logger.info(r.text)
 
             if self.run_config["full_photometry"]:
 
-                filename = "Photometry_" + date + ".csv"
+                filename = "Photometry_%s.csv" % date
 
                 buffer = io.StringIO(filename)
                 photometry.to_csv(buffer)
@@ -116,6 +117,7 @@ class SlackSummaryPublisher(AbsT3Unit):
                     params=param,
                     files={"file": buffer.getvalue()}
                 )
+
                 self.logger.info(r.text)
 
 
@@ -127,14 +129,15 @@ class SlackSummaryPublisher(AbsT3Unit):
         photometry = []
 
         for transient in transients:
-            mycols = list(self.run_config["mycols"]) + list(
-                self.run_config["channel(s)"])
 
-            if transient.photopoints is None or len(transient.photopoints) == 0:
+            mycols = list(self.run_config["mycols"]) + list(self.run_config["channel(s)"])
+
+            if not transient.photopoints:
                 continue
 
             tdf = pd.DataFrame(
-                [x.content for x in transient.photopoints])
+                [x.content for x in transient.photopoints]
+            )
 
             # compute ZTF name
             tdf['ztf_name'] = tdf['tranId'].apply(AmpelUtils.get_ztf_name)
@@ -154,9 +157,8 @@ class SlackSummaryPublisher(AbsT3Unit):
                         try:
                             tdf[new_key] = value
                             mycols.append(new_key)
-                        except ValueError:
-                            raise
-                            pass
+                        except ValueError as ve:
+                            self.logger.error(ve)
 
             for channel in self.run_config["channel(s)"]:
                 if channel in transient.channel:
