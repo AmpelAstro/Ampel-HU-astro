@@ -4,8 +4,8 @@
 # License           : BSD-3-Clause
 # Author            : robert stein
 # Date              : 11.03.2018
-# Last Modified Date: 14.07.2018
-# Last Modified By  : rs
+# Last Modified Date: 04.08.2018
+# Last Modified By  : vb
 
 import pandas as pd
 import numpy as np
@@ -147,7 +147,7 @@ class SlackSummaryPublisher(AbsT3Unit):
 
             if transient.t2records is not None:
                 for j, t2record in enumerate(transient.t2records):
-                    if not t2record.get('results'):
+                    if not t2record.results:
                         continue
                     res = (t2record.results[-1])
                     if not "results" in res:
