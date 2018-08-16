@@ -40,6 +40,7 @@ setup(name='ampel-contrib-hu',
           'ampel.pipeline.t3.units' : [
               'TransientInfoPrinter = ampel.contrib.hu.t3.TransientInfoPrinter:TransientInfoPrinter',
               'TransientViewDumper = ampel.contrib.hu.t3.TransientViewDumper:TransientViewDumper',
+              'TransientWebPublisher = ampel.contrib.hu.t3.TransientWebPublisher:TransientWebPublisher',
               'SlackSummaryPublisher = ampel.contrib.hu.t3.SlackSummaryPublisher:SlackSummaryPublisher',
               'MarshalPublisher = ampel.contrib.hu.t3.MarshalPublisher:MarshalPublisher',
           ],
