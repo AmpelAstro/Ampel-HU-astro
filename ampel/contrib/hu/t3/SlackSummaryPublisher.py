@@ -151,9 +151,9 @@ class SlackSummaryPublisher(AbsT3Unit):
                         if not t2record.results:
                             continue
                         res = (t2record.results[-1])
-                        if not "results" in res:
+                        if not "output" in res:
                             continue
-                        for key, value in res['results'].items():
+                        for key, value in res['output'].items():
                             new_key = "T2-{}".format(key)
                             try:
                                 tdf[new_key] = value
