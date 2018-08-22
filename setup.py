@@ -26,7 +26,7 @@ setup(name='ampel-contrib-hu',
               'RandFilter = ampel.contrib.hu.t0.RandFilter:RandFilter',
               'ToOFilter = ampel.contrib.hu.t0.ToOFilter:ToOFilter',
               'SEDmTargetFilter = ampel.contrib.hu.t0.SEDmTargetFilter:SEDmTargetFilter',
-              'SNFilter = ampel.contrib.hu.t0.SNFilter:SNFilter',
+              'NoFilter = ampel.contrib.hu.t0.NoFilter:NoFilter',
               'TransientInEllipticalFilter = ampel.contrib.hu.t0.TransientInEllipticalFilter:TransientInEllipticalFilter',
           ],
           'ampel.pipeline.t2.units' : [
