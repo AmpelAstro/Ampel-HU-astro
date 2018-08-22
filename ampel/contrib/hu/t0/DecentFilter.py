@@ -90,8 +90,8 @@ class DecentFilter(AbsAlertFilter):
 		self.ps1_confusion_sg_tol		= run_config['PS1_CONFUSION_SG_TOL']
 
 		# technical
-#		self.catshtm_path 			= urlparse(base_config['catsHTM.default']).path
-#		self.logger.info("using catsHTM files in %s"%self.catshtm_path)
+		self.catshtm_path 			= urlparse(base_config['catsHTM.default']).path
+		self.logger.info("using catsHTM files in %s"%self.catshtm_path)
 		self.keys_to_check = (
 			'fwhm', 'elong', 'magdiff', 'nbad', 'distpsnr1', 'sgscore1', 'distpsnr2', 
 			'sgscore2', 'distpsnr3', 'sgscore3', 'isdiffpos', 'ra', 'dec', 'rb', 'ssdistnr')
