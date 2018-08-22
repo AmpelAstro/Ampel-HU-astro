@@ -23,11 +23,10 @@ setup(name='ampel-contrib-hu',
           'ampel.pipeline.t0' : [
               'DecentFilter = ampel.contrib.hu.t0.DecentFilter:DecentFilter',
               'LensedTransientFilter = ampel.contrib.hu.t0.LensedTransientFilter:LensedTransientFilter',
-              'NoFilter = ampel.contrib.hu.t0.NoFilter:NoFilter',
               'RandFilter = ampel.contrib.hu.t0.RandFilter:RandFilter',
               'ToOFilter = ampel.contrib.hu.t0.ToOFilter:ToOFilter',
               'SEDmTargetFilter = ampel.contrib.hu.t0.SEDmTargetFilter:SEDmTargetFilter',
-              'SNFilter = ampel.contrib.hu.t0.SNFilter:SNFilter',
+              'NoFilter = ampel.contrib.hu.t0.NoFilter:NoFilter',
               'TransientInEllipticalFilter = ampel.contrib.hu.t0.TransientInEllipticalFilter:TransientInEllipticalFilter',
           ],
           'ampel.pipeline.t2.units' : [
