@@ -2,7 +2,7 @@
 Ampel components from HU/DESY group
 ===================================
 
-Contains the following plugin components (as of August 2018):
+Contains as of August 2018:
 
 T0
 --
