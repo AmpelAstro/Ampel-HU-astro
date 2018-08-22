@@ -7,7 +7,7 @@
 # Last Modified Date: 27.06.2018
 # Last Modified By  : m. giomi <matteo.giomi@desy.de>
 
-import numpy as np
+from numpy import exp, array
 import logging
 from urllib.parse import urlparse
 from astropy.coordinates import SkyCoord
@@ -56,7 +56,8 @@ class DecentFilter(AbsAlertFilter):
 			'GAIA_PLX_SIGNIF',			# significance of parallax detection of GAIA counterpart [sigma]
 			'PS1_SGVETO_RAD',			# maximum distance to closest PS1 source for SG score veto [arcsec]
 			'PS1_SGVETO_SGTH',			# maximum allowed SG score for PS1 source within PS1_SGVETO_RAD
-			'PS1_CONFUSION_RAD'			# reject alerts if the three PS1 sources are all within this radius [arcsec]
+			'PS1_CONFUSION_RAD',			# reject alerts if the three PS1 sources are all within this radius [arcsec]
+			'PS1_CONFUSION_SG_TOL'		# and if the SG score of all of these 3 sources is within this tolerance to 0.5
 			)
 		for el in config_params:
 			if el not in run_config:
@@ -86,13 +87,14 @@ class DecentFilter(AbsAlertFilter):
 		self.ps1_sgveto_rad				= run_config['PS1_SGVETO_RAD']
 		self.ps1_sgveto_th				= run_config['PS1_SGVETO_SGTH']
 		self.ps1_confusion_rad			= run_config['PS1_CONFUSION_RAD']
+		self.ps1_confusion_sg_tol		= run_config['PS1_CONFUSION_SG_TOL']
 
 		# technical
-		self.catshtm_path 			= urlparse(base_config['catsHTM.default']).path
-		self.logger.info("using catsHTM files in %s"%self.catshtm_path)
+#		self.catshtm_path 			= urlparse(base_config['catsHTM.default']).path
+#		self.logger.info("using catsHTM files in %s"%self.catshtm_path)
 		self.keys_to_check = (
-			'fwhm', 'elong', 'magdiff', 'nbad', 'distpsnr1', 'sgscore1',
-			'isdiffpos', 'ra', 'dec', 'rb', 'ssdistnr')
+			'fwhm', 'elong', 'magdiff', 'nbad', 'distpsnr1', 'sgscore1', 'distpsnr2', 
+			'sgscore2', 'distpsnr3', 'sgscore3', 'isdiffpos', 'ra', 'dec', 'rb', 'ssdistnr')
 
 
 	def _alert_has_keys(self, photop):
@@ -125,11 +127,13 @@ class DecentFilter(AbsAlertFilter):
 		"""
 			check in PS1 for source confusion, which can induce subtraction artifatcs. 
 			These cases are selected requiring that all three PS1 cps are in the imediate
-			vicinity of the transient and their sgscore to be exactly 0.5
+			vicinity of the transient and their sgscore to be close to 0.5 within given tolerance.
 		"""
 		sg1, sg2, sg3 = transient['sgscore1'], transient['sgscore2'], transient['sgscore3']
 		d1, d2, d3 = transient['distpsnr1'], transient['distpsnr2'], transient['distpsnr3']
-		if (sg1 == sg2 == sg3 == 0.5) and max([d1, d2, d3])<self.ps1_confusion_rad:
+		very_close = max([d1, d2, d3]) < self.ps1_confusion_rad
+		sg_confused =  abs( array([sg1, sg2, sg3]) - 0.5 ).max() < self.ps1_confusion_sg_tol
+		if sg_confused and very_close:
 			return True
 		else:
 			return False
@@ -158,7 +162,7 @@ class DecentFilter(AbsAlertFilter):
 			# compute distance
 			gaia_tab['DISTANCE']		= transient_coords.separation(gaia_coords).arcsec
 			gaia_tab['DISTANCE_NORM']	= (
-				1.8 + 0.6 * np.exp( (20 - gaia_tab['Mag_G']) / 2.05) > gaia_tab['DISTANCE'])
+				1.8 + 0.6 * exp( (20 - gaia_tab['Mag_G']) / 2.05) > gaia_tab['DISTANCE'])
 			gaia_tab['FLAG_PROX']		= [True if x['DISTANCE_NORM'] == True and 11 <= x['Mag_G'] <= 19 else False for x in gaia_tab]
 
 			# check for proper motion and parallax conditioned to distance
@@ -199,7 +203,6 @@ class DecentFilter(AbsAlertFilter):
 		if not self._alert_has_keys(latest):
 			return None
 		
-		# ---- image quality cuts ----- #
 		if (latest['isdiffpos'] == 'f' or latest['isdiffpos'] == '0'):
 			self.logger.debug("rejected: 'isdiffpos' is %s", latest['isdiffpos'])
 			return None
@@ -244,7 +247,7 @@ class DecentFilter(AbsAlertFilter):
 			self.logger.debug("rejected: three confused PS1 sources within %.2f arcsec from alert."%
 				(self.ps1_confusion_rad))
 			return None
-			
+		
 		# check with gaia
 		if self.is_star_in_gaia(latest):
 			self.logger.debug("rejected: within %.2f arcsec from a GAIA start (PM of PLX)" % 
@@ -252,5 +255,8 @@ class DecentFilter(AbsAlertFilter):
 			return None
 		
 		# congratulation alert! you made it!
+		self.logger.debug("Alert %s accepted. Latest pp ID: %d"%(alert.tran_id, latest['candid']))
+		for key in self.keys_to_check:
+			self.logger.debug("{}: {}".format(key, latest[key]))
 		return self.on_match_t2_units
 	
