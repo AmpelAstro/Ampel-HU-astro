@@ -46,12 +46,14 @@ class DecentFilter(AbsAlertFilter):
 		config_params = (
 			'MIN_NDET',					# number of previous detections
 			'MIN_TSPAN', 				# minimum duration of alert detection history [days]
+			'MAX_TSPAN', 				# maximum duration of alert detection history [days]
 			'MIN_RB',					# real bogus score
 			'MAX_FWHM',					# sexctrator FWHM (assume Gaussian) [pix]
 			'MAX_ELONG',				# Axis ratio of image: aimage / bimage 
 			'MAX_MAGDIFF',				# Difference: magap - magpsf [mag]
 			'MAX_NBAD',					# number of bad pixels in a 5 x 5 pixel stamp
 			'MIN_DIST_TO_SSO',			# distance to nearest solar system object [arcsec]
+			'MIN_GAL_LAT', 				# minium distance from galactic plane. Set to negative to disable cut.
 			'GAIA_RS',					# search radius for GAIA DR2 matching [arcsec]
 			'GAIA_PM_SIGNIF',			# significance of proper motion detection of GAIA counterpart [sigma]
 			'GAIA_PLX_SIGNIF',			# significance of parallax detection of GAIA counterpart [sigma]
@@ -75,6 +77,7 @@ class DecentFilter(AbsAlertFilter):
 		# history
 		self.min_ndet 					= run_config['MIN_NDET'] 
 		self.min_tspan					= run_config['MIN_TSPAN']
+		self.max_tspan					= run_config['MAX_TSPAN']
 		
 		# Image quality
 		self.max_fwhm					= run_config['MAX_FWHM']
@@ -85,6 +88,7 @@ class DecentFilter(AbsAlertFilter):
 		
 		# astro
 		self.min_ssdistnr	 			= run_config['MIN_DIST_TO_SSO']
+		self.min_gal_lat				= run_config['MIN_GAL_LAT']
 		self.gaia_rs					= run_config['GAIA_RS']
 		self.gaia_pm_signif				= run_config['GAIA_PM_SIGNIF']
 		self.gaia_plx_signif			= run_config['GAIA_PLX_SIGNIF']
@@ -115,6 +119,15 @@ class DecentFilter(AbsAlertFilter):
 				self.logger.debug("rejected: '%s' is None" % el)
 				return False
 		return True
+
+
+	def get_galactic_latitude(self, transient):
+		"""
+			compute galactic latitude of the transient
+		"""
+		coordinates = SkyCoord(transient['ra'], transient['dec'], unit='deg')
+		b = coordinates.galactic.b.deg
+		return b
 
 
 	def is_star_in_PS1(self, transient):
@@ -205,11 +218,12 @@ class DecentFilter(AbsAlertFilter):
 				(npp, self.min_ndet))
 			return None
 		
-		pp_jds = [pp['jd'] for pp in alert.pps]
-		det_tspan = max(pp_jds) - min(pp_jds)
-		if det_tspan < self.min_tspan:
-			self.logger.debug("rejected: detection time span is %.3f d, requested at least %.3f"%
-				(det_tspan, self.min_tspan))
+		# cut on length of detection history
+		detections_jds = alert.get_values('jd', upper_limits=False)
+		det_tspan = max(detections_jds) - min(detections_jds)
+		if not (self.min_tspan < det_tspan < self.max_tspan):
+			self.logger.debug("rejected: detection history is %.3f d long, requested between %.3f and %.3f d"%
+				(det_tspan, self.min_tspan, self.max_tspan))
 			return None
 		
 		# --------------------------------------------------------------------- #
@@ -252,6 +266,13 @@ class DecentFilter(AbsAlertFilter):
 		if (0 < latest['ssdistnr'] < self.min_ssdistnr):
 			self.logger.debug("rejected: solar-system object close to transient (max allowed: %d)."%
 				(self.min_ssdistnr))
+			return None
+		
+		# cut on galactic latitude
+		b = self.get_galactic_latitude(latest)
+		if abs(b) < self.min_gal_lat:
+			self.logger.debug("rejected: b=%.4f, too close to Galactic plane (max allowed: %f)."%
+				(b, self.min_gal_lat))
 			return None
 		
 		# check ps1 star-galaxy score
