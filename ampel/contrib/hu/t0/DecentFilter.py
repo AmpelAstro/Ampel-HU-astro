@@ -45,6 +45,7 @@ class DecentFilter(AbsAlertFilter):
 		
 		config_params = (
 			'MIN_NDET',					# number of previous detections
+			'MIN_TSPAN', 				# minimum duration of alert detection history [days]
 			'MIN_RB',					# real bogus score
 			'MAX_FWHM',					# sexctrator FWHM (assume Gaussian) [pix]
 			'MAX_ELONG',				# Axis ratio of image: aimage / bimage 
@@ -54,6 +55,8 @@ class DecentFilter(AbsAlertFilter):
 			'GAIA_RS',					# search radius for GAIA DR2 matching [arcsec]
 			'GAIA_PM_SIGNIF',			# significance of proper motion detection of GAIA counterpart [sigma]
 			'GAIA_PLX_SIGNIF',			# significance of parallax detection of GAIA counterpart [sigma]
+			'GAIA_VETO_GMAG_MIN', 		# min gmag for normalized distance cut of GAIA counterparts [mag]
+			'GAIA_VETO_GMAG_MAX', 		# max gmag for normalized distance cut of GAIA counterparts [mag]
 			'PS1_SGVETO_RAD',			# maximum distance to closest PS1 source for SG score veto [arcsec]
 			'PS1_SGVETO_SGTH',			# maximum allowed SG score for PS1 source within PS1_SGVETO_RAD
 			'PS1_CONFUSION_RAD',			# reject alerts if the three PS1 sources are all within this radius [arcsec]
@@ -71,6 +74,7 @@ class DecentFilter(AbsAlertFilter):
 		
 		# history
 		self.min_ndet 					= run_config['MIN_NDET'] 
+		self.min_tspan					= run_config['MIN_TSPAN']
 		
 		# Image quality
 		self.max_fwhm					= run_config['MAX_FWHM']
@@ -84,6 +88,8 @@ class DecentFilter(AbsAlertFilter):
 		self.gaia_rs					= run_config['GAIA_RS']
 		self.gaia_pm_signif				= run_config['GAIA_PM_SIGNIF']
 		self.gaia_plx_signif			= run_config['GAIA_PLX_SIGNIF']
+		self.gaia_veto_gmag_min			= run_config['GAIA_VETO_GMAG_MIN']
+		self.gaia_veto_gmag_max			= run_config['GAIA_VETO_GMAG_MAX']
 		self.ps1_sgveto_rad				= run_config['PS1_SGVETO_RAD']
 		self.ps1_sgveto_th				= run_config['PS1_SGVETO_SGTH']
 		self.ps1_confusion_rad			= run_config['PS1_CONFUSION_RAD']
@@ -162,8 +168,12 @@ class DecentFilter(AbsAlertFilter):
 			# compute distance
 			gaia_tab['DISTANCE']		= transient_coords.separation(gaia_coords).arcsec
 			gaia_tab['DISTANCE_NORM']	= (
-				1.8 + 0.6 * exp( (20 - gaia_tab['Mag_G']) / 2.05) > gaia_tab['DISTANCE'])
-			gaia_tab['FLAG_PROX']		= [True if x['DISTANCE_NORM'] == True and 11 <= x['Mag_G'] <= 19 else False for x in gaia_tab]
+				1.8 + 0.6 * exp( (20 - gaia_tab['Mag_G']) / 2.05) > gaia_tab['DISTANCE'])	#TODO: vary mag_G exclusion
+			gaia_tab['FLAG_PROX']		= [
+											True if x['DISTANCE_NORM'] == True and 
+											(self.gaia_veto_gmag_min <= x['Mag_G'] <= self.gaia_veto_gmag_max) else 
+											False for x in gaia_tab
+											]
 
 			# check for proper motion and parallax conditioned to distance
 			gaia_tab['FLAG_PMRA']		= abs(gaia_tab['PMRA']  / gaia_tab['ErrPMRA']) > self.gaia_pm_signif
@@ -193,6 +203,13 @@ class DecentFilter(AbsAlertFilter):
 		if npp < self.min_ndet:
 			self.logger.debug("rejected: %d photopoints in alert (minimum required %d)"% 
 				(npp, self.min_ndet))
+			return None
+		
+		pp_jds = [pp['jd'] for pp in alert.pps]
+		det_tspan = max(pp_jds) - min(pp_jds)
+		if det_tspan < self.min_tspan:
+			self.logger.debug("rejected: detection time span is %.3f d, requested at least %.3f"%
+				(det_tspan, self.min_tspan))
 			return None
 		
 		# --------------------------------------------------------------------- #
