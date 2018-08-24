@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t2/TagAgn.py
+# File              : ampel/contrib/hu/t2/T2CatalogMatch.py
 # License           : BSD-3-Clause
 # Author            : matteo.giomi@desy.de
 # Date              : 24.08.2018
