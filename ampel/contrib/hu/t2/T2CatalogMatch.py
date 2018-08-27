@@ -104,7 +104,23 @@ class T2CatalogMatch(AbsT2Unit):
 			
 			Returns
 			-------
-				dict with the keys to append to each transient.
+				dict with the keys to append to each transient. For example, with the
+				above run-config (and in case of a match in SDSS but not in NED), the 
+				returned dict would be:
+				
+				{
+					'SDSS_spec': 
+						{
+						'z': 0.08820018172264099, 
+						'bptclass': 2.0, 
+						'subclass': '', 
+						'dist2transient': 1.841666956181802e-09}
+						},
+					'NED': False
+				}
+				
+				Note that, when a match is found, the distance of the lightcurve object
+				to the catalog counterpart is also returned as the 'dist2transient' key.
 		"""
 		try:
 			return self._run_(light_curve, run_config)
@@ -212,15 +228,14 @@ class T2CatalogMatch(AbsT2Unit):
 				raise ValueError("use option can not be %s for catalog %s"%(use, catalog))
 			
 			# now add the results to the output dictionary
+			out_dict_catalog = {}
 			if not src is None:
-				
 				# if you found a cp add the required field from the catalog
 				self.logger.debug("found counterpart %.2f arcsec away from transient."%dist)
-				for field in cat_opts['keys_to_append']:
-					out_dict[catalog+"_"+field] = src[field]
-				out_dict[catalog+'_dist2transient'] = dist
+				out_dict[catalog] = {field: src[field] for field in cat_opts['keys_to_append']}
+				out_dict[catalog]['dist2transient'] = dist
 			else:
-				out_dict[catalog] = "n/a"
+				out_dict[catalog] = False
 			
 		# return the info as dictionary
 		return out_dict
