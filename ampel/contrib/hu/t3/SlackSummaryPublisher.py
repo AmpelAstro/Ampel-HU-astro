@@ -9,6 +9,7 @@
 
 import pandas as pd
 import numpy as np
+import collections
 import io, pickle, datetime, requests
 from slackclient import SlackClient
 
@@ -153,11 +154,16 @@ class SlackSummaryPublisher(AbsT3Unit):
                         res = (t2record.results[-1])
                         if not "output" in res:
                             continue
-                        for key, value in res['output'].items():
-                            new_key = "T2-{}".format(key)
+
+                        # Flatten T2 output dictionary
+                        # If this is not a dictionry it will be through
+                        res_flat = flat_dict(res['output'],prefix='T2-')
+
+                        # Add these to the dataframe (could we just join the dictionaries?)                        
+                        for key, value in res_flat.items():
                             try:
-                                tdf[new_key] = value
-                                mycols.append(new_key)
+                                tdf[key] = value
+                                mycols.append(key)
                             except ValueError as ve:
                                 self.logger.error(ve)
             except:
@@ -241,3 +247,26 @@ def calculate_excitement(n_transients, date, thresholds, n_alerts=np.nan):
         message += "\n The results are summarised below. "
 
     return message
+
+
+def flat_dict(d, prefix = ''):
+    '''
+    Loop through dictionary d
+    Append any key, val pairs to the return list ret
+    Add the prefix to any key param
+    Recurse if encountered value is a nested dictionary.
+    '''
+
+    
+    if not isinstance(d,collections.Mapping):
+        return d
+    
+    ret = {}
+
+    for key, val in d.items():
+        if isinstance(val, collections.Mapping):
+            ret = {**ret, **flat_dict(val, prefix = prefix+str(key)+'_') }
+        else:
+            ret[ prefix+str(key) ] = val
+
+    return ret
