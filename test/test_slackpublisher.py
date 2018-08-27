@@ -59,6 +59,11 @@ def test_slacksummary(t3_transient_views, mocker):
 	with StringIO(content) as f:
 		reader = csv.DictReader(f)
 		rows = list(reader)
+
+	# verify that T2 information is in summary
+	t2s = set(t2.t2_unit_id for tv in t3_transient_views for t2 in tv.t2records)
+	assert len(t2s) > 0
+	# FIXME: what names do we expect to find here if sncosmo info is present?
 	for key in "T2-foo","T2-bar":
 		assert key in reader.fieldnames
 
