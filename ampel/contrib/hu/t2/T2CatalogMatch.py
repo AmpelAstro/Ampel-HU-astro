@@ -185,13 +185,14 @@ class T2CatalogMatch(AbsT2Unit):
 		catalogs = run_config.get('catalogs')
 		for catalog, cat_opts in catalogs.items():
 			src, dist = None, None
-			self.logger.info("Loading catalog %s using options:"%catalog, cat_opts)
+			self.logger.debug("Loading catalog %s using options: %s"%(catalog, str(cat_opts)))
 			
 			# check options:
 			for opt_key in self.mandatory_keys:
 				if not opt_key in cat_opts.keys():
-					raise KeyError("options for catalog %s are missing mandatory %s argument. Check your run config."%
+					message = ("options for catalog %s are missing mandatory %s argument. Check your run config."%
 						(catalog, opt_key))
+					raise KeyError(message)
 			
 			# how do you want to support the catalog?
 			use = cat_opts.get('use')
@@ -208,7 +209,7 @@ class T2CatalogMatch(AbsT2Unit):
 				srcs, colnames, colunits = cone_search(
 													catalog,
 													transient_coords.ra.rad, transient_coords.dec.rad,
-													cat_opt['rs_arcsec'],
+													cat_opts['rs_arcsec'],
 													catalogs_dir=self.catshtm_path)
 				if len(srcs) > 0:
 					
@@ -225,7 +226,8 @@ class T2CatalogMatch(AbsT2Unit):
 					# get the closest source and its distance
 					src, dist = get_closest(transient_ra, transient_dec, srcs_tab, ra_key, dec_key)
 			else:
-				raise ValueError("use option can not be %s for catalog %s"%(use, catalog))
+				message = "use option can not be %s for catalog %s. valid are 'extcats' or 'catsHTM'"%(use, catalog)
+				raise ValueError(message)
 			
 			# now add the results to the output dictionary
 			out_dict_catalog = {}
