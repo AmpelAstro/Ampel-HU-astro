@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t0/DecentFilter.py
+# File              : ampel/contrib/hu/t0/XShooterFilter.py
 # License           : BSD-3-Clause
 # Author            : m. giomi <matteo.giomi@desy.de>
-# Date              : 06.06.2018
-# Last Modified Date: 27.06.2018
+# Date              : 28.08.2018
+# Last Modified Date: 28.08.2018
 # Last Modified By  : m. giomi <matteo.giomi@desy.de>
 
 
@@ -89,7 +89,7 @@ class XShooterFilter(DecentFilter):
 				(self.det_within, (now_jd - max(detection_jds))))
 			return None
 		
-		# check on the history 1: at least one upper limit in the last 5 days
+		# check on the history 2: at least one upper limit in the last 5 days
 		ulim_jds = array(alert.get_values('jd', upper_limits=True))
 		if ulim_jds is None:
 			self.logger.debug("rejected: this alert has no upper limits")
