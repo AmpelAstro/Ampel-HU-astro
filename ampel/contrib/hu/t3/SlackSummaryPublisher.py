@@ -152,6 +152,9 @@ class SlackSummaryPublisher(AbsT3Unit):
                         if not t2record.results:
                             continue
                         res = (t2record.results[-1])
+                        print(res)
+
+                        
                         if not "output" in res:
                             continue
 
@@ -161,8 +164,9 @@ class SlackSummaryPublisher(AbsT3Unit):
 
                         # Add these to the dataframe (could we just join the dictionaries?)                        
                         for key, value in res_flat.items():
+                            print('%s : %s'%(key, str(value)))
                             try:
-                                tdf[key] = value
+                                tdf[key] = str(value)
                                 mycols.append(key)
                             except ValueError as ve:
                                 self.logger.error(ve)
