@@ -237,6 +237,8 @@ class T2CatalogMatch(AbsT2Unit):
 				out_dict[catalog] = {field: src[field] for field in cat_opts['keys_to_append']}
 				out_dict[catalog]['dist2transient'] = dist
 			else:
+				self.logger.debug("no match found in catalog %s within %.2f arcsec from transient"%
+					(catalog, cat_opts['rs_arcsec']))
 				out_dict[catalog] = False
 			
 		# return the info as dictionary
