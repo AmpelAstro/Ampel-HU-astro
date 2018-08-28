@@ -90,10 +90,11 @@ class XShooterFilter(DecentFilter):
 			return None
 		
 		# check on the history 2: at least one upper limit in the last 5 days
-		ulim_jds = array(alert.get_values('jd', upper_limits=True))
-		if ulim_jds is None or len(ulim_jds)==0:
+		ulim_jds = alert.get_values('jd', upper_limits=True)
+		if ulim_jds is None:
 			self.logger.debug("rejected: this alert has no upper limits")
 			return None
+		ulim_jds =array(ulim_jds)
 		if not any(ulim_jds > (now_jd - self.ul_within)):
 			self.logger.debug("rejected: no upper limit in the last %.3f days (latest one %.3f days ago)"%
 			(self.ul_within, (now_jd - max(ulim_jds))))
