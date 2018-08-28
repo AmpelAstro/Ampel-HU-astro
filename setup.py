@@ -22,6 +22,7 @@ setup(name='ampel-contrib-hu',
           ],
           'ampel.pipeline.t0' : [
               'DecentFilter = ampel.contrib.hu.t0.DecentFilter:DecentFilter',
+              'XShooterFilter = ampel.contrib.hu.t0.XShooterFilter:XShooterFilter',
               'LensedTransientFilter = ampel.contrib.hu.t0.LensedTransientFilter:LensedTransientFilter',
               'RandFilter = ampel.contrib.hu.t0.RandFilter:RandFilter',
               'ToOFilter = ampel.contrib.hu.t0.ToOFilter:ToOFilter',
