@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : robert stein
 # Date              : 11.03.2018
-# Last Modified Date: 04.08.2018
+# Last Modified Date: 29.08.2018
 # Last Modified By  : vb
 
 import pandas as pd
@@ -14,7 +14,7 @@ import io, pickle, datetime, requests
 from slackclient import SlackClient
 
 from ampel.base.abstract.AbsT3Unit import AbsT3Unit
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
+from ampel.pipeline.common.ZTFUtils import ZTFUtils
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
 class SlackSummaryPublisher(AbsT3Unit):
@@ -141,7 +141,7 @@ class SlackSummaryPublisher(AbsT3Unit):
             )
 
             # compute ZTF name
-            tdf['ztf_name'] = tdf['tranId'].apply(AmpelUtils.get_ztf_name)
+            tdf['ztf_name'] = tdf['tranId'].apply(ZTFUtils.to_ztf_id)
             tdf["most_recent_detection"] = max(tdf["jd"])
             tdf["first_detection"] = min(tdf["jd"])
             tdf["n_detections"] = len(tdf["jd"])

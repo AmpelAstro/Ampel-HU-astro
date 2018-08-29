@@ -4,10 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 11.06.2018
-# Last Modified Date: 22.08.2018
+# Last Modified Date: 29.08.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
+from ampel.pipeline.common.ZTFUtils import ZTFUtils
 from ampel.base.flags.TransientFlags import TransientFlags
 from ampel.base.TransientView import TransientView
 from ampel.base.abstract.AbsT3Unit import AbsT3Unit
@@ -41,6 +41,7 @@ class TransientInfoPrinter(AbsT3Unit):
 
 			for tran_view in transients:
 				TransientInfoPrinter._print_info(tran_view, self.logger)
+				self.logger.info("-")
 				self.printed_ids.append(tran_view.tran_id)
 
 		else:
@@ -58,17 +59,11 @@ class TransientInfoPrinter(AbsT3Unit):
 	def _print_info(tran, logger):
 		""" 
 		"""
-		logger.info("#"*30)
-
-		logger.info(" -> Ampel ID: %i" % 
-			(tran.tran_id)
-		)
+		logger.info(" -> Ampel ID: %i" % tran.tran_id)
 
 		# pylint: disable=no-member
 		if TransientFlags.INST_ZTF in tran.flags:
-			logger.info(" -> ZTF ID: %s" % 
-				(AmpelUtils.get_ztf_name(tran.tran_id))
-			)
+			logger.info(" -> ZTF ID: %s" % ZTFUtils.to_ztf_id(tran.tran_id))
 
 		if tran.channel is not None:
 			logger.info(" -> Channel: %s" % str(tran.channel))
@@ -77,17 +72,8 @@ class TransientInfoPrinter(AbsT3Unit):
 		modified = tran.get_time_modified(True)
 		logger.info(" -> Created: %s" % created if created is not None else 'Not available')
 		logger.info(" -> Modified: %s" % modified if modified is not None else 'Not available')
-		logger.info(" -> Flags: %s" % (tran.flags if tran.flags is not None else "not set"))
-		logger.info(" -> Latest state: %s" % 
-			(tran.latest_state.hex() if tran.latest_state is not None else "not set")
+		logger.info(" -> Flags: %s" % tran.flags if tran.flags is not None else "Not set")
+		logger.info(" -> Latest state: %s" % \
+			tran.latest_state.hex() if tran.latest_state is not None else "Not set"
 		)
-		logger.info(" -> Transient elements: PP: %i, UL: %i, CP: %i, LC: %i, SR: %i" % 
-			(
-				len(tran.photopoints) if tran.photopoints is not None else 0, 
-				len(tran.upperlimits) if tran.upperlimits is not None else 0, 
-				len(tran.compounds) if tran.compounds is not None else 0, 
-				len(tran.lightcurves) if tran.lightcurves is not None else 0, 
-				len(tran.t2records) if tran.t2records is not None else 0
-			)
-		)
-		logger.info("#"*30)
+		logger.info(" -> Content: %s" % TransientView.content_summary(tran))
