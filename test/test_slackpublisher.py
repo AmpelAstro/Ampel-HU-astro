@@ -64,8 +64,9 @@ def test_slacksummary(t3_transient_views, mocker):
 	t2s = set(t2.t2_unit_id for tv in t3_transient_views for t2 in tv.t2records)
 	assert len(t2s) > 0
 
-        # Verify that nested t2 results were extrected
-        # This tests assumes that sncosmo was run on the test data
+	# Verify that nested t2 results were extrected
+	# This tests assumes that sncosmo was run on the test data
+	print(reader.fieldnames)
 	for key in ["T2-model","T2-sncosmo_info_ndof","T2-fit_results_t0"]:
 		assert key in reader.fieldnames
 
