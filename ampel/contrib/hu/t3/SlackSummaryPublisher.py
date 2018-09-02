@@ -12,6 +12,7 @@ import numpy as np
 import collections
 import io, pickle, datetime, requests
 from slackclient import SlackClient
+from slackclient.exceptions import SlackClientError
 
 from ampel.base.abstract.AbsT3Unit import AbsT3Unit
 from ampel.pipeline.common.ZTFUtils import ZTFUtils
@@ -66,9 +67,9 @@ class SlackSummaryPublisher(AbsT3Unit):
             username="AMPEL-live",
             as_user=False
         )
+        if not api['ok']:
+            raise SlackClientError(api['error'])
 
-        self.logger.info(api)
-        
         if len(self.frames) > 0:
 
             df = pd.concat(self.frames, sort=False)
