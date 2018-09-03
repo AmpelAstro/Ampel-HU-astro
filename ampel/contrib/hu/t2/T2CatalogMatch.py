@@ -56,8 +56,45 @@ class T2CatalogMatch(AbsT2Unit):
 		
 		# mandatory keys
 		self.mandatory_keys = ['use', 'rs_arcsec', 'keys_to_append']
+
+	def init_extcats_query(self, catalog, catq_kwargs=None):
+		"""
+			Return the extcats.CatalogQuery object corresponding to the desired
+			catalog. Repeated requests to the same catalog will not cause new duplicated
+			CatalogQuery instances to be created.
+			
+			Returns:
+			--------
+				
+				extcats.CatalogQuery instance.
+			
+		"""
 		
+		# check if the catalog exist as an extcats database
+		if not catalog in self.catq_client.database_names():
+			raise ValueError("cannot find %s among installed extcats catalogs"%(catalog))
 		
+		# check if you have already init this peculiar query
+		catq = self.catq_objects.get(catalog)
+		if catq is None:
+			self.logger.debug("CatalogQuery object not previously instantiated. Doing it now.")
+			
+			# add catalog specific arguments to the general ones
+			if catq_kwargs is None:
+				catq_kwargs = self.catq_kwargs_global
+			else:
+				merged_kwargs = self.catq_kwargs_global.copy()
+				merged_kwargs.update(catq_kwargs)
+			self.logger.debug("Using arguments: %s", merged_kwargs)
+			
+			# init the catalog query and remember it
+			catq = CatalogQuery.CatalogQuery(catalog, **merged_kwargs)
+			self.catq_objects[catalog] = catq
+			return catq
+		else:
+			self.logger.debug("CatalogQuery object for catalog %s already exists."%catalog)
+			return catq
+
 	def run(self, light_curve, run_config):
 		""" 
 			Parameters
@@ -121,55 +158,6 @@ class T2CatalogMatch(AbsT2Unit):
 				
 				Note that, when a match is found, the distance of the lightcurve object
 				to the catalog counterpart is also returned as the 'dist2transient' key.
-		"""
-		try:
-			return self._run_(light_curve, run_config)
-		except:
-			self.logger.error("Exception occured", exc_info=1)
-			return T2RunStates.EXCEPTION
-
-	
-	def init_extcats_query(self, catalog, catq_kwargs=None):
-		"""
-			Return the extcats.CatalogQuery object corresponding to the desired
-			catalog. Repeated requests to the same catalog will not cause new duplicated
-			CatalogQuery instances to be created.
-			
-			Returns:
-			--------
-				
-				extcats.CatalogQuery instance.
-			
-		"""
-		
-		# check if the catalog exist as an extcats database
-		if not catalog in self.catq_client.database_names():
-			raise ValueError("cannot find %s among installed extcats catalogs"%(catalog))
-		
-		# check if you have already init this peculiar query
-		catq = self.catq_objects.get(catalog)
-		if catq is None:
-			self.logger.debug("CatalogQuery object not previously instantiated. Doing it now.")
-			
-			# add catalog specific arguments to the general ones
-			if catq_kwargs is None:
-				catq_kwargs = self.catq_kwargs_global
-			else:
-				merged_kwargs = self.catq_kwargs_global.copy()
-				merged_kwargs.update(catq_kwargs)
-			self.logger.debug("Using arguments: %s", merged_kwargs)
-			
-			# init the catalog query and remember it
-			catq = CatalogQuery.CatalogQuery(catalog, **merged_kwargs)
-			self.catq_objects[catalog] = catq
-			return catq
-		else:
-			self.logger.debug("CatalogQuery object for catalog %s already exists."%catalog)
-			return catq
-
-	def _run_(self, light_curve, run_config):
-		""" 
-		refer to docstring of run method.
 		"""
 		
 		# get ra and dec from lightcurve object
