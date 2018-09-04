@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 11.06.2018
-# Last Modified Date: 29.08.2018
+# Last Modified Date: 04.09.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.common.ZTFUtils import ZTFUtils
@@ -70,10 +70,10 @@ class TransientInfoPrinter(AbsT3Unit):
 
 		created = tran.get_time_created(True)
 		modified = tran.get_time_modified(True)
-		logger.info(" -> Created: %s" % created if created is not None else 'Not available')
-		logger.info(" -> Modified: %s" % modified if modified is not None else 'Not available')
-		logger.info(" -> Flags: %s" % tran.flags if tran.flags is not None else "Not set")
-		logger.info(" -> Latest state: %s" % \
+		logger.info(" -> Created: %s" % (created if created is not None else 'Not available'))
+		logger.info(" -> Modified: %s" % (modified if modified is not None else 'Not available'))
+		logger.info(" -> Flags: %s" % (tran.flags if tran.flags is not None else "Not set"))
+		logger.info(" -> Latest state: %s" % (
 			tran.latest_state.hex() if tran.latest_state is not None else "Not set"
-		)
+		))
 		logger.info(" -> Content: %s" % TransientView.content_summary(tran))
