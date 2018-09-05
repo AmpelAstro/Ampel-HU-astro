@@ -55,7 +55,7 @@ class T2CatalogMatch(AbsT2Unit):
 		self.lc_get_pos_defaults = {'ret': "brightest", 'filters': None}
 		
 		# mandatory keys
-		self.mandatory_keys = ['use', 'rs_arcsec', 'keys_to_append']
+		self.mandatory_keys = ['use', 'rs_arcsec']
 
 	def init_extcats_query(self, catalog, catq_kwargs=None):
 		"""
@@ -106,9 +106,42 @@ class T2CatalogMatch(AbsT2Unit):
 						configuration parameter for this job. There is provision to
 						pass arguments to the LightCurve.get_pos method used to derive
 						the position of the transient from the lightcure. 
+						
 						Most importantly, the catalogs key correspond to a nested dictionary
 						in which each entry specify a catalog in extcats or catsHTM format 
-						and the parameters used for the queries. Eg:
+						and the parameters used for the queries. 
+						
+						for each entry in the 'catalogs' configuration dictionary, the 
+						following keys are MANDATORY:
+							
+							'use': `str`
+								either extcats or catsHTM, depending on how the catalog is set up.
+							
+							'rs_arcsec': `float`
+								search radius for the cone search, in arcseconds
+							
+						Optional keys includes:
+							
+						'catq_kwargs': `dict`
+							parameters to pass to the catalog query routine. Two cases arise:
+								if 'use' == 'extcats':
+									the 'catq_kwargs' can (or MUST I don't ) contain the names of the ra and dec
+									keys in the catalog (se example below), all valid arguments to
+									extcats.CatalogQuert.findclosest can be given, such as pre- and post 
+									cone-search query filters can be passed.
+								if 'use' == 'catsHTM':
+									the 'catq_kwargs' SHOULD contain the the names of the ra and dec
+									keys in the catalog if those are different from 'ra' and 'dec'
+						
+						the 'keys_to_append' parameters is OPTIONAL and specifies wich fileds from 
+							the catalog should be returned in case of positional match:
+								
+								if not present or if equal to 'all':
+									all the fields in the given catalog will be returned.
+								if `list`
+									just take this subset of fields.
+						
+						Eg:
 				
 						run_config = 
 							{
@@ -130,10 +163,7 @@ class T2CatalogMatch(AbsT2Unit):
 										'use': 'catshtm',
 										'rs_arcsec': 20,
 										'keys_to_append': ['fuffa1', 'fuffa2', ..],
-										'catq_kwargs': {
-														'ra_key': 'RAJ2000',
-														'dec_key': 'DECJ2000'
-													},
+										'catq_kwargs': 
 									},
 								...
 								}
@@ -211,8 +241,8 @@ class T2CatalogMatch(AbsT2Unit):
 					else:
 						ra_key, dec_key = catq_kwargs.get('ra_key', 'ra'), catq_kwargs.get('dec_key', 'dec')
 					
-					# get the closest source and its distance
-					src, dist = get_closest(transient_ra, transient_dec, srcs_tab, ra_key, dec_key)
+					# get the closest source and its distance (catsHTM stuff is in radians)
+					src, dist = get_closest(transient_coords.ra.rad, transient_coords.dec.rad, srcs_tab, ra_key, dec_key)
 			else:
 				message = "use option can not be %s for catalog %s. valid are 'extcats' or 'catsHTM'"%(use, catalog)
 				raise ValueError(message)
@@ -220,9 +250,16 @@ class T2CatalogMatch(AbsT2Unit):
 			# now add the results to the output dictionary
 			out_dict_catalog = {}
 			if not src is None:
-				# if you found a cp add the required field from the catalog
 				self.logger.debug("found counterpart %.2f arcsec away from transient."%dist)
-				out_dict[catalog] = {field: src[field] for field in cat_opts['keys_to_append']}
+				# if you found a cp add the required field from the catalog:
+				# if keys_to_append argument is given or if it is equal to 'all'
+				# then take all the columns in the catalog. Otherwise only add the 
+				# requested ones.
+				keys_to_append = cat_opts.get('keys_to_append', 'all')
+				if keys_to_append == 'all':
+					keys_to_append = src.colnames
+
+				out_dict[catalog] = {field: src[field] for field in keys_to_append}
 				out_dict[catalog]['dist2transient'] = dist
 			else:
 				self.logger.debug("no match found in catalog %s within %.2f arcsec from transient"%
