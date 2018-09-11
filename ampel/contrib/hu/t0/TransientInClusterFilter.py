@@ -27,7 +27,7 @@ class TransientInClusterFilter(DecentFilter):
 
 	# Static version info
 	version = 1.0
-	resources = ('extcats.reader',)
+	resources = ('extcats.reader', 'catsHTM.default')
 	
 	
 	def __init__(self, on_match_t2_units, base_config=None, run_config=None, logger=None):
