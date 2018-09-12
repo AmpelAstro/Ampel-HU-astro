@@ -94,7 +94,7 @@ class T2LightcurveQuality(AbsT2Unit):
 				n_strong+=1
 		return n_strong
 	
-	def test_plot(dets, ulims)
+	def test_plot(dets, ulims):
 		"""
 			never used, but useful for debugging
 		"""
