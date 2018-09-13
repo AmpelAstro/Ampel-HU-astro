@@ -48,6 +48,12 @@ class T2LightcurveQuality(AbsT2Unit):
 				time jd_ul of magnitude mag_ul is considered 'strong' if:
 					
 					interp_lc(jd_ul) < mag_ul
+		
+		NOTE that in the calculations of the strength, all the upper limits happening after
+		the first detection are considered, while for the 'purity' metric, the default behaviour
+		is to just consider ulims happening after the first, and before the last detection. This
+		behaviour can be changed via the 'exclude_ulims' parameter of the run_config dictionary.
+		
 	"""
 	
 	version = 0.1
@@ -59,22 +65,23 @@ class T2LightcurveQuality(AbsT2Unit):
 		self.base_config = {} if base_config is None else base_config
 		
 		# set some default values
-		self.default_filter_ids = [1, 2, 3]
-		self.filter_names = {1: 'g', 2: 'r', 3: 'i'}
-		self.default_lc_filter = [
-									{
-									'attribute': 'isdiffpos', 
-									'operator': '!=', 
-									'value': 'f'
-									},
-									{
-									'attribute': 'isdiffpos', 
-									'operator': '!=', 
-									'value': '0'
-									}
-								]
+		self.filter_names 					= {1: 'g', 2: 'r', 3: 'i'}
+		self.default_filter_ids 			= [1, 2, 3]
+		self.default_exclude_ulims_after 	= True
+		self.default_lc_filter 				= [
+												{
+												'attribute': 'isdiffpos', 
+												'operator': '!=', 
+												'value': 'f'
+												},
+												{
+												'attribute': 'isdiffpos', 
+												'operator': '!=', 
+												'value': '0'
+												}
+											]
 
-	def _count_strong_ulims(self, det_tab, ulim_tab):
+	def count_strong_ulims(self, det_tab, ulim_tab):
 		"""
 			compute the number of strong upper limts in the light curve. This is
 			defined as the number of upper limits which are below (higher magnitude) than
@@ -82,7 +89,7 @@ class T2LightcurveQuality(AbsT2Unit):
 		"""
 		
 		# interpolate detections
-		interp_lc = interp1d(det_tab['jd'], det_tab['mag'], kind='zero', fill_value="extrapolate")
+		interp_lc = interp1d(det_tab['jd'], det_tab['mag'], kind="zero", fill_value="extrapolate")
 		
 		# loop on uls and count the strong ones
 		n_strong = 0
@@ -94,9 +101,43 @@ class T2LightcurveQuality(AbsT2Unit):
 				n_strong+=1
 		return n_strong
 	
-	def test_plot(dets, ulims):
+	def compute_strength_purity(self, dets, ulims, exclude_ulims_after):
 		"""
-			never used, but useful for debugging
+			given the detection and upper limit history, compute the 
+			strength and purity of the light curve.
+			
+			exclude_ul is a dict of the {'before': bool, 'after': bool} type, with 
+			flags can be used to mask out upper limts that happends before the 
+			first detections and/or after the last one.
+		"""
+		
+		# compute time of first and last detection and mask out upper before first detection
+		det_start, det_end = dets['jd'].min(), dets['jd'].max()
+		ulims = ulims[ulims['jd']>det_start]
+		self.logger.debug("retained %d upper limits from start of detection (at %f jd)"%
+			(len(ulims), det_start))
+		
+		# if you don't have any upper limit to consider, easy
+		if len(ulims) == 0:
+			return 0, 1, 1
+		
+		# compute number of detections, total observations, and upper limts.
+		# for the strength, use all ulims from first detection on
+		strength = len(dets) / (len(dets) + len(ulims))
+		
+		# for the strong upper limits, eventually exclude those which happends after the last detection
+		if exclude_ulims_after:
+			ulims = ulims[ulims['jd']<det_end]
+		n_strong_ulims = self.count_strong_ulims(dets, ulims)
+		purity = len(dets) / (len(dets) + n_strong_ulims)
+		
+		# return
+		return n_strong_ulims, strength, purity
+	
+	
+	def test_plot(self, dets, ulims, n_strong_ulims, purity, strength, fid):
+		"""
+			but useful for debugging
 		"""
 		
 		import matplotlib.pyplot as plt
@@ -125,16 +166,57 @@ class T2LightcurveQuality(AbsT2Unit):
 		""" 
 			Parameters
 			-----------
-				light_curve: "ampel.base.LightCurve" instance. 
-				 See the LightCurve docstring for more info.
+				light_curve: `ampel.base.LightCurve` instance. 
+				 	See the LightCurve docstring for more info.
 			
-				run_parameters: `dict`
-						configuration parameter for this job. 
+				run_config: `dict` or None
+					configuration parameter for this job. If none is given, the
+					default behaviour would be to compute the metrics for the light
+					curve in all the three bands (if the corresponding light curves have
+					some detection), to use zero-order (step-like) interpoaltion
+					between the LC points, and to exclude points with negative detections
+					(having isdiffpos in ['f', 0]).
+					
+					These defaults can be changed by the following keys of the 
+					run_config dictionary:
+					
+						lc_filter: `dict` or `list`
+							to be passed to ampel.base.LightCurve.get_tuples.
+							if list, the items must be dicts and they'll be combined 
+							with a logical and. Pass an empy list to disable the filter
+							completely (filtering on the ztf bands will still be applied).
 						
-			
+						filter_ids: `list` or `tuple`
+							list of ints in the range 1 to 3 that specify the filter
+							ids for which this job has to run. 1=g, 2=r, and 3=i
+						
+						exclude_ulims_after: `bool`
+							specifies weather to consider upper limits that happens after
+							the first last detection.
+						
 			Returns
 			-------
-				dict with the keys to append to each transient.
+				dict with the strength, purity, and number of detections computed
+				for the light curve in each of the band specified by the run_config
+				(default is all of them). E.g.:
+					
+					{
+						'g': {
+							'strength': 0,
+							'purity': 0,
+							'ndet': 0
+						},
+						'r': {
+							'strength': 1,
+							'purity': 1,
+							'ndet': 1
+						},
+						'i': {
+							'strength': 0,
+							'purity': 0,
+							'ndet': 0
+						}
+					}
 		"""
 		
 		# parse some run config params and use default if not given
@@ -144,6 +226,9 @@ class T2LightcurveQuality(AbsT2Unit):
 		filter_ids = run_config.get('filter_ids')
 		if filter_ids is None:
 			filter_ids = self.default_filter_ids
+		exclude_ulims_after =  run_config.get('exclude_ulims_after')
+		if exclude_ulims_after is None:
+			exclude_ulims_after = self.default_exclude_ulims_after
 
 		# run on the single bands individually
 		out_dict = {}
@@ -184,23 +269,12 @@ class T2LightcurveQuality(AbsT2Unit):
 			self.logger.debug("got %d detections and %d ulims for lightcurve."%
 				(len(dets), len(ulims)))
 			
-			# compute time of first and last detection and mask out upper limts happening before
-			det_start, det_end = dets['jd'].min(), dets['jd'].max()
-			ulims = ulims[ulims['jd']>det_start]
-			self.logger.debug("retained %d upper limit from start of detection (at %f jd)"%
-				(len(ulims), det_start))
-			
-			# if you don't have any upper limit after first detection, easy
-			if len(ulims) == 0:
-				out_dict[self.filter_names[fid]] = {'strength':1, 'purity':1, 'ndet': len(dets)}
-				continue
-			
-			# compute number of detections, total observations, and upper limts.
-			# for the strong upper limits, exclude those which happends after the last detection
-			n_strong_ulims = self._count_strong_ulims(dets, ulims[ulims['jd']<det_end])
-			strength = len(dets) / (len(dets) + len(ulims))
-			purity = len(dets) / (len(dets) + n_strong_ulims)
+			# compute LC metrics and append to output
+			n_strong_ulims, strength, purity = self.compute_strength_purity(dets, ulims, exclude_ulims_after)
 			out_dict[self.filter_names[fid]] = {'strength':strength, 'purity':purity, 'ndet': len(dets)}
+			
+#			if len(dets)>5:
+#				self.test_plot(dets, ulims, n_strong_ulims, purity, strength, fid)
 			
 		# return the info as dictionary
 		return out_dict
