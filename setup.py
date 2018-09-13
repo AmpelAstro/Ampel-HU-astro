@@ -34,6 +34,7 @@ setup(name='ampel-contrib-hu',
           'ampel.pipeline.t2.units' : [
               'SNCOSMO = ampel.contrib.hu.t2.T2SNCosmo:T2SNCosmo',
               'CATALOGMATCH = ampel.contrib.hu.t2.T2CatalogMatch:T2CatalogMatch',
+              'LCQUALITY = ampel.contrib.hu.t2.T2LCQuality:T2LCQuality',
               'POLYFIT = ampel.contrib.hu.examples.t2.T2ExamplePolyFit:T2ExamplePolyFit',
           ],
           'ampel.pipeline.t3.jobs' : [

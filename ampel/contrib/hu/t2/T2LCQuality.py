@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t2/T2CatalogMatch.py
+# File              : ampel/contrib/hu/t2/T2LCQuality.py
 # License           : BSD-3-Clause
 # Author            : matteo.giomi@desy.de
 # Date              : 11.09.2018
-# Last Modified Date: 11.09.2018
+# Last Modified Date: 13.09.2018
 # Last Modified By  : matteo.giomi@desy.de
 
 
@@ -20,7 +20,7 @@ from ampel.base.abstract.AbsT2Unit import AbsT2Unit
 from ampel.core.flags.T2RunStates import T2RunStates
 
 
-class T2LightcurveQuality(AbsT2Unit):
+class T2LCQuality(AbsT2Unit):
 	"""
 		determine the 'quality' of the light curve by computing ratios between
 		the number of detection and that of upper limits.
