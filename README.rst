@@ -2,7 +2,7 @@
 Ampel components from HU/DESY group
 ===================================
 
-Contains as of August 2018:
+Contains as of Sept 2018:
 
 T0
 --
@@ -13,6 +13,8 @@ T0
 * ToOFilter
 * LensedTransientFilter
 * TransientInEllipticalFilter
+* TransientInClusterFilter
+* XShooterFilter
 
 T2
 --
