@@ -2,7 +2,7 @@
 from setuptools import setup
 
 setup(name='ampel-contrib-hu',
-      version='0.4.1',
+      version='0.4.4',
       packages=['ampel.contrib.hu',
                 'ampel.contrib.hu.examples.t0',
                 'ampel.contrib.hu.examples.t2',
