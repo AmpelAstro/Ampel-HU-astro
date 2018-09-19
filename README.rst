@@ -17,6 +17,9 @@ T0
 T2
 --
 * SNCOSMO
+* CatalogMatch
+* LCQuality
+* Observability
 
 T3
 --
