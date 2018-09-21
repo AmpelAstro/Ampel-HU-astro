@@ -115,9 +115,6 @@ class DecentFilter(AbsAlertFilter):
 			if el not in photop:
 				self.logger.debug("rejected: '%s' missing" % el)
 				return False
-			if photop[el] is None:
-				self.logger.debug("rejected: '%s' is None" % el)
-				return False
 		return True
 
 
@@ -135,8 +132,15 @@ class DecentFilter(AbsAlertFilter):
 			apply combined cut on sgscore1 and distpsnr1 to reject the transient if
 			there is a PS1 star-like object in it's immediate vicinity
 		"""
-		if (transient['distpsnr1'] < self.ps1_sgveto_rad and
-				transient['sgscore1'] > self.ps1_sgveto_th):
+		
+		distpsnr1, sgscore1 = transient.get('distpsnr1'), transient.get('sgscore1')
+		
+		# if no match is found then it can't be a star
+		if distpsnr1 is None or sgscore1 is None:
+			return False
+		
+		# check if it's star enough and close enough
+		if distpsnr1 < self.ps1_sgveto_rad and sgscore1 > self.ps1_sgveto_th:
 			return True
 		else:
 			return False
@@ -148,10 +152,17 @@ class DecentFilter(AbsAlertFilter):
 			These cases are selected requiring that all three PS1 cps are in the imediate
 			vicinity of the transient and their sgscore to be close to 0.5 within given tolerance.
 		"""
-		sg1, sg2, sg3 = transient['sgscore1'], transient['sgscore2'], transient['sgscore3']
-		d1, d2, d3 = transient['distpsnr1'], transient['distpsnr2'], transient['distpsnr3']
-		very_close = max([d1, d2, d3]) < self.ps1_confusion_rad
-		sg_confused =  abs( array([sg1, sg2, sg3]) - 0.5 ).max() < self.ps1_confusion_sg_tol
+		sg1, sg2, sg3 = transient.get('sgscore1'), transient.get('sgscore2'), transient.get('sgscore2')
+		d1, d2, d3 = transient.get('distpsnr1'), transient.get('distpsnr2'), transient.get('distpsnr3')
+		
+		# require all three PS1 to be there
+		dists, sgscores = [d1, d2, d3], [sg1, sg2, sg3]
+		if None in dists or None in [sg1, sg2, sg3]:
+			return False
+		
+		# reject if veryclose to each other and with simlar SG score
+		very_close = max(dists) < self.ps1_confusion_rad
+		sg_confused =  abs( array(sgscores) - 0.5 ).max() < self.ps1_confusion_sg_tol
 		if sg_confused and very_close:
 			return True
 		else:
@@ -263,7 +274,7 @@ class DecentFilter(AbsAlertFilter):
 		# --------------------------------------------------------------------- #
 		
 		# check for closeby ss objects
-		if (0 < latest['ssdistnr'] < self.min_ssdistnr):
+		if (0 < latest.get('ssdistnr', -999) < self.min_ssdistnr):
 			self.logger.debug("rejected: solar-system object close to transient (max allowed: %d)."%
 				(self.min_ssdistnr))
 			return None
@@ -278,7 +289,7 @@ class DecentFilter(AbsAlertFilter):
 		# check ps1 star-galaxy score
 		if self.is_star_in_PS1(latest):
 			self.logger.debug("rejected: closest PS1 source %.2f arcsec away with sgscore of %.2f"%
-				(latest['distpsnr1'], latest['sgscore1']))
+				(latest.get('distpsnr1'), latest.get('sgscore1')))
 			return None
 		
 		if self.is_confused_in_PS1(latest):
