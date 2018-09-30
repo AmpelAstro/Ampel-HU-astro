@@ -47,9 +47,6 @@ setup(name='ampel-contrib-hu',
               'SlackSummaryPublisher = ampel.contrib.hu.t3.SlackSummaryPublisher:SlackSummaryPublisher',
               'MarshalPublisher = ampel.contrib.hu.t3.MarshalPublisher:MarshalPublisher',
           ],
-          'ampel.pipeline.t3.configs' : [
-              'hu = ampel.contrib.hu.channels:load_t3_run_configs',
-          ],
           'ampel.pipeline.resources' : [
               'extcats = ampel.contrib.hu.resources:extcatsURI',
               'catsHTM = ampel.contrib.hu.resources:catsHTMPath',
