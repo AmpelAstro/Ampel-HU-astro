@@ -11,7 +11,7 @@ import numpy as np
 from extcats import CatalogQuery
 from pymongo import MongoClient
 
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.base.abstract.AbsAlertFilter import AbsAlertFilter
 
 class LensedTransientFilter(AbsAlertFilter):
@@ -32,7 +32,7 @@ class LensedTransientFilter(AbsAlertFilter):
 		if run_config is None or len(run_config) == 0:
 			raise ValueError("Please check you run configurtion")
 		
-		self.logger = LoggingUtils.get_logger() if logger is None else logger
+		self.logger = AmpelLogger.get_logger() if logger is None else logger
 		
 		self.on_match_t2_units = on_match_t2_units
 		self.min_ndet = run_config['MinNdet']

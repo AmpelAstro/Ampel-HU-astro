@@ -29,12 +29,16 @@ class RandFilter(AbsAlertFilter):
 
 		if logger is not None:
 			logger.info("RandFilter with passing rate {}".format(self.passing_rate))
+			self.logger = logger
 
 
 	def apply(self, ampel_alert):
 		"""
 		"""
-		if uniform(0,1) < self.passing_rate:
+
+		rv = uniform(0,1)
+		if rv < self.passing_rate:
 			return self.on_match_default_t2_units
 		else:
+			self.logger.info("NO", extra={'rv': rv})
 			return None

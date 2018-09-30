@@ -16,7 +16,7 @@ from slackclient.exceptions import SlackClientError
 
 from ampel.base.abstract.AbsT3Unit import AbsT3Unit
 from ampel.pipeline.common.ZTFUtils import ZTFUtils
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 
 class SlackSummaryPublisher(AbsT3Unit):
     """
@@ -27,7 +27,7 @@ class SlackSummaryPublisher(AbsT3Unit):
     def __init__(self, logger, base_config=None, run_config=None, global_info=None):
         """
         """
-        self.logger = LoggingUtils.get_logger() if logger is None else logger
+        self.logger = AmpelLogger.get_logger() if logger is None else logger
         self.base_config = base_config
         self.run_config = run_config
 
