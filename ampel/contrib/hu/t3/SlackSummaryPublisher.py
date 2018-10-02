@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : robert stein
 # Date              : 11.03.2018
-# Last Modified Date: 29.08.2018
+# Last Modified Date: 02.10.2018
 # Last Modified By  : vb
 
 import pandas as pd
@@ -13,7 +13,8 @@ import collections
 import io, pickle, datetime, requests
 from slackclient import SlackClient
 from slackclient.exceptions import SlackClientError
-
+from pydantic import BaseModel
+from typing import Dict, List
 from ampel.base.abstract.AbsT3Unit import AbsT3Unit
 from ampel.pipeline.common.ZTFUtils import ZTFUtils
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
@@ -22,15 +23,22 @@ class SlackSummaryPublisher(AbsT3Unit):
     """
     """
 
-    version = 2.2
+    class RunConfig(BaseModel):
+        quiet: bool = False
+        date: str = str(datetime.date.today())
+        slackToken: str
+        excitement: Dict[str, int]
+        slackChannel: str
+        fullPhotometry: bool
+        cols: List[str]
+        channels: List[str]
+
 
     def __init__(self, logger, base_config=None, run_config=None, global_info=None):
         """
         """
         self.logger = AmpelLogger.get_logger() if logger is None else logger
-        self.base_config = base_config
         self.run_config = run_config
-
         self.frames = []
         self.photometry = []
 
@@ -46,23 +54,18 @@ class SlackSummaryPublisher(AbsT3Unit):
     def done(self):
         """
         """
-        if len(self.frames) == 0 and self.run_config.get('quiet', False):
+        if len(self.frames) == 0 and self.run_config.quiet:
             return
    
-        try:
-            date = self.run_config["date"]
-        except KeyError:
-            date = str(datetime.date.today())
+        sc = SlackClient(self.run_config.slackToken)
 
-        sc = SlackClient(self.run_config["Slack_token"])
-
-        m = calculate_excitement(len(self.frames), date=date,
-            thresholds=self.run_config["excitement_levels"]
+        m = calculate_excitement(len(self.frames), date=self.run_config.date,
+            thresholds=self.run_config.excitement
         )
 
         api = sc.api_call(
             "chat.postMessage",
-            channel=self.run_config["Slack_channel"],
+            channel=self.run_config.slackChannel,
             text=m,
             username="AMPEL-live",
             as_user=False
@@ -75,15 +78,15 @@ class SlackSummaryPublisher(AbsT3Unit):
             df = pd.concat(self.frames, sort=False)
             photometry = pd.concat(self.photometry, sort=False)
 
-            filename = "Summary_%s.csv" % date
+            filename = "Summary_%s.csv" % self.run_config.date
 
             buffer = io.StringIO(filename)
             df.to_csv(buffer)
 
             param = {
-                'token': self.run_config["Slack_token"],
-                'channels': self.run_config["Slack_channel"],
-                'title': 'Summary: ' + date,
+                'token': self.run_config.slackToken,
+                'channels': self.run_config.slackChannel,
+                'title': 'Summary: ' + self.run_config.date,
                 "username": "AMPEL-live",
                 "as_user": "false",
                 "filename": filename
@@ -98,17 +101,17 @@ class SlackSummaryPublisher(AbsT3Unit):
 
             self.logger.info(r.text)
 
-            if self.run_config["full_photometry"]:
+            if self.run_config.fullPhotometry:
 
-                filename = "Photometry_%s.csv" % date
+                filename = "Photometry_%s.csv" % self.run_config.date
 
                 buffer = io.StringIO(filename)
                 photometry.to_csv(buffer)
 
                 param = {
-                    'token': self.run_config["Slack_token"],
-                    'channels': self.run_config["Slack_channel"],
-                    'title': 'Full Photometry: ' + date,
+                    'token': self.run_config.slackToken,
+                    'channels': self.run_config.slackChannel,
+                    'title': 'Full Photometry: ' + self.run_config.date,
                     "username": "AMPEL-live",
                     "as_user": "false",
                     "filename": filename
@@ -132,7 +135,7 @@ class SlackSummaryPublisher(AbsT3Unit):
 
         for transient in transients:
 
-            mycols = list(self.run_config["mycols"]) + list(self.run_config["channel(s)"])
+            mycols = list(self.run_config.cols) + list(self.run_config.channels)
 
             if not transient.photopoints:
                 continue
@@ -170,7 +173,7 @@ class SlackSummaryPublisher(AbsT3Unit):
             except:
                 pass
 
-            for channel in self.run_config["channel(s)"]:
+            for channel in self.run_config.channels:
                 if channel in transient.channel:
                     tdf[channel] = True
                 else:
