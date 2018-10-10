@@ -20,7 +20,7 @@ setup(name='ampel-contrib-hu',
           'ampel.pipeline.t2.configs' : [
               'hu = ampel.contrib.hu.channels:load_t2_run_configs',
           ],
-          'ampel.pipeline.t0' : [
+          'ampel.pipeline.t0.units' : [
               'DecentFilter = ampel.contrib.hu.t0.DecentFilter:DecentFilter',
               'XShooterFilter = ampel.contrib.hu.t0.XShooterFilter:XShooterFilter',
               'TransientInClusterFilter = ampel.contrib.hu.t0.TransientInClusterFilter:TransientInClusterFilter',
