@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 11.06.2018
-# Last Modified Date: 04.09.2018
+# Last Modified Date: 16.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.common.ZTFUtils import ZTFUtils
@@ -15,9 +15,6 @@ from ampel.base.abstract.AbsT3Unit import AbsT3Unit
 class TransientInfoPrinter(AbsT3Unit):
 	"""
 	"""
-
-	version = 0.1
-
 
 	def __init__(self, logger, run_config=None, base_config=None, global_info=None):
 		"""
