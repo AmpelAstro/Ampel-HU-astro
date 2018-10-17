@@ -2,7 +2,7 @@
 from setuptools import setup
 
 setup(name='ampel-contrib-hu',
-      version='0.4.1',
+      version='0.5.0',
       packages=['ampel.contrib.hu',
                 'ampel.contrib.hu.examples.t0',
                 'ampel.contrib.hu.examples.t2',
@@ -35,6 +35,7 @@ setup(name='ampel-contrib-hu',
               'SNCOSMO = ampel.contrib.hu.t2.T2SNCosmo:T2SNCosmo',
               'CATALOGMATCH = ampel.contrib.hu.t2.T2CatalogMatch:T2CatalogMatch',
               'LCQUALITY = ampel.contrib.hu.t2.T2LCQuality:T2LCQuality',
+              'MARSHALMONITOR = ampel.contrib.hu.t2.T2MarshalMonitor:T2MarshalMonitor',
               'POLYFIT = ampel.contrib.hu.examples.t2.T2ExamplePolyFit:T2ExamplePolyFit',
           ],
           'ampel.pipeline.t3.jobs' : [
