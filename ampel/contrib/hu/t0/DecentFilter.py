@@ -4,8 +4,8 @@
 # License           : BSD-3-Clause
 # Author            : m. giomi <matteo.giomi@desy.de>
 # Date              : 06.06.2018
-# Last Modified Date: 27.06.2018
-# Last Modified By  : m. giomi <matteo.giomi@desy.de>
+# Last Modified Date: 24.10.2018
+# Last Modified By  : vb
 
 from numpy import exp, array
 import logging
@@ -101,10 +101,13 @@ class DecentFilter(AbsAlertFilter):
 
 		# technical
 		self.catshtm_path 			= urlparse(base_config['catsHTM.default']).path
-		self.logger.info("using catsHTM files in %s"%self.catshtm_path)
+
+		self.logger.info("using catsHTM files in %s" % self.catshtm_path)
+
 		self.keys_to_check = (
 			'fwhm', 'elong', 'magdiff', 'nbad', 'distpsnr1', 'sgscore1', 'distpsnr2', 
-			'sgscore2', 'distpsnr3', 'sgscore3', 'isdiffpos', 'ra', 'dec', 'rb', 'ssdistnr')
+			'sgscore2', 'distpsnr3', 'sgscore3', 'isdiffpos', 'ra', 'dec', 'rb', 'ssdistnr'
+		)
 
 
 	def _alert_has_keys(self, photop):
@@ -214,16 +217,17 @@ class DecentFilter(AbsAlertFilter):
 		
 		npp = len(alert.pps)
 		if npp < self.min_ndet:
-			self.logger.debug("rejected: %d photopoints in alert (minimum required %d)"% 
-				(npp, self.min_ndet))
+			#self.logger.debug("rejected: %d photopoints in alert (minimum required %d)"% (npp, self.min_ndet))
+			self.logger.debug(None, extra={'nDet': npp})
 			return None
 		
 		# cut on length of detection history
 		detections_jds = alert.get_values('jd', upper_limits=False)
 		det_tspan = max(detections_jds) - min(detections_jds)
 		if not (self.min_tspan < det_tspan < self.max_tspan):
-			self.logger.debug("rejected: detection history is %.3f d long, requested between %.3f and %.3f d"%
-				(det_tspan, self.min_tspan, self.max_tspan))
+			#self.logger.debug("rejected: detection history is %.3f d long, \
+			# requested between %.3f and %.3f d"% (det_tspan, self.min_tspan, self.max_tspan))
+			self.logger.debug(None, extra={'tSpan': det_tspan})
 			return None
 		
 		# --------------------------------------------------------------------- #
@@ -235,27 +239,28 @@ class DecentFilter(AbsAlertFilter):
 			return None
 		
 		if (latest['isdiffpos'] == 'f' or latest['isdiffpos'] == '0'):
-			self.logger.debug("rejected: 'isdiffpos' is %s", latest['isdiffpos'])
+			#self.logger.debug("rejected: 'isdiffpos' is %s", latest['isdiffpos'])
+			self.logger.debug(None, extra={'isdiffpos': latest['isdiffpos']})
 			return None
 		
 		if latest['rb'] < self.min_rb:
-			self.logger.debug("rejected: RB score %.2f below threshod (%.2f)"%
-				(latest['rb'], self.min_rb))
+			#self.logger.debug("rejected: RB score %.2f below threshod (%.2f)"% (latest['rb'], self.min_rb))
+			self.logger.debug(None, extra={'rb': latest['rb']})
 			return None
 		
 		if latest['fwhm'] > self.max_fwhm:
-			self.logger.debug("rejected: fwhm %.2f above threshod (%.2f)"%
-				(latest['fwhm'], self.max_fwhm))
+			#self.logger.debug("rejected: fwhm %.2f above threshod (%.2f)"% (latest['fwhm'], self.max_fwhm))
+			self.logger.debug(None, extra={'fwhm': latest['fwhm']})
 			return None
 		
 		if latest['elong'] > self.max_elong:
-			self.logger.debug("rejected: elongation %.2f above threshod (%.2f)"%
-				(latest['elong'], self.max_elong))
+			#self.logger.debug("rejected: elongation %.2f above threshod (%.2f)"% (latest['elong'], self.max_elong))
+			self.logger.debug(None, extra={'elong': latest['elong']})
 			return None
 		
 		if abs(latest['magdiff']) > self.max_magdiff:
-			self.logger.debug("rejected: magdiff (AP-PSF) %.2f above threshod (%.2f)"% 
-				(latest['magdiff'], self.max_magdiff))
+			#self.logger.debug("rejected: magdiff (AP-PSF) %.2f above threshod (%.2f)"% (latest['magdiff'], self.max_magdiff))
+			self.logger.debug(None, extra={'magdiff': latest['magdiff']})
 			return None
 		
 		# --------------------------------------------------------------------- #
@@ -264,37 +269,39 @@ class DecentFilter(AbsAlertFilter):
 		
 		# check for closeby ss objects
 		if (0 < latest['ssdistnr'] < self.min_ssdistnr):
-			self.logger.debug("rejected: solar-system object close to transient (max allowed: %d)."%
-				(self.min_ssdistnr))
+			#self.logger.debug("rejected: solar-system object close to transient (max allowed: %d)."% (self.min_ssdistnr))
+			self.logger.debug(None, extra={'ssdistnr': latest['ssdistnr']})
 			return None
 		
 		# cut on galactic latitude
 		b = self.get_galactic_latitude(latest)
 		if abs(b) < self.min_gal_lat:
-			self.logger.debug("rejected: b=%.4f, too close to Galactic plane (max allowed: %f)."%
-				(b, self.min_gal_lat))
+			#self.logger.debug("rejected: b=%.4f, too close to Galactic plane (max allowed: %f)."% (b, self.min_gal_lat))
+			self.logger.debug(None, extra={'galPlane': abs(b)})
 			return None
 		
 		# check ps1 star-galaxy score
 		if self.is_star_in_PS1(latest):
-			self.logger.debug("rejected: closest PS1 source %.2f arcsec away with sgscore of %.2f"%
-				(latest['distpsnr1'], latest['sgscore1']))
+			#self.logger.debug("rejected: closest PS1 source %.2f arcsec away with sgscore of %.2f"% (latest['distpsnr1'], latest['sgscore1']))
+			self.logger.debug(None, extra={'distpsnr1': latest['distpsnr1']})
 			return None
 		
 		if self.is_confused_in_PS1(latest):
-			self.logger.debug("rejected: three confused PS1 sources within %.2f arcsec from alert."%
-				(self.ps1_confusion_rad))
+			#self.logger.debug("rejected: three confused PS1 sources within %.2f arcsec from alert."% (self.ps1_confusion_rad))
+			self.logger.debug(None, extra={'ps1Confusion': True})
 			return None
 		
 		# check with gaia
 		if self.is_star_in_gaia(latest):
-			self.logger.debug("rejected: within %.2f arcsec from a GAIA start (PM of PLX)" % 
-				(self.gaia_rs))
+			#self.logger.debug("rejected: within %.2f arcsec from a GAIA start (PM of PLX)" % (self.gaia_rs))
+			self.logger.debug(None, extra={'gaiaIsStar': True})
 			return None
 		
 		# congratulation alert! you made it!
-		self.logger.debug("Alert %s accepted. Latest pp ID: %d"%(alert.tran_id, latest['candid']))
-		for key in self.keys_to_check:
-			self.logger.debug("{}: {}".format(key, latest[key]))
+		#self.logger.debug("Alert %s accepted. Latest pp ID: %d"%(alert.tran_id, latest['candid']))
+		self.logger.debug("Alert accepted", extra={'latestPpId': latest['candid']})
+
+		#for key in self.keys_to_check:
+		#	self.logger.debug("{}: {}".format(key, latest[key]))
+
 		return self.on_match_t2_units
-	
