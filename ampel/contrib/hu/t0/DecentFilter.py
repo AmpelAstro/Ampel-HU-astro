@@ -7,12 +7,12 @@
 # Last Modified Date: 24.10.2018
 # Last Modified By  : vb
 
-from numpy import exp, array
+from numpy import exp, array, asarray
 import logging
 from urllib.parse import urlparse
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
-from catsHTM import cone_search
+import zerorpc
 from ampel.base.abstract.AbsAlertFilter import AbsAlertFilter
 
 class DecentFilter(AbsAlertFilter):
@@ -99,10 +99,7 @@ class DecentFilter(AbsAlertFilter):
 		self.ps1_confusion_rad			= run_config['PS1_CONFUSION_RAD']
 		self.ps1_confusion_sg_tol		= run_config['PS1_CONFUSION_SG_TOL']
 
-		# technical
-		self.catshtm_path 			= urlparse(base_config['catsHTM.default']).path
-
-		self.logger.info("using catsHTM files in %s" % self.catshtm_path)
+		self.catshtm				= zerorpc.Client(base_config['catsHTM.default'])
 
 		self.keys_to_check = (
 			'fwhm', 'elong', 'magdiff', 'nbad', 'distpsnr1', 'sgscore1', 'distpsnr2', 
@@ -170,14 +167,13 @@ class DecentFilter(AbsAlertFilter):
 		"""
 		
 		transient_coords = SkyCoord(transient['ra'], transient['dec'], unit='deg')
-		srcs, colnames, colunits = cone_search(
+		srcs, colnames, colunits = self.catshtm.cone_search(
 											'GAIADR2',
 											transient_coords.ra.rad, transient_coords.dec.rad,
-											self.gaia_rs,
-											catalogs_dir=self.catshtm_path)
+											self.gaia_rs)
 		my_keys = ['RA', 'Dec', 'Mag_G', 'PMRA', 'ErrPMRA', 'PMDec', 'ErrPMDec', 'Plx', 'ErrPlx']
 		if len(srcs) > 0:
-			gaia_tab					= Table(srcs, names=colnames)
+			gaia_tab					= Table(asarray(srcs), names=colnames)
 			gaia_tab					= gaia_tab[my_keys]
 			gaia_coords					= SkyCoord(gaia_tab['RA'], gaia_tab['Dec'], unit='rad')
 			
