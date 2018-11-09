@@ -3,13 +3,16 @@
 # File              : ampel/contrib/hu/t2/T2Observability.py
 # License           : BSD-3-Clause
 # Author            : matteo.giomi@desy.de
-# Date              : 24.08.2018
-# Last Modified Date: 24.08.2018
-# Last Modified By  : matteo.giomi@desy.de
+# Date              : 19.09.2018
+# Last Modified Date: 21.09.2018
+# Last Modified By  : ulrich.feindt@fysik.su.se
 
 import logging
 from astropy.coordinates import SkyCoord
+from astropy.time import Time
+import astropy.units as u
 
+from ampel.base import Observatory
 from ampel.base.abstract.AbsT2Unit import AbsT2Unit
 from ampel.core.flags.T2RunStates import T2RunStates
 
@@ -21,7 +24,6 @@ class T2Observability(AbsT2Unit):
 	"""
 	
 	version = 0.1
-	resources = ('extcats.reader', 'catsHTM.default')
 
 	def __init__(self, logger, base_config):
 		"""
@@ -36,29 +38,29 @@ class T2Observability(AbsT2Unit):
 		# default parameters for LightCurve.get_pos method
 		self.lc_get_pos_defaults = {'ret': "brightest", 'filters': None}
 		
-		# default parameters for twilight
-		self.twilight_defaults = {'min_am': 2, 'sun_alt': -12}
+		# default parameters for visibility
+		self.visibility_defaults = {'airmass_th': 2, 'sun_alt_th': -12, 'min_moon_dist': 30}
 		
 
 	def init_observatory(self, name, position):
 		"""
 			Return the earth location object corresponding to the desired observatory.
-			catalog. Repeated requests to the same instance will not cause new duplicates.
+			Repeated requests to the same instance will not cause new duplicates.
 			
 			Returns:
 			--------
 				
-				extcats.CatalogQuery instance.
-			
+				Observatory instance.
 		"""
 		
 		# check if the observatory has already been init
-		obs = self.observatories.get(catalog)
+		obs = self.observatories.get(name)
 		if obs is None:
 			self.logger.debug("Observatory %s not previously instantiated. Doing it now."%name)
 			
 			#init your obs depending on the position
-			obs = ...
+			obs = Observatory(name, *position, logger=self.logger)
+			self.observatories[name] = obs
 			return obs
 		else:
 			self.logger.debug("Observatory %s already exists."%name)
@@ -89,9 +91,9 @@ class T2Observability(AbsT2Unit):
 											'alt': 1680
 										},
 										constraints: {
-											'am': 2,
-											'sun_alt': 12,
-											'moon_dist': 30
+											'airmass_th': 2,
+											'sun_alt_th': -12,
+											'min_moon_dist': 30
 										}
 									},
 								'SNIFS': 
@@ -111,7 +113,6 @@ class T2Observability(AbsT2Unit):
 							night1: {
 								start,
 								stop,
-								exposure
 								},
 							night2: {
 								...
@@ -143,11 +144,13 @@ class T2Observability(AbsT2Unit):
 		
 		for name, observatory in obs.items():
 			
-			my_obs = self.init_observatory(name, position)
-			
-			ret = my_obs.compute_observability()
-			
-			out_dict[name] = ret
+			my_obs = self.init_observatory(name, observatory['pos'])
+
+			for k in range(3):
+					trange = [(Time.now() + k*u.day).iso[:10], (Time.now() + (k+1)*u.day).iso[:10]]
+			ret = my_obs.compute_observability(transient_ra, transient_dec, trange, **observatory['constraints'])
+
+			out_dict[name]['night%i'%(k+1)] = {'start': ret[0].iso, 'end': ret[-1].iso}
 			
 		# return the info as dictionary
 		return out_dict
