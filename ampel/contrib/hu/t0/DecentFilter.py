@@ -180,7 +180,7 @@ class DecentFilter(AbsAlertFilter):
 			# compute distance
 			gaia_tab['DISTANCE']		= transient_coords.separation(gaia_coords).arcsec
 			gaia_tab['DISTANCE_NORM']	= (
-				1.8 + 0.6 * exp( (20 - gaia_tab['Mag_G']) / 2.05) > gaia_tab['DISTANCE'])	#TODO: vary mag_G exclusion
+				1.8 + 0.6 * exp( (20 - gaia_tab['Mag_G']) / 2.05) > gaia_tab['DISTANCE'])
 			gaia_tab['FLAG_PROX']		= [
 											True if x['DISTANCE_NORM'] == True and 
 											(self.gaia_veto_gmag_min <= x['Mag_G'] <= self.gaia_veto_gmag_max) else 
@@ -191,9 +191,13 @@ class DecentFilter(AbsAlertFilter):
 			gaia_tab['FLAG_PMRA']		= abs(gaia_tab['PMRA']  / gaia_tab['ErrPMRA']) > self.gaia_pm_signif
 			gaia_tab['FLAG_PMDec']		= abs(gaia_tab['PMDec'] / gaia_tab['ErrPMDec']) > self.gaia_pm_signif
 			gaia_tab['FLAG_Plx']		= abs(gaia_tab['Plx']   / gaia_tab['ErrPlx']) > self.gaia_plx_signif
+			
+			# check if among all the sources which are close enough there is anyone with
+			# significant proper motion and parallax
+			gaia_tab = gaia_tab[gaia_tab['FLAG_PROX']]
 			if (any(gaia_tab['FLAG_PMRA'] == True) or 
 				any(gaia_tab['FLAG_PMDec'] == True) or
-				any(gaia_tab['FLAG_Plx'] == True)) and any(gaia_tab['FLAG_PROX'] == True):
+				any(gaia_tab['FLAG_Plx'] == True)):
 				return True
 		return False
 
