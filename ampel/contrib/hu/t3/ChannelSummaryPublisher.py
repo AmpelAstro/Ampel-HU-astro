@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t3/ChannelSummaryDumper.py
+# File              : ampel/contrib/hu/t3/ChannelSummaryPublisher.py
 # License           : BSD-3-Clause
 # Author            : m. giomi <matteo.giomi@desy.de>
 # Date              : 13.11.2018
@@ -19,7 +19,7 @@ from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.common.ZTFUtils import ZTFUtils
 
 
-class ChannelSummaryDumper(AbsT3Unit):
+class ChannelSummaryPublisher(AbsT3Unit):
 	"""
 		Create a json file with summary statistics for the channel. For the transients
 		detected in the last N days, this json file contains, i.e. coords, RB score,
