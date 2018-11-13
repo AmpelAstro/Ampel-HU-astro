@@ -36,13 +36,9 @@ class ChannelSummaryPublisher(AbsT3Unit):
 		"""
 		"""
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
-		self.count = 0
-		self.outfile = StringIO()
+		self.summary = {}
 		
 		self.dest = base_config['desycloud.default'] + '/AMPEL/ZTF/'
-		# don't bother preserving immutable types
-		self.encoder = AmpelEncoder(lossy=True)
-		
 		# pick up which alert keys you want to be part of the summary
 		self.default_alert_metrics = ['ztf_name', 'ra', 'dec', 'rb', 'detections', 'first_detection', 'last_detection']
 		if run_config is None:
@@ -61,8 +57,7 @@ class ChannelSummaryPublisher(AbsT3Unit):
 		
 		out = {}
 		
-		if 'ztf_name' in self.alert_metrics:
-			out['ztf_name'] = ZTFUtils.to_ztf_id(tran_view.tran_id)
+		out['ztf_name'] = ZTFUtils.to_ztf_id(tran_view.tran_id)
 		
 		# sort photopoints
 		pps = sorted([pp.content for pp in tran_view.photopoints], key=lambda x: x['jd'])
@@ -95,9 +90,8 @@ class ChannelSummaryPublisher(AbsT3Unit):
 					raise ValueError("Only single-channel views are supported")
 				self._channels.add(tran_view.channel)
 				info_dict = self.extract_from_transient_view(tran_view)
-				self.outfile.write(self.encoder.encode(info_dict))
-				self.outfile.write("\n")
-				
+				key = info_dict.pop("ztf_name")
+				self.summary[key] = info_dict
 
 
 	def done(self):
@@ -107,8 +101,6 @@ class ChannelSummaryPublisher(AbsT3Unit):
 			return
 		elif len(self._channels) > 1:
 			raise ValueError("Got multiple channels ({}) in summary".format(list(self._channels)))
-		mb = len(self.outfile.getvalue().encode()) / 2.0 ** 20
-		self.logger.info("{:.1f} MB of JSONy goodness".format(mb))
 
 		# The latest ZTF night is the yesterday, Pacific time
 		timestamp = datetime.datetime.fromtimestamp(time.time(), timezone('US/Pacific')) - datetime.timedelta(days=1)
@@ -120,4 +112,9 @@ class ChannelSummaryPublisher(AbsT3Unit):
 		if not rep.ok:
 			self.session.request('MKCOL', basedir).raise_for_status()
 
-		self.session.put('{}/{}'.format(basedir, filename), data=self.outfile.getvalue()).raise_for_status()
+		outfile = StringIO()
+		outfile.write(AmpelEncoder(lossy=True).encode(self.summary))
+		outfile.write('\n')
+		mb = len(outfile.getvalue().encode()) / 2.0 ** 20
+		self.logger.info("{:.1f} MB of JSONy goodness".format(mb))
+		self.session.put('{}/{}'.format(basedir, filename), data=outfile.getvalue()).raise_for_status()
