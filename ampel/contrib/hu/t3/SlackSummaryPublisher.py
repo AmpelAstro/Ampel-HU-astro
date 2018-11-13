@@ -24,6 +24,7 @@ class SlackSummaryPublisher(AbsT3Unit):
     """
 
     class RunConfig(BaseModel):
+        dryRun: bool = False
         quiet: bool = False
         date: str = str(datetime.date.today())
         slackToken: str
@@ -54,6 +55,7 @@ class SlackSummaryPublisher(AbsT3Unit):
     def done(self):
         """
         """
+        assert self.run_config.dryRun
         if len(self.frames) == 0 and self.run_config.quiet:
             return
    
@@ -62,16 +64,19 @@ class SlackSummaryPublisher(AbsT3Unit):
         m = calculate_excitement(len(self.frames), date=self.run_config.date,
             thresholds=self.run_config.excitement
         )
-
-        api = sc.api_call(
-            "chat.postMessage",
-            channel=self.run_config.slackChannel,
-            text=m,
-            username="AMPEL-live",
-            as_user=False
-        )
-        if not api['ok']:
-            raise SlackClientError(api['error'])
+        
+        if self.run_config.dryRun:
+            self.logger.info(m)
+        else:
+            api = sc.api_call(
+                "chat.postMessage",
+                channel=self.run_config.slackChannel,
+                text=m,
+                username="AMPEL-live",
+                as_user=False
+            )
+            if not api['ok']:
+                raise SlackClientError(api['error'])
 
         if len(self.frames) > 0:
 
@@ -93,13 +98,20 @@ class SlackSummaryPublisher(AbsT3Unit):
 
             }
 
-            r = requests.post(
-                "https://slack.com/api/files.upload",
-                params=param,
-                files={"file": buffer.getvalue()}
-            )
-
-            self.logger.info(r.text)
+            if self.run_config.dryRun:
+                # log only first two lines
+                csv = buffer.getvalue()
+                idx = 0
+                for _ in range(2):
+                    idx = csv.find('\n',idx)+1
+                self.logger.info({"files": {"file": csv[:idx]+'...'}, **param})
+            else:
+                r = requests.post(
+                    "https://slack.com/api/files.upload",
+                    params=param,
+                    files={"file": buffer.getvalue()}
+                )
+                self.logger.info(r.text)
 
             if self.run_config.fullPhotometry:
 
@@ -117,13 +129,19 @@ class SlackSummaryPublisher(AbsT3Unit):
                     "filename": filename
                 }
 
-                r = requests.post(
-                    "https://slack.com/api/files.upload",
-                    params=param,
-                    files={"file": buffer.getvalue()}
-                )
-
-                self.logger.info(r.text)
+                if self.run_config.dryRun:
+                    csv = buffer.getvalue()
+                    idx = 0
+                    for _ in range(2):
+                        idx = csv.find('\n',idx)+1
+                    self.logger.info({"files": {"file": csv[:idx]+'...'}, **param})
+                else:
+                    r = requests.post(
+                        "https://slack.com/api/files.upload",
+                        params=param,
+                        files={"file": buffer.getvalue()}
+                    )
+                    self.logger.info(r.text)
 
 
     def combine_transients(self, transients):
