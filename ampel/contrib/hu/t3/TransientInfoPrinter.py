@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 11.06.2018
-# Last Modified Date: 06.11.2018
+# Last Modified Date: 13.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.common.ZTFUtils import ZTFUtils
@@ -67,9 +67,7 @@ class TransientInfoPrinter(AbsT3Unit):
 		"""
 		logger.info("Ampel ID: %i" % tran.tran_id)
 
-		# pylint: disable=no-member
-		if TransientFlags.INST_ZTF in tran.flags:
-			logger.info("ZTF ID: %s" % ZTFUtils.to_ztf_id(tran.tran_id))
+		logger.info("Transient names: %s" % tran.tran_names)
 
 		if tran.channel is not None:
 			logger.info("Channel: %s" % str(tran.channel))
