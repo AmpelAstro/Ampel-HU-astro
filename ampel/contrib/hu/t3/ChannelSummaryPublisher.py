@@ -10,6 +10,8 @@
 import json
 import requests
 import uuid
+import time, datetime
+from pytz import timezone
 from urllib.parse import urlencode
 from io import StringIO
 
@@ -36,10 +38,8 @@ class ChannelSummaryPublisher(AbsT3Unit):
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 		self.count = 0
 		self.outfile = StringIO()
-		self.filename = "channel_summay_"+str(uuid.uuid1()) + '.json'
 		
-		self.dest = base_config['desycloud.default'] + '/AMPEL/' + self.filename
-		self.public = "https://desycloud.desy.de/index.php/s/eirQngtMrj7WfFQ/download?{}".format(urlencode({'files': self.filename}))
+		self.dest = base_config['desycloud.default'] + '/AMPEL/ZTF/'
 		# don't bother preserving immutable types
 		self.encoder = AmpelEncoder(lossy=True)
 		
@@ -50,7 +50,8 @@ class ChannelSummaryPublisher(AbsT3Unit):
 		else:
 			self.alert_metrics = run_config.get('alert_metrics')
 		self.logger.info("Channel summary will include following metrics: %s"%repr(self.alert_metrics))
-		
+		self._channels = set()
+		self.session = requests.Session()
 
 	def extract_from_transient_view(self, tran_view):
 		"""
@@ -90,6 +91,9 @@ class ChannelSummaryPublisher(AbsT3Unit):
 		"""
 		if transients is not None:
 			for tran_view in transients:
+				if isinstance(tran_view.channel, list):
+					raise ValueError("Only single-channel views are supported")
+				self._channels.add(tran_view.channel)
 				info_dict = self.extract_from_transient_view(tran_view)
 				self.outfile.write(self.encoder.encode(info_dict))
 				self.outfile.write("\n")
@@ -99,8 +103,21 @@ class ChannelSummaryPublisher(AbsT3Unit):
 	def done(self):
 		"""
 		"""
+		if len(self._channels) == 0:
+			return
+		elif len(self._channels) > 1:
+			raise ValueError("Got multiple channels ({}) in summary".format(list(self._channels)))
 		mb = len(self.outfile.getvalue().encode()) / 2.0 ** 20
 		self.logger.info("{:.1f} MB of JSONy goodness".format(mb))
-		self.logger.info("Total number of transient printed: %i" % self.count)
-		requests.put(self.dest, data=self.outfile.getvalue()).raise_for_status()
-		self.logger.info(self.public)
+
+		# The latest ZTF night is the yesterday, Pacific time
+		timestamp = datetime.datetime.fromtimestamp(time.time(), timezone('US/Pacific')) - datetime.timedelta(days=1)
+		filename = timestamp.strftime("channel-summary-%Y%m%d.json")
+
+		channel = list(self._channels)[0]
+		basedir = '{}/{}'.format(self.dest, channel)
+		rep = self.session.head(basedir)
+		if not rep.ok:
+			self.session.request('MKCOL', basedir).raise_for_status()
+
+		self.session.put('{}/{}'.format(basedir, filename), data=self.outfile.getvalue()).raise_for_status()
