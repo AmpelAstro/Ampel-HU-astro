@@ -36,15 +36,15 @@ class ChannelSummaryPublisher(AbsT3Unit):
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 		self.count = 0
 		self.outfile = StringIO()
-		self.filename = "channel_summay_"str(uuid.uuid1()) + '.json'
+		self.filename = "channel_summay_"+str(uuid.uuid1()) + '.json'
 		
 		self.dest = base_config['desycloud.default'] + '/AMPEL/' + self.filename
-		self.public = "https://desycloud.desy.de/index.php/s/W6J4sm7H6aAk7aq/download?{}".format(urlencode({'files': self.filename}))
+		self.public = "https://desycloud.desy.de/index.php/s/eirQngtMrj7WfFQ/download?{}".format(urlencode({'files': self.filename}))
 		# don't bother preserving immutable types
 		self.encoder = AmpelEncoder(lossy=True)
 		
 		# pick up which alert keys you want to be part of the summary
-		self.default_alert_metrics = ['ztf_name', 'ra', 'dec', 'rb', 'first_detection', 'last_detection']
+		self.default_alert_metrics = ['ztf_name', 'ra', 'dec', 'rb', 'detections', 'first_detection', 'last_detection']
 		if run_config is None:
 			self.alert_metrics = self.default_alert_metrics
 		else:
@@ -52,7 +52,7 @@ class ChannelSummaryPublisher(AbsT3Unit):
 		self.logger.info("Channel summary will include following metrics: %s"%repr(self.alert_metrics))
 		
 
-	def extract_from_transient_view(tran_view):
+	def extract_from_transient_view(self, tran_view):
 		"""
 			given transient view object return a dictionary 
 			with the desired metrics
@@ -60,11 +60,13 @@ class ChannelSummaryPublisher(AbsT3Unit):
 		
 		out = {}
 		
-		if 'ztf_name' in self.alert_metric:
+		if 'ztf_name' in self.alert_metrics:
 			out['ztf_name'] = ZTFUtils.to_ztf_id(tran_view.tran_id)
 		
 		# sort photopoints
 		pps = sorted([pp.content for pp in tran_view.photopoints], key=lambda x: x['jd'])
+		if len(pps) == 0:
+			return out
 		
 		# some metric should only be computed for the latest pp
 		for key in self.alert_metrics:
@@ -74,8 +76,10 @@ class ChannelSummaryPublisher(AbsT3Unit):
 		# look at full det history for start and end of detection
 		if 'first_detection' in self.alert_metrics:
 			out['first_detection'] = pps[0]['jd']
-		if 'first_detection' in self.alert_metrics:
-			out['first_detection'] = pps[-1]['jd']
+		if 'last_detection' in self.alert_metrics:
+			out['last_detection'] = pps[-1]['jd']
+		if 'detections' in self.alert_metrics:
+			out['detections'] = len(pps)
 		
 		return out
 
