@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 04.07.2018
+# Last Modified Date: 14.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 
@@ -12,10 +12,6 @@ from ampel.base.abstract.AbsAlertFilter import AbsAlertFilter
 from random import uniform
 
 class RandFilter(AbsAlertFilter):
-
-
-	version = 0.2
-
 
 	def __init__(self, on_match_t2_units, base_config=None, run_config=None, logger=None):
 		"""
@@ -40,5 +36,4 @@ class RandFilter(AbsAlertFilter):
 		if rv < self.passing_rate:
 			return self.on_match_default_t2_units
 		else:
-			self.logger.info("NO", extra={'rv': rv})
 			return None
