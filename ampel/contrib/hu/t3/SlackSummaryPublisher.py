@@ -4,8 +4,8 @@
 # License           : BSD-3-Clause
 # Author            : robert stein
 # Date              : 11.03.2018
-# Last Modified Date: 02.10.2018
-# Last Modified By  : vb
+# Last Modified Date: 14.11.2018
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pandas as pd
 import numpy as np
@@ -14,10 +14,11 @@ import io, pickle, datetime, requests
 from slackclient import SlackClient
 from slackclient.exceptions import SlackClientError
 from pydantic import BaseModel
-from typing import Dict, List
+from typing import Dict, List, Union
 from ampel.base.abstract.AbsT3Unit import AbsT3Unit
-from ampel.pipeline.common.ZTFUtils import ZTFUtils
+from ampel.ztf.pipeline.common.ZTFUtils import ZTFUtils
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
+from ampel.pipeline.config.EncryptedConfig import EncryptedConfig
 
 class SlackSummaryPublisher(AbsT3Unit):
     """
@@ -27,7 +28,7 @@ class SlackSummaryPublisher(AbsT3Unit):
         dryRun: bool = False
         quiet: bool = False
         date: str = str(datetime.date.today())
-        slackToken: str
+        slackToken: Union[str, EncryptedConfig]
         excitement: Dict[str, int]
         slackChannel: str
         fullPhotometry: bool
