@@ -7,10 +7,10 @@
 # Last Modified Date: 13.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.pipeline.common.ZTFUtils import ZTFUtils
 from ampel.base.flags.TransientFlags import TransientFlags
 from ampel.base.TransientView import TransientView
 from ampel.base.abstract.AbsT3Unit import AbsT3Unit
+from ampel.ztf.pipeline.common.ZTFUtils import ZTFUtils
 
 class TransientInfoPrinter(AbsT3Unit):
 	"""
