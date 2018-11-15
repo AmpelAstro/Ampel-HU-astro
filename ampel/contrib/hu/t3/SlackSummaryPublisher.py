@@ -56,7 +56,6 @@ class SlackSummaryPublisher(AbsT3Unit):
     def done(self):
         """
         """
-        assert self.run_config.dryRun
         if len(self.frames) == 0 and self.run_config.quiet:
             return
    
