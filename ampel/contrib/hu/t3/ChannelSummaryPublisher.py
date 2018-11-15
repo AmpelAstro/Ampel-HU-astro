@@ -18,7 +18,7 @@ from io import StringIO
 from ampel.base.abstract.AbsT3Unit import AbsT3Unit
 from ampel.utils.json import AmpelEncoder
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
-from ampel.pipeline.common.ZTFUtils import ZTFUtils
+from ampel.ztf.pipeline.common.ZTFUtils import ZTFUtils
 
 
 class ChannelSummaryPublisher(AbsT3Unit):
