@@ -60,10 +60,10 @@ class ChannelSummaryPublisher(AbsT3Unit):
 		out['ztf_name'] = ZTFUtils.to_ztf_id(tran_view.tran_id)
 		
 		# sort photopoints
-		pps = sorted([pp.content for pp in tran_view.photopoints], key=lambda x: x['jd'])
-		if len(pps) == 0:
+		if tran_view.photopoints is None or len(tran_view.photopoints) == 0:
 			return out
-		
+		pps = sorted([pp.content for pp in tran_view.photopoints], key=lambda x: x['jd'])
+
 		# some metric should only be computed for the latest pp
 		for key in self.alert_metrics:
 			if key in ['ra', 'dec', 'rb']:
