@@ -47,11 +47,10 @@ setup(name='ampel-contrib-hu',
               'ChannelSummaryPublisher = ampel.contrib.hu.t3.ChannelSummaryPublisher:ChannelSummaryPublisher',
               'TransientWebPublisher = ampel.contrib.hu.t3.TransientWebPublisher:TransientWebPublisher',
               'SlackSummaryPublisher = ampel.contrib.hu.t3.SlackSummaryPublisher:SlackSummaryPublisher',
+              'SlackAlertPublisher = ampel.contrib.hu.t3.SlackAlertPublisher:SlackAlertPublisher',
               'MarshalPublisher = ampel.contrib.hu.t3.MarshalPublisher:MarshalPublisher',
               'MarshalMonitor = ampel.contrib.hu.t3.T3MarshalMonitor:T3MarshalMonitor',
-              'CountSncosmo = ampel.contrib.hu.t3.CountSncosmo:CountSncosmo',
-              'CompareUli = ampel.contrib.hu.t3.CompareUli:CompareUli',
-              'CompareExternal = ampel.contrib.hu.t3.CompareExternal:CompareExternal'
+              'TNSTalker = ampel.contrib.hu.t3.TNSTalker:TNSTalker'
           ],
           'ampel.pipeline.resources' : [
               'extcats = ampel.contrib.hu.resources:extcatsURI',
