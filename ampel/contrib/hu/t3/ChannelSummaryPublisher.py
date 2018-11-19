@@ -14,6 +14,8 @@ import time, datetime
 from pytz import timezone
 from urllib.parse import urlencode
 from io import StringIO
+from pydantic import BaseModel
+from typing import List
 
 from ampel.base.abstract.AbsT3Unit import AbsT3Unit
 from ampel.utils.json import AmpelEncoder
@@ -32,20 +34,20 @@ class ChannelSummaryPublisher(AbsT3Unit):
 	version = 0.1
 	resources = ('desycloud.default',)
 
+	class RunConfig(BaseModel):
+		dryRun: bool = False
+		baseDir: str = '/AMPEL/ZTF'
+		alertMetrics: List[str] = ['ztf_name', 'ra', 'dec', 'rb', 'detections', 'first_detection', 'last_detection']
+
 	def __init__(self, logger, base_config=None, run_config=None, global_info=None):
 		"""
 		"""
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 		self.summary = {}
 		
-		self.dest = base_config['desycloud.default'] + '/AMPEL/ZTF/'
-		# pick up which alert keys you want to be part of the summary
-		self.default_alert_metrics = ['ztf_name', 'ra', 'dec', 'rb', 'detections', 'first_detection', 'last_detection']
-		if run_config is None:
-			self.alert_metrics = self.default_alert_metrics
-		else:
-			self.alert_metrics = run_config.get('alert_metrics')
-		self.logger.info("Channel summary will include following metrics: %s"%repr(self.alert_metrics))
+		self.run_config = run_config
+		self.dest = base_config['desycloud.default'] + self.run_config.baseDir
+		self.logger.info("Channel summary will include following metrics: %s"%repr(self.run_config.alertMetrics))
 		self._channels = set()
 		self.session = requests.Session()
 
@@ -54,7 +56,7 @@ class ChannelSummaryPublisher(AbsT3Unit):
 			given transient view object return a dictionary 
 			with the desired metrics
 		"""
-		
+		metrics = set(self.run_config.alertMetrics)
 		out = {}
 		
 		out['ztf_name'] = ZTFUtils.to_ztf_id(tran_view.tran_id)
@@ -65,16 +67,16 @@ class ChannelSummaryPublisher(AbsT3Unit):
 		pps = sorted([pp.content for pp in tran_view.photopoints], key=lambda x: x['jd'])
 
 		# some metric should only be computed for the latest pp
-		for key in self.alert_metrics:
+		for key in metrics:
 			if key in ['ra', 'dec', 'rb']:
 				out[key] = pps[-1].get(key)
 		
 		# look at full det history for start and end of detection
-		if 'first_detection' in self.alert_metrics:
+		if 'first_detection' in metrics:
 			out['first_detection'] = pps[0]['jd']
-		if 'last_detection' in self.alert_metrics:
+		if 'last_detection' in metrics:
 			out['last_detection'] = pps[-1]['jd']
-		if 'detections' in self.alert_metrics:
+		if 'detections' in metrics:
 			out['detections'] = len(pps)
 		
 		return out
@@ -109,7 +111,7 @@ class ChannelSummaryPublisher(AbsT3Unit):
 		channel = list(self._channels)[0]
 		basedir = '{}/{}'.format(self.dest, channel)
 		rep = self.session.head(basedir)
-		if not rep.ok:
+		if not (rep.ok or self.run_config.dryRun):
 			self.session.request('MKCOL', basedir).raise_for_status()
 
 		outfile = StringIO()
@@ -117,4 +119,5 @@ class ChannelSummaryPublisher(AbsT3Unit):
 		outfile.write('\n')
 		mb = len(outfile.getvalue().encode()) / 2.0 ** 20
 		self.logger.info("{:.1f} MB of JSONy goodness".format(mb))
-		self.session.put('{}/{}'.format(basedir, filename), data=outfile.getvalue()).raise_for_status()
+		if not self.run_config.dryRun:
+			self.session.put('{}/{}'.format(basedir, filename), data=outfile.getvalue()).raise_for_status()
