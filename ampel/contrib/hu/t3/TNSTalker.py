@@ -91,20 +91,62 @@ class TNSTalker(AbsT3Unit):
 
 
 
-	def _find_journal_entry(self, tran_view):
+		
+	def _find_latest_journal_entry(self, tran_view, t3unit=self.name, required_keys=[]):
 		"""
-			return journal entry and position in journal for this T3 Unit
+			return the latest journal entry, possibly belonging to a specific t3 unit and containing all in list of keys
+			replace with tran_view method
 		"""
 		
 		# TODO: find decent schema for naming of journal entry
-		journal_entry, journal_id = {}, None
-		for ie, je in enumerate(tran_view.journal):
-			if je.get('t3unit', 'fuffa') == self.name:
-				journal_entry = je
-				journal_id = ie
-				break
-		return journal_entry, journal_id
+		journal_entry, journal_dt = None, -10**10
+		for je in tran_view.journal:
+			# Only look at later journals - if key dt is not guaranteed to exist we have to add timestamps for this
+			if je['dt']<journal_dt :
+				continue
+			# Match saved t3unit name if this is set
+			if t3unit is not None and not je.get('t3unit', 'fuffa') == t3unit:
+				continue
+
+			# Make sure all the required keys are there
+			key_lacking = False
+			for reqkey in required_keys:
+				if not reqkey in je.keys():
+					key_lacking = True
+			if key_lacking : continue
+			
+			# Made it - this is a correct entry and the current last one
+			journal_entry = je
+			journal_dt = je['dt']
+
+		return journal_entry
+
+	def _find_all_journal_entries(self, tran_view, t3unit=self.name, required_keys=[]):
+		"""
+			return the all journal entry, possibly belonging to a specific t3 unit and containing all in list of keys
+			replace with tran_view method
+		"""
 		
+		# TODO: find decent schema for naming of journal entry
+		journal_entries = {}
+		for je in tran_view.journal:
+
+			# Match saved t3unit name if this is set
+			if t3unit is not None and not je.get('t3unit', 'fuffa') == t3unit:
+				continue
+
+			# Make sure all the required keys are there
+			key_lacking = False
+			for reqkey in required_keys:
+				if not reqkey in je.keys():
+					key_lacking = True
+			if key_lacking : continue
+			
+			# Made it - this is a correct entry and the current last one
+			journal_entries[je['dt']] = je
+
+		return journal_entries
+
 
 
 	def get_tnsname(self, tran_view):
@@ -150,54 +192,22 @@ class TNSTalker(AbsT3Unit):
 			Look through the journal for a TNS name
 		"""
 
-		tns_name, tns_internal = None, []		
-		for ie, je in enumerate(tran_view.journal):
-			print("%s %s"%(ie,je))
-			if not je.get('t3unit', 'fuffa') == self.name:
-				continue
-			# Do we have an official TNS name?
-			new_name = je.get('tns_name',None)
-			if new_name is not None:
-				if tns_name is not None:
-					self.logger.info("Multiple TNS names",extra={'old_tns':tns_name,'new_tns':new_name})
-					# In any case we have an internal name
-				else:
-					tns_name = new_name
-			# Do we have a stored internal tns name?
-			int_name = je.get('tns_internal',None)
-			if int_name is not None:
-				tns_internal.append(int_name)
+		# Find the latest tns name (skipping previous)
+		jentry = self._find_latest_journal_entry(tran_view, t3unit=self.name, required_keys=['tns_name'])
+		tns_name = jentry['tns_name']
 
-		return tns_name, tns_internal
+		# Find internal names
+		jentries = self._find_all_journal_entries(tran_view, t3unit=self.name, required_keys=['tns_internal'])
+		tns_internals = [j['tns_internal'] for j in jentries]
+
+		self.logger.info('',extra={'tran_id':tran_view.tran_id,'tns_name':tns_name,'tns_internals':tns_internals})
+
+
+		return tns_name, tns_internals
 			
 
 
 
-	def add_marshal_info_to_journal(self, tran_view):
-		"""
-			get info from the marshal and add them to the journal of 
-			the given transient view. If the same job has been already
-			performed for this transient, the information in the journal 
-			will be updated
-		"""
-		
-		ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
-		
-		# look for previous results of this job.
-		journal_entry, je_id = self._find_journal_entry(tran_view)
-		
-		# If you run for this transient for the first time or if you want to update it
-		if journal_entry == {} or self.update:
-			
-			# look for the stuff
-			new_info = self.search_transient_in_marshal(ztf_name)
-			new_info['t3unit'] = self.name
-			
-			# write it to the journal
-			journal_entry.update(new_info)
-			tran_view.journal[je_id] = journal_entry
-		else:
-			self.logger.debug("transient %s already has marhal info"%ztf_name)
 
 
 	def check_submit_criteria(self,tran_view):
@@ -212,6 +222,19 @@ class TNSTalker(AbsT3Unit):
 			cut_sdsstar [bool]
 		"""
 
+		# Look for catalog matching
+		if self.cut_agn or self.cut_sdsstar:
+			if transient.t2records is not None:
+				for j, t2record in enumerate(transient.t2records):
+					if not t2record.results:
+						continue
+					res = (t2record.results[-1])
+					if not "output" in res:
+						continue
+					# Check for AGN
+					if self.cut_agn:
+						if t2record.get_t2_unit_id()=='X':	
+							pass
 		
 
 		return False
