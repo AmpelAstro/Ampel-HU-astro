@@ -21,7 +21,7 @@ from ampel.ztf.pipeline.common.ZTFUtils import ZTFUtils
 
 def tstamp(): return time.time()
 
-from ampel_tns import sendTNSreports, tnsName, tnsInternal
+from ampel.contrib.hu.t3.ampel_tns import sendTNSreports, tnsName, tnsInternal
 
 # Create a function called "chunks" with two arguments, l and n:
 def chunks(l, n):
@@ -117,7 +117,7 @@ class TNSTalker(AbsT3Unit):
 		phot = tran_view.get_photopoints()
 		ras = [pp.get_value("ra") for pp in phot]
 		decs = [pp.get_value("dec") for pp in phot]
-"
+
 		# Look for TNS name
 		tnsnames, runstatus = tnsName( np.mean(ras), np.mean(decs), self.api_key, sandbox=self.sandbox )
 		if re.match('Error', runstatus):
@@ -220,96 +220,95 @@ class TNSTalker(AbsT3Unit):
 
 
 	def add(self, transients):
-			"""
-				Loop through transients and check for TNS names and/or candidates to submit
-			"""
+		"""
+			Loop through transients and check for TNS names and/or candidates to submit
+		"""
 
-			journal_updates = []  # Will be saved to future journals
-			atreports = []        # Reports to be sent
+		self.logger.inf("Turned off")
+		return []
 
-			if transients is not None:
-				for tran_view in transients:
+		journal_updates = []  # Will be saved to future journals
+		atreports = []        # Reports to be sent
 
-					tns_name, tns_internals = self.search_journal_tns(tran_view.tran_id)
+		if transients is not None:
+			for tran_view in transients:
 
-					# Search TNS for a name
-					if (tns_name is not None and self.get_tns) or self.get_tns_force:
-						new_tns_name, new_internal = self.get_tnsname(tran_view)
-						if tns_name is not None and not tns_name==new_tns_name:
-							self.logger.info("Adding new TNS name",extra={"tns_old":tns_name,"tns_new":new_tns_name})
-						tns_internals.append(new_internal)
-						# Create new journal entry
-						journal_updates.append(
-							# Constructing journal update. The module ID and timestamp are added automatically
-							# ext saves it to the resiliant db, so persistent across DB resets
-							JournalUpdate(
-								tranId=tran_view.tran_id,
-								ext=True,
-								content={
-									't3unit': self.name,
-									'tns_name': tns_name,
-									'tns_internal': new_internal
-								}
-							)
+				tns_name, tns_internals = self.search_journal_tns(tran_view.tran_id)
+
+				# Search TNS for a name
+				if (tns_name is not None and self.get_tns) or self.get_tns_force:
+					new_tns_name, new_internal = self.get_tnsname(tran_view)
+					if tns_name is not None and not tns_name==new_tns_name:
+						self.logger.info("Adding new TNS name",extra={"tns_old":tns_name,"tns_new":new_tns_name})
+					tns_internals.append(new_internal)
+					# Create new journal entry
+					journal_updates.append(
+						# Constructing journal update. The module ID and timestamp are added automatically
+						# ext saves it to the resiliant db, so persistent across DB resets
+						JournalUpdate(
+							tranId=tran_view.tran_id,
+							ext=True,
+							content={
+								't3unit': self.name,
+								'tns_name': tns_name,
+								'tns_internal': new_internal
+							}
 						)
-
+					)
 					# If we do not want to submit anything we can continue
-					if not self.submit_tns:
-						continue
-
-					# Chech whether this ID has been submitted (note that we do not check whether the same candidate was submitte as different ZTF name)
-					is_ztfsubmitted = False
-					ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
-					for iname in tns_internals:
-						if iname==ztf_name:
-							is_ztfsubmitted = True
-
+				if not self.submit_tns:
+					continue
+					# Chech whether this ID has been submitted (note that we do not check whether the same candidate was ubmitte as different ZTF name)
+				is_ztfsubmitted = False
+				ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
+				for iname in tns_internals:
+					if iname==ztf_name:
+						is_ztfsubmitted = True
 					# Should we submit
-					if not is_ztfsubmitted and self.resubmit_tns_nonztf:
-						# Ok!
-						pass
-					elif is_ztfsubmitted and self.resubmit_tns_ztf:
-						# Ok!
-						pass
-					else:
-						# Not ok
-						continue
-		
-					# Does the transient fulfill submit requirements
-					if not self.check_submit_criteria(tran_view):
-						continue
-
+				if not is_ztfsubmitted and self.resubmit_tns_nonztf:
+					# Ok!
+					pass
+				elif is_ztfsubmitted and self.resubmit_tns_ztf:
+					# Ok!
+					pass
+				else:
+					# Not ok
+					continue
+	
+				# Does the transient fulfill submit requirements
+				if not self.check_submit_criteria(tran_view):
+					continue
 					atreport = self.get_atreport(tran_view)
-					atreports.append(atreport)
-			
-				if len(atreports)>0:
-					# Send reports in chunks of size 90 (99 should work)
-					atchunks = list(chunks(atreports,90))
-					tnsreplies = sendTNSreports(atchunks, self.api_key, self.logger, sandbox=self.sandbox)
+				atreports.append(atreport)
+		
+			if len(atreports)>0:
+				# Send reports in chunks of size 90 (99 should work)
+				atchunks = list(chunks(atreports,90))
+				tnsreplies = sendTNSreports(atchunks, self.api_key, self.logger, sandbox=self.sandbox)
 				
-					# Create journal updates for the cases where SN was added
-					for tran_view in transients:
-						ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
-						if not ztf_name in tnsreplies.keys():
-							self.logger.info("No TNS add reply",extra={"tran_id":tran_view.tran_id})
-							continue
-						# Create new journal entry
-						journal_updates.append(
-							# Constructing journal update. The module ID and timestamp are added automatically
-							# ext saves it to the resiliant db, so persistent across DB resets
-							JournalUpdate(
-								tranId=tran_view.tran_id,
-								ext=True,
-								content={
-									't3unit': self.name,
-									'tns_name': tnsreplies[ztf_name][1]["TNSName"],
-									'tns_internal': ztf_name,
-									'tns_submitresult':tnsreplies[ztf_name][0]
-								}
-							)
+				# Create journal updates for the cases where SN was added
+				for tran_view in transients:
+					ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
+					if not ztf_name in tnsreplies.keys():
+						self.logger.info("No TNS add reply",extra={"tran_id":tran_view.tran_id})
+						continue
+					# Create new journal entry
+					journal_updates.append(
+						# Constructing journal update. The module ID and timestamp are added automatically
+						# ext saves it to the resiliant db, so persistent across DB resets
+						JournalUpdate(
+							tranId=tran_view.tran_id,
+							ext=True,
+							content={
+								't3unit': self.name,
+								'tns_name': tnsreplies[ztf_name][1]["TNSName"],
+								'tns_internal': ztf_name,
+								'tns_submitresult':tnsreplies[ztf_name][0]
+							}
 						)
+					)
 
-			return journal_updates
+		return journal_updates
 
 
 						
