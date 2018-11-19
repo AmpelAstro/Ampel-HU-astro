@@ -87,17 +87,13 @@ class TNSTalker(AbsT3Unit):
 		self.cut_agn = self.run_config.get('cut_agn', True)
 		self.cut_sdsstar = self.run_config.get('cut_sdsstar', True)
 
-	
-
-
-
-		
-	def _find_latest_journal_entry(self, tran_view, t3unit=self.name, required_keys=[]):
+	def _find_latest_journal_entry(self, tran_view, t3unit=None, required_keys=[]):
 		"""
 			return the latest journal entry, possibly belonging to a specific t3 unit and containing all in list of keys
 			replace with tran_view method
 		"""
-		
+		if t3unit is None:
+			t3unit = self.name
 		# TODO: find decent schema for naming of journal entry
 		journal_entry, journal_dt = None, -10**10
 		for je in tran_view.journal:
@@ -121,12 +117,13 @@ class TNSTalker(AbsT3Unit):
 
 		return journal_entry
 
-	def _find_all_journal_entries(self, tran_view, t3unit=self.name, required_keys=[]):
+	def _find_all_journal_entries(self, tran_view, t3unit=None, required_keys=[]):
 		"""
 			return the all journal entry, possibly belonging to a specific t3 unit and containing all in list of keys
 			replace with tran_view method
 		"""
-		
+		if t3unit is None:
+			t3unit = self.name
 		# TODO: find decent schema for naming of journal entry
 		journal_entries = {}
 		for je in tran_view.journal:
