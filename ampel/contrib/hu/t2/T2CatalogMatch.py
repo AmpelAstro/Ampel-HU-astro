@@ -194,7 +194,10 @@ class T2CatalogMatch(AbsT2Unit):
 		if lc_get_pos_kwargs is None:
 			lc_get_pos_kwargs = self.lc_get_pos_defaults
 		self.logger.debug("getting transient position from lightcurve using args: %s", lc_get_pos_kwargs)
-		transient_ra, transient_dec = light_curve.get_pos(**lc_get_pos_kwargs)
+		try:
+			transient_ra, transient_dec = light_curve.get_pos(**lc_get_pos_kwargs)
+		except IndexError:
+			return T2RunStates.MISSING_INFO
 		self.logger.debug("Transient position (ra, dec): %.4f, %.4f deg"%(transient_ra, transient_dec))
 		
 		# initialize the catalog quer(ies). Use instance variable to aviod duplicates
