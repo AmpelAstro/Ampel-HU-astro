@@ -244,7 +244,7 @@ class TNSTalker(AbsT3Unit):
 			Loop through transients and check for TNS names and/or candidates to submit
 		"""
 
-		self.logger.inf("Turned off")
+		self.logger.info("Turned off")
 		return []
 
 		journal_updates = []  # Will be saved to future journals
