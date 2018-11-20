@@ -4,7 +4,7 @@ import pytest
 @pytest.mark.xfail(reason="Credentials need to be set as env vars DESYCLOUD_USERNAME and DESYCLOUD_PASSWORD")
 def test_desycloud():
     import requests
-    from ampel.pipeline.config.ConfigLoader import AmpelArgumentParser
+    from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
     from ampel.pipeline.config.AmpelConfig import AmpelConfig
 
     parser = AmpelArgumentParser()

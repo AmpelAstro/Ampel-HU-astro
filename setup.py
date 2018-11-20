@@ -2,7 +2,7 @@
 from setuptools import setup
 
 setup(name='ampel-contrib-hu',
-      version='0.4.4',
+      version='0.5.0',
       packages=['ampel.contrib.hu',
                 'ampel.contrib.hu.examples.t0',
                 'ampel.contrib.hu.examples.t2',
@@ -20,7 +20,7 @@ setup(name='ampel-contrib-hu',
           'ampel.pipeline.t2.configs' : [
               'hu = ampel.contrib.hu.channels:load_t2_run_configs',
           ],
-          'ampel.pipeline.t0' : [
+          'ampel.pipeline.t0.units' : [
               'DecentFilter = ampel.contrib.hu.t0.DecentFilter:DecentFilter',
               'XShooterFilter = ampel.contrib.hu.t0.XShooterFilter:XShooterFilter',
               'TransientInClusterFilter = ampel.contrib.hu.t0.TransientInClusterFilter:TransientInClusterFilter',
@@ -44,17 +44,21 @@ setup(name='ampel-contrib-hu',
           'ampel.pipeline.t3.units' : [
               'TransientInfoPrinter = ampel.contrib.hu.t3.TransientInfoPrinter:TransientInfoPrinter',
               'TransientViewDumper = ampel.contrib.hu.t3.TransientViewDumper:TransientViewDumper',
+              'ChannelSummaryPublisher = ampel.contrib.hu.t3.ChannelSummaryPublisher:ChannelSummaryPublisher',
               'TransientWebPublisher = ampel.contrib.hu.t3.TransientWebPublisher:TransientWebPublisher',
               'SlackSummaryPublisher = ampel.contrib.hu.t3.SlackSummaryPublisher:SlackSummaryPublisher',
+              'SlackAlertPublisher = ampel.contrib.hu.t3.SlackAlertPublisher:SlackAlertPublisher',
               'MarshalPublisher = ampel.contrib.hu.t3.MarshalPublisher:MarshalPublisher',
-          ],
-          'ampel.pipeline.t3.configs' : [
-              'hu = ampel.contrib.hu.channels:load_t3_run_configs',
+              'MarshalMonitor = ampel.contrib.hu.t3.T3MarshalMonitor:T3MarshalMonitor',
+              'TNSTalker = ampel.contrib.hu.t3.TNSTalker:TNSTalker'
           ],
           'ampel.pipeline.resources' : [
               'extcats = ampel.contrib.hu.resources:extcatsURI',
-              'catsHTM = ampel.contrib.hu.resources:catsHTMPath',
+              'catsHTM = ampel.contrib.hu.resources:catsHTMURI',
               'desycloud = ampel.contrib.hu.resources:desyCloudURI',
+          ],
+          'console_scripts' : [
+              'catshtmd = ampel.contrib.hu.catshtm_server:run'
           ]
       }
 )

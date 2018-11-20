@@ -15,7 +15,7 @@ from astropy.table import Table
 from scipy.interpolate import interp1d
 
 
-from ampel.pipeline.common.ZTFUtils import ZTFUtils
+from ampel.ztf.pipeline.common.ZTFUtils import ZTFUtils
 from ampel.base.abstract.AbsT2Unit import AbsT2Unit
 from ampel.core.flags.T2RunStates import T2RunStates
 
@@ -123,13 +123,13 @@ class T2LCQuality(AbsT2Unit):
 		
 		# compute number of detections, total observations, and upper limts.
 		# for the strength, use all ulims from first detection on
-		strength = len(dets) / (len(dets) + len(ulims))
+		strength = float(len(dets)) / (len(dets) + len(ulims))
 		
 		# for the strong upper limits, eventually exclude those which happends after the last detection
 		if exclude_ulims_after:
 			ulims = ulims[ulims['jd']<det_end]
 		n_strong_ulims = self.count_strong_ulims(dets, ulims)
-		purity = len(dets) / (len(dets) + n_strong_ulims)
+		purity = float(len(dets)) / (len(dets) + n_strong_ulims)
 		
 		# return
 		return n_strong_ulims, strength, purity

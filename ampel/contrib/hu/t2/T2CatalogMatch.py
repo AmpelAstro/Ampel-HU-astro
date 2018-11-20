@@ -18,9 +18,8 @@ from ampel.core.flags.T2RunStates import T2RunStates
 
 from extcats import CatalogQuery
 from extcats.catquery_utils import get_closest
-from catsHTM import cone_search
-
-
+from numpy import asarray
+import zerorpc
 
 class T2CatalogMatch(AbsT2Unit):
 	"""
@@ -42,7 +41,7 @@ class T2CatalogMatch(AbsT2Unit):
 		self.catq_objects = {}
 		
 		# initialize the catsHTM paths and the extcats query client.
-		self.catshtm_path 			= urlparse(base_config['catsHTM.default']).path
+		self.catshtm_client 			= zerorpc.Client(base_config['catsHTM.default'])
 		self.catq_client 			= MongoClient(base_config['extcats.reader'])
 		self.catq_kwargs_global 		= {
 										'logger': self.logger,
@@ -224,15 +223,14 @@ class T2CatalogMatch(AbsT2Unit):
 				
 				# catshtm needs coordinates in radians
 				transient_coords = SkyCoord(transient_ra, transient_dec, unit='deg')
-				srcs, colnames, colunits = cone_search(
+				srcs, colnames, colunits = self.catshtm_client.cone_search(
 													catalog,
 													transient_coords.ra.rad, transient_coords.dec.rad,
-													cat_opts['rs_arcsec'],
-													catalogs_dir=self.catshtm_path)
+													cat_opts['rs_arcsec'])
 				if len(srcs) > 0:
 					
 					# format to astropy Table
-					srcs_tab = Table(srcs, names=colnames)
+					srcs_tab = Table(asarray(srcs), names=colnames)
 					
 					# find out how ra/dec are called in the catalog
 					catq_kwargs = cat_opts.get('catq_kwargs')

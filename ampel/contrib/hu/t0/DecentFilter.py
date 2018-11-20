@@ -4,15 +4,15 @@
 # License           : BSD-3-Clause
 # Author            : m. giomi <matteo.giomi@desy.de>
 # Date              : 06.06.2018
-# Last Modified Date: 27.06.2018
-# Last Modified By  : m. giomi <matteo.giomi@desy.de>
+# Last Modified Date: 24.10.2018
+# Last Modified By  : vb
 
-from numpy import exp, array
+from numpy import exp, array, asarray
 import logging
 from urllib.parse import urlparse
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
-from catsHTM import cone_search
+import zerorpc
 from ampel.base.abstract.AbsAlertFilter import AbsAlertFilter
 
 class DecentFilter(AbsAlertFilter):
@@ -99,12 +99,12 @@ class DecentFilter(AbsAlertFilter):
 		self.ps1_confusion_rad			= run_config['PS1_CONFUSION_RAD']
 		self.ps1_confusion_sg_tol		= run_config['PS1_CONFUSION_SG_TOL']
 
-		# technical
-		self.catshtm_path 			= urlparse(base_config['catsHTM.default']).path
-		self.logger.info("using catsHTM files in %s"%self.catshtm_path)
+		self.catshtm				= zerorpc.Client(base_config['catsHTM.default'])
+
 		self.keys_to_check = (
 			'fwhm', 'elong', 'magdiff', 'nbad', 'distpsnr1', 'sgscore1', 'distpsnr2', 
-			'sgscore2', 'distpsnr3', 'sgscore3', 'isdiffpos', 'ra', 'dec', 'rb', 'ssdistnr')
+			'sgscore2', 'distpsnr3', 'sgscore3', 'isdiffpos', 'ra', 'dec', 'rb', 'ssdistnr'
+		)
 
 
 	def _alert_has_keys(self, photop):
@@ -114,6 +114,9 @@ class DecentFilter(AbsAlertFilter):
 		for el in self.keys_to_check:
 			if el not in photop:
 				self.logger.debug("rejected: '%s' missing" % el)
+				return False
+			if photop[el] is None:
+				self.logger.debug("rejected: '%s' is None" % el)
 				return False
 		return True
 
@@ -132,15 +135,8 @@ class DecentFilter(AbsAlertFilter):
 			apply combined cut on sgscore1 and distpsnr1 to reject the transient if
 			there is a PS1 star-like object in it's immediate vicinity
 		"""
-		
-		distpsnr1, sgscore1 = transient.get('distpsnr1'), transient.get('sgscore1')
-		
-		# if no match is found then it can't be a star
-		if distpsnr1 is None or sgscore1 is None:
-			return False
-		
-		# check if it's star enough and close enough
-		if distpsnr1 < self.ps1_sgveto_rad and sgscore1 > self.ps1_sgveto_th:
+		if (transient['distpsnr1'] < self.ps1_sgveto_rad and
+				transient['sgscore1'] > self.ps1_sgveto_th):
 			return True
 		else:
 			return False
@@ -152,17 +148,10 @@ class DecentFilter(AbsAlertFilter):
 			These cases are selected requiring that all three PS1 cps are in the imediate
 			vicinity of the transient and their sgscore to be close to 0.5 within given tolerance.
 		"""
-		sg1, sg2, sg3 = transient.get('sgscore1'), transient.get('sgscore2'), transient.get('sgscore2')
-		d1, d2, d3 = transient.get('distpsnr1'), transient.get('distpsnr2'), transient.get('distpsnr3')
-		
-		# require all three PS1 to be there
-		dists, sgscores = [d1, d2, d3], [sg1, sg2, sg3]
-		if None in dists or None in [sg1, sg2, sg3]:
-			return False
-		
-		# reject if veryclose to each other and with simlar SG score
-		very_close = max(dists) < self.ps1_confusion_rad
-		sg_confused =  abs( array(sgscores) - 0.5 ).max() < self.ps1_confusion_sg_tol
+		sg1, sg2, sg3 = transient['sgscore1'], transient['sgscore2'], transient['sgscore3']
+		d1, d2, d3 = transient['distpsnr1'], transient['distpsnr2'], transient['distpsnr3']
+		very_close = max([d1, d2, d3]) < self.ps1_confusion_rad
+		sg_confused =  abs( array([sg1, sg2, sg3]) - 0.5 ).max() < self.ps1_confusion_sg_tol
 		if sg_confused and very_close:
 			return True
 		else:
@@ -178,21 +167,20 @@ class DecentFilter(AbsAlertFilter):
 		"""
 		
 		transient_coords = SkyCoord(transient['ra'], transient['dec'], unit='deg')
-		srcs, colnames, colunits = cone_search(
+		srcs, colnames, colunits = self.catshtm.cone_search(
 											'GAIADR2',
 											transient_coords.ra.rad, transient_coords.dec.rad,
-											self.gaia_rs,
-											catalogs_dir=self.catshtm_path)
+											self.gaia_rs)
 		my_keys = ['RA', 'Dec', 'Mag_G', 'PMRA', 'ErrPMRA', 'PMDec', 'ErrPMDec', 'Plx', 'ErrPlx']
 		if len(srcs) > 0:
-			gaia_tab					= Table(srcs, names=colnames)
+			gaia_tab					= Table(asarray(srcs), names=colnames)
 			gaia_tab					= gaia_tab[my_keys]
 			gaia_coords					= SkyCoord(gaia_tab['RA'], gaia_tab['Dec'], unit='rad')
 			
 			# compute distance
 			gaia_tab['DISTANCE']		= transient_coords.separation(gaia_coords).arcsec
 			gaia_tab['DISTANCE_NORM']	= (
-				1.8 + 0.6 * exp( (20 - gaia_tab['Mag_G']) / 2.05) > gaia_tab['DISTANCE'])	#TODO: vary mag_G exclusion
+				1.8 + 0.6 * exp( (20 - gaia_tab['Mag_G']) / 2.05) > gaia_tab['DISTANCE'])
 			gaia_tab['FLAG_PROX']		= [
 											True if x['DISTANCE_NORM'] == True and 
 											(self.gaia_veto_gmag_min <= x['Mag_G'] <= self.gaia_veto_gmag_max) else 
@@ -203,9 +191,13 @@ class DecentFilter(AbsAlertFilter):
 			gaia_tab['FLAG_PMRA']		= abs(gaia_tab['PMRA']  / gaia_tab['ErrPMRA']) > self.gaia_pm_signif
 			gaia_tab['FLAG_PMDec']		= abs(gaia_tab['PMDec'] / gaia_tab['ErrPMDec']) > self.gaia_pm_signif
 			gaia_tab['FLAG_Plx']		= abs(gaia_tab['Plx']   / gaia_tab['ErrPlx']) > self.gaia_plx_signif
+			
+			# check if among all the sources which are close enough there is anyone with
+			# significant proper motion and parallax
+			gaia_tab = gaia_tab[gaia_tab['FLAG_PROX']]
 			if (any(gaia_tab['FLAG_PMRA'] == True) or 
 				any(gaia_tab['FLAG_PMDec'] == True) or
-				any(gaia_tab['FLAG_Plx'] == True)) and any(gaia_tab['FLAG_PROX'] == True):
+				any(gaia_tab['FLAG_Plx'] == True)):
 				return True
 		return False
 
@@ -225,16 +217,17 @@ class DecentFilter(AbsAlertFilter):
 		
 		npp = len(alert.pps)
 		if npp < self.min_ndet:
-			self.logger.debug("rejected: %d photopoints in alert (minimum required %d)"% 
-				(npp, self.min_ndet))
+			#self.logger.debug("rejected: %d photopoints in alert (minimum required %d)"% (npp, self.min_ndet))
+			self.logger.debug(None, extra={'nDet': npp})
 			return None
 		
 		# cut on length of detection history
 		detections_jds = alert.get_values('jd', upper_limits=False)
 		det_tspan = max(detections_jds) - min(detections_jds)
 		if not (self.min_tspan < det_tspan < self.max_tspan):
-			self.logger.debug("rejected: detection history is %.3f d long, requested between %.3f and %.3f d"%
-				(det_tspan, self.min_tspan, self.max_tspan))
+			#self.logger.debug("rejected: detection history is %.3f d long, \
+			# requested between %.3f and %.3f d"% (det_tspan, self.min_tspan, self.max_tspan))
+			self.logger.debug(None, extra={'tSpan': det_tspan})
 			return None
 		
 		# --------------------------------------------------------------------- #
@@ -246,27 +239,28 @@ class DecentFilter(AbsAlertFilter):
 			return None
 		
 		if (latest['isdiffpos'] == 'f' or latest['isdiffpos'] == '0'):
-			self.logger.debug("rejected: 'isdiffpos' is %s", latest['isdiffpos'])
+			#self.logger.debug("rejected: 'isdiffpos' is %s", latest['isdiffpos'])
+			self.logger.debug(None, extra={'isdiffpos': latest['isdiffpos']})
 			return None
 		
 		if latest['rb'] < self.min_rb:
-			self.logger.debug("rejected: RB score %.2f below threshod (%.2f)"%
-				(latest['rb'], self.min_rb))
+			#self.logger.debug("rejected: RB score %.2f below threshod (%.2f)"% (latest['rb'], self.min_rb))
+			self.logger.debug(None, extra={'rb': latest['rb']})
 			return None
 		
 		if latest['fwhm'] > self.max_fwhm:
-			self.logger.debug("rejected: fwhm %.2f above threshod (%.2f)"%
-				(latest['fwhm'], self.max_fwhm))
+			#self.logger.debug("rejected: fwhm %.2f above threshod (%.2f)"% (latest['fwhm'], self.max_fwhm))
+			self.logger.debug(None, extra={'fwhm': latest['fwhm']})
 			return None
 		
 		if latest['elong'] > self.max_elong:
-			self.logger.debug("rejected: elongation %.2f above threshod (%.2f)"%
-				(latest['elong'], self.max_elong))
+			#self.logger.debug("rejected: elongation %.2f above threshod (%.2f)"% (latest['elong'], self.max_elong))
+			self.logger.debug(None, extra={'elong': latest['elong']})
 			return None
 		
 		if abs(latest['magdiff']) > self.max_magdiff:
-			self.logger.debug("rejected: magdiff (AP-PSF) %.2f above threshod (%.2f)"% 
-				(latest['magdiff'], self.max_magdiff))
+			#self.logger.debug("rejected: magdiff (AP-PSF) %.2f above threshod (%.2f)"% (latest['magdiff'], self.max_magdiff))
+			self.logger.debug(None, extra={'magdiff': latest['magdiff']})
 			return None
 		
 		# --------------------------------------------------------------------- #
@@ -274,38 +268,40 @@ class DecentFilter(AbsAlertFilter):
 		# --------------------------------------------------------------------- #
 		
 		# check for closeby ss objects
-		if (0 < latest.get('ssdistnr', -999) < self.min_ssdistnr):
-			self.logger.debug("rejected: solar-system object close to transient (max allowed: %d)."%
-				(self.min_ssdistnr))
+		if (0 < latest['ssdistnr'] < self.min_ssdistnr):
+			#self.logger.debug("rejected: solar-system object close to transient (max allowed: %d)."% (self.min_ssdistnr))
+			self.logger.debug(None, extra={'ssdistnr': latest['ssdistnr']})
 			return None
 		
 		# cut on galactic latitude
 		b = self.get_galactic_latitude(latest)
 		if abs(b) < self.min_gal_lat:
-			self.logger.debug("rejected: b=%.4f, too close to Galactic plane (max allowed: %f)."%
-				(b, self.min_gal_lat))
+			#self.logger.debug("rejected: b=%.4f, too close to Galactic plane (max allowed: %f)."% (b, self.min_gal_lat))
+			self.logger.debug(None, extra={'galPlane': abs(b)})
 			return None
 		
 		# check ps1 star-galaxy score
 		if self.is_star_in_PS1(latest):
-			self.logger.debug("rejected: closest PS1 source %.2f arcsec away with sgscore of %.2f"%
-				(latest.get('distpsnr1'), latest.get('sgscore1')))
+			#self.logger.debug("rejected: closest PS1 source %.2f arcsec away with sgscore of %.2f"% (latest['distpsnr1'], latest['sgscore1']))
+			self.logger.debug(None, extra={'distpsnr1': latest['distpsnr1']})
 			return None
 		
 		if self.is_confused_in_PS1(latest):
-			self.logger.debug("rejected: three confused PS1 sources within %.2f arcsec from alert."%
-				(self.ps1_confusion_rad))
+			#self.logger.debug("rejected: three confused PS1 sources within %.2f arcsec from alert."% (self.ps1_confusion_rad))
+			self.logger.debug(None, extra={'ps1Confusion': True})
 			return None
 		
 		# check with gaia
 		if self.is_star_in_gaia(latest):
-			self.logger.debug("rejected: within %.2f arcsec from a GAIA start (PM of PLX)" % 
-				(self.gaia_rs))
+			#self.logger.debug("rejected: within %.2f arcsec from a GAIA start (PM of PLX)" % (self.gaia_rs))
+			self.logger.debug(None, extra={'gaiaIsStar': True})
 			return None
 		
 		# congratulation alert! you made it!
-		self.logger.debug("Alert %s accepted. Latest pp ID: %d"%(alert.tran_id, latest['candid']))
-		for key in self.keys_to_check:
-			self.logger.debug("{}: {}".format(key, latest[key]))
+		#self.logger.debug("Alert %s accepted. Latest pp ID: %d"%(alert.tran_id, latest['candid']))
+		self.logger.debug("Alert accepted", extra={'latestPpId': latest['candid']})
+
+		#for key in self.keys_to_check:
+		#	self.logger.debug("{}: {}".format(key, latest[key]))
+
 		return self.on_match_t2_units
-	
