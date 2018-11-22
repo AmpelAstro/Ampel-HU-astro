@@ -152,26 +152,26 @@ class TNSTalker(AbsT3Unit):
 		# Look for TNS name
 		tnsnames, runstatus = tnsName( np.mean(ras), np.mean(decs), self.run_config.api_key, sandbox=self.run_config.sandbox )
 		if re.match('Error', runstatus):
-			self.logger.info("TNS get error", extra={"tns_request":runstatus} )
+			self.logger.info("TNS get error", extra={"tnsRequest":runstatus} )
 			return None, []
 		if len(tnsnames)>1:
-			self.logger.info("Multipe TNS names, choosing first", extra={"tns_names":tnsnames} )
+			self.logger.info("Multipe TNS names, choosing first", extra={"tnsNames":tnsnames} )
 			tns_name = tnsnames[0]
 		elif len(tnsnames)==1:
 			tns_name = tnsnames[0]
 		elif len(tnsnames)==0:
 			# No TNS name, then no need to look for internals
 			return tns_name, tns_internal
-		self.logger.info("TNS search",extra={"tns_name":tns_name})
+		self.logger.info("TNS search",extra={"tnsName":tns_name})
 
 
 		# Look for internal name (note that have to skip the prefix)
 		internal_name, runstatus = tnsInternal( tns_name[2:], self.run_config.api_key, sandbox=self.run_config.sandbox )
 		if internal_name is not None:
-			self.logger.info("",extra={"tns_internal_name":internal_name})
+			self.logger.info("",extra={"tnsInternalName":internal_name})
 			if re.search('ZTF',internal_name):		
 				if not internal_name == sne[1]["ztf_name"]:
-					self.logger.info("TNS registered under other ZTF name %s", extra={"tns_other_internal":internal_name} )
+					self.logger.info("TNS registered under other ZTF name %s", extra={"tnsOtherInternal":internal_name} )
 
 		return tns_name, internal_name
 
@@ -182,14 +182,14 @@ class TNSTalker(AbsT3Unit):
 		"""
 
 		# Find the latest tns name (skipping previous)
-		jentry = self._find_latest_journal_entry(tran_view, t3unit=self.name, required_keys=['tns_name'])
-		tns_name = jentry['tns_name']
+		jentry = self._find_latest_journal_entry(tran_view, t3unit=self.name, required_keys=['tnsName'])
+		tns_name = jentry['tnsName']
 
 		# Find internal names
-		jentries = self._find_all_journal_entries(tran_view, t3unit=self.name, required_keys=['tns_internal'])
-		tns_internals = [j['tns_internal'] for j in jentries]
+		jentries = self._find_all_journal_entries(tran_view, t3unit=self.name, required_keys=['tnsInternal'])
+		tns_internals = [j['tnsInternal'] for j in jentries]
 
-		self.logger.info('',extra={'tran_id':tran_view.tran_id,'tns_name':tns_name,'tns_internals':tns_internals})
+		self.logger.info('',extra={'tranId':tran_view.tran_id,'tnsName':tns_name,'tnsInternals':tns_internals})
 
 
 		return tns_name, tns_internals
@@ -245,13 +245,13 @@ class TNSTalker(AbsT3Unit):
 		if transients is not None:
 			for tran_view in transients:
 
-				tns_name, tns_internals = self.search_journal_tns(tran_view.tran_id)
+				tns_name, tns_internals = self.search_journal_tns(tran_view)
 
 				# Search TNS for a name
 				if (tns_name is not None and self.run_config.get_tns) or self.run_config.get_tns_force:
 					new_tns_name, new_internal = self.get_tnsname(tran_view)
 					if tns_name is not None and not tns_name==new_tns_name:
-						self.logger.info("Adding new TNS name",extra={"tns_old":tns_name,"tns_new":new_tns_name})
+						self.logger.info("Adding new TNS name",extra={"tnsOld":tns_name,"tnsNew":new_tns_name})
 					tns_internals.append(new_internal)
 					# Create new journal entry
 					journal_updates.append(
@@ -262,8 +262,8 @@ class TNSTalker(AbsT3Unit):
 							ext=True,
 							content={
 								't3unit': self.name,
-								'tns_name': tns_name,
-								'tns_internal': new_internal
+								'tnsName': tns_name,
+								'tnsInternal': new_internal
 							}
 						)
 					)
@@ -313,9 +313,9 @@ class TNSTalker(AbsT3Unit):
 							ext=True,
 							content={
 								't3unit': self.name,
-								'tns_name': tnsreplies[ztf_name][1]["TNSName"],
-								'tns_internal': ztf_name,
-								'tns_submitresult':tnsreplies[ztf_name][0]
+								'tnsName': tnsreplies[ztf_name][1]["TNSName"],
+								'tnsInternal': ztf_name,
+								'tnsSubmitresult':tnsreplies[ztf_name][0]
 							}
 						)
 					)
