@@ -203,6 +203,8 @@ class SlackSummaryPublisher(AbsT3Unit):
             for col in missing:
                 tdf[col] = "MISSING"
 
+            # deduplicate mycols, preserving order
+            mycols = list(dict.fromkeys(mycols))
             # remove stupid columns and save to table
             frames.append(tdf[mycols][:1])
             photometry.append(tdf)
