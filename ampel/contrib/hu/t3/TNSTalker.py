@@ -12,11 +12,10 @@ import time
 
 from ampel.base.abstract.AbsT3Unit import AbsT3Unit
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
-from typing import Union, List, Dict, Any
+from pydantic import BaseModel
 from ampel.base.dataclass.JournalUpdate import JournalUpdate
 
 # Changed location
-#from ampel.pipeline.common.ZTFUtils import ZTFUtils
 from ampel.ztf.pipeline.common.ZTFUtils import ZTFUtils
 
 def tstamp(): return time.time()
@@ -37,6 +36,22 @@ class TNSTalker(AbsT3Unit):
 	"""
 	
 	version = 0.1
+
+	class RunConfig(BaseModel):
+		minmagpdf: float = 18. 
+		mindet: float = 4.
+		maxage: float = 30.
+		check_minref: bool = True 
+		cut_agn: bool = True
+		cut_sdsstar: bool = True
+		api_key: str = "a3f9bcbbe6a26a1ae97a0eeefe465932e68cba83"              # Bot api key frm TNS
+		get_tns: bool = True       # Check for TNS names and add to journal
+		get_tns_force: bool = True # Check for TNS info even if internal name is known
+		submit_tns: bool = True    # Submit candidates passing criteria
+		resubmit_tns_nonztf: bool = True # Resubmit candidate submitted w/o the same ZTF internal ID 
+		resubmit_tns_nonztf: bool = False # Resubmit candidates even if they have been added with this name before
+		sandbox: bool = True      # Submit to TNS sandbox only
+		dryRun: bool = False # query only; do not submit anything to TNS
 
 	def __init__(self, logger, base_config=None, run_config=None, global_info=None):
 		"""
@@ -60,32 +75,9 @@ class TNSTalker(AbsT3Unit):
 		
 		self.logger = logger if logger is not None else logging.getLogger()
 		self.base_config = {} if base_config is None else base_config
-		self.run_config = {} if run_config is None else run_config
+		self.run_config = self.RunConfig() if run_config is None else run_config
 		
 		self.name = "TNSTalker"		#used to tag entries in the journal
-		
-		# parse run_config - tns commands
-		self.get_tns = self.run_config.get('get_tns', True)
-		self.get_tns_force = self.run_config.get('get_tns_force', False)
-		self.submit_tns = self.run_config.get('submit_tns', False)
-		self.resubmit_tns_nonztf = self.run_config.get('resubmit_tns_nonztf', False)
-		self.resubmit_tns_ztf = self.run_config.get('resubmit_tns_ztf', False)
-		self.sandbox = self.run_config.get('sandbox', True)
-
-		self.api_key = self.run_config.get('api_key')
-		if self.api_key is None:
-			#raise KeyError("No TNS api_key, cannot run.")
-			self.logger.info("No TNS api_key, using default + sandbox")	
-			self.api_key = "a3f9bcbbe6a26a1ae97a0eeefe465932e68cba83"
-			self.sandbox = True		
-
-		# Selecting parameters
-		self.minmagpdf = self.run_config.get('minmagpdf', 18.) 
-		self.mindet = self.run_config.get('mindet', 4.)
-		self.maxage = self.run_config.get('maxage', 30.)
-		self.check_minref = self.run_config.get('check_minref', True) 
-		self.cut_agn = self.run_config.get('cut_agn', True)
-		self.cut_sdsstar = self.run_config.get('cut_sdsstar', True)
 
 	def _find_latest_journal_entry(self, tran_view, t3unit=None, required_keys=[]):
 		"""
@@ -158,7 +150,7 @@ class TNSTalker(AbsT3Unit):
 		decs = [pp.get_value("dec") for pp in phot]
 
 		# Look for TNS name
-		tnsnames, runstatus = tnsName( np.mean(ras), np.mean(decs), self.api_key, sandbox=self.sandbox )
+		tnsnames, runstatus = tnsName( np.mean(ras), np.mean(decs), self.run_config.api_key, sandbox=self.run_config.sandbox )
 		if re.match('Error', runstatus):
 			self.logger.info("TNS get error", extra={"tns_request":runstatus} )
 			return None, []
@@ -174,7 +166,7 @@ class TNSTalker(AbsT3Unit):
 
 
 		# Look for internal name (note that have to skip the prefix)
-		internal_name, runstatus = tnsInternal( tns_name[2:], self.api_key, sandbox=self.sandbox )
+		internal_name, runstatus = tnsInternal( tns_name[2:], self.run_config.api_key, sandbox=self.run_config.sandbox )
 		if internal_name is not None:
 			self.logger.info("",extra={"tns_internal_name":internal_name})
 			if re.search('ZTF',internal_name):		
@@ -220,7 +212,7 @@ class TNSTalker(AbsT3Unit):
 		"""
 
 		# Look for catalog matching
-		if self.cut_agn or self.cut_sdsstar:
+		if self.run_config.cut_agn or self.run_config.cut_sdsstar:
 			if transient.t2records is not None:
 				for j, t2record in enumerate(transient.t2records):
 					if not t2record.results:
@@ -229,7 +221,7 @@ class TNSTalker(AbsT3Unit):
 					if not "output" in res:
 						continue
 					# Check for AGN
-					if self.cut_agn:
+					if self.run_config.cut_agn:
 						if t2record.get_t2_unit_id()=='X':	
 							pass
 		
@@ -256,7 +248,7 @@ class TNSTalker(AbsT3Unit):
 				tns_name, tns_internals = self.search_journal_tns(tran_view.tran_id)
 
 				# Search TNS for a name
-				if (tns_name is not None and self.get_tns) or self.get_tns_force:
+				if (tns_name is not None and self.run_config.get_tns) or self.run_config.get_tns_force:
 					new_tns_name, new_internal = self.get_tnsname(tran_view)
 					if tns_name is not None and not tns_name==new_tns_name:
 						self.logger.info("Adding new TNS name",extra={"tns_old":tns_name,"tns_new":new_tns_name})
@@ -266,7 +258,7 @@ class TNSTalker(AbsT3Unit):
 						# Constructing journal update. The module ID and timestamp are added automatically
 						# ext saves it to the resiliant db, so persistent across DB resets
 						JournalUpdate(
-							tranId=tran_view.tran_id,
+							tran_id=tran_view.tran_id,
 							ext=True,
 							content={
 								't3unit': self.name,
@@ -276,7 +268,7 @@ class TNSTalker(AbsT3Unit):
 						)
 					)
 					# If we do not want to submit anything we can continue
-				if not self.submit_tns:
+				if not self.run_config.submit_tns:
 					continue
 					# Chech whether this ID has been submitted (note that we do not check whether the same candidate was ubmitte as different ZTF name)
 				is_ztfsubmitted = False
@@ -285,10 +277,10 @@ class TNSTalker(AbsT3Unit):
 					if iname==ztf_name:
 						is_ztfsubmitted = True
 					# Should we submit
-				if not is_ztfsubmitted and self.resubmit_tns_nonztf:
+				if not is_ztfsubmitted and self.run_config.resubmit_tns_nonztf:
 					# Ok!
 					pass
-				elif is_ztfsubmitted and self.resubmit_tns_ztf:
+				elif is_ztfsubmitted and self.run_config.resubmit_tns_ztf:
 					# Ok!
 					pass
 				else:
@@ -301,10 +293,10 @@ class TNSTalker(AbsT3Unit):
 					atreport = self.get_atreport(tran_view)
 				atreports.append(atreport)
 		
-			if len(atreports)>0:
+			if len(atreports)>0 and not self.dryRun:
 				# Send reports in chunks of size 90 (99 should work)
 				atchunks = list(chunks(atreports,90))
-				tnsreplies = sendTNSreports(atchunks, self.api_key, self.logger, sandbox=self.sandbox)
+				tnsreplies = sendTNSreports(atchunks, self.run_config.api_key, self.logger, sandbox=self.run_config.sandbox)
 				
 				# Create journal updates for the cases where SN was added
 				for tran_view in transients:
@@ -317,7 +309,7 @@ class TNSTalker(AbsT3Unit):
 						# Constructing journal update. The module ID and timestamp are added automatically
 						# ext saves it to the resiliant db, so persistent across DB resets
 						JournalUpdate(
-							tranId=tran_view.tran_id,
+							tran_id=tran_view.tran_id,
 							ext=True,
 							content={
 								't3unit': self.name,
