@@ -19,7 +19,7 @@ from ampel.core.flags.T2RunStates import T2RunStates
 from extcats import CatalogQuery
 from extcats.catquery_utils import get_closest
 from numpy import asarray
-import zerorpc
+from ampel.contrib.hu import catshtm_server
 
 class T2CatalogMatch(AbsT2Unit):
 	"""
@@ -41,7 +41,7 @@ class T2CatalogMatch(AbsT2Unit):
 		self.catq_objects = {}
 		
 		# initialize the catsHTM paths and the extcats query client.
-		self.catshtm_client 			= zerorpc.Client(base_config['catsHTM.default'])
+		self.catshtm_client 			= catshtm_server.get_client(base_config['catsHTM.default'])
 		self.catq_client 			= MongoClient(base_config['extcats.reader'])
 		self.catq_kwargs_global 		= {
 										'logger': self.logger,

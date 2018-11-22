@@ -12,7 +12,7 @@ import logging
 from urllib.parse import urlparse
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
-import zerorpc
+from ampel.contrib.hu import catshtm_server
 from ampel.base.abstract.AbsAlertFilter import AbsAlertFilter
 
 class DecentFilter(AbsAlertFilter):
@@ -99,7 +99,7 @@ class DecentFilter(AbsAlertFilter):
 		self.ps1_confusion_rad			= run_config['PS1_CONFUSION_RAD']
 		self.ps1_confusion_sg_tol		= run_config['PS1_CONFUSION_SG_TOL']
 
-		self.catshtm				= zerorpc.Client(base_config['catsHTM.default'])
+		self.catshtm				= catshtm_server.get_client(base_config['catsHTM.default'])
 
 		self.keys_to_check = (
 			'fwhm', 'elong', 'magdiff', 'nbad', 'distpsnr1', 'sgscore1', 'distpsnr2', 
