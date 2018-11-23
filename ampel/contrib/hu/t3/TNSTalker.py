@@ -91,6 +91,9 @@ class TNSTalker(AbsT3Unit):
 		self.maxage = self.run_config.get('maxage', 100.)
 		self.cut_sdsstar = self.run_config.get('cut_sdsstar', True)
 
+		# Using external journal
+		self.ext_journal = True
+
 
 	def _find_latest_journal_entry(self, tran_view, t3unit=None, required_keys=[]):
 		"""
@@ -102,7 +105,7 @@ class TNSTalker(AbsT3Unit):
 		# TODO: find decent schema for naming of journal entry
 		journal_entry, journal_dt = {}, -10**10
 		for je in tran_view.journal:
-			print(je)
+
 			# Only look at later journals - if key dt is not guaranteed to exist we have to add timestamps for this
 			if je['dt']<journal_dt :
 				continue
@@ -197,19 +200,19 @@ class TNSTalker(AbsT3Unit):
 		"""
 
 		# Find the latest tns name (skipping previous)
-		jentry = self._find_latest_journal_entry(tran_view, t3unit=self.name, required_keys=['tns_name'])
-		tns_name = jentry.get("tns_name",None)
+		jentry = self._find_latest_journal_entry(tran_view, t3unit=self.name, required_keys=['tnsName'])
+		tns_name = jentry.get("tnsName",None)
 #		if jentry is not None:
 #			tns_name = jentry['tns_name']
 
 		# Find internal names
-		jentries = self._find_all_journal_entries(tran_view, t3unit=self.name, required_keys=['tns_internal'])
+		jentries = self._find_all_journal_entries(tran_view, t3unit=self.name, required_keys=['tnsInternal'])
 		if jentries is not None:
-			tns_internals = [j.get('tns_internal',None) for dt, j in jentries.items()]
+			tns_internals = [j.get('tnsInternal',None) for dt, j in jentries.items()]
 		else:
 			tns_internals = []
 
-		self.logger.info('Journal search',extra={'tran_id':tran_view.tran_id,'tns_name':tns_name,'tns_internals':tns_internals})
+		self.logger.info('Journal search',extra={'tranId':tran_view.tran_id,'tnsName':tns_name,'tnsInternals':tns_internals})
 
 
 		return tns_name, tns_internals
@@ -339,7 +342,7 @@ class TNSTalker(AbsT3Unit):
 
 		if transients is not None:
 			for tran_view in transients:
-				self.logger.info("TNS start", extra={"tran_id":tran_view.tran_id})
+				self.logger.info("TNS start", extra={"tranId":tran_view.tran_id})
 
 				tns_name, tns_internals = self.search_journal_tns(tran_view)
 
@@ -353,20 +356,20 @@ class TNSTalker(AbsT3Unit):
 					# Create new journal entry if we have a tns_name
 					if new_tns_name is not None:
 						if tns_name is not None and not tns_name==new_tns_name:
-							self.logger.info("Adding new TNS name",extra={"tns_old":tns_name,"tns_new":new_tns_name})
+							self.logger.info("Adding new TNS name",extra={"tnsOld":tns_name,"tnsNew":new_tns_name})
 							pass
 
-						jcontent = {'t3unit': self.name, 'tns_name': new_tns_name}
+						jcontent = {'t3unit': self.name, 'tnsName': new_tns_name}
 #						jcontent = OrderedDict([ ('t3unit',self.name), ('tns_name',new_tns_name) ] )
 						if new_internal is not None:
 #							jcontent['tns_internal'] = new_internal
-							jcontent.update( {'tns_internal':new_internal} )
+							jcontent.update( {'tnsInternal':new_internal} )
 						journal_updates.append(
 							# Constructing journal update. The module ID and timestamp are added automatically
 							# ext saves it to the resiliant db, so persistent across DB resets
 							JournalUpdate(
 								tran_id= getattr(tran_view, "tran_id"),
-								ext=True,
+								ext=self.ext_journal,
 								content= jcontent
 							)
 #							{"tran_id":getattr(tran_view, "tran_id"),
@@ -406,7 +409,7 @@ class TNSTalker(AbsT3Unit):
 
 				# Check if transient is an agn
 				is_agn = self.is_agn(tran_view)
-				self.logger.info("",extra={"is_agn":is_agn} )				
+				self.logger.info("",extra={"isAgn":is_agn} )				
 
 
 				# Does the transient fulfill submit requirements
@@ -428,7 +431,7 @@ class TNSTalker(AbsT3Unit):
 				for tran_view in transients:
 					ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
 					if not ztf_name in tnsreplies.keys():
-						self.logger.info("No TNS add reply",extra={"tran_id":tran_view.tran_id})
+						self.logger.info("No TNS add reply",extra={"tranId":tran_view.tran_id})
 						continue
 					# Create new journal entry
 					journal_updates.append(
@@ -436,20 +439,16 @@ class TNSTalker(AbsT3Unit):
 						# ext saves it to the resiliant db, so persistent across DB resets
 						JournalUpdate(
 							tranId=tran_view.tran_id,
-							ext=True,
+							ext=self.ext_journal,
 							content={
 								't3unit': self.name,
-								'tns_name': tnsreplies[ztf_name][1]["TNSName"],
-								'tns_internal': ztf_name,
-								'tns_submitresult':tnsreplies[ztf_name][0]
+								'tnsName': tnsreplies[ztf_name][1]["TNSName"],
+								'tnsInternal': ztf_name,
+								'tnsSubmitresult':tnsreplies[ztf_name][0]
 							}
 						)
 					)
 
-		#self.logger.info("starting journal print")
-		for j in journal_updates:
-			#self.logger.info(j)
-			print("LOOK HERE: {0}".format( j ) )
 
 		return journal_updates
 
