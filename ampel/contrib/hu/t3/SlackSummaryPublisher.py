@@ -34,6 +34,9 @@ class SlackSummaryPublisher(AbsT3Unit):
         fullPhotometry: bool
         cols: List[str]
         channels: List[str]
+        requireNoAGN: bool = False
+        requireNoSDSStar: bool = False
+        requireNEDz: bool = False
 
 
     def __init__(self, logger, base_config=None, run_config=None, global_info=None):
@@ -43,6 +46,7 @@ class SlackSummaryPublisher(AbsT3Unit):
         self.run_config = run_config
         self.frames = []
         self.photometry = []
+
 
 
     def add(self, transients):
@@ -59,6 +63,8 @@ class SlackSummaryPublisher(AbsT3Unit):
         if len(self.frames) == 0 and self.run_config.quiet:
             return
    
+	
+
         sc = SlackClient(self.run_config.slackToken)
 
         m = calculate_excitement(len(self.frames), date=self.run_config.date,
@@ -190,6 +196,10 @@ class SlackSummaryPublisher(AbsT3Unit):
                                 self.logger.error(ve)
             except:
                 pass
+
+            if self.run_config.requireNEDz:
+                if not "T2-NEDz_z" in mycols:
+                    continue
 
             for channel in self.run_config.channels:
                 if channel in transient.channel:
