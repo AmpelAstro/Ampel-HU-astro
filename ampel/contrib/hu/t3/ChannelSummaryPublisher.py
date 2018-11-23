@@ -45,7 +45,7 @@ class ChannelSummaryPublisher(AbsT3Unit):
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 		self.summary = {}
 		
-		self.run_config = run_config
+		self.run_config = run_config if run_config is not None else self.RunConfig()
 		self.dest = base_config['desycloud.default'] + self.run_config.baseDir
 		self.logger.info("Channel summary will include following metrics: %s"%repr(self.run_config.alertMetrics))
 		self._channels = set()
