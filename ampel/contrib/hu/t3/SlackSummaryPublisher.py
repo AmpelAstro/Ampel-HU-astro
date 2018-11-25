@@ -17,6 +17,7 @@ from pydantic import BaseModel
 from typing import Dict, List, Union
 from ampel.base.abstract.AbsT3Unit import AbsT3Unit
 from ampel.ztf.pipeline.common.ZTFUtils import ZTFUtils
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.config.EncryptedConfig import EncryptedConfig
 
@@ -27,12 +28,15 @@ class SlackSummaryPublisher(AbsT3Unit):
     class RunConfig(BaseModel):
         dryRun: bool = False
         quiet: bool = False
-        slackToken: Union[str, EncryptedConfig]
-        excitement: Dict[str, int]
         slackChannel: str
-        fullPhotometry: bool
-        cols: List[str]
-        channels: List[str]
+        slackToken: Union[str, EncryptedConfig]
+        excitement: Dict[str, int] = {"Low": 50,"Mid": 200,"High": 400}
+        fullPhotometry: bool = False
+        cols: List[str] = [
+            "ztf_name","ra","dec","magpsf","sgscore1","rb",
+            "most_recent_detection","first_detection","n_detections",
+            "distnr","distpsnr1","isdiffpos","_id"
+            ]
         requireNoAGN: bool = False
         requireNoSDSStar: bool = False
         requireNEDz: bool = False
@@ -45,8 +49,7 @@ class SlackSummaryPublisher(AbsT3Unit):
         self.run_config = run_config
         self.frames = []
         self.photometry = []
-
-
+        self.channels = set()
 
     def add(self, transients):
         """
@@ -86,7 +89,12 @@ class SlackSummaryPublisher(AbsT3Unit):
         if len(self.frames) > 0:
 
             df = pd.concat(self.frames, sort=False)
-            photometry = pd.concat(self.photometry, sort=False)
+            # Set fill value for channel columns to False
+            for channel in self.channels:
+                df[channel].fillna(False, inplace=True)
+            # Set fill value for all other columns to MISSING
+            for field in set(df.columns.values).difference(self.channels):
+                df[field].fillna('MISSING', inplace=True)
 
             filename = "Summary_%s.csv" % date
 
@@ -119,6 +127,13 @@ class SlackSummaryPublisher(AbsT3Unit):
                 self.logger.info(r.text)
 
             if self.run_config.fullPhotometry:
+                photometry = pd.concat(self.photometry, sort=False)
+                # Set fill value for channel columns to False
+                for channel in self.channels:
+                    photometry[channel].fillna(False, inplace=True)
+                # Set fill value for all other columns to MISSING
+                for field in set(photometry.columns.values).difference(self.channels):
+                    photometry[field].fillna('MISSING', inplace=True)
 
                 filename = "Photometry_%s.csv" % date
 
@@ -158,7 +173,7 @@ class SlackSummaryPublisher(AbsT3Unit):
 
         for transient in transients:
 
-            mycols = list(self.run_config.cols) + list(self.run_config.channels)
+            mycols = list(self.run_config.cols)
 
             if not transient.photopoints:
                 continue
@@ -200,20 +215,15 @@ class SlackSummaryPublisher(AbsT3Unit):
                 if not "T2-NEDz_z" in mycols:
                     continue
 
-            for channel in self.run_config.channels:
-                if channel in transient.channel:
-                    tdf[channel] = True
-                else:
-                    tdf[channel] = False
+            for channel in AmpelUtils.iter(transient.channel):
+                tdf[channel] = True
+                self.channels.add(channel)
 
-            dfcols = list(tdf.columns.values)
-            missing = [x for x in mycols if x not in dfcols]
-
-            for col in missing:
-                tdf[col] = "MISSING"
+            mycols += list(self.channels)
+            missing = set(mycols).difference(tdf.columns.values)
 
             # deduplicate mycols, preserving order
-            mycols = list(dict.fromkeys(mycols))
+            mycols = list(dict.fromkeys([x for x in mycols if not x in missing]))
             # remove stupid columns and save to table
             frames.append(tdf[mycols][:1])
             photometry.append(tdf)
