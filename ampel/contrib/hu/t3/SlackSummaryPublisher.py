@@ -27,7 +27,6 @@ class SlackSummaryPublisher(AbsT3Unit):
     class RunConfig(BaseModel):
         dryRun: bool = False
         quiet: bool = False
-        date: str = str(datetime.date.today())
         slackToken: Union[str, EncryptedConfig]
         excitement: Dict[str, int]
         slackChannel: str
@@ -63,11 +62,11 @@ class SlackSummaryPublisher(AbsT3Unit):
         if len(self.frames) == 0 and self.run_config.quiet:
             return
    
-	
+        date = str(datetime.date.today())
 
         sc = SlackClient(self.run_config.slackToken)
 
-        m = calculate_excitement(len(self.frames), date=self.run_config.date,
+        m = calculate_excitement(len(self.frames), date=date,
             thresholds=self.run_config.excitement
         )
         
@@ -89,7 +88,7 @@ class SlackSummaryPublisher(AbsT3Unit):
             df = pd.concat(self.frames, sort=False)
             photometry = pd.concat(self.photometry, sort=False)
 
-            filename = "Summary_%s.csv" % self.run_config.date
+            filename = "Summary_%s.csv" % date
 
             buffer = io.StringIO(filename)
             df.to_csv(buffer)
@@ -97,7 +96,7 @@ class SlackSummaryPublisher(AbsT3Unit):
             param = {
                 'token': self.run_config.slackToken,
                 'channels': self.run_config.slackChannel,
-                'title': 'Summary: ' + self.run_config.date,
+                'title': 'Summary: ' + date,
                 "username": "AMPEL-live",
                 "as_user": "false",
                 "filename": filename
@@ -121,7 +120,7 @@ class SlackSummaryPublisher(AbsT3Unit):
 
             if self.run_config.fullPhotometry:
 
-                filename = "Photometry_%s.csv" % self.run_config.date
+                filename = "Photometry_%s.csv" % date
 
                 buffer = io.StringIO(filename)
                 photometry.to_csv(buffer)
@@ -129,7 +128,7 @@ class SlackSummaryPublisher(AbsT3Unit):
                 param = {
                     'token': self.run_config.slackToken,
                     'channels': self.run_config.slackChannel,
-                    'title': 'Full Photometry: ' + self.run_config.date,
+                    'title': 'Full Photometry: ' + date,
                     "username": "AMPEL-live",
                     "as_user": "false",
                     "filename": filename
