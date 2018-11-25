@@ -26,6 +26,8 @@ class SlackSummaryPublisher(AbsT3Unit):
     """
 
     class RunConfig(BaseModel):
+        class Config:
+            ignore_extra = False
         dryRun: bool = False
         quiet: bool = False
         slackChannel: str
