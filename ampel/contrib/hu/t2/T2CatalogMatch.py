@@ -15,6 +15,7 @@ from urllib.parse import urlparse
 
 from ampel.base.abstract.AbsT2Unit import AbsT2Unit
 from ampel.core.flags.T2RunStates import T2RunStates
+from ampel.contrib.hu.utils import info_as_debug
 
 from extcats import CatalogQuery
 from extcats.catquery_utils import get_closest
@@ -44,7 +45,7 @@ class T2CatalogMatch(AbsT2Unit):
 		self.catshtm_client 			= catshtm_server.get_client(base_config['catsHTM.default'])
 		self.catq_client 			= MongoClient(base_config['extcats.reader'])
 		self.catq_kwargs_global 		= {
-										'logger': self.logger,
+										'logger': info_as_debug(self.logger),
 										'dbclient': self.catq_client,
 										'ra_key': 'ra',
 										'dec_key': 'dec'
