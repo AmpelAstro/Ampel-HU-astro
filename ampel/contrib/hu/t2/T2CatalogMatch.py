@@ -251,7 +251,7 @@ class T2CatalogMatch(AbsT2Unit):
 			# now add the results to the output dictionary
 			out_dict_catalog = {}
 			if not src is None:
-				self.logger.info("found counterpart %.2f arcsec away from transient."%dist)
+				self.logger.debug("found counterpart %.2f arcsec away from transient."%dist)
 				# if you found a cp add the required field from the catalog:
 				# if keys_to_append argument is given or if it is equal to 'all'
 				# then take all the columns in the catalog. Otherwise only add the 
@@ -263,7 +263,7 @@ class T2CatalogMatch(AbsT2Unit):
 				out_dict[catalog] = {field: src[field] for field in keys_to_append}
 				out_dict[catalog]['dist2transient'] = dist
 			else:
-				self.logger.info("no match found in catalog %s within %.2f arcsec from transient"%
+				self.logger.debug("no match found in catalog %s within %.2f arcsec from transient"%
 					(catalog, cat_opts['rs_arcsec']))
 				out_dict[catalog] = False
 			
