@@ -24,7 +24,6 @@ import re
 # Changed location
 #from ampel.pipeline.common.ZTFUtils import ZTFUtils
 from ampel.ztf.pipeline.common.ZTFUtils import ZTFUtils
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
 
 def tstamp(): return time.time()
 
@@ -386,7 +385,7 @@ class TNSTalker(AbsT3Unit):
 					
 				# Chech whether this ID has been submitted (note that we do not check whether the same candidate was ubmitte as different ZTF name)
 				is_ztfsubmitted = False
-				ztf_name = ZTFUtils.to_ztf_id(AmpelUtils.iter(tran_view.tran_id)[0])
+				ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
 				for iname in tns_internals:
 					if iname==ztf_name:
 						is_ztfsubmitted = True
@@ -430,7 +429,7 @@ class TNSTalker(AbsT3Unit):
 				
 				# Create journal updates for the cases where SN was added
 				for tran_view in transients:
-					ztf_name = ZTFUtils.to_ztf_id(AmpelUtils.iter(tran_view.tran_id)[0])
+					ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
 					if not ztf_name in tnsreplies.keys():
 						self.logger.info("No TNS add reply",extra={"tranId":tran_view.tran_id})
 						continue

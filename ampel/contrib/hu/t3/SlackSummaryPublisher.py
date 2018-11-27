@@ -185,7 +185,7 @@ class SlackSummaryPublisher(AbsT3Unit):
             )
 
             # compute ZTF name
-            tdf['ztf_name'] = tdf['tranId'].apply(lambda _id: ZTFUtils.to_ztf_id(AmpelUtils.iter(_id)[0]))
+            tdf['ztf_name'] = tdf['tranId'].apply(ZTFUtils.to_ztf_id)
             tdf["most_recent_detection"] = max(tdf["jd"])
             tdf["first_detection"] = min(tdf["jd"])
             tdf["n_detections"] = len(tdf["jd"])
