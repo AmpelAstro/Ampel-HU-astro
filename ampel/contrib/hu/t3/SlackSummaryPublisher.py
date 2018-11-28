@@ -184,7 +184,8 @@ class SlackSummaryPublisher(AbsT3Unit):
                 [x.content for x in transient.photopoints]
             )
 
-            # compute ZTF name
+            # use tranId from parent view to compute ZTF name
+            tdf['tranId'] = transient.tran_id
             tdf['ztf_name'] = tdf['tranId'].apply(ZTFUtils.to_ztf_id)
             tdf["most_recent_detection"] = max(tdf["jd"])
             tdf["first_detection"] = min(tdf["jd"])
