@@ -113,10 +113,10 @@ class DecentFilter(AbsAlertFilter):
 		"""
 		for el in self.keys_to_check:
 			if el not in photop:
-				self.logger.info("rejected: '%s' missing" % el)
+				self.logger.info(None, extra={"missing": el})
 				return False
 			if photop[el] is None:
-				self.logger.info("rejected: '%s' is None" % el)
+				self.logger.info(None, extra={"isNone": el})
 				return False
 		return True
 
