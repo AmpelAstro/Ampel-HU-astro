@@ -268,7 +268,7 @@ class DecentFilter(AbsAlertFilter):
 		# --------------------------------------------------------------------- #
 		
 		# check for closeby ss objects
-		if (0 < latest['ssdistnr'] < self.min_ssdistnr):
+		if (0 <= latest['ssdistnr'] < self.min_ssdistnr):
 			#self.logger.debug("rejected: solar-system object close to transient (max allowed: %d)."% (self.min_ssdistnr))
 			self.logger.info(None, extra={'ssdistnr': latest['ssdistnr']})
 			return None
