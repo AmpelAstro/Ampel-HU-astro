@@ -194,7 +194,7 @@ class T2CatalogMatch(AbsT2Unit):
 		lc_get_pos_kwargs = run_config.get('lc_get_pos_kwargs')
 		if lc_get_pos_kwargs is None:
 			lc_get_pos_kwargs = self.lc_get_pos_defaults
-		self.logger.debug("getting transient position from lightcurve using args: %s", lc_get_pos_kwargs)
+		self.logger.debug("getting transient position from lightcurve using args: %s"%lc_get_pos_kwargs)
 		try:
 			transient_ra, transient_dec = light_curve.get_pos(**lc_get_pos_kwargs)
 		except IndexError:
@@ -267,6 +267,6 @@ class T2CatalogMatch(AbsT2Unit):
 				self.logger.debug("no match found in catalog %s within %.2f arcsec from transient"%
 					(catalog, cat_opts['rs_arcsec']))
 				out_dict[catalog] = False
-			
+		
 		# return the info as dictionary
 		return out_dict
