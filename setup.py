@@ -47,7 +47,8 @@ setup(name='ampel-contrib-hu',
               'SlackAlertPublisher = ampel.contrib.hu.t3.SlackAlertPublisher:SlackAlertPublisher',
               'MarshalPublisher = ampel.contrib.hu.t3.MarshalPublisher:MarshalPublisher',
               'MarshalMonitor = ampel.contrib.hu.t3.T3MarshalMonitor:T3MarshalMonitor',
-              'TNSTalker = ampel.contrib.hu.t3.TNSTalker:TNSTalker'
+              'TNSTalker = ampel.contrib.hu.t3.TNSTalker:TNSTalker',
+              'TNSMatcher = ampel.contrib.hu.t3.aiotns:TNSMatcher'
           ],
           'ampel.pipeline.resources' : [
               'extcats = ampel.contrib.hu.resources:extcatsURI',
