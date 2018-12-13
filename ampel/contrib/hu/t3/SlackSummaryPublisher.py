@@ -191,6 +191,22 @@ class SlackSummaryPublisher(AbsT3Unit):
             tdf["first_detection"] = min(tdf["jd"])
             tdf["n_detections"] = len(tdf["jd"])
             
+            # Parse upper limits if present for the last upper limit prior to detection
+            # Only include "significant" (limit deeper than 20)
+            if transient.upperlimits is not None:
+		        jd_last_nondet = 0
+                for ulim in transient.upperlimits:
+                    jd = ulim.get_value("obs_date")
+                    if jd<jd_last_nondet or jd>tdf["first_detection"]:
+                        continue
+                    ul = ulim.get_mag_lim()
+                    if ul<20.0:
+                        continue
+                    jd_last_nondet = jd
+                if jd_last_nondet>0:
+                    tdf["last_significant_nondet"] = jd_last_nondet
+
+            
             try:
                 if transient.t2records is not None:
                     for j, t2record in enumerate(transient.t2records):
