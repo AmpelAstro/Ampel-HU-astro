@@ -95,7 +95,6 @@ class TransientInClusterFilter(DecentFilter):
 				(self.big_rs_arcsec))
 			return None
 		
-		
 		# B) for all the nearby clusters, compute their distances to the alert
 		clust_dists_2_alert = get_distances(alert_ra, alert_dec, nearby_clusters, "RA", "DEC")
 		clust_dists_2_alert = clust_dists_2_alert/60.	# extcats works in arcsec but ANGULAR_RADIUS is in arcmin
