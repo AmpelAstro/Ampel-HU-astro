@@ -30,13 +30,13 @@ class SlackSummaryPublisher(AbsT3Unit):
             ignore_extra = False
         dryRun: bool = False
         quiet: bool = False
-        slackChannel: str
-        slackToken: Union[str, EncryptedConfig]
+        slackChannel: str 
+        slackToken: Union[str, EncryptedConfig] 
         excitement: Dict[str, int] = {"Low": 50,"Mid": 200,"High": 400}
         fullPhotometry: bool = False
         cols: List[str] = [
-            "ztf_name","ra","dec","magpsf","sgscore1","rb",
-            "most_recent_detection","first_detection","n_detections",
+            "ztf_name","ra","dec","magpsf","sgscore1","rb", "last_significant_nondet", "first_detection",
+            "most_recent_detection","n_detections",
             "distnr","distpsnr1","isdiffpos","_id"
             ]
         requireNoAGN: bool = False
@@ -194,10 +194,10 @@ class SlackSummaryPublisher(AbsT3Unit):
             # Parse upper limits if present for the last upper limit prior to detection
             # Only include "significant" (limit deeper than 20)
             if transient.upperlimits is not None:
-		        jd_last_nondet = 0
+                jd_last_nondet = 0
                 for ulim in transient.upperlimits:
                     jd = ulim.get_value("obs_date")
-                    if jd<jd_last_nondet or jd>tdf["first_detection"]:
+                    if jd<jd_last_nondet or jd>min(tdf["first_detection"]):
                         continue
                     ul = ulim.get_mag_lim()
                     if ul<20.0:
@@ -205,6 +205,7 @@ class SlackSummaryPublisher(AbsT3Unit):
                     jd_last_nondet = jd
                 if jd_last_nondet>0:
                     tdf["last_significant_nondet"] = jd_last_nondet
+
 
             
             try:
