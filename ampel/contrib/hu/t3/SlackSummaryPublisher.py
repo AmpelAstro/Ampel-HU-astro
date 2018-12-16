@@ -275,9 +275,7 @@ def calculate_excitement(n_transients, date, thresholds, n_alerts=np.nan):
 
         if n_transients == 0:
             message += "TRAGEDY! Sadly, it seems that no transients passed the " \
-                       "filters last night, even though alerts were ingested.  " \
-                       ":cry: \n Maybe we should check if the other SWGs " \
-                       "found things?"
+                       "filters last night"
             return message
 
         elif n_transients == 1:
