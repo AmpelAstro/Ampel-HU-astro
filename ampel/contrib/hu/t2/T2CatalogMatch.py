@@ -148,7 +148,7 @@ class T2CatalogMatch(AbsT2Unit):
 							'get_lc_pos_kwargs': None, # optional see ampel.base.LightCurve doc
 							'catalogs':
 								{
-								'sdss_spec': 
+								'SDSS_spec': 
 									{
 										'use': 'extcats',
 										'catq_kwargs': {
