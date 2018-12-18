@@ -257,12 +257,12 @@ class T2CatalogMatch(AbsT2Unit):
 				# if keys_to_append argument is given or if it is equal to 'all'
 				# then take all the columns in the catalog. Otherwise only add the 
 				# requested ones.
+				out_dict[catalog] = {'dist2transient': dist}
 				keys_to_append = cat_opts.get('keys_to_append', 'all')
 				if keys_to_append == 'all':
 					keys_to_append = src.colnames
-
-				out_dict[catalog] = {field: src[field] for field in keys_to_append}
-				out_dict[catalog]['dist2transient'] = dist
+				if len(keys_to_append) > 0:
+					out_dict[catalog].update({field: src[field] for field in keys_to_append})
 			else:
 				self.logger.debug("no match found in catalog %s within %.2f arcsec from transient"%
 					(catalog, cat_opts['rs_arcsec']))
