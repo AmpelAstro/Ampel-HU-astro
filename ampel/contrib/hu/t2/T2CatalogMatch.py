@@ -262,7 +262,15 @@ class T2CatalogMatch(AbsT2Unit):
 				if keys_to_append == 'all':
 					keys_to_append = src.colnames
 				if len(keys_to_append) > 0:
-					out_dict[catalog].update({field: src[field] for field in keys_to_append})
+					to_add = {}
+					for field in keys_to_append:
+						try:
+							val = src[field].tolist()
+						except AttributeError:
+							val = src[field]
+						to_add[field] = val
+					out_dict[catalog].update(to_add)
+#					out_dict[catalog].update({field: src[field] for field in keys_to_append})
 			else:
 				self.logger.debug("no match found in catalog %s within %.2f arcsec from transient"%
 					(catalog, cat_opts['rs_arcsec']))
