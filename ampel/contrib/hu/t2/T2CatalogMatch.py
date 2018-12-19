@@ -156,7 +156,7 @@ class T2CatalogMatch(AbsT2Unit):
 														'dec_key': 'dec'
 													},
 										'rs_arcsec': 3,
-										'keys_to_append': ['z', 'bptclass', 'subclass', 'dist2alert']
+										'keys_to_append': ['z', 'bptclass', 'subclass']
 									},
 								'NED': 
 									{
