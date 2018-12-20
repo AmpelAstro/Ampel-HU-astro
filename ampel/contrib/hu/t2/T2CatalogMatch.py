@@ -19,7 +19,7 @@ from ampel.contrib.hu.utils import info_as_debug
 
 from extcats import CatalogQuery
 from extcats.catquery_utils import get_closest
-from numpy import asarray
+from numpy import asarray, degrees
 from ampel.contrib.hu import catshtm_server
 
 class T2CatalogMatch(AbsT2Unit):
@@ -244,7 +244,9 @@ class T2CatalogMatch(AbsT2Unit):
 						ra_key, dec_key = catq_kwargs.get('ra_key', 'ra'), catq_kwargs.get('dec_key', 'dec')
 					
 					# get the closest source and its distance (catsHTM stuff is in radians)
-					src, dist = get_closest(transient_coords.ra.rad, transient_coords.dec.rad, srcs_tab, ra_key, dec_key)
+					srcs_tab[ra_key]  = degrees(srcs_tab[ra_key])
+					srcs_tab[dec_key] = degrees(srcs_tab[dec_key])
+					src, dist = get_closest(transient_coords.ra.degree, transient_coords.dec.degree, srcs_tab, ra_key, dec_key)
 			else:
 				message = "use option can not be %s for catalog %s. valid are 'extcats' or 'catsHTM'"%(use, catalog)
 				raise ValueError(message)
