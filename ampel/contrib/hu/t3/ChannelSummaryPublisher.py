@@ -20,8 +20,6 @@ from typing import List
 from ampel.base.abstract.AbsT3Unit import AbsT3Unit
 from ampel.utils.json import AmpelEncoder
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
-from ampel.ztf.pipeline.common.ZTFUtils import ZTFUtils
-
 
 class ChannelSummaryPublisher(AbsT3Unit):
 	"""
@@ -59,7 +57,8 @@ class ChannelSummaryPublisher(AbsT3Unit):
 		metrics = set(self.run_config.alertMetrics)
 		out = {}
 		
-		out['ztf_name'] = ZTFUtils.to_ztf_id(tran_view.tran_id)
+		out['ztf_name'] = tran_view.tran_names[0]
+		out['tns_names'] = tran_view.tran_names[1:]
 		
 		# sort photopoints
 		if tran_view.photopoints is None or len(tran_view.photopoints) == 0:
