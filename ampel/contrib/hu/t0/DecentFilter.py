@@ -94,6 +94,7 @@ class DecentFilter(AbsAlertFilter):
 		self.gaia_plx_signif			= run_config['GAIA_PLX_SIGNIF']
 		self.gaia_veto_gmag_min			= run_config['GAIA_VETO_GMAG_MIN']
 		self.gaia_veto_gmag_max			= run_config['GAIA_VETO_GMAG_MAX']
+		self.gaia_excessnoise_sig_max	= run_config['GAIA_EXCESSNOISE_SIG_MAX']
 		self.ps1_sgveto_rad				= run_config['PS1_SGVETO_RAD']
 		self.ps1_sgveto_th				= run_config['PS1_SGVETO_SGTH']
 		self.ps1_confusion_rad			= run_config['PS1_CONFUSION_RAD']
@@ -171,7 +172,7 @@ class DecentFilter(AbsAlertFilter):
 											'GAIADR2',
 											transient_coords.ra.rad, transient_coords.dec.rad,
 											self.gaia_rs)
-		my_keys = ['RA', 'Dec', 'Mag_G', 'PMRA', 'ErrPMRA', 'PMDec', 'ErrPMDec', 'Plx', 'ErrPlx']
+		my_keys = ['RA', 'Dec', 'Mag_G', 'PMRA', 'ErrPMRA', 'PMDec', 'ErrPMDec', 'Plx', 'ErrPlx', 'ExcessNoiseSig']
 		if len(srcs) > 0:
 			gaia_tab					= Table(asarray(srcs), names=colnames)
 			gaia_tab					= gaia_tab[my_keys]
@@ -192,9 +193,15 @@ class DecentFilter(AbsAlertFilter):
 			gaia_tab['FLAG_PMDec']		= abs(gaia_tab['PMDec'] / gaia_tab['ErrPMDec']) > self.gaia_pm_signif
 			gaia_tab['FLAG_Plx']		= abs(gaia_tab['Plx']   / gaia_tab['ErrPlx']) > self.gaia_plx_signif
 			
-			# check if among all the sources which are close enough there is anyone with
-			# significant proper motion and parallax
+			# take into account precison of the astrometric solution via the ExcessNoise key
+			gaia_tab['FLAG_Clean']	= gaia_tab['ExcessNoiseSig']<self.gaia_excessnoise_sig_max
+			
+			# select just the sources that are close enough and that are not noisy
 			gaia_tab = gaia_tab[gaia_tab['FLAG_PROX']]
+			gaia_tab = gaia_tab[gaia_tab['FLAG_Clean']]
+			
+			# among the remaining sources there is anything with
+			# significant proper motion or parallax measurement
 			if (any(gaia_tab['FLAG_PMRA'] == True) or 
 				any(gaia_tab['FLAG_PMDec'] == True) or
 				any(gaia_tab['FLAG_Plx'] == True)):
