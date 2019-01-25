@@ -2,7 +2,6 @@
 import pytest, logging, re
 from unittest.mock import MagicMock
 from ampel.contrib.hu.t3.aiotns import TNSMatcher
-pytest_plugins = ['ampel.test.fixtures']
 
 def test_tnsname(t3_transient_views, mocker):
     t3 = TNSMatcher(logging.getLogger())
@@ -16,7 +15,7 @@ def test_tnsname(t3_transient_views, mocker):
     assert collection.bulk_write.called_once()
     ops = collection.bulk_write.call_args[0][0]
     assert len(ops) > 0
-    pattern = re.compile('^TNS20\d{2}[a-z]{3}$')
+    pattern = re.compile('^TNS20[0-9]{2}[a-z]{3}$')
     for op in ops:
         assert '$addToSet' in op._doc
         assert 'tranNames' in op._doc['$addToSet']

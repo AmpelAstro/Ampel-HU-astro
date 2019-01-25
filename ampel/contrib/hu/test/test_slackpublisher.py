@@ -1,7 +1,6 @@
 
 import pytest
 from ampel.contrib.hu.t3.SlackSummaryPublisher import SlackSummaryPublisher
-pytest_plugins = ['ampel.test.fixtures']
 
 import requests, slackclient
 import csv
