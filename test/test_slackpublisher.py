@@ -9,8 +9,8 @@ from io import StringIO
 
 def test_slacksummary(t3_transient_views, mocker):
 
-	run_config = {
-		"mycols": [
+	run_config = SlackSummaryPublisher.RunConfig(**{
+		"cols": [
 			"ztf_name",
 			"ra",
 			"dec",
@@ -25,18 +25,17 @@ def test_slacksummary(t3_transient_views, mocker):
 			"isdiffpos",
 			"_id"
 		],
-		"channel(s)": [ '0', '1'],
-		"excitement_levels": {
+		"excitement": {
 			"Low": 50,
 			"Mid": 200,
 			"High": 400
 		},
-		"Slack_token": "xoxoxox",
-		"Slack_channel": "#ampel-live",
-		"full_photometry": True
-	}
+		"slackToken": "xoxoxox",
+		"slackChannel": "#ampel-live",
+		"fullPhotometry": True
+	})
 	
-	assert len(t3_transient_views) < run_config['excitement_levels']['Low'], 'Small number passed'
+	assert len(t3_transient_views) < run_config.excitement['Low'], 'Small number passed'
 
 	t3 = SlackSummaryPublisher(None, run_config=run_config)
 
