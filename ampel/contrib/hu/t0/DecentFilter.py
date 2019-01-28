@@ -59,9 +59,10 @@ class DecentFilter(AbsAlertFilter):
 			'GAIA_PLX_SIGNIF',			# significance of parallax detection of GAIA counterpart [sigma]
 			'GAIA_VETO_GMAG_MIN', 		# min gmag for normalized distance cut of GAIA counterparts [mag]
 			'GAIA_VETO_GMAG_MAX', 		# max gmag for normalized distance cut of GAIA counterparts [mag]
+			'GAIA_EXCESSNOISE_SIG_MAX',	# maximum allowed noise (expressed as significance) for Gaia match to be trusted.
 			'PS1_SGVETO_RAD',			# maximum distance to closest PS1 source for SG score veto [arcsec]
 			'PS1_SGVETO_SGTH',			# maximum allowed SG score for PS1 source within PS1_SGVETO_RAD
-			'PS1_CONFUSION_RAD',			# reject alerts if the three PS1 sources are all within this radius [arcsec]
+			'PS1_CONFUSION_RAD',		# reject alerts if the three PS1 sources are all within this radius [arcsec]
 			'PS1_CONFUSION_SG_TOL'		# and if the SG score of all of these 3 sources is within this tolerance to 0.5
 			)
 		for el in config_params:
@@ -70,7 +71,6 @@ class DecentFilter(AbsAlertFilter):
 			if run_config[el] is None:
 				raise ValueError("Parameter %s is None, please check your channel config" % el)
 			self.logger.info("Using %s=%s" % (el, run_config[el]))
-		
 		
 		# ----- set filter proerties ----- #
 		
