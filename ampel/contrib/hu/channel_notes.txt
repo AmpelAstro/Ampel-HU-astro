@@ -4,11 +4,14 @@ Transients matched to catalog of known lenses.
 Run hourly save to AmpelLensing marshal program
 Daily Slack dumps
 Partnership
+done
 
 DESY_TOO_TEST
 
 General ToO test channel. Matches printed to slack.
 Partnership
+done
+
 
 HU_TNS_MSIP
 
@@ -16,13 +19,7 @@ Main channel for transients that might be posted to the TNS
 Modeled after rerun channel 1 parameters (but with extended max time-range, can be modified manually later)
 Hourly save to marshal and slack dumps (for now)
 Public
-
-
-HU_GP_16
-
-General purpose that includes "crap" photometry candidates.
-Public
-Candidates at z<0.05 should be sent to slack as well as saved to AmpelRapid
+TODO: find marshal_saveprogid
 
 HU_GP_10
 HU_GP_59
@@ -30,39 +27,43 @@ HU_GP_59
 The channel combination that was most efficient in finding all supernovae.
 For now plot a weekly slack summary. We will then think of how to select which to add to AmpelCosmology.
 Public
+done
 
 HU_PARTNER_10
 HU_PARTNER_59
 As above, just including partnership data and doing a qso fit
+done
 
 MPA_SNSAMPLE
 
 Likely SN locations for MPA
 Public
-
+done
 
 HU_NEARBY_CLUSTERS
 
 Match to nearby clusters catalog
 Private
 T3? 
-
+done
 
 TRANSIENTS_IN_ELLIPTICAL
 Match to elliptical galaxy catalog
 Private
 No T3 at this time
+deactivated, done
+
+
+
+
+
+
+
 
 
 HU_RAPID_south
 Filter to find candidates suitable for VLT same night
 Export to AmpelRapid + Slack Summary at 8 and 10
-partnership
-
-HU_RAPID
-Filter to find candidates suitable for follow-up same night
-Export to AmpelRapid
-Slack Summary hourly for z<0.05 candidates
 partnership
 
 HU_RAPID_UL
@@ -71,9 +72,24 @@ This time no z limit, but require an upper limit from previous night
 Export to AmpelRapid + Slack Summary hourly
 partnership
 
+HU_GP_16
+General purpose that includes "crap" photometry candidates.
+Public
+Candidates at z<0.05 should be sent to slack as well as saved to AmpelRapid
+
+
+HU_RAPID
+Filter to find candidates suitable for follow-up same night
+Export to AmpelRapid
+Slack Summary hourly for z<0.05 candidates
+partnership
+
 HU_RAPID_SINGLE
 This one only requires one detection, but an upper limit
 AmpelRapid + Slack Summary hourly for z<0.05 candidates
+
+
+
 
 HU_RAPID_LANCASTER
 Candidates for rapid filters a la lancaster
