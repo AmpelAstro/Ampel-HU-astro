@@ -12,6 +12,8 @@ import logging
 from urllib.parse import urlparse
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
+from pydantic import BaseModel
+
 from ampel.contrib.hu import catshtm_server
 from ampel.base.abstract.AbsAlertFilter import AbsAlertFilter
 
@@ -33,72 +35,76 @@ class DecentFilter(AbsAlertFilter):
 	# Static version info
 	version = 1.0
 	resources = ('catsHTM.default',)
+	
+	
+	class RunConfig(BaseModel):
+		"""
+ 		Necessary class to validate configuration.
+		"""
+		
+		MIN_NDET					: int	# number of previous detections
+		MIN_TSPAN 					: float	# minimum duration of alert detection history [days]
+		MAX_TSPAN 					: float # maximum duration of alert detection history [days]
+		MIN_RB						: float # real bogus score
+		MAX_FWHM					: float # sexctrator FWHM (assume Gaussian) [pix]
+		MAX_ELONG					: float	# Axis ratio of image: aimage / bimage 
+		MAX_MAGDIFF					: float	# Difference: magap - magpsf [mag]
+		MAX_NBAD					: int	# number of bad pixels in a 5 x 5 pixel stamp
+		MIN_DIST_TO_SSO				: float	#distance to nearest solar system object [arcsec]
+		MIN_GAL_LAT 				: float	#minium distance from galactic plane. Set to negative to disable cut.
+		GAIA_RS						: float	#search radius for GAIA DR2 matching [arcsec]
+		GAIA_PM_SIGNIF				: float	# significance of proper motion detection of GAIA counterpart [sigma]
+		GAIA_PLX_SIGNIF				: float	# significance of parallax detection of GAIA counterpart [sigma]
+		GAIA_VETO_GMAG_MIN			: float	# min gmag for normalized distance cut of GAIA counterparts [mag]
+		GAIA_VETO_GMAG_MAX			: float	# max gmag for normalized distance cut of GAIA counterparts [mag]
+		GAIA_EXCESSNOISE_SIG_MAX	: float	# maximum allowed noise (expressed as significance) for Gaia match to be trusted.
+		PS1_SGVETO_RAD				: float	# maximum distance to closest PS1 source for SG score veto [arcsec]
+		PS1_SGVETO_SGTH				: float	# maximum allowed SG score for PS1 source within PS1_SGVETO_RAD
+		PS1_CONFUSION_RAD			: float	# reject alerts if the three PS1 sources are all within this radius [arcsec]
+		PS1_CONFUSION_SG_TOL		: float	# and if the SG score of all of these 3 sources is within this tolerance to 0.5
+
 
 	def __init__(self, on_match_t2_units, base_config=None, run_config=None, logger=None):
 		"""
 		"""
-		if run_config is None or len(run_config) == 0:
+		if run_config is None:
 			raise ValueError("Please check you run configuration")
 
 		self.on_match_t2_units = on_match_t2_units
 		self.logger = logger if logger is not None else logging.getLogger()
 		
-		config_params = (
-			'MIN_NDET',					# number of previous detections
-			'MIN_TSPAN', 				# minimum duration of alert detection history [days]
-			'MAX_TSPAN', 				# maximum duration of alert detection history [days]
-			'MIN_RB',					# real bogus score
-			'MAX_FWHM',					# sexctrator FWHM (assume Gaussian) [pix]
-			'MAX_ELONG',				# Axis ratio of image: aimage / bimage 
-			'MAX_MAGDIFF',				# Difference: magap - magpsf [mag]
-			'MAX_NBAD',					# number of bad pixels in a 5 x 5 pixel stamp
-			'MIN_DIST_TO_SSO',			# distance to nearest solar system object [arcsec]
-			'MIN_GAL_LAT', 				# minium distance from galactic plane. Set to negative to disable cut.
-			'GAIA_RS',					# search radius for GAIA DR2 matching [arcsec]
-			'GAIA_PM_SIGNIF',			# significance of proper motion detection of GAIA counterpart [sigma]
-			'GAIA_PLX_SIGNIF',			# significance of parallax detection of GAIA counterpart [sigma]
-			'GAIA_VETO_GMAG_MIN', 		# min gmag for normalized distance cut of GAIA counterparts [mag]
-			'GAIA_VETO_GMAG_MAX', 		# max gmag for normalized distance cut of GAIA counterparts [mag]
-			'GAIA_EXCESSNOISE_SIG_MAX',	# maximum allowed noise (expressed as significance) for Gaia match to be trusted.
-			'PS1_SGVETO_RAD',			# maximum distance to closest PS1 source for SG score veto [arcsec]
-			'PS1_SGVETO_SGTH',			# maximum allowed SG score for PS1 source within PS1_SGVETO_RAD
-			'PS1_CONFUSION_RAD',		# reject alerts if the three PS1 sources are all within this radius [arcsec]
-			'PS1_CONFUSION_SG_TOL'		# and if the SG score of all of these 3 sources is within this tolerance to 0.5
-			)
-		for el in config_params:
-			if el not in run_config:
-				raise ValueError("Parameter %s missing, please check your channel config" % el)
-			if run_config[el] is None:
-				raise ValueError("Parameter %s is None, please check your channel config" % el)
-			self.logger.info("Using %s=%s" % (el, run_config[el]))
+		# parse the run config
+		rc_dict = run_config.dict()
+		for k, val in rc_dict.items():
+			self.logger.info("Using %s=%s" % (k, val))
 		
 		# ----- set filter proerties ----- #
 		
 		# history
-		self.min_ndet 					= run_config['MIN_NDET'] 
-		self.min_tspan					= run_config['MIN_TSPAN']
-		self.max_tspan					= run_config['MAX_TSPAN']
+		self.min_ndet 					= rc_dict['MIN_NDET'] 
+		self.min_tspan					= rc_dict['MIN_TSPAN']
+		self.max_tspan					= rc_dict['MAX_TSPAN']
 		
 		# Image quality
-		self.max_fwhm					= run_config['MAX_FWHM']
-		self.max_elong					= run_config['MAX_ELONG']
-		self.max_magdiff				= run_config['MAX_MAGDIFF']
-		self.max_nbad					= run_config['MAX_NBAD']
-		self.min_rb						= run_config['MIN_RB']
+		self.max_fwhm					= rc_dict['MAX_FWHM']
+		self.max_elong					= rc_dict['MAX_ELONG']
+		self.max_magdiff				= rc_dict['MAX_MAGDIFF']
+		self.max_nbad					= rc_dict['MAX_NBAD']
+		self.min_rb						= rc_dict['MIN_RB']
 		
 		# astro
-		self.min_ssdistnr	 			= run_config['MIN_DIST_TO_SSO']
-		self.min_gal_lat				= run_config['MIN_GAL_LAT']
-		self.gaia_rs					= run_config['GAIA_RS']
-		self.gaia_pm_signif				= run_config['GAIA_PM_SIGNIF']
-		self.gaia_plx_signif			= run_config['GAIA_PLX_SIGNIF']
-		self.gaia_veto_gmag_min			= run_config['GAIA_VETO_GMAG_MIN']
-		self.gaia_veto_gmag_max			= run_config['GAIA_VETO_GMAG_MAX']
-		self.gaia_excessnoise_sig_max	= run_config['GAIA_EXCESSNOISE_SIG_MAX']
-		self.ps1_sgveto_rad				= run_config['PS1_SGVETO_RAD']
-		self.ps1_sgveto_th				= run_config['PS1_SGVETO_SGTH']
-		self.ps1_confusion_rad			= run_config['PS1_CONFUSION_RAD']
-		self.ps1_confusion_sg_tol		= run_config['PS1_CONFUSION_SG_TOL']
+		self.min_ssdistnr	 			= rc_dict['MIN_DIST_TO_SSO']
+		self.min_gal_lat				= rc_dict['MIN_GAL_LAT']
+		self.gaia_rs					= rc_dict['GAIA_RS']
+		self.gaia_pm_signif				= rc_dict['GAIA_PM_SIGNIF']
+		self.gaia_plx_signif			= rc_dict['GAIA_PLX_SIGNIF']
+		self.gaia_veto_gmag_min			= rc_dict['GAIA_VETO_GMAG_MIN']
+		self.gaia_veto_gmag_max			= rc_dict['GAIA_VETO_GMAG_MAX']
+		self.gaia_excessnoise_sig_max	= rc_dict['GAIA_EXCESSNOISE_SIG_MAX']
+		self.ps1_sgveto_rad				= rc_dict['PS1_SGVETO_RAD']
+		self.ps1_sgveto_th				= rc_dict['PS1_SGVETO_SGTH']
+		self.ps1_confusion_rad			= rc_dict['PS1_CONFUSION_RAD']
+		self.ps1_confusion_sg_tol		= rc_dict['PS1_CONFUSION_SG_TOL']
 
 		self.catshtm				= catshtm_server.get_client(base_config['catsHTM.default'])
 
