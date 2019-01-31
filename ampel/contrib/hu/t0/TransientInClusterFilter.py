@@ -17,8 +17,6 @@ from extcats.catquery_utils import get_distances
 
 from ampel.contrib.hu.t0.DecentFilter import DecentFilter
 
-
-
 class TransientInClusterFilter(DecentFilter):
 	"""
 		Filter derived from the DecentFilter, in addition selecting candidates
@@ -29,11 +27,14 @@ class TransientInClusterFilter(DecentFilter):
 	version = 1.0
 	resources = ('extcats.reader', 'catsHTM.default')
 	
+	class RunConfig(DecentFilter.RunConfig):
+		BIG_SEARCH_RADIUS_ARCMIN		: float	# conservative search radius around cluster position. Max in RASSEBCS is 16.a arcmin
+		CLUSTER_RADIUS_MULTIPLIER		: float	# if we want to enlarge the search region around each cluster.
 	
 	def __init__(self, on_match_t2_units, base_config=None, run_config=None, logger=None):
 		"""
 		"""
-		if run_config is None or len(run_config) == 0:
+		if run_config is None:
 			raise ValueError("Please check you run configuration")
 
 		self.on_match_t2_units = on_match_t2_units
@@ -44,19 +45,12 @@ class TransientInClusterFilter(DecentFilter):
 		
 		# now add the parameters which are relevant for this
 		# new filter. All the others are passed to the DecentFilter
-		config_params = (
-			'BIG_SEARCH_RADIUS_ARCMIN',					# conservative search radius around cluster position. Max in RASSEBCS is 16.a arcmin
-			'CLUSTER_RADIUS_MULTIPLIER'					# if we want to enlarge the search region around each cluster.
-			)
-		for el in config_params:
-			if el not in run_config:
-				raise ValueError("Parameter %s missing, please check your channel config" % el)
-			if run_config[el] is None:
-				raise ValueError("Parameter %s is None, please check your channel config" % el)
-			self.logger.info("Using %s=%s" % (el, run_config[el]))
+		rc_dict = run_config.dict()
+		for k, val in rc_dict.items():
+			self.logger.info("Using %s=%s" % (k, val))
 		
-		self.big_search_radius_arcmin			= run_config['BIG_SEARCH_RADIUS_ARCMIN']
-		self.cl_rad_multiply					= run_config['CLUSTER_RADIUS_MULTIPLIER']
+		self.big_search_radius_arcmin			= rc_dict['BIG_SEARCH_RADIUS_ARCMIN']
+		self.cl_rad_multiply					= rc_dict['CLUSTER_RADIUS_MULTIPLIER']
 		
 		# convert the 'big search radius' from arcmin to arcsecs. 
 		# Take into account the multiplier as well

@@ -8,6 +8,7 @@
 # Last Modified By  : m. giomi <matteo.giomi@desy.de>
 
 import numpy as np
+from pydantic import BaseModel
 from extcats import CatalogQuery
 from pymongo import MongoClient
 
@@ -21,6 +22,16 @@ class LensedTransientFilter(AbsAlertFilter):
 	# Static version info
 	version = 0.1
 	resources = ('extcats.reader',)
+	
+	class RunConfig(BaseModel):
+		"""
+ 		Necessary class to validate configuration.
+		"""
+		
+		MinNdet					: int
+		ClusListSearchRadius	: float
+		MasterlensSearchRadius	: float
+		CaslteQSOSearchRadius	: float
 
 	def __init__(self, on_match_t2_units, base_config=None, run_config=None, logger=None):
 		"""
@@ -29,17 +40,17 @@ class LensedTransientFilter(AbsAlertFilter):
 			or if they do not match with the position of kwokn lenses.
 		"""
 		
-		if run_config is None or len(run_config) == 0:
+		if run_config is None:
 			raise ValueError("Please check you run configurtion")
 		
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 		
 		self.on_match_t2_units = on_match_t2_units
-		self.min_ndet = run_config['MinNdet']
+		self.min_ndet = run_config.MinNdet
 		self.search_radiuses = {
-			'cluslist': run_config['ClusListSearchRadius'],
-			'masterlens': run_config['MasterlensSearchRadius'],
-			'castleqso': run_config['CaslteQSOSearchRadius']
+			'cluslist': run_config.ClusListSearchRadius,
+			'masterlens': run_config.MasterlensSearchRadius,
+			'castleqso': run_config.CaslteQSOSearchRadius
 		}
 		
 		# init the catalog query objects for the different lens catalogs

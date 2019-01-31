@@ -29,11 +29,15 @@ class XShooterFilter(DecentFilter):
 	version = 1.0
 	resources = ('catsHTM.default',)
 	
+	class RunConfig(DecentFilter.RunConfig):
+		MAX_DEC			: float	# maximum allowed value for the declination
+		DET_WITHIN		: float	# the transient must have been detected within the last 'DET_WITHIN' days
+		UL_WITHIN		: float # the transient must AT LEAST one ulim within the last 'UL_WITHIN' days
 	
 	def __init__(self, on_match_t2_units, base_config=None, run_config=None, logger=None):
 		"""
 		"""
-		if run_config is None or len(run_config) == 0:
+		if run_config is None:
 			raise ValueError("Please check you run configuration")
 
 		self.on_match_t2_units = on_match_t2_units
@@ -42,24 +46,15 @@ class XShooterFilter(DecentFilter):
 		# init the parent DecentFilter
 		DecentFilter.__init__(self, self.on_match_t2_units, base_config, run_config, logger=self.logger)
 		
-		# now add the parameters which are relevant for this
-		# new filter. All the others are passed to the DecentFilter
-		config_params = (
-			'MAX_DEC',					# maximum allowed value for the declination
-			'DET_WITHIN',				# the transient must have been detected within the last 'DET_WITHIN' days
-			'UL_WITHIN'					# the transient must AT LEAST one ulim within the last 'UL_WITHIN' days
-			)
-		for el in config_params:
-			if el not in run_config:
-				raise ValueError("Parameter %s missing, please check your channel config" % el)
-			if run_config[el] is None:
-				raise ValueError("Parameter %s is None, please check your channel config" % el)
-			self.logger.info("Using %s=%s" % (el, run_config[el]))
+		# parse the run config
+		rc_dict = run_config.dict()
+		for k, val in rc_dict.items():
+			self.logger.info("Using %s=%s" % (k, val))
 		
 		# remember the pars
-		self.max_dec 					= run_config['MAX_DEC']
-		self.det_within					= run_config['DET_WITHIN']
-		self.ul_within					= run_config['UL_WITHIN']
+		self.max_dec 					= rc_dict['MAX_DEC']
+		self.det_within					= rc_dict['DET_WITHIN']
+		self.ul_within					= rc_dict['UL_WITHIN']
 		self.keys_to_check += ('jd',)
 
 	def apply(self, alert):
