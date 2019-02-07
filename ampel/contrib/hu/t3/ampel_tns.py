@@ -11,7 +11,7 @@ import logging
 import time
 from collections import OrderedDict
 
-
+TNSFILTERID = {1:"110",2:"111",3:"112"}
 AT_REPORT_FORM = "bulk-report"
 AT_REPORT_REPLY = "bulk-report-reply"
 TNS_ARCHIVE = {'OTHER': '0', 'SDSS': '1', 'DSS': '2'}
@@ -371,9 +371,6 @@ def tnsget(json_list, api_key, sandbox=True):                        #
     return [None,'Error message : \n'+str(e)]                        #
 
 
-
-
-
 def sendTNSreports(atreportlists, api_key, logger, sandbox=True):
 	'''
 	Based on a lists of reportlists, send to TNS.
@@ -401,8 +398,7 @@ def sendTNSreports(atreportlists, api_key, logger, sandbox=True):
 			time.sleep(SLEEP)
 		if not reportid:
 			continue
-    
-    
+
 		# Try to read reply
 		counter = 0
 		while True:
@@ -425,7 +421,37 @@ def sendTNSreports(atreportlists, api_key, logger, sandbox=True):
 				logger.info("ALready existing with name %s"%(response[k]["101"]["objname"]))
 				reportresult[v["internal_name"]] = ['TNS pre-existing',{"TNSName":response[k]["101"]["objname"]} ] 
 
-
-    
 	return reportresult
+
+def get_tnsname(self, ra, dec, api_key, logger, sandbox=True):
+	"""
+		look for names registered at tns for a given position
+	"""
+	tns_name = None
+
+	# Look for TNS name at the coordinate of the transient
+	tnsnames, runstatus = tnsName(ra, dec, api_key, sandbox=sandbox )
+	if re.match('Error', runstatus):
+		logger.info("TNS get error", extra={"tns_request":runstatus} )
+		return None, []
+	if len(tnsnames)>1:
+		logger.debug("Multipe TNS names, choosing first", extra={"tns_names":tnsnames} )
+		tns_name = tnsnames[0]
+	elif len(tnsnames)==1:
+		tns_name = tnsnames[0]
+	elif len(tnsnames)==0:
+		# No TNS name, then no need to look for internals
+		return tns_name, None
+	logger.info("TNS get cand id",extra={"tns_name":tns_name})
+
+	# Look for internal name (note that we skip the prefix)
+	internal_name, runstatus = tnsInternal( tns_name[2:], api_key, sandbox=sandbox)
+#		if internal_name is not None:
+#			self.logger.info("TNS search",extra={"tns_internal_name":internal_name})
+#			pass
+#			if re.search('ZTF',internal_name):		
+#				if not internal_name == sne[1]["ztf_name"]:
+#					#self.logger.info("TNS registered under other ZTF name %s", extra={"tns_other_internal":internal_name} )
+	return tns_name, internal_name
+
 
