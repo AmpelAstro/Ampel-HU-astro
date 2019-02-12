@@ -4,8 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 11.06.2018
-# Last Modified Date: 13.11.2018
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# Last Modified Date: 12.02.2019
+# Last Modified By  : mg <matteo.giomi@desy.de>
+
+import logging
+from pydantic import BaseModel
 
 from ampel.base.flags.TransientFlags import TransientFlags
 from ampel.base.TransientView import TransientView
@@ -15,19 +18,42 @@ from ampel.ztf.pipeline.common.ZTFUtils import ZTFUtils
 class TransientInfoPrinter(AbsT3Unit):
 	"""
 	"""
-
+	
+	class RunConfig(BaseModel):
+		"""
+		"""
+		logfile			: str 		= None	# logging (INFO and onwards) goes to this file.
+	
 	def __init__(self, logger, run_config=None, base_config=None, global_info=None):
 		"""
 		"""
+		
+		print ("inside my T3 instance runConfig is", run_config, "of type", type(run_config))
+		return
+		
 		self.logger = logger
 		self.count = 0
-
+		
+		self.logger.info(type(run_config))
+		# add logging to file if so configured
+		logfile =  None if run_config is None else run_config.get("logfile")
+		print (run_config)
+		print (logfile)
+		input()
+		
+		if not logfile is None:
+#		if not run_config.logfile is None:
+			fh = logging.FileHandler(logfile)#run_config.logfile)
+			fh.setLevel(logging.INFO)
+			self.logger.addHandler(fh)
+			self.logger.info("added logging handle to: %s"%logfile)
+			input()
+			
 		if global_info is not None:
 			self.logger.info(
 				"Provided global info: %s" % 
 				global_info
 			)
-
 
 	def add(self, transients):
 		"""
