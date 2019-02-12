@@ -3,9 +3,9 @@
 # File              : ampel/contrib/hu/t0/DecentFilter.py
 # License           : BSD-3-Clause
 # Author            : m. giomi <matteo.giomi@desy.de>
-# Date              : 06.06.2018
-# Last Modified Date: 24.10.2018
-# Last Modified By  : vb
+# Date              : 12.02.2019
+# Last Modified Date: 12.02.2019
+# Last Modified By  : mg
 
 from numpy import exp, array, asarray
 import logging
@@ -39,20 +39,20 @@ class SimpleDecentFilter(AbsAlertFilter):
  		Necessary class to validate configuration.
 		"""
 		
-		MIN_NDET					: int	# number of previous detections
-		MIN_TSPAN 					: float	# minimum duration of alert detection history [days]
-		MAX_TSPAN 					: float # maximum duration of alert detection history [days]
-		MIN_RB						: float # real bogus score
-		MAX_FWHM					: float # sexctrator FWHM (assume Gaussian) [pix]
-		MAX_ELONG					: float	# Axis ratio of image: aimage / bimage 
-		MAX_MAGDIFF					: float	# Difference: magap - magpsf [mag]
-		MAX_NBAD					: int	# number of bad pixels in a 5 x 5 pixel stamp
-		MIN_DIST_TO_SSO				: float	#distance to nearest solar system object [arcsec]
-		MIN_GAL_LAT 				: float	#minium distance from galactic plane. Set to negative to disable cut.
-		PS1_SGVETO_RAD				: float	# maximum distance to closest PS1 source for SG score veto [arcsec]
-		PS1_SGVETO_SGTH				: float	# maximum allowed SG score for PS1 source within PS1_SGVETO_RAD
-		PS1_CONFUSION_RAD			: float	# reject alerts if the three PS1 sources are all within this radius [arcsec]
-		PS1_CONFUSION_SG_TOL		: float	# and if the SG score of all of these 3 sources is within this tolerance to 0.5
+		MIN_NDET					: int	= 3	 # number of previous detections
+		MIN_TSPAN 					: float	= 1. # minimum duration of alert detection history [days]
+		MAX_TSPAN 					: float = 25.# maximum duration of alert detection history [days]
+		MIN_RB						: float = 0.6# real bogus score
+		MAX_FWHM					: float = 5. # sexctrator FWHM (assume Gaussian) [pix]
+		MAX_ELONG					: float	= 1.4# Axis ratio of image: aimage / bimage 
+		MAX_MAGDIFF					: float	= 0.4# Difference: magap - magpsf [mag]
+		MAX_NBAD					: int	= 0	 # number of bad pixels in a 5 x 5 pixel stamp
+		MIN_DIST_TO_SSO				: float	= 20.#distance to nearest solar system object [arcsec]
+		MIN_GAL_LAT 				: float	= 0. #minium distance from galactic plane. Set to negative to disable cut.
+		PS1_SGVETO_RAD				: float	= 2  # maximum distance to closest PS1 source for SG score veto [arcsec]
+		PS1_SGVETO_SGTH				: float	= 0.8# maximum allowed SG score for PS1 source within PS1_SGVETO_RAD
+		PS1_CONFUSION_RAD			: float	= 1  # reject alerts if the three PS1 sources are all within this radius [arcsec]
+		PS1_CONFUSION_SG_TOL		: float	= 0.5# and if the SG score of all of these 3 sources is within this tolerance to 0.5
 
 
 	def __init__(self, on_match_t2_units, base_config=None, run_config=None, logger=None):
