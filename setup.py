@@ -20,6 +20,7 @@ setup(name='ampel-contrib-hu',
           ],
           'ampel.pipeline.t0.units' : [
               'DecentFilter = ampel.contrib.hu.t0.DecentFilter:DecentFilter',
+              'SimpleDecentFilter = ampel.contrib.hu.t0.SimpleDecentFilter:SimpleDecentFilter',	#This was just for testing at NERSC 
               'XShooterFilter = ampel.contrib.hu.t0.XShooterFilter:XShooterFilter',
               'TransientInClusterFilter = ampel.contrib.hu.t0.TransientInClusterFilter:TransientInClusterFilter',
               'LensedTransientFilter = ampel.contrib.hu.t0.LensedTransientFilter:LensedTransientFilter',
