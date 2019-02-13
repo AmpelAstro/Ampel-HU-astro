@@ -479,7 +479,7 @@ class TNSTalker(AbsT3Unit):
 		
 		# TODO: we save the atreports to send them to the TNS. 
 		# This is just part of the tesing and will have to go away
-#		self.atreports = {k: atreports[k] for k in list(atreports.keys())[:2]}
+#		atreports = {k: atreports[k] for k in list(atreports.keys())[:2]}
 		self.atreports = atreports
 		
 		self.logger.info("collected %d AT reports to post"%len(atreports))
@@ -530,18 +530,7 @@ class TNSTalker(AbsT3Unit):
 		slack_username = "Ampel_TNS_test"
 		
 		sc = SlackClient(slack_token)
-		tstamp = datetime.datetime.today().strftime("%x-%X")
-		
-		# post initial message
-		api = sc.api_call(
-				"chat.postMessage",
-				channel=slack_channel,
-				text="%d atreports from TNSTalker DEBUG %s"%(len(self.atreports.values()), tstamp),
-				username=slack_username,
-				as_user=False
-			)
-		if not api['ok']:
-			raise SlackClientError(api['error'])
+		tstamp = datetime.datetime.today().strftime("%Y-%m-%d-%X")
 		
 		# add the atreport to a file
 		filename = "TNSTalker_DEBUG_%s.json"%tstamp
@@ -550,15 +539,17 @@ class TNSTalker(AbsT3Unit):
 		
 		# upload the file with the at reports
 		api = sc.api_call(
-					'files.upload',
-					token = slack_token,
-					channels = [slack_channel],
-					title = "TNSTalker_DEBUG_%s"%tstamp,
-					username = slack_username,
-					as_user = False,
-					filename =  filename,
-					file = fbuffer.getvalue()
-				)
+				'files.upload',
+				token = slack_token,
+				channels = [slack_channel],
+				title = "TNSTalker_DEBUG_%s"%tstamp,
+				initial_comment = "%d atreports found by TNSTalker T3"%len(self.atreports.values()),
+				username = slack_username,
+				as_user = False,
+				filename =  filename,
+				filetype = 'javascript',
+				file = fbuffer.getvalue()
+			)
 		if not api['ok']:
 			raise SlackClientError(api['error'])
 		
