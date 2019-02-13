@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File			  : ampel/contrib/hu/t3/T3MarshalMonitor
-# License		   : BSD-3-Clause
+# File				: ampel/contrib/hu/t3/T3MarshalMonitor
+# License			: BSD-3-Clause
 # Author			: jnordin@physik.hu-berlin.de
-# Date			  : 17.11.2018
+# Date				: 17.11.2018
 # Last Modified Date: 06.02.2019
-# Last Modified By  : matteo.giomi@desy.de
+# Last Modified By	: matteo.giomi@desy.de
 
 import re
 from pydantic import BaseModel, BaseConfig
-from typing import Dict
-
+from typing import Dict, List
 
 from astropy.time import Time
 from astropy.coordinates import SkyCoord
@@ -39,70 +38,14 @@ def pedantic_get(rc, key):
 			(key, ", ".join(rc.dict().keys())))
 	return val
 
-def is_sdss_star(tran_view):
-	"""
-	Check whether the there is CATALOGMATCH (T2) info 
-	suggesting this an SDSS photometric star
-	"""
-	# Look for catalog matching
-	if tran_view.t2records is not None:
-		for j, t2record in enumerate(tran_view.t2records):
-			# Look for catalog matching
-			if not t2record.get_t2_unit_id() == "CATALOGMATCH":
-				continue
 
-			foo = t2record.get_results()
-			if foo is None:
-				continue
-			res = foo[-1]
-			
-			print (t2record)
-			
-			# Try to check for spectroscopic class in SDSS
-			if 'SDSSDR10' in res.keys():
-				sdssphot = res['SDSSDR10'].get("type",None)
-				if sdssphot=="STAR":
-					return True
-
-	# If we got here we did not get a match
-	return False
-
-
-def is_agn(tran_view):
-	"""
-	Check whether the there is CATALOGMATCH (T2) info suggesting this is a QSO/AGN
-	"""
-
-	# Look for catalog matching
-	if tran_view.t2records is not None:
-		for j, t2record in enumerate(tran_view.t2records):
-			# Look for catalog matching
-			if not t2record.get_t2_unit_id() == "CATALOGMATCH":
-				continue
-
-			foo = t2record.get_results()
-			if foo is None:
-				continue
-			res = foo[-1]
-
-			# Try to check for spectroscopic class in SDSS
-			if 'SDSS_spec' in res.keys():
-				sdssclass = res['SDSS_spec'].get("bptclass",-1)
-				if sdssclass==4 or sdssclass==5:
-					return True
-
-			# Check if there is a million quasar catalog z
-			if 'milliquas' in res.keys():
-				mz = res['milliquas'].get("redshift",-1)
-				if mz>0:
-					return True
-
-				
-	# If we got here we did not get a match
-	return False
-
-
-
+# get the science records for the catalog match
+def get_catalogmatch_srecs(tran_view, logger):
+	cat_res = tran_view.get_science_records(t2_unit_id="CATALOGMATCH")
+	if len(cat_res) == 0 or cat_res is None:
+		logger.info("NO CATALOG MATCH FOR THIS TRANSIENT")
+		return {}
+	return cat_res[-1].get_results()[-1]['output']
 
 
 class TNSTalker(AbsT3Unit):
@@ -130,7 +73,6 @@ class TNSTalker(AbsT3Unit):
 		submit_tns	 		: bool	= True		# Submit candidates passing criteria 
 		resubmit_tns_nonztf	: bool	= True		# Resubmit candidate submitted w/o the same ZTF internal ID 
 		resubmit_tns_ztf	: bool	= False		# Resubmit candidates even if they have been added with this name before
-		n_photo_submit		: int	= 2			# how many photometric points we add to the TNS report
 		sandbox				: bool	= True		# Submit to TNS sandbox only
 		ext_journal			: bool	= True		# weather journal will go to separate collection.
 		
@@ -154,15 +96,20 @@ class TNSTalker(AbsT3Unit):
 		# cut on transients:
 		max_redshift	: float	= 1.15	# maximum redshift from T2 CATALOGMATCH catalogs
 		min_ndet		: int	= 2		# A candidate need to have at least this many detections
+		min_ndet_postul	: int	= 2		# and if it has this minimum nr of detection after the last significant (max_maglim) UL.
 		max_age			: float = 5		# days, If a detection has an age older than this, skip (stars,age).
 		min_age			: float = 0		# Min age of detection history
 		min_peak_mag	: float	= 19.5	# range of peak magnitudes for submission
 		max_peak_mag	: float = 13	#
 		min_n_filters	: int	= 1		# Reported detections in at least this many filters
 		min_gal_lat		: float = 14	# Minimal galactic latitide
-		min_sharpness	: float = -10.15# Remove datapoints with sharpness below this value? TODO!
-		cut_sdss_stars	: bool 	= True  # Cut objects with SDSS photometric definition as star
-		
+		# Cut to apply to all the photopoints in the light curve.
+		# This will affect all operations, i.e. evaluating the position, computing number of detections ecc.
+		lc_filters		: List[Dict]= [{
+									'attribute': 'sharpnr',
+									'operator': '>=', 
+									'value': -10.15
+								}]
 		
 		# tag
 		nuclear_dist: float = 1.	# Tag objects this close to SDSS galaxies as nuclear. Use negative to disable
@@ -182,8 +129,10 @@ class TNSTalker(AbsT3Unit):
 		self.logger = logger if logger is not None else logging.getLogger()
 		self.base_config = {} if base_config is None else base_config
 		self.run_config = {} if run_config is None else run_config
-		
-		self.name = "TNSTalker"		#used to tag entries in the journal
+		self.name = "TNSTalker"
+		self.logger.info("Initialized T3 TNSTalker instance %s"%self.name)
+		self.logger.info("base_config: %s"%self.base_config)
+		self.logger.info("run_config: %s"%self.run_config)
 		
 		# parse run_config - tns commands
 		self.get_tns				= pedantic_get(run_config, 'get_tns')
@@ -211,20 +160,15 @@ class TNSTalker(AbsT3Unit):
 		# parse run_config - selection parameters
 		self.max_redshift	= pedantic_get(run_config, 'max_redshift')
 		self.min_ndet		= pedantic_get(run_config, 'min_ndet')
+		self.min_ndet_postul= pedantic_get(run_config, 'min_ndet_postul')
 		self.max_age		= pedantic_get(run_config, 'max_age')
 		self.min_age		= pedantic_get(run_config, 'min_age')
 		self.min_peak_mag	= pedantic_get(run_config, 'min_peak_mag')
 		self.max_peak_mag	= pedantic_get(run_config, 'max_peak_mag')
 		self.min_n_filters	= pedantic_get(run_config, 'min_n_filters')
 		self.min_gal_lat	= pedantic_get(run_config, 'min_gal_lat')
-		self.min_sharpness	= pedantic_get(run_config, 'min_sharpness')
+		self.lc_filters		= pedantic_get(run_config, 'lc_filters')
 		
-		# TODO: can we include in the select- run config part of the parameters?
-		self.cut_sdss_stars	= pedantic_get(run_config, 'cut_sdss_stars')
-
-		# Using external journal
-		self.ext_journal = True
-
 	def search_journal_tns(self, tran_view):
 		"""
 			Look through the journal for a TNS name.
@@ -262,7 +206,7 @@ class TNSTalker(AbsT3Unit):
 		if (tns_name is None and self.get_tns) or self.get_tns_force:
 			
 			# query the TNS for transient at this position
-			ra, dec = tran_view.get_latest_lightcurve().get_pos(ret="mean")
+			ra, dec = tran_view.get_latest_lightcurve().get_pos(ret="mean", filters=self.lc_filters)
 			new_tns_name, new_internal = get_tnsname(
 				ra=ra, dec=dec, api_key=self.api_key, logger=self.logger, sandbox=self.sandbox)#self.get_tnsname(tran_view)
 			
@@ -273,10 +217,9 @@ class TNSTalker(AbsT3Unit):
 				if tns_name is not None and not tns_name==new_tns_name:
 					self.logger.info("Adding new TNS name",extra={"tnsOld":tns_name,"tnsNew":new_tns_name})
 				
-				# create content of journal entry
-				jcontent = {'t3unit': self.name, 'tnsName': new_tns_name}
-				
+				# create content of journal entry. Eventually 
 				# update the list with the new internal names if any are found
+				jcontent = {'t3unit': self.name, 'tnsName': new_tns_name}
 				if new_internal is not None:
 					tns_internals.append(new_internal)
 					jcontent.update({'tnsInternal':new_internal})
@@ -297,21 +240,36 @@ class TNSTalker(AbsT3Unit):
 			the task/job config, some of them still require relatively non trivial
 			computation (e.g. 'age' of the transient). This makes this selection method 
 			necessary.
+			
+			FOR SAKE OF SIMPLICITY during the first period of TNS submission, 
+			we here declare that all the transient selection logic should be 
+			implemented in this method, even rejection based on catalog matching 
+			that could be done by the select config param.
 		"""
 		
 		# get the latest light curve
 		lc = tran_view.get_latest_lightcurve()
 		
 		# apply cut on history: consider photophoints which are sharp enough
-		pp_filter = {'attribute': 'sharpnr', 'operator': '>=', 'value': self.min_sharpness}
-		pps = lc.get_photopoints(filters=pp_filter)
-		self.logger.debug("%d photop. passed filter %s"%(len(pps), pp_filter))
+		pps = lc.get_photopoints(filters=self.lc_filters)
+		self.logger.debug("%d photop. passed filter %s"%(len(pps), self.lc_filters))
 		
 		# cut on number of detection
 		if len(pps) < self.min_ndet:
 			self.logger.debug("not enough detections: got %d, required %d"%
 				(len(pps), self.min_ndet))
 			return False
+		
+		# cut on number of detection after last SIGNIFICANT UL
+		ulims = lc.get_upperlimits(filters={'attribute':'diffmaglim', 'operator':'>=', 'value':self.max_maglim})
+		if len(ulims) > 0:
+			last_ulim_jd = sorted(ulims, key=lambda x: x.get_value('jd'))[-1].get_value('jd')
+			pps_after_ndet = lc.get_photopoints( 
+				filters = self.lc_filters + [{'attribute': 'jd', 'operator': '>=', 'value': last_ulim_jd}])
+			if len(pps_after_ndet) < self.min_ndet_postul:
+				self.logger.debug("not enough consecutive detections after last significant UL.",
+					extra={'NDet': len(pps), 'lastUlimJD': last_ulim_jd})
+				return False
 		
 		# cut on number of filters
 		used_filters = set([pp.get_value('fid') for pp in pps])
@@ -337,7 +295,7 @@ class TNSTalker(AbsT3Unit):
 			return False
 		
 		# cut on galactic coordinates
-		ra, dec = lc.get_pos(ret="mean", filters=pp_filter)
+		ra, dec = lc.get_pos(ret="mean", filters=self.lc_filters)
 		coordinates = SkyCoord(ra, dec, unit='deg')
 		b = coordinates.galactic.b.deg
 		if abs(b) < self.min_gal_lat:
@@ -345,11 +303,72 @@ class TNSTalker(AbsT3Unit):
 				(b, self.min_gal_lat))
 			return False
 		
+		# ----------------------------------------------------------------------#
+		# 							CUTS ON T2 RECORDS							#
+		# ----------------------------------------------------------------------#
+		cat_res = get_catalogmatch_srecs(tran_view, logger=self.logger)
+		
+		# cut stars in SDSS	#TODO: veryfy!
+		sdss_dr10 = cat_res.get('SDSSDR10', False)
+		if sdss_dr10 and sdss_dr10['type'] == 6:
+			self.logger.debug("transient matched with star in SDSS_DR10.", extra=sdss_dr10)
+			return False
+		
+		# cut matches with variable star catalog
+		aavsovsx = cat_res.get('AAVSOVSX', False)
+		if aavsovsx and aavsovsx['dist2transient'] < 1:
+			self.logger.debug("transient too close to AAVSOVSX sorce", extra=aavsovsx)
+			return False
+		
 		# congratulation TransientView, you made it!
 		return True
-#		self.cut_sdss_stars	= pedantic_get(run_config, 'cut_sdss_stars')
 
-	def get_atreport(self,tran_view):
+
+	def add_atreport_remarks(self, tran_view):
+		"""
+			create additional remarks based, i.e. on catalog matching data
+		"""
+		
+		# TODO: check values for the cuts and and put them in the config
+		# TODO: can remarks be combined? e.g. nucler + noisy? 
+		
+		# get the science records for the catalog match
+		cat_res = get_catalogmatch_srecs(tran_view, logger=self.logger)
+		
+		# tag AGNs
+		milliquas = cat_res.get('milliquas', False)
+		sdss_spec = cat_res.get('SDSS_spec', False)
+		if ( milliquas and milliquas['redshift'] > 0) or (sdss_spec and sdss_spec['bptclass'] in [4, 5]):
+			self.logger.info("Transient is SDSS BPT or Milliquas AGN.",
+				extra={"tranId":tran_view.tran_id, 'milliquas': milliquas, 'SDSS_spec': sdss_spec})
+			return {
+					"remarks": "Known SDSS and/or MILLIQUAS QSO/AGN. ",
+					"at_type": 3
+				}
+		
+		# tag nuclear
+		sdss_dr10 = cat_res.get('SDSSDR10', False)
+		if sdss_dr10 and sdss_dr10['type'] == 3 and sdss_dr10['dist2transient'] < self.nuclear_dist:
+			self.logger.info("Transient close to SDSS photometric galaxy - possibly nuclear",
+				extra={"tranId":tran_view.tran_id, 'SDSSDR10': sdss_dr10})
+			return {
+					"remarks": "Close to core of SDSS DR10 galaxy",
+					"at_type": 4
+				}
+		
+		# tag noisy gaia
+		gaia_dr2 = cat_res.get('GAIADR2', False)
+		nedz	 = cat_res.get('NEDz', False)
+		if ( (gaia_dr2 and gaia_dr2['ExcessNoise'] > self.max_gaia_noise and gaia_dr2['dist2transient'] < 1) and 
+			 (nedz and not (nedz['z']>0.01 and nedz['dist2transient'] < 1)) and 			#if it's not extragalactic
+			 (sdss_dr10 and not (sdss_dr10['type'] == 3 and sdss_dr10['dist2transient'] <3))	# and if it's not a galaxy
+			):
+			self.logger.info("Significant noise in Gaia DR2 - variable star cannot be excluded.", 
+				extra={"tranId":tran_view.tran_id, 'GAIADR2': gaia_dr2, 'NEDz': nedz, 'SDSSDR10': sdss_dr10})
+			return {"remarks": "Significant noise in Gaia DR2 - variable star cannot be excluded." }
+
+
+	def create_atreport(self,tran_view):
 		"""
 			Collect the data needed for the atreport. Return None in case 
 			you have to skip this transient for some reason.
@@ -358,7 +377,7 @@ class TNSTalker(AbsT3Unit):
 		self.logger.info("creating AT report for transient.")
 		ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
 		lc = tran_view.get_latest_lightcurve()
-		ra, dec = lc.get_pos(ret="mean")
+		ra, dec = lc.get_pos(ret="mean", filters=self.lc_filters)
 		
 		# Start defining AT dict: name and position
 		atdict = {}
@@ -367,23 +386,6 @@ class TNSTalker(AbsT3Unit):
 		atdict["ra"] = {"value": ra, "error" : 1., "units":"arcsec"}
 		atdict["dec"] = {"value": dec, "error" : 1., "units":"arcsec"}
 		
-#		# now add remarks based on catalog matching
-#		atdict["remarks"] = ""
-#		if sne[1]["ztf_name"] in list(agn_sne):
-#			atdict["remarks"] = atdict["remarks"] + "Known SDSS and/or MILLIQUAS QSO/AGN. "
-#			atdict["at_type"] = 3
-#			#sys.exit('have an agn') 
-#		elif sne[1]["ztf_name"] in list(nuclear_sne):
-#			print("close to core of sdss gal, but do mark as nuclear for now")
-#	#		atdict["remarks"] = "Close to core of SDSS DR10 galaxy"
-#	#		atdict["at_type"] = 4
-#			#sys.exit('have a nuclar') 
-#		elif sne[1]["ztf_name"] in AAVSOVSX.keys():
-#			atdict["remarks"] = atdict["remarks"] + "AAVSOVSX match: %s "%(AAVSOVSX[sne[1]["ztf_name"]])
-#		if sne[1]["ztf_name"] in list(gaianoisy_sne):
-#			atdict["remarks"] = atdict["remarks"] + "Significant noise in Gaia DR2 - variable star cannot be excluded. " 
-#			#sys.exit("Time to check whether the gaia noise remark works.")
-
 		# Add information on the latest SIGNIFICANT non detection. TODO: check!
 		ulims = lc.get_upperlimits(filters={'attribute':'diffmaglim', 'operator':'>=', 'value':self.max_maglim})
 		last_non_obs = 0
@@ -404,11 +406,8 @@ class TNSTalker(AbsT3Unit):
 		
 		# now add info on photometric detections: consider only candidates which
 		# have some consecutive detection after the last ulim
-		pps = lc.get_photopoints(filters = {'attribute': 'jd', 'operator': '>=', 'value': last_non_obs})
-		if len(pps) < self.min_ndet:	#TODO: all the cut should be together! 
-			self.logger.info("too few detections after last significant upper limit.", 
-				extra = {'NDet': len(pps), 'lastUlimJD': last_non_obs})
-			return None
+		pps = lc.get_photopoints(
+			filters = self.lc_filters + [{'attribute': 'jd', 'operator': '>=', 'value': last_non_obs}])
 		
 		# Lets create a few photometry points: TODO: should they be the latest or the first?
 		atdict["photometry"] = {"photometry_group":{}}
@@ -426,6 +425,10 @@ class TNSTalker(AbsT3Unit):
 			photdict.update(self.ztf_tns_at)
 			atdict["photometry"]["photometry_group"][ipp] = photdict
 		
+		# finally, add remarks based on catalogs adn return
+		remarks = self.add_atreport_remarks(tran_view)
+		if not remarks is None:
+			atdict.update(remarks)
 		return atdict
 
 	def add(self, transients):
@@ -466,20 +469,18 @@ class TNSTalker(AbsT3Unit):
 			is_ztfsubmitted = ztf_name in tns_internals
 			if not ( (is_ztfsubmitted and self.resubmit_tns_ztf) or 
 					 (not is_ztfsubmitted and self.resubmit_tns_nonztf) ):
-				 self.logger.debug("we won't submit candidate.", extra={'is_ztfsub': is_ztfsubmitted})
-
-			# Check if transient is a star
-#			if True and self.is_sdss_star(tran_view):
-#				self.logger.info("SDSS photstar")
-
-			# Check if transient is an agn
-#			tran_is_agn = is_agn(tran_view)
-#			self.logger.info("",extra={"isAgn":is_agn})
-
-			atreport = self.get_atreport(tran_view)
-			if not atreport is None:
-				self.logger.info("Added to report list")
-				atreports[tran_view.tran_id] = atreport
+				self.logger.debug("we won't submit candidate.", extra={'is_ztfsub': is_ztfsubmitted})
+				continue
+			
+			# create AT report
+			atreport = self.create_atreport(tran_view)
+			self.logger.info("Added to report list")
+			atreports[tran_view.tran_id] = atreport
+		
+		# TODO: we save the atreports to send them to the TNS. 
+		# This is just part of the tesing and will have to go away
+#		self.atreports = {k: atreports[k] for k in list(atreports.keys())[:2]}
+		self.atreports = atreports
 		
 		self.logger.info("collected %d AT reports to post"%len(atreports))
 		if len(atreports) == 0:		#TODO: do we want to return them even though we haven't submitted anything?
@@ -487,18 +488,16 @@ class TNSTalker(AbsT3Unit):
 		
 		# Send reports in chunks of size 90 (99 should work)
 		atchunks = list(chunks([atr for atr in atreports.values()], 90))
-#		tnsreplies = sendTNSreports(atchunks, self.api_key, self.logger, sandbox=self.sandbox)
+		tnsreplies = sendTNSreports(atchunks, self.api_key, self.logger, sandbox=self.sandbox)
 		
 		# Now go and check and create journal updates for the cases where SN was added
 		for tran_id in atreports.keys():
 			ztf_name = ZTFUtils.to_ztf_id(tran_id)
-			
-			#TODO: do we want to add to the journal a failed TNS submit?
 			if not ztf_name in tnsreplies.keys():
 				self.logger.info("No TNS add reply",extra={"tranId":tran_id})
 				continue
 			
-			# Create new journal entry
+			# Create new journal entry 			#TODO: do we want to add to the journal a failed TNS submit?
 			jup = JournalUpdate(
 					tranId=tran_id,
 					ext=self.ext_journal,
@@ -506,10 +505,9 @@ class TNSTalker(AbsT3Unit):
 						't3unit': self.name,
 						'tnsName': tnsreplies[ztf_name][1]["TNSName"],
 						'tnsInternal': ztf_name,
-						'tnsSubmitresult':tnsreplies[ztf_name][0]
+						'tnsSubmitresult': tnsreplies[ztf_name][0]
 					})
 			journal_updates.append(jup)
-
 		return journal_updates
 
 
@@ -517,4 +515,51 @@ class TNSTalker(AbsT3Unit):
 		"""
 		"""
 		self.logger.info("done running T3")
-
+		
+		#TODO: to help debugging and verification, we post the collected atreports
+		# to the slack, so that we can compare them with what JNo script is doing
+		# ALL THE FOLLOWING LINES SHOULD GO AWAY AS SOON AS WE TRUST THIS T3
+		self.logger.warning("Posting collected ATreports to Slack. I'm still running as a test!")
+		
+		import datetime, io, json
+		from slackclient import SlackClient
+		from slackclient.exceptions import SlackClientError
+		
+		slack_token = "xoxb-297846339667-549790069252-FLwKXkra0NL3FNnrvu9XYm4a"
+		slack_channel  = "#ampel_tns_test"
+		slack_username = "Ampel_TNS_test"
+		
+		sc = SlackClient(slack_token)
+		tstamp = datetime.datetime.today().strftime("%x-%X")
+		
+		# post initial message
+		api = sc.api_call(
+			"chat.postMessage",
+			channel=slack_channel,
+			text="%d atreports from TNSTalker DEBUG %s"%(len(self.atreports.values()), tstamp),
+			username=slack_username,
+			as_user=False
+		)
+		if not api['ok']:
+			raise SlackClientError(api['error'])
+		
+		# add the atreport to a file
+		filename = "TNSTalker_DEBUG_%s.txt"%tstamp
+		fbuffer = io.StringIO(filename)
+		json.dump(list(self.atreports.values()), fbuffer, indent=2)
+		
+		# upload the file with the at reports
+		api = sc.api_call(
+					'files.upload',
+					token = slack_token,
+					channels = [slack_channel],
+					title = "TNSTalker_DEBUG_%s"%tstamp,
+					username = slack_username,
+					as_user = False,
+					filename =  filename,
+					file = fbuffer.getvalue()
+				)
+		if not api['ok']:
+			raise SlackClientError(api['error'])
+		
+		self.logger.warning("DONE DEBUG Slack posting. Look at %s for the results"%slack_channel)
