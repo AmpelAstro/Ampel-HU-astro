@@ -534,17 +534,17 @@ class TNSTalker(AbsT3Unit):
 		
 		# post initial message
 		api = sc.api_call(
-			"chat.postMessage",
-			channel=slack_channel,
-			text="%d atreports from TNSTalker DEBUG %s"%(len(self.atreports.values()), tstamp),
-			username=slack_username,
-			as_user=False
-		)
+				"chat.postMessage",
+				channel=slack_channel,
+				text="%d atreports from TNSTalker DEBUG %s"%(len(self.atreports.values()), tstamp),
+				username=slack_username,
+				as_user=False
+			)
 		if not api['ok']:
 			raise SlackClientError(api['error'])
 		
 		# add the atreport to a file
-		filename = "TNSTalker_DEBUG_%s.txt"%tstamp
+		filename = "TNSTalker_DEBUG_%s.json"%tstamp
 		fbuffer = io.StringIO(filename)
 		json.dump(list(self.atreports.values()), fbuffer, indent=2)
 		
