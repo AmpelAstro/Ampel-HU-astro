@@ -49,14 +49,16 @@ class TransientViewDumper(AbsT3Unit):
 		self.logger = logger
 		self.count = 0
 		self.config = run_config or self.RunConfig()
-		self.outfile = GzipFile(fileobj=BytesIO(), mode='w')
 		if not self.config.outputfile:
+			self.outfile = GzipFile(fileobj=BytesIO(), mode='w')
 			self.path = '/AMPEL/dumps/' + str(uuid.uuid1()) + '.json.gz'
 			url, auth = strip_auth_from_url(base_config['desycloud.default'])
 			self.session = requests.Session()
 			self.auth = auth
 			self.webdav_base = url
 			self.ocs_base = strip_path_from_url(url) + '/ocs/v1.php/apps/files_sharing/api/v1'
+		else:
+			self.outfile = GzipFile(self.config.outputfile+".json.gz", mode='w')
 		# don't bother preserving immutable types
 		self.encoder = AmpelEncoder(lossy=True)
 
@@ -77,14 +79,13 @@ class TransientViewDumper(AbsT3Unit):
 		"""
 		"""
 		self.outfile.flush()
-		mb = len(self.outfile.fileobj.getvalue()) / 2.0 ** 20
-		self.logger.info("{:.1f} MB of gzipped JSONy goodness".format(mb))
 		self.logger.info("Total number of transient printed: %i" % self.count)
 		if self.config.outputfile:
-			with open(self.config.outputfile+".json.gz", 'wb') as f:
-				f.write(self.outfile.fileobj.getvalue())
+			self.outfile.close()
 			self.logger.info(self.config.outputfile+".json.gz")
 		else:
+			mb = len(self.outfile.fileobj.getvalue()) / 2.0 ** 20
+			self.logger.info("{:.1f} MB of gzipped JSONy goodness".format(mb))
 			self.session.put(self.webdav_base + self.path, data=self.outfile.fileobj.getvalue(), auth=self.auth).raise_for_status()
 			response = self.session.post(self.ocs_base + '/shares',
 			    data=dict(path=self.path, shareType=3),
