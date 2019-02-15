@@ -42,7 +42,7 @@ def pedantic_get(rc, key):
 # get the science records for the catalog match
 def get_catalogmatch_srecs(tran_view, logger):
 	cat_res = tran_view.get_science_records(t2_unit_id="CATALOGMATCH")
-	if len(cat_res) == 0 or cat_res is None:
+	if len(cat_res) == 0 or cat_res is None or cat_res[-1].get_results() is None:
 		logger.info("NO CATALOG MATCH FOR THIS TRANSIENT")
 		return {}
 	return cat_res[-1].get_results()[-1]['output']
@@ -67,10 +67,10 @@ class TNSTalker(AbsT3Unit):
 			ignore_extra = False
 		
 		# TNS config
-		api_key				: str	= None		# Bot api key frm TNS
+		tns_api_key			: str	= None		# Bot api key frm TNS
 		get_tns				: bool	= False		# Check for TNS names and add to journal
 		get_tns_force		: bool	= False		# Check for TNS info even if internal name is known
-		submit_tns	 		: bool	= True		# Submit candidates passing criteria 
+		submit_tns	 		: bool	= True		# Submit candidates passing criteria (False gives you a 'dry run')
 		resubmit_tns_nonztf	: bool	= True		# Resubmit candidate submitted w/o the same ZTF internal ID 
 		resubmit_tns_ztf	: bool	= False		# Resubmit candidates even if they have been added with this name before
 		sandbox				: bool	= True		# Submit to TNS sandbox only
@@ -91,10 +91,10 @@ class TNSTalker(AbsT3Unit):
 		max_maglim			: float = 20	# Limiting magnitude to consider upper limits as 'significant'
 		nphot_submit		: int	= 2		# Number of photometric detection we include in the TNS AT report
 		
-		# TODO: dry run method / default API key?
 		
 		# cut on transients:
-		max_redshift	: float	= 1.15	# maximum redshift from T2 CATALOGMATCH catalogs
+		max_redshift	: float	= 1.15	# maximum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
+		min_redshift	: float	= 0		# minimum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
 		min_ndet		: int	= 2		# A candidate need to have at least this many detections
 		min_ndet_postul	: int	= 2		# and if it has this minimum nr of detection after the last significant (max_maglim) UL.
 		max_age			: float = 5		# days, If a detection has an age older than this, skip (stars,age).
@@ -103,6 +103,8 @@ class TNSTalker(AbsT3Unit):
 		max_peak_mag	: float = 13	#
 		min_n_filters	: int	= 1		# Reported detections in at least this many filters
 		min_gal_lat		: float = 14	# Minimal galactic latitide
+		needed_catalogs	: List[str]	= []# reject candidates if they don't have matching in this list of T2CATALOGMATCH catalogs
+		
 		# Cut to apply to all the photopoints in the light curve.
 		# This will affect all operations, i.e. evaluating the position, computing number of detections ecc.
 		lc_filters		: List[Dict]= [{
@@ -111,10 +113,10 @@ class TNSTalker(AbsT3Unit):
 									'value': -10.15
 								}]
 		
-		# tag
-		nuclear_dist: float = 1.	# Tag objects this close to SDSS galaxies as nuclear. Use negative to disable
-		aav_dist	: float = 1.	# Required distance to match with aav catalog. TODO: move?
-		
+		# parameters for adding remarks to AT reports
+		nuclear_dist	: float = 1.	# Tag objects this close to SDSS galaxies as nuclear. Use negative to disable
+		aav_dist		: float = 1.	# Required distance to match with aav catalog. TODO: move?
+		max_gaia_noise	: float = 2.	# (sigma!) if GAIA match is noisier than this, add a remark
 		
 		#maxGaiaNoise = 2.0 # Significance!
 		#minGaiaNoise = 0.0 # Significance!
@@ -141,7 +143,7 @@ class TNSTalker(AbsT3Unit):
 		self.resubmit_tns_nonztf	= pedantic_get(run_config, 'resubmit_tns_nonztf')
 		self.resubmit_tns_ztf 		= pedantic_get(run_config, 'resubmit_tns_ztf')
 		self.sandbox				= pedantic_get(run_config, 'sandbox')
-		self.api_key				= pedantic_get(run_config, 'api_key')
+		self.tns_api_key				= pedantic_get(run_config, 'tns_api_key')
 		self.ext_journal			= pedantic_get(run_config, 'ext_journal')
 		
 		# AT request parameters
@@ -149,6 +151,7 @@ class TNSTalker(AbsT3Unit):
 		self.ztf_tns_at				= pedantic_get(run_config, 'ztf_tns_at')
 		self.max_maglim				= pedantic_get(run_config, 'max_maglim')
 		self.nphot_submit			= pedantic_get(run_config, 'nphot_submit')
+		self.max_gaia_noise			= pedantic_get(run_config, 'max_gaia_noise')
 		
 #		# TODO: do we want to leave this
 #		if self.api_key is None:
@@ -159,6 +162,7 @@ class TNSTalker(AbsT3Unit):
 		
 		# parse run_config - selection parameters
 		self.max_redshift	= pedantic_get(run_config, 'max_redshift')
+		self.min_redshift	= pedantic_get(run_config, 'min_redshift')
 		self.min_ndet		= pedantic_get(run_config, 'min_ndet')
 		self.min_ndet_postul= pedantic_get(run_config, 'min_ndet_postul')
 		self.max_age		= pedantic_get(run_config, 'max_age')
@@ -168,7 +172,9 @@ class TNSTalker(AbsT3Unit):
 		self.min_n_filters	= pedantic_get(run_config, 'min_n_filters')
 		self.min_gal_lat	= pedantic_get(run_config, 'min_gal_lat')
 		self.lc_filters		= pedantic_get(run_config, 'lc_filters')
-		
+		self.needed_catalogs= pedantic_get(run_config, 'needed_catalogs')
+
+
 	def search_journal_tns(self, tran_view):
 		"""
 			Look through the journal for a TNS name.
@@ -208,7 +214,7 @@ class TNSTalker(AbsT3Unit):
 			# query the TNS for transient at this position
 			ra, dec = tran_view.get_latest_lightcurve().get_pos(ret="mean", filters=self.lc_filters)
 			new_tns_name, new_internal = get_tnsname(
-				ra=ra, dec=dec, api_key=self.api_key, logger=self.logger, sandbox=self.sandbox)#self.get_tnsname(tran_view)
+				ra=ra, dec=dec, api_key=self.tns_api_key, logger=self.logger, sandbox=self.sandbox)#self.get_tnsname(tran_view)
 			
 			# Create new journal entry if we have a tns_name
 			if not new_tns_name is None:
@@ -308,6 +314,19 @@ class TNSTalker(AbsT3Unit):
 		# ----------------------------------------------------------------------#
 		cat_res = get_catalogmatch_srecs(tran_view, logger=self.logger)
 		
+		# check that you have positive match in all of the necessary cataslogs:
+		for needed_cat in self.needed_catalogs:
+			if not cat_res.get(needed_cat, False):
+				self.logger.debug("no T2CATALOGMATCH results", extra={'catalog_matches': cat_res})
+				return False
+		
+		nedz		= cat_res.get('NEDz', False)
+		sdss_spec 	= cat_res.get("SDSS_spec", False)
+		if ((nedz and not (self.min_redshift <  nedz['z'] < self.max_redshift)) or 
+			(sdss_spec and not (self.min_redshift < sdss_spec['z'] > self.max_redshift))):
+			self.logger.debug("transient z above limit.", extra={'max_z': self.max_redshift, 'SDSSspec': sdss_spec, 'NEDz': nedz})
+			return False
+		
 		# cut stars in SDSS	#TODO: veryfy!
 		sdss_dr10 = cat_res.get('SDSSDR10', False)
 		if sdss_dr10 and sdss_dr10['type'] == 6:
@@ -360,7 +379,7 @@ class TNSTalker(AbsT3Unit):
 		gaia_dr2 = cat_res.get('GAIADR2', False)
 		nedz	 = cat_res.get('NEDz', False)
 		if ( (gaia_dr2 and gaia_dr2['ExcessNoise'] > self.max_gaia_noise and gaia_dr2['dist2transient'] < 1) and 
-			 (nedz and not (nedz['z']>0.01 and nedz['dist2transient'] < 1)) and 			#if it's not extragalactic
+			 (nedz and not (nedz['z']>0.01 and nedz['dist2transient'] < 1)) and 				#if it's not extragalactic
 			 (sdss_dr10 and not (sdss_dr10['type'] == 3 and sdss_dr10['dist2transient'] <3))	# and if it's not a galaxy
 			):
 			self.logger.info("Significant noise in Gaia DR2 - variable star cannot be excluded.", 
@@ -458,11 +477,6 @@ class TNSTalker(AbsT3Unit):
 			if not jup is None:
 				journal_updates.append(jup)
 			
-			# If we do not want to submit anything we can continue
-			if not self.submit_tns:
-				self.logger.debug("submit_tns config parameter is False, candidate won't be submitted")
-				continue
-			
 			# Chech whether this ID has been submitted (note that we do not check 
 			# whether the same candidate was ubmitte as different ZTF name) and
 			# depending on what's already on the TNS we can chose to submit or not
@@ -481,14 +495,17 @@ class TNSTalker(AbsT3Unit):
 		# This is just part of the tesing and will have to go away
 #		atreports = {k: atreports[k] for k in list(atreports.keys())[:2]}
 		self.atreports = atreports
-		
 		self.logger.info("collected %d AT reports to post"%len(atreports))
-		if len(atreports) == 0:		#TODO: do we want to return them even though we haven't submitted anything?
+		
+		# If we do not want to submit anything, or if there's nothing to submit
+		if len(atreports) == 0 or (not self.submit_tns):
+			self.logger.info("submit_tns config parameter is False or there's nothing to submit", 
+				extra={'n_reports': len(atreports), 'submit_tns': self.submit_tns})
 			return journal_updates
 		
 		# Send reports in chunks of size 90 (99 should work)
 		atchunks = list(chunks([atr for atr in atreports.values()], 90))
-		tnsreplies = sendTNSreports(atchunks, self.api_key, self.logger, sandbox=self.sandbox)
+		tnsreplies = sendTNSreports(atchunks, self.tns_api_key, self.logger, sandbox=self.sandbox)
 		
 		# Now go and check and create journal updates for the cases where SN was added
 		for tran_id in atreports.keys():
@@ -516,41 +533,55 @@ class TNSTalker(AbsT3Unit):
 		"""
 		self.logger.info("done running T3")
 		
+		if not hasattr(self, 'atreports'):
+			self.logger.info("No atreports collected.")
+			return
+		
 		#TODO: to help debugging and verification, we post the collected atreports
 		# to the slack, so that we can compare them with what JNo script is doing
-		# ALL THE FOLLOWING LINES SHOULD GO AWAY AS SOON AS WE TRUST THIS T3
+		# ALL THE CONTENT OF THIS METHOD SHOULD GO AWAY AS SOON AS WE TRUST THIS T3
 		self.logger.warning("Posting collected ATreports to Slack. I'm still running as a test!")
 		
 		import datetime, io, json
 		from slackclient import SlackClient
 		from slackclient.exceptions import SlackClientError
 		
-		slack_token = "xoxb-297846339667-549790069252-FLwKXkra0NL3FNnrvu9XYm4a"
-		slack_channel  = "#ampel_tns_test"
-		slack_username = "Ampel_TNS_test"
+		slack_token			= "xoxb-297846339667-549790069252-FLwKXkra0NL3FNnrvu9XYm4a"
+		slack_channel 		= "#ampel_tns_test"
+		slack_username		= "Ampel_TNS_test"
+		max_slackmsg_size	= 200	# if you have more than this # of reports, send different files
 		
 		sc = SlackClient(slack_token)
+		
 		tstamp = datetime.datetime.today().strftime("%Y-%m-%d-%X")
+		atlist = list(self.atreports.values())
+		last = 0
+		for ic, atrep in enumerate(chunks(atlist, max_slackmsg_size)):
+			
+			# add the atreport to a file
+			self.logger.debug("Posting chunk #%d"%ic)
+			filename = "TNSTalker_DEBUG_%s_chunk%d.json"%(tstamp, ic)
+			fbuffer = io.StringIO(filename)
+			json.dump(atrep, fbuffer, indent=2)
 		
-		# add the atreport to a file
-		filename = "TNSTalker_DEBUG_%s.json"%tstamp
-		fbuffer = io.StringIO(filename)
-		json.dump(list(self.atreports.values()), fbuffer, indent=2)
-		
-		# upload the file with the at reports
-		api = sc.api_call(
-				'files.upload',
-				token = slack_token,
-				channels = [slack_channel],
-				title = "TNSTalker_DEBUG_%s"%tstamp,
-				initial_comment = "%d atreports found by TNSTalker T3"%len(self.atreports.values()),
-				username = slack_username,
-				as_user = False,
-				filename =  filename,
-				filetype = 'javascript',
-				file = fbuffer.getvalue()
-			)
-		if not api['ok']:
-			raise SlackClientError(api['error'])
+			# upload the file with the at reports
+			first = last
+			last += len(atrep)
+			msg = ("A total of %d atreports found by TNSTalker T3. Here's chunk #%d (reports from %d to %d)"%
+				(len(self.atreports), ic, first, last))
+			api = sc.api_call(
+					'files.upload',
+					token = slack_token,
+					channels = [slack_channel],
+					title = "TNSTalker_DEBUG_%s_chunk%d"%(tstamp, ic),
+					initial_comment = msg,
+					username = slack_username,
+					as_user = False,
+					filename =  filename,
+					filetype = 'javascript',
+					file = fbuffer.getvalue()
+				)
+			if not api['ok']:
+				raise SlackClientError(api['error'])
 		
 		self.logger.warning("DONE DEBUG Slack posting. Look at %s for the results"%slack_channel)
