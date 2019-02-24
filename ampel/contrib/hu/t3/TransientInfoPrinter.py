@@ -6,13 +6,11 @@
 # Date              : 11.06.2018
 # Last Modified Date: 12.02.2019
 # Last Modified By  : mg <matteo.giomi@desy.de>
+
 import logging
 from pydantic import BaseModel
-
-from ampel.base.flags.TransientFlags import TransientFlags
 from ampel.base.TransientView import TransientView
 from ampel.base.abstract.AbsT3Unit import AbsT3Unit
-from ampel.ztf.pipeline.common.ZTFUtils import ZTFUtils
 
 class TransientInfoPrinter(AbsT3Unit):
 	"""
