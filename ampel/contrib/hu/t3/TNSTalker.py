@@ -528,7 +528,6 @@ class TNSTalker(AbsT3Unit):
 				(len(self.atreports), ic, first, last))
 			api = sc.api_call(
 					'files.upload',
-					token = slack_token,
 					channels = [slack_channel],
 					title = "TNSTalker_DEBUG_%s_chunk%d"%(tstamp, ic),
 					initial_comment = msg,
