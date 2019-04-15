@@ -28,17 +28,6 @@ def chunks(l, n):
 		# Create an index range for l of n items:
 		yield l[i:i+n]
 
-def pedantic_get(rc, key):
-	"""
-		get a key from a RunConfig object, raising exception if the key is not found
-	"""
-	val = getattr(rc, key, 'fuffaccia')
-	if val == 'fuffaccia':
-		raise KeyError("parameter %s not found in the run_config. Avaliable are: %s"%
-			(key, ", ".join(rc.dict().keys())))
-	return val
-
-
 # get the science records for the catalog match
 def get_catalogmatch_srecs(tran_view, logger):
 	cat_res = tran_view.get_science_records(t2_unit_id="CATALOGMATCH")
@@ -130,28 +119,11 @@ class TNSTalker(AbsT3Unit):
 		
 		self.logger = logger if logger is not None else logging.getLogger()
 		self.base_config = {} if base_config is None else base_config
-		self.run_config = {} if run_config is None else run_config
+		self.run_config = self.RunConfig() if run_config is None else run_config
 		self.name = "TNSTalker"
 		self.logger.info("Initialized T3 TNSTalker instance %s"%self.name)
 		self.logger.info("base_config: %s"%self.base_config)
 		self.logger.info("run_config: %s"%self.run_config)
-		
-		# parse run_config - tns commands
-		self.get_tns				= pedantic_get(run_config, 'get_tns')
-		self.get_tns_force			= pedantic_get(run_config, 'get_tns_force')
-		self.submit_tns				= pedantic_get(run_config, 'submit_tns')
-		self.resubmit_tns_nonztf	= pedantic_get(run_config, 'resubmit_tns_nonztf')
-		self.resubmit_tns_ztf 		= pedantic_get(run_config, 'resubmit_tns_ztf')
-		self.sandbox				= pedantic_get(run_config, 'sandbox')
-		self.tns_api_key				= pedantic_get(run_config, 'tns_api_key')
-		self.ext_journal			= pedantic_get(run_config, 'ext_journal')
-		
-		# AT request parameters
-		self.base_at_dict			= pedantic_get(run_config, 'base_at_dict')
-		self.ztf_tns_at				= pedantic_get(run_config, 'ztf_tns_at')
-		self.max_maglim				= pedantic_get(run_config, 'max_maglim')
-		self.nphot_submit			= pedantic_get(run_config, 'nphot_submit')
-		self.max_gaia_noise			= pedantic_get(run_config, 'max_gaia_noise')
 		
 #		# TODO: do we want to leave this
 #		if self.api_key is None:
@@ -159,21 +131,6 @@ class TNSTalker(AbsT3Unit):
 #			self.logger.info("No TNS api_key, using default + sandbox")	
 #			self.api_key = "a3f9bcbbe6a26a1ae97a0eeefe465932e68cba83"
 #			self.sandbox = True
-		
-		# parse run_config - selection parameters
-		self.max_redshift	= pedantic_get(run_config, 'max_redshift')
-		self.min_redshift	= pedantic_get(run_config, 'min_redshift')
-		self.min_ndet		= pedantic_get(run_config, 'min_ndet')
-		self.min_ndet_postul= pedantic_get(run_config, 'min_ndet_postul')
-		self.max_age		= pedantic_get(run_config, 'max_age')
-		self.min_age		= pedantic_get(run_config, 'min_age')
-		self.min_peak_mag	= pedantic_get(run_config, 'min_peak_mag')
-		self.max_peak_mag	= pedantic_get(run_config, 'max_peak_mag')
-		self.min_n_filters	= pedantic_get(run_config, 'min_n_filters')
-		self.min_gal_lat	= pedantic_get(run_config, 'min_gal_lat')
-		self.lc_filters		= pedantic_get(run_config, 'lc_filters')
-		self.needed_catalogs= pedantic_get(run_config, 'needed_catalogs')
-
 
 	def search_journal_tns(self, tran_view):
 		"""
@@ -209,12 +166,12 @@ class TNSTalker(AbsT3Unit):
 		
 		# if you can't find it, or if you want to re-scan, go and look in the TNS
 		jup = None
-		if (tns_name is None and self.get_tns) or self.get_tns_force:
+		if (tns_name is None and self.run_config.get_tns) or self.run_config.get_tns_force:
 			
 			# query the TNS for transient at this position
-			ra, dec = tran_view.get_latest_lightcurve().get_pos(ret="mean", filters=self.lc_filters)
+			ra, dec = tran_view.get_latest_lightcurve().get_pos(ret="mean", filters=self.run_config.lc_filters)
 			new_tns_name, new_internal = get_tnsname(
-				ra=ra, dec=dec, api_key=self.tns_api_key, logger=self.logger, sandbox=self.sandbox)#self.get_tnsname(tran_view)
+				ra=ra, dec=dec, api_key=self.run_config.tns_api_key, logger=self.logger, sandbox=self.run_config.sandbox)#self.get_tnsname(tran_view)
 			
 			# Create new journal entry if we have a tns_name
 			if not new_tns_name is None:
@@ -231,7 +188,7 @@ class TNSTalker(AbsT3Unit):
 					jcontent.update({'tnsInternal':new_internal})
 				
 				# create a journalUpdate and update the tns_name as well. TODO: check with JNo
-				jup = JournalUpdate(tran_id=tran_view.tran_id, ext=self.ext_journal, content=jcontent)
+				jup = JournalUpdate(tran_id=tran_view.tran_id, ext=self.run_config.ext_journal, content=jcontent)
 				tns_name = new_tns_name
 		
 		# if you have already your name, then don't add to journal
@@ -257,56 +214,56 @@ class TNSTalker(AbsT3Unit):
 		lc = tran_view.get_latest_lightcurve()
 		
 		# apply cut on history: consider photophoints which are sharp enough
-		pps = lc.get_photopoints(filters=self.lc_filters)
-		self.logger.debug("%d photop. passed filter %s"%(len(pps), self.lc_filters))
+		pps = lc.get_photopoints(filters=self.run_config.lc_filters)
+		self.logger.debug("%d photop. passed filter %s"%(len(pps), self.run_config.lc_filters))
 		
 		# cut on number of detection
-		if len(pps) < self.min_ndet:
+		if len(pps) < self.run_config.min_ndet:
 			self.logger.debug("not enough detections: got %d, required %d"%
-				(len(pps), self.min_ndet))
+				(len(pps), self.run_config.min_ndet))
 			return False
 		
 		# cut on number of detection after last SIGNIFICANT UL
-		ulims = lc.get_upperlimits(filters={'attribute':'diffmaglim', 'operator':'>=', 'value':self.max_maglim})
+		ulims = lc.get_upperlimits(filters={'attribute':'diffmaglim', 'operator':'>=', 'value':self.run_config.max_maglim})
 		if len(ulims) > 0:
 			last_ulim_jd = sorted(ulims, key=lambda x: x.get_value('jd'))[-1].get_value('jd')
 			pps_after_ndet = lc.get_photopoints( 
-				filters = self.lc_filters + [{'attribute': 'jd', 'operator': '>=', 'value': last_ulim_jd}])
-			if len(pps_after_ndet) < self.min_ndet_postul:
+				filters = self.run_config.lc_filters + [{'attribute': 'jd', 'operator': '>=', 'value': last_ulim_jd}])
+			if len(pps_after_ndet) < self.run_config.min_ndet_postul:
 				self.logger.debug("not enough consecutive detections after last significant UL.",
 					extra={'NDet': len(pps), 'lastUlimJD': last_ulim_jd})
 				return False
 		
 		# cut on number of filters
 		used_filters = set([pp.get_value('fid') for pp in pps])
-		if len(used_filters) < self.min_n_filters:
+		if len(used_filters) < self.run_config.min_n_filters:
 			self.logger.debug("requested detections in more than %d bands, got: %d"%
-				(self.min_n_filters, len(used_filters)))
+				(self.run_config.min_n_filters, len(used_filters)))
 			return False
 		
 		# cut on range of peak magnitude
 		mags = [pp.get_value('magpsf') for pp in pps]
 		peak_mag = min(mags)
-		if peak_mag > self.min_peak_mag or peak_mag < self.max_peak_mag:
+		if peak_mag > self.run_config.min_peak_mag or peak_mag < self.run_config.max_peak_mag:
 			self.logger.debug("peak magnitude of %.2f outside of range [%.2f, %.2f]"%
-				(peak_mag, self.min_peak_mag, self.max_peak_mag))
+				(peak_mag, self.run_config.min_peak_mag, self.run_config.max_peak_mag))
 			return False
 		
 		# cut on age
 		jds = [pp.get_value('jd') for pp in pps]
 		age = Time.now().jd - min(jds)
-		if age > self.max_age or age < self.min_age:
+		if age > self.run_config.max_age or age < self.run_config.min_age:
 			self.logger.debug("age of %.2f days outside of range [%.2f, %.2f]"%
-				(age, self.min_age, self.max_age))
+				(age, self.run_config.min_age, self.run_config.max_age))
 			return False
 		
 		# cut on galactic coordinates
-		ra, dec = lc.get_pos(ret="mean", filters=self.lc_filters)
+		ra, dec = lc.get_pos(ret="mean", filters=self.run_config.lc_filters)
 		coordinates = SkyCoord(ra, dec, unit='deg')
 		b = coordinates.galactic.b.deg
-		if abs(b) < self.min_gal_lat:
+		if abs(b) < self.run_config.min_gal_lat:
 			self.logger.debug("transient at b=%.2f too close to galactic plane (cut at %.2f)"%
-				(b, self.min_gal_lat))
+				(b, self.run_config.min_gal_lat))
 			return False
 		
 		# ----------------------------------------------------------------------#
@@ -315,16 +272,16 @@ class TNSTalker(AbsT3Unit):
 		cat_res = get_catalogmatch_srecs(tran_view, logger=self.logger)
 		
 		# check that you have positive match in all of the necessary cataslogs:
-		for needed_cat in self.needed_catalogs:
+		for needed_cat in self.run_config.needed_catalogs:
 			if not cat_res.get(needed_cat, False):
 				self.logger.debug("no T2CATALOGMATCH results", extra={'catalog_matches': cat_res})
 				return False
 		
 		nedz		= cat_res.get('NEDz', False)
 		sdss_spec 	= cat_res.get("SDSS_spec", False)
-		if ((nedz and not (self.min_redshift <  nedz['z'] < self.max_redshift)) or 
-			(sdss_spec and not (self.min_redshift < sdss_spec['z'] > self.max_redshift))):
-			self.logger.debug("transient z above limit.", extra={'max_z': self.max_redshift, 'SDSSspec': sdss_spec, 'NEDz': nedz})
+		if ((nedz and not (self.run_config.min_redshift <  nedz['z'] < self.run_config.max_redshift)) or 
+			(sdss_spec and not (self.run_config.min_redshift < sdss_spec['z'] > self.run_config.max_redshift))):
+			self.logger.debug("transient z above limit.", extra={'max_z': self.run_config.max_redshift, 'SDSSspec': sdss_spec, 'NEDz': nedz})
 			return False
 		
 		# cut stars in SDSS	#TODO: veryfy!
@@ -367,7 +324,7 @@ class TNSTalker(AbsT3Unit):
 		
 		# tag nuclear
 		sdss_dr10 = cat_res.get('SDSSDR10', False)
-		if sdss_dr10 and sdss_dr10['type'] == 3 and sdss_dr10['dist2transient'] < self.nuclear_dist:
+		if sdss_dr10 and sdss_dr10['type'] == 3 and sdss_dr10['dist2transient'] < self.run_config.nuclear_dist:
 			self.logger.info("Transient close to SDSS photometric galaxy - possibly nuclear",
 				extra={"tranId":tran_view.tran_id, 'SDSSDR10': sdss_dr10})
 			return {
@@ -378,7 +335,7 @@ class TNSTalker(AbsT3Unit):
 		# tag noisy gaia
 		gaia_dr2 = cat_res.get('GAIADR2', False)
 		nedz	 = cat_res.get('NEDz', False)
-		if ( (gaia_dr2 and gaia_dr2['ExcessNoise'] > self.max_gaia_noise and gaia_dr2['dist2transient'] < 1) and 
+		if ( (gaia_dr2 and gaia_dr2['ExcessNoise'] > self.run_config.max_gaia_noise and gaia_dr2['dist2transient'] < 1) and 
 			 (nedz and not (nedz['z']>0.01 and nedz['dist2transient'] < 1)) and 				#if it's not extragalactic
 			 (sdss_dr10 and not (sdss_dr10['type'] == 3 and sdss_dr10['dist2transient'] <3))	# and if it's not a galaxy
 			):
@@ -396,17 +353,17 @@ class TNSTalker(AbsT3Unit):
 		self.logger.info("creating AT report for transient.")
 		ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
 		lc = tran_view.get_latest_lightcurve()
-		ra, dec = lc.get_pos(ret="mean", filters=self.lc_filters)
+		ra, dec = lc.get_pos(ret="mean", filters=self.run_config.lc_filters)
 		
 		# Start defining AT dict: name and position
 		atdict = {}
-		atdict.update(self.base_at_dict)
+		atdict.update(self.run_config.base_at_dict)
 		atdict["internal_name"] = ztf_name
 		atdict["ra"] = {"value": ra, "error" : 1., "units":"arcsec"}
 		atdict["dec"] = {"value": dec, "error" : 1., "units":"arcsec"}
 		
 		# Add information on the latest SIGNIFICANT non detection. TODO: check!
-		ulims = lc.get_upperlimits(filters={'attribute':'diffmaglim', 'operator':'>=', 'value':self.max_maglim})
+		ulims = lc.get_upperlimits(filters={'attribute':'diffmaglim', 'operator':'>=', 'value':self.run_config.max_maglim})
 		last_non_obs = 0
 		if len(ulims) == 0:
 			atdict["non_detection"] = {
@@ -421,17 +378,17 @@ class TNSTalker(AbsT3Unit):
 									"limiting_flux"	: last_ulim.get_value('diffmaglim'),
 									"filter_value"	: filter_name
 								}
-		atdict["non_detection"].update(self.ztf_tns_at)# Add the default ZTF values
+		atdict["non_detection"].update(self.run_config.ztf_tns_at)# Add the default ZTF values
 		
 		# now add info on photometric detections: consider only candidates which
 		# have some consecutive detection after the last ulim
 		pps = lc.get_photopoints(
-			filters = self.lc_filters + [{'attribute': 'jd', 'operator': '>=', 'value': last_non_obs}])
+			filters = self.run_config.lc_filters + [{'attribute': 'jd', 'operator': '>=', 'value': last_non_obs}])
 		
 		# Lets create a few photometry points: TODO: should they be the latest or the first?
 		atdict["photometry"] = {"photometry_group":{}}
 		atdict["discovery_datetime"] = 10**30
-		for ipp, pp in enumerate(pps[:self.nphot_submit]):
+		for ipp, pp in enumerate(pps[:self.run_config.nphot_submit]):
 			photdict = {	#TODO: do we need to round the numerical values?
 				"obsdate"		: pp.get_value('jd'),
 				"flux"			: pp.get_value('magpsf'),
@@ -441,7 +398,7 @@ class TNSTalker(AbsT3Unit):
 				}
 			if pp.get_value('jd')<atdict["discovery_datetime"]:
 				atdict["discovery_datetime"] = pp.get_value('jd')
-			photdict.update(self.ztf_tns_at)
+			photdict.update(self.run_config.ztf_tns_at)
 			atdict["photometry"]["photometry_group"][ipp] = photdict
 		
 		# finally, add remarks based on catalogs adn return
@@ -481,8 +438,8 @@ class TNSTalker(AbsT3Unit):
 			# whether the same candidate was ubmitte as different ZTF name) and
 			# depending on what's already on the TNS we can chose to submit or not
 			is_ztfsubmitted = ztf_name in tns_internals
-			if not ( (is_ztfsubmitted and self.resubmit_tns_ztf) or 
-					 (not is_ztfsubmitted and self.resubmit_tns_nonztf) ):
+			if not ( (is_ztfsubmitted and self.run_config.resubmit_tns_ztf) or 
+					 (not is_ztfsubmitted and self.run_config.resubmit_tns_nonztf) ):
 				self.logger.debug("we won't submit candidate.", extra={'is_ztfsub': is_ztfsubmitted})
 				continue
 			
@@ -498,14 +455,14 @@ class TNSTalker(AbsT3Unit):
 		self.logger.info("collected %d AT reports to post"%len(atreports))
 		
 		# If we do not want to submit anything, or if there's nothing to submit
-		if len(atreports) == 0 or (not self.submit_tns):
+		if len(atreports) == 0 or (not self.run_config.submit_tns):
 			self.logger.info("submit_tns config parameter is False or there's nothing to submit", 
-				extra={'n_reports': len(atreports), 'submit_tns': self.submit_tns})
+				extra={'n_reports': len(atreports), 'submit_tns': self.run_config.submit_tns})
 			return journal_updates
 		
 		# Send reports in chunks of size 90 (99 should work)
 		atchunks = list(chunks([atr for atr in atreports.values()], 90))
-		tnsreplies = sendTNSreports(atchunks, self.tns_api_key, self.logger, sandbox=self.sandbox)
+		tnsreplies = sendTNSreports(atchunks, self.run_config.tns_api_key, self.logger, sandbox=self.run_config.sandbox)
 		
 		# Now go and check and create journal updates for the cases where SN was added
 		for tran_id in atreports.keys():
@@ -517,7 +474,7 @@ class TNSTalker(AbsT3Unit):
 			# Create new journal entry 			#TODO: do we want to add to the journal a failed TNS submit?
 			jup = JournalUpdate(
 					tranId=tran_id,
-					ext=self.ext_journal,
+					ext=self.run_config.ext_journal,
 					content={
 						't3unit': self.name,
 						'tnsName': tnsreplies[ztf_name][1]["TNSName"],
