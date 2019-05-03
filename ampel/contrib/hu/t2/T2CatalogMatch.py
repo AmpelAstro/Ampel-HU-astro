@@ -85,7 +85,7 @@ class T2CatalogMatch(AbsT2Unit):
 			else:
 				merged_kwargs = self.catq_kwargs_global.copy()
 				merged_kwargs.update(catq_kwargs)
-			self.logger.debug("Using arguments: %s", merged_kwargs)
+			self.logger.debug("Using arguments: %s"%repr(merged_kwargs))
 			
 			# init the catalog query and remember it
 			catq = CatalogQuery.CatalogQuery(catalog, **merged_kwargs)
