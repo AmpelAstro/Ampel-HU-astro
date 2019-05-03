@@ -142,6 +142,10 @@ class DecentFilter(AbsAlertFilter):
 			apply combined cut on sgscore1 and distpsnr1 to reject the transient if
 			there is a PS1 star-like object in it's immediate vicinity
 		"""
+		
+		#TODO: consider the case of alert moving wrt to the position of a star
+		# maybe cut on the minimum of the distance!
+		
 		if (transient['distpsnr1'] < self.ps1_sgveto_rad and
 				transient['sgscore1'] > self.ps1_sgveto_th):
 			return True
