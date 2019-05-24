@@ -52,14 +52,12 @@ class TransientInfoPrinter(AbsT3Unit):
 			"Printing info of %i transient(s)" % 
 			len(transients)
 		)
-		print("")
 
 		self.count += len(transients)
 
 		ret=[]
 		for tran_view in transients:
 			TransientInfoPrinter._print_info(tran_view, self.logger)
-			print("")
 
 		return ret
 
