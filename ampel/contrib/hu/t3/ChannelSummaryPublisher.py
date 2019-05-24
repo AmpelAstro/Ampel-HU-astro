@@ -18,7 +18,7 @@ from pydantic import BaseModel
 from typing import List
 
 from ampel.base.abstract.AbsT3Unit import AbsT3Unit
-from ampel.utils.json import AmpelEncoder
+from ampel.utils.json_serialization import AmpelEncoder
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 
 class ChannelSummaryPublisher(AbsT3Unit):
