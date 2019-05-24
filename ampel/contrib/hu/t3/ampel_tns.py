@@ -5,6 +5,7 @@
 # Original sample code by Ken Smith (May 2016) modified by Jakob Nordin (Feb 2018)
 # -----------------------------------------------------------------------------
 
+import re
 import requests
 import json
 import logging

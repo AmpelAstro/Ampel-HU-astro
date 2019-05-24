@@ -142,7 +142,7 @@ class T2Observability(AbsT2Unit):
 		if observatories is None:
 			raise KeyError("run_config missing list of observatories.")
 		
-		for name, observatory in obs.items():
+		for name, observatory in observatories.items():
 			
 			my_obs = self.init_observatory(name, observatory['pos'])
 

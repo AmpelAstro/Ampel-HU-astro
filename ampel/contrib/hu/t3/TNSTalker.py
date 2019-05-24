@@ -8,6 +8,7 @@
 # Last Modified By	: matteo.giomi@desy.de
 
 import re
+import logging
 from pydantic import BaseModel, BaseConfig
 from typing import Dict, List
 
