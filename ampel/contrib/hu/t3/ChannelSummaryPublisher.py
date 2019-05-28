@@ -7,6 +7,7 @@
 # Last Modified Date: 13.11.2018
 # Last Modified By  : m. giomi <matteo.giomi@desy.de>
 
+import backoff
 import json
 import requests
 import uuid
@@ -94,7 +95,7 @@ class ChannelSummaryPublisher(AbsT3Unit):
 				key = info_dict.pop("ztf_name")
 				self.summary[key] = info_dict
 
-
+	@backoff.on_exception(backoff.expo, TimeoutError)
 	def done(self):
 		"""
 		"""
