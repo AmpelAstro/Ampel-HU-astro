@@ -14,6 +14,7 @@ setup(name='ampel-contrib-hu',
           ],
           'ampel.target_sources' : [
               'TargetSourceListener = ampel.contrib.hu.TargetSourceListener:TargetSourceListener',
+              'TargetSourceListenerSlack = ampel.contrib.hu.TargetSourceListenerSlack:TargetSourceListenerSlack',
           ],
           'ampel.pipeline.t2.configs' : [
               'hu = ampel.contrib.hu.channels:load_t2_run_configs',
