@@ -221,7 +221,11 @@ class T2CatalogMatch(AbsT2Unit):
 				
 				# get the catalog query object and do the query
 				catq = self.init_extcats_query(catalog, catq_kwargs=cat_opts.get('catq_kwargs'))
-				src, dist = catq.findclosest(transient_ra, transient_dec, cat_opts['rs_arcsec'])
+				src, dist = catq.findclosest(
+							transient_ra, transient_dec, cat_opts['rs_arcsec'], 
+							pre_filter=cat_opts.get('pre_filter'), 
+							post_filter=cat_opts.get('post_filter')
+							)
 				
 			elif use == 'catsHTM':
 				
