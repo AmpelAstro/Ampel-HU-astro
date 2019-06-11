@@ -22,6 +22,10 @@ from extcats.catquery_utils import get_closest
 from numpy import asarray, degrees
 from ampel.contrib.hu import catshtm_server
 
+import backoff
+from pymongo.errors import AutoReconnect
+from zerorpc.exceptions import LostRemote
+
 class T2CatalogMatch(AbsT2Unit):
 	"""
 		cross match the position of a transient to those of sources in a set
@@ -56,6 +60,14 @@ class T2CatalogMatch(AbsT2Unit):
 		
 		# mandatory keys
 		self.mandatory_keys = ['use', 'rs_arcsec']
+
+		# decorate run() so that it retries with exponential backoff on
+		# failed reconnects
+		self.run = backoff.on_exception(backoff.expo,
+			(AutoReconnect, LostRemote),
+			logger=self.logger,
+			max_time=300,
+		)(self.run)
 
 	def init_extcats_query(self, catalog, catq_kwargs=None):
 		"""
