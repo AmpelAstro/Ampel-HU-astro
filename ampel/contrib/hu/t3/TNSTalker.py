@@ -9,6 +9,7 @@
 
 import re
 import logging
+import numpy as np
 from pydantic import BaseModel, BaseConfig
 from typing import Dict, List
 
@@ -352,6 +353,8 @@ class TNSTalker(AbsT3Unit):
 		# cut on distance to closest solar system object
 		# TODO: how to make this check: ('0.0' in list(phot["ssdistnr"])
 		ssdist = np.array([pp.get_value('ssdistnr') for pp in pps])
+		ssdist[ssdist==None] = -999
+		print (ssdist)
 		close_to_sso = np.logical_and(ssdist < self.run_config.ssdistnr_max, ssdist > 0)
 		if np.any(close_to_sso):
 			self.logger.debug("transient too close to solar system object", extra={'ssdistnr': ssdist.tolist()})
@@ -371,7 +374,7 @@ class TNSTalker(AbsT3Unit):
 			return False
 		
 		# cut on median RB score
-		rbs = [pp['rb'] for pp in pps]
+		rbs = [pp.get_value('rb') for pp in pps]
 		if np.median(rbs) < self.run_config.rb_minmed:
 			self.logger.debug(
 				"Median RB %below limit.",
