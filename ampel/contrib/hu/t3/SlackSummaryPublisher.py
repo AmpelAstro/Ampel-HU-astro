@@ -192,6 +192,9 @@ class SlackSummaryPublisher(AbsT3Unit):
             tdf["n_detections"] = len(tdf["jd"])
             
             # Parse upper limits if present for the last upper limit prior to detection
+	    # As is, an upper limit between two detections (so after the first) will not reset this clock
+            # It can be discussed whether this is the requested behaviour (see jd>min(tdf["first_detection"]) ) below
+            # For example case, look at ZTF19abejaiy
             # Only include "significant" (limit deeper than 19.5)
             if transient.upperlimits is not None:
                 jd_last_nondet = 0
