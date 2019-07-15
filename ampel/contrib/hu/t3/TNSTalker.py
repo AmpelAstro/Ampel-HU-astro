@@ -21,7 +21,7 @@ from ampel.base.dataclass.JournalUpdate import JournalUpdate
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.ztf.pipeline.common.ZTFUtils import ZTFUtils
 
-from ampel.contrib.hu.t3.ampel_tns import sendTNSreports, get_tnsname, TNSFILTERID
+from ampel.contrib.hu.t3.ampel_tns import sendTNSreports, get_tnsname, TNSFILTERID, tnsInternal
 
 # Create a function called "chunks" with two arguments, l and n:
 def chunks(l, n):
@@ -83,6 +83,7 @@ class TNSTalker(AbsT3Unit):
 		
 		# cuts on T2 catalogs
 		needed_catalogs	: List[str]	= []# reject candidates if they don't have matching in this list of T2CATALOGMATCH catalogs
+		require_catalogmatch : bool = True
 		max_redshift	: float	= 1.15	# maximum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
 		min_redshift	: float	= 0		# minimum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
 		start_dist		: float = 1.5 	# arcsec, minimum distance to remove star matches to transient if found (eg in SDSSDR10)
@@ -146,6 +147,8 @@ class TNSTalker(AbsT3Unit):
 	def search_journal_tns(self, tran_view):
 		"""
 			Look through the journal for a TNS name.
+                        Assumes journal entries came from this unit, that the TNS name is saved as "tnsName"
+                        and internal names as "tnsInternal"
 		"""
 		# Find the latest tns name (skipping previous)
 		jentry = tran_view.get_journal_entries(
@@ -157,7 +160,8 @@ class TNSTalker(AbsT3Unit):
 		jentries = tran_view.get_journal_entries(
 			filterFunc=lambda x: x.get('t3unit')==self.name and 'tnsInternal' in x.keys())
 		tns_internals = [] if jentries is None else [j.get('tnsInternal',None) for j in jentries]
-		self.logger.debug('Journal search',extra={'tranId':tran_view.tran_id,'tnsName':tns_name,'tnsInternals':tns_internals})
+		self.logger.info('Journal search',extra={'tranId':tran_view.tran_id,'tnsName':tns_name,'tnsInternals':tns_internals})
+
 		return tns_name, tns_internals
 
 	def _query_tns_names(self, tran_view):
@@ -165,25 +169,30 @@ class TNSTalker(AbsT3Unit):
 			query the TNS for names and internals at the position
 			of the transient.
 		"""
-		# query the TNS for transient at this position
+		# query the TNS for transient at this position. Note that we check the real TNS for names for compatibility...
 		ra, dec = tran_view.get_latest_lightcurve().get_pos(ret="mean", filters=self.run_config.lc_filters)
 		tns_name, tns_internals = get_tnsname(
 							ra=ra, dec=dec, 
 							api_key=self.run_config.tns_api_key, 
 							logger=self.logger, 
-							sandbox=self.run_config.sandbox
+							sandbox=False
 						)
+		
+		# Skip the AT SN prefix if present
+		if tns_name is not None:
+			tns_name = re.sub('^AT','',tns_name)
+			tns_name = re.sub('^SN','',tns_name)
 		
 		# be nice and then go
 		ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
-		self.logger.debug(
+		self.logger.info(
 			"looking for TNS name in the TNS.",
 			extra={
 				'ZTFname': ztf_name, 
 				'ra': ra,
 				'dec': dec,
-				'TNSname': tns_name,
-				'TNSinternals': tns_internals,
+				'tnsName': tns_name,
+				'tnsInternals': tns_internals,
 			})
 		return tns_name, tns_internals
 
@@ -196,26 +205,29 @@ class TNSTalker(AbsT3Unit):
 		
 		tns_name, tns_internals = None, []
 		for tname in tran_view.tran_names:
+
 			if 'TNS' in tname and (not self.run_config.get_tns_force):
-				self.logger.debug(
+				self.logger.info(
 					"found TNS name in tran_names.", extra={'TNSname': tname, 'TransNames': tran_view.tran_names})
 				# as TNS to give you the internal names.
 				# we remove the 'TNS' part of the name, since this has been 
 				# added by the TNSMatcher T3, plus we skip the prefix
-				tns_name = tname.replace("TNS", "")			# TODO: check if this line is correct
+				tns_name = tname.replace("TNS", "")	# We here assume that the AT/SN suffix is cut				
+				# Not using sandbox (only checking wrt to full system)
 				tns_internals, runstatus = tnsInternal(
-														tns_name[2:],
-														api_key=self.run_config.tns_api_key,
-														sandbox=self.run_config.sandbox
-													)
+								tns_name,   
+								api_key=self.run_config.tns_api_key,
+								sandbox=False
+							)
+
 		# be nice with the logging
 		ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
-		self.logger.debug(
+		self.logger.info(
 			"looked for TNS name in self.tran_names",
 			extra={
 				'ZTFname': ztf_name,
-				'TNSname': tns_name,
-				'TNSinternals': tns_internals,
+				'tnsName': tns_name,
+				'tnsInternals': tns_internals,
 				'TransNames': tran_view.tran_names
 			})
 		
@@ -235,14 +247,14 @@ class TNSTalker(AbsT3Unit):
 		"""
 		
 		ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
-		self.logger.debug("looking for TNS name for transient.", extra={'ZTFname': ztf_name})
+		self.logger.info("looking for TNS name for transient.", extra={'ZTFname': ztf_name})
 		
 		# first we look in the journal, this is the cheapest option. If we have 
 		# a valid name from the journal and if you do not want to look again in 
 		# the TNS, we are fine. NOTE: in this case you don't return a journal update.
 		tns_name, tns_internals = self.search_journal_tns(tran_view)
 		if (not tns_name is None) and (not self.run_config.get_tns_force):
-			return tns_name, tns_internal, None
+			return tns_name, tns_internals, None
 		
 		# second option in case there is no TNS name in the journal: go and look in tran_names
 		# and if you don't find any, go and ask TNS again.
@@ -265,7 +277,8 @@ class TNSTalker(AbsT3Unit):
 				jcontent = {'t3unit': self.name, 'tnsName': new_tns_name}
 				if tns_internals_new is not None:
 					tns_internals.append(tns_internals_new)
-					jcontent.update({'tnsInternal':tns_internals_new})
+					for tns_int in tns_internals_new:
+						jcontent.update({'tnsInternal':tns_int})
 				
 				# create a journalUpdate and update the tns_name as well. TODO: check with JNo
 				jup = JournalUpdate(tran_id=tran_view.tran_id, ext=self.run_config.ext_journal, content=jcontent)
@@ -276,7 +289,7 @@ class TNSTalker(AbsT3Unit):
 		return tns_name, tns_internals, jup
 
 
-	def acctept_tview(self, tran_view):
+	def accept_tview(self, tran_view):
 		"""
 			decide weather or not this transient is worth submitting to TNS 
 			or not. 
@@ -297,11 +310,11 @@ class TNSTalker(AbsT3Unit):
 		
 		# apply cut on history: consider photophoints which are sharp enough
 		pps = lc.get_photopoints(filters=self.run_config.lc_filters)
-		self.logger.debug("%d photop. passed filter %s"%(len(pps), self.run_config.lc_filters))
+		self.logger.info("%d photop. passed filter %s"%(len(pps), self.run_config.lc_filters))
 		
 		# cut on number of detection
 		if len(pps) < self.run_config.min_ndet:
-			self.logger.debug("not enough detections: got %d, required %d"%
+			self.logger.info("not enough detections: got %d, required %d"%
 				(len(pps), self.run_config.min_ndet))
 			return False
 		
@@ -312,14 +325,14 @@ class TNSTalker(AbsT3Unit):
 			pps_after_ndet = lc.get_photopoints( 
 				filters = self.run_config.lc_filters + [{'attribute': 'jd', 'operator': '>=', 'value': last_ulim_jd}])
 			if len(pps_after_ndet) < self.run_config.min_ndet_postul:
-				self.logger.debug("not enough consecutive detections after last significant UL.",
+				self.logger.info("not enough consecutive detections after last significant UL.",
 					extra={'NDet': len(pps), 'lastUlimJD': last_ulim_jd})
 				return False
 		
 		# cut on number of filters
 		used_filters = set([pp.get_value('fid') for pp in pps])
 		if len(used_filters) < self.run_config.min_n_filters:
-			self.logger.debug("requested detections in more than %d bands, got: %d"%
+			self.logger.info("requested detections in more than %d bands, got: %d"%
 				(self.run_config.min_n_filters, len(used_filters)))
 			return False
 		
@@ -327,7 +340,7 @@ class TNSTalker(AbsT3Unit):
 		mags = [pp.get_value('magpsf') for pp in pps]
 		peak_mag = min(mags)
 		if peak_mag > self.run_config.min_peak_mag or peak_mag < self.run_config.max_peak_mag:
-			self.logger.debug("peak magnitude of %.2f outside of range [%.2f, %.2f]"%
+			self.logger.info("peak magnitude of %.2f outside of range [%.2f, %.2f]"%
 				(peak_mag, self.run_config.min_peak_mag, self.run_config.max_peak_mag))
 			return False
 		
@@ -337,7 +350,7 @@ class TNSTalker(AbsT3Unit):
 		#age = Time.now().jd - min(jds)
 		age = most_recent_detection - first_detection
 		if age > self.run_config.max_age or age < self.run_config.min_age:
-			self.logger.debug("age of %.2f days outside of range [%.2f, %.2f]"%
+			self.logger.info("age of %.2f days outside of range [%.2f, %.2f]"%
 				(age, self.run_config.min_age, self.run_config.max_age))
 			return False
 		
@@ -346,7 +359,7 @@ class TNSTalker(AbsT3Unit):
 		coordinates = SkyCoord(ra, dec, unit='deg')
 		b = coordinates.galactic.b.deg
 		if abs(b) < self.run_config.min_gal_lat:
-			self.logger.debug("transient at b=%.2f too close to galactic plane (cut at %.2f)"%
+			self.logger.info("transient at b=%.2f too close to galactic plane (cut at %.2f)"%
 				(b, self.run_config.min_gal_lat))
 			return False
 		
@@ -354,10 +367,11 @@ class TNSTalker(AbsT3Unit):
 		# TODO: how to make this check: ('0.0' in list(phot["ssdistnr"])
 		ssdist = np.array([pp.get_value('ssdistnr') for pp in pps])
 		ssdist[ssdist==None] = -999
-		print (ssdist)
+		#print (ssdist)
+
 		close_to_sso = np.logical_and(ssdist < self.run_config.ssdistnr_max, ssdist > 0)
 		if np.any(close_to_sso):
-			self.logger.debug("transient too close to solar system object", extra={'ssdistnr': ssdist.tolist()})
+			self.logger.info("transient too close to solar system object", extra={'ssdistnr': ssdist.tolist()})
 			return False
 		
 		# check PS1 sg for the full alert history
@@ -367,7 +381,7 @@ class TNSTalker(AbsT3Unit):
 									np.array(sgscore1) > self.run_config.ps1_sgveto_sgth
 								)
 		if np.any(is_ps1_star):
-			self.logger.debug(
+			self.logger.info(
 				"transient below PS1 SG cut for at least one pp.",
 				extra={'distpsnr1': distpsnr1, 'sgscore1': sgscore1}
 				)
@@ -376,7 +390,7 @@ class TNSTalker(AbsT3Unit):
 		# cut on median RB score
 		rbs = [pp.get_value('rb') for pp in pps]
 		if np.median(rbs) < self.run_config.rb_minmed:
-			self.logger.debug(
+			self.logger.info(
 				"Median RB %below limit.",
 				extra={'median_rd': np.median(rbs), 'rb_minmed': self.run_config.rb_minmed}
 				)
@@ -387,17 +401,22 @@ class TNSTalker(AbsT3Unit):
 		# ----------------------------------------------------------------------#
 		cat_res = get_catalogmatch_srecs(tran_view, logger=self.logger)
 		
+		# check that we got any catalogmatching results (that it was run)
+		if self.run_config.require_catalogmatch and len(cat_res)==0:
+			self.logger.info("no T2CATALOGMATCH results")
+			return False
+
 		# check that you have positive match in all of the necessary cataslogs:
 		for needed_cat in self.run_config.needed_catalogs:
 			if not cat_res.get(needed_cat, False):
-				self.logger.debug("no T2CATALOGMATCH results for %s"%needed_cat, extra={'catalog_matches': cat_res})
+				self.logger.info("no T2CATALOGMATCH results for %s"%needed_cat, extra={'catalog_matches': cat_res})
 				return False
 		
 		nedz		= cat_res.get('NEDz', False)
 		sdss_spec 	= cat_res.get("SDSS_spec", False)
 		if ((nedz and not (self.run_config.min_redshift <  nedz['z'] < self.run_config.max_redshift)) or 
 			(sdss_spec and not (self.run_config.min_redshift < sdss_spec['z'] > self.run_config.max_redshift))):
-			self.logger.debug("transient z above limit.", extra={'max_z': self.run_config.max_redshift, 'SDSSspec': sdss_spec, 'NEDz': nedz})
+			self.logger.info("transient z above limit.", extra={'max_z': self.run_config.max_redshift, 'SDSSspec': sdss_spec, 'NEDz': nedz})
 			return False
 		
 		# another battle in the endless war against stars.
@@ -410,19 +429,19 @@ class TNSTalker(AbsT3Unit):
 			cat = cat_res.get(cat_name, False)
 			cname, sval = sfilter['class_col'], sfilter['star_val']
 			if cat and cat[cname] == sval and cat['dist2transient'] < self.run_config.start_dist:
-				self.logger.debug("transient matched with star in catalog.", extra={'cat_name': cat_name, 'cat_res': cat})
+				self.logger.info("transient matched with star in catalog.", extra={'cat_name': cat_name, 'cat_res': cat})
 				return False
 		
 		# cut matches with variable star catalog
 		aavsovsx = cat_res.get('AAVSOVSX', False)
 		if aavsovsx and aavsovsx['dist2transient'] < self.run_config.start_dist:
-			self.logger.debug("transient too close to AAVSOVSX sorce", extra=aavsovsx)
+			self.logger.info("transient too close to AAVSOVSX sorce", extra=aavsovsx)
 			return False
 		
 		# cut away bright stars. TODO: this considers just the closest matches...
 		gaia_dr2 = cat_res.get('GAIADR2', None)
 		if gaia_dr2 and gaia_dr2['Mag_G'] > 0 and gaia_dr2['Mag_G'] < self.run_config.max_gaia_neighbour_gmag:
-			self.logger.debug("transient close to bright GAIA source", extra=gaia_dr2)
+			self.logger.info("transient close to bright GAIA source", extra=gaia_dr2)
 			return False
 		
 		# congratulation TransientView, you made it!
@@ -551,7 +570,7 @@ class TNSTalker(AbsT3Unit):
 			return []
 		
 		# select the transients
-		transients_to_submit = [tv for tv in transients if self.acctept_tview(tv)]
+		transients_to_submit = [tv for tv in transients if self.accept_tview(tv)]
 		self.logger.info("of the %d transients presented to this task, %d passed selection criteria"%
 			(len(transients), len(transients_to_submit)))
 		
@@ -574,7 +593,7 @@ class TNSTalker(AbsT3Unit):
 			is_ztfsubmitted = ztf_name in tns_internals
 			if not ( (is_ztfsubmitted and self.run_config.resubmit_tns_ztf) or 
 					 (not is_ztfsubmitted and self.run_config.resubmit_tns_nonztf) ):
-				self.logger.debug(
+				self.logger.info(
 					"we won't submit candidate.",
 					extra = {
 						'is_ztfsub': is_ztfsubmitted, 
@@ -659,7 +678,7 @@ class TNSTalker(AbsT3Unit):
 		from slackclient import SlackClient
 		from slackclient.exceptions import SlackClientError
 		
-		slack_token			= "xoxb-297846339667-549790069252-FLwKXkra0NL3FNnrvu9XYm4a"
+		slack_token		= "xoxb-297846339667-549790069252-FLwKXkra0NL3FNnrvu9XYm4a"
 		slack_channel 		= "#ampel_tns_test"
 		slack_username		= "Ampel_TNS_test"
 		max_slackmsg_size	= 200	# if you have more than this # of reports, send different files
@@ -672,7 +691,7 @@ class TNSTalker(AbsT3Unit):
 		for ic, atrep in enumerate(chunks(atlist, max_slackmsg_size)):
 			
 			# add the atreport to a file
-			self.logger.debug("Posting chunk #%d"%ic)
+			self.logger.info("Posting chunk #%d"%ic)
 			filename = "TNSTalker_DEBUG_%s_chunk%d.json"%(tstamp, ic)
 			fbuffer = io.StringIO(filename)
 			json.dump(atrep, fbuffer, indent=2)
