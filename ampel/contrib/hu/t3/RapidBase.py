@@ -86,6 +86,7 @@ class RapidBase(AbsT3Unit):
 		ps1_sgveto_sgth	: float = 0.8	# 
 		rb_minmed	: float = 0.3	# Minimal median RB.
 		drb_minmed	: float = 0.5	# Minimal median RB.
+		min_magrise     : float = -20   # NOT IMPLEMENTED
 
 		maglim_min	: float = 19.5	# Limiting magnitude to consider upper limits as 'significant'
 		maglim_maxago	: float = 2.5	# A limiting magnitude max this time ago
@@ -262,6 +263,8 @@ class RapidBase(AbsT3Unit):
 			return False
 		info['peakmag'] = peak_mag
 		
+		# we should here add a cut based on the mag rise per day (see submitRapid)
+
 		
 		# cut on galactic coordinates
 		ra, dec = lc.get_pos(ret="mean", filters=self.run_config.lc_filters)
