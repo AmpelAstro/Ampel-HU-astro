@@ -105,7 +105,7 @@ class TNSTalker(AbsT3Unit):
 		
 		
 		# Cut to apply to all the photopoints in the light curve.
-		# This will affect all operations, i.e. evaluating the position, 
+		# This will affect most operations, i.e. evaluating the position, 
 		# computing number of detections ecc.
 		lc_filters		: List[Dict]= [
 										{
@@ -375,7 +375,10 @@ class TNSTalker(AbsT3Unit):
 			return False
 		
 		# check PS1 sg for the full alert history
-		distpsnr1, sgscore1 = zip(*lc.get_tuples('distpsnr1', 'sgscore1', filters=self.run_config.lc_filters))
+		# Note that we for this check do *not* use the lightcurve filter criteria
+		# TODO: Evaluate whether we should use the filters, and do a check for sufficient number of datapoints remaining
+#		distpsnr1, sgscore1 = zip(*lc.get_tuples('distpsnr1', 'sgscore1', filters=self.run_config.lc_filters))
+		distpsnr1, sgscore1 = zip(*lc.get_tuples('distpsnr1', 'sgscore1'))
 		is_ps1_star = np.logical_and(
 									np.array(distpsnr1) < self.run_config.ps1_sgveto_rad,
 									np.array(sgscore1) > self.run_config.ps1_sgveto_sgth

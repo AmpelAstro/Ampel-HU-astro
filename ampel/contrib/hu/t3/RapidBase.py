@@ -93,7 +93,7 @@ class RapidBase(AbsT3Unit):
 		
 		
 		# Cut to apply to all the photopoints in the light curve.
-		# This will affect all operations, i.e. evaluating the position, 
+		# This will affect most operations, i.e. evaluating the position, 
 		# computing number of detections ecc.
 		lc_filters		: List[Dict]= [
 										{
@@ -206,6 +206,7 @@ class RapidBase(AbsT3Unit):
 		# apply cut on history: consider photophoints which are sharp enough
 		pps = lc.get_photopoints(filters=self.run_config.lc_filters)
 		self.logger.info("%d photop. passed filter %s"%(len(pps), self.run_config.lc_filters))
+#		print("%d photop. passed filter %s"%(len(pps), self.run_config.lc_filters))
 		
 		# cut on number of detection
 		if len(pps) < self.run_config.min_ndet:
@@ -286,8 +287,18 @@ class RapidBase(AbsT3Unit):
 			self.logger.info("transient too close to solar system object", extra={'ssdistnr': ssdist.tolist()})
 			return False
 		
+
 		# check PS1 sg for the full alert history
-		distpsnr1, sgscore1 = zip(*lc.get_tuples('distpsnr1', 'sgscore1', filters=self.run_config.lc_filters))
+		# Note that we for this check do *not* use the lightcurve filter criteria
+		# TODO: Evaluate whether we should use the filters, and do a check for sufficient number of datapoints remaining
+#		print(ZTFUtils.to_ztf_id(tran_view.tran_id))
+#		print(lc)
+#		print(lc.get_tuples('distpsnr1', 'sgscore1') )
+#		print(lc.get_tuples('distpsnr1', 'sgscore1', filters=self.run_config.lc_filters) )
+		
+
+#		distpsnr1, sgscore1 = zip(*lc.get_tuples('distpsnr1', 'sgscore1', filters=self.run_config.lc_filters))
+		distpsnr1, sgscore1 = zip(*lc.get_tuples('distpsnr1', 'sgscore1'))
 		is_ps1_star = np.logical_and(
 									np.array(distpsnr1) < self.run_config.ps1_sgveto_rad,
 									np.array(sgscore1) > self.run_config.ps1_sgveto_sgth
@@ -307,8 +318,9 @@ class RapidBase(AbsT3Unit):
 				extra={'median_rd': np.median(rbs), 'rb_minmed': self.run_config.rb_minmed}
 				)
 			return False
-		drbs = [pp.get_value('drb') for pp in pps]
-		if np.median(drbs) < self.run_config.drb_minmed:
+		# drb might not exist
+		drbs = [pp.get_value('drb') for pp in pps if pp.has_parameter('drb')]
+		if len(drbs)>0 and np.median(drbs) < self.run_config.drb_minmed:
 			self.logger.info(
 				"Median DRB %below limit.",
 				extra={'median_drd': np.median(drbs), 'drb_minmed': self.run_config.drb_minmed}
@@ -385,7 +397,7 @@ class RapidBase(AbsT3Unit):
 			if not matchinfo:
 				continue
 
-			self.logger.info("Passed reaction threshold", extra={"tranId":tran_view.tran_id})
+			self.logger.info("Passed reaction threshold", extra={"tranId":tv.tran_id})
 
 			# Ok, so we have a transient to react to
 			if self.run_config.do_react:
