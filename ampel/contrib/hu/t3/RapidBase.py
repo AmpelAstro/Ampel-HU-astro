@@ -59,9 +59,9 @@ class RapidBase(AbsT3Unit):
 
 		# Test react config
 		do_testreact			: bool			# If set, will post trigger to slack
-		slack_token		: str = "xoxb-297846339667-549790069252-FLwKXkra0NL3FNnrvu9XYm4a"
-		slack_channel 		: str = "#ampel_tns_test"
-		slack_username		: str = "Ampel_TNS_test"
+		slack_token		: str = "***REMOVED***"
+		slack_channel 		: str = "#ztf_auto"
+		slack_username		: str = "AMPEL"
 
 
 		# Cuts based on T2 catalog redshifts
