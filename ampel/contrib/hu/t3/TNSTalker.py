@@ -78,7 +78,8 @@ class TNSTalker(AbsT3Unit):
 										"exptime":"30",
 										"Observer":"Robot"
 								}
-		max_maglim			: float = 20	# Limiting magnitude to consider upper limits as 'significant'
+		baseremark : str = "See arXiv:1904.05922 for selection criteria."
+		max_maglim			: float = 19.5	# Limiting magnitude to consider upper limits as 'significant'
 		nphot_submit		: int	= 2		# Number of photometric detection we include in the TNS AT report
 		
 		# cuts on T2 catalogs
@@ -102,6 +103,8 @@ class TNSTalker(AbsT3Unit):
 		ps1_sgveto_rad	: float = 1		# reject alert if PS1 star for any pp
 		ps1_sgveto_sgth	: float = 0.8	# 
 		rb_minmed		: float = 0.3	# Minimal median RB.
+		cut_fastrise  : bool = True   # Try to reject likely CV through rejecting objects that quickly get very bright
+		require_lowerthanlim : bool = True # Require each PP to have a magpsf lower than the diffmaglim
 		
 		
 		# Cut to apply to all the photopoints in the light curve.
@@ -121,7 +124,7 @@ class TNSTalker(AbsT3Unit):
 									]
 		
 		# parameters for adding remarks to AT reports
-		nuclear_dist	: float = 1.	# Tag objects this close to SDSS galaxies as nuclear. Use negative to disable
+		nuclear_dist	: float = -1.	# Tag objects this close to SDSS galaxies as nuclear. Use negative to disable
 		aav_dist		: float = 1.	# Required distance to match with aav catalog. TODO: move?
 		max_gaia_noise	: float = 2.	# (sigma!) if GAIA match is noisier than this, add a remark
 
@@ -310,24 +313,19 @@ class TNSTalker(AbsT3Unit):
 		
 		# apply cut on history: consider photophoints which are sharp enough
 		pps = lc.get_photopoints(filters=self.run_config.lc_filters)
+		# Current filters cannot sort two attributes
+		if self.run_config.require_lowerthanlim:
+			pps = [pp for pp in pps if pp.get_value('magpsf') < pp.get_value('diffmaglim')]
 		self.logger.info("%d photop. passed filter %s"%(len(pps), self.run_config.lc_filters))
 		
 		# cut on number of detection
 		if len(pps) < self.run_config.min_ndet:
-			self.logger.info("not enough detections: got %d, required %d"%
+			self.logger.info(", not enough detections: got %d, required %d"%
 				(len(pps), self.run_config.min_ndet))
 			return False
 		
-		# cut on number of detection after last SIGNIFICANT UL
-		ulims = lc.get_upperlimits(filters={'attribute':'diffmaglim', 'operator':'>=', 'value':self.run_config.max_maglim})
-		if len(ulims) > 0:
-			last_ulim_jd = sorted(ulims, key=lambda x: x.get_value('jd'))[-1].get_value('jd')
-			pps_after_ndet = lc.get_photopoints( 
-				filters = self.run_config.lc_filters + [{'attribute': 'jd', 'operator': '>=', 'value': last_ulim_jd}])
-			if len(pps_after_ndet) < self.run_config.min_ndet_postul:
-				self.logger.info("not enough consecutive detections after last significant UL.",
-					extra={'NDet': len(pps), 'lastUlimJD': last_ulim_jd})
-				return False
+
+
 		
 		# cut on number of filters
 		used_filters = set([pp.get_value('fid') for pp in pps])
@@ -363,6 +361,38 @@ class TNSTalker(AbsT3Unit):
 				(b, self.run_config.min_gal_lat))
 			return False
 		
+
+		# cut on number of detection after last SIGNIFICANT UL or r
+		ulims = lc.get_upperlimits(filters={'attribute':'diffmaglim', 'operator':'>=', 'value':self.run_config.max_maglim})
+		if len(ulims) > 0:
+			last_ulim = sorted(ulims, key=lambda x: x.get_value('jd'))[-1]
+			pps_after_ndet = lc.get_photopoints( 
+				filters = self.run_config.lc_filters + [{'attribute': 'jd', 'operator': '>=', 'value': last_ulim.get_value('jd')}])
+				# Can this work? - It does not seem like it
+				#filters = self.run_config.lc_filters + [{'attribute': 'jd', 'operator': '>=', 'value': last_ulim.get_value('jd')}, {'attribute': 'magpsf', 'operator': '<', 'attribute': 'diffmaglim'}]
+			# Current filters cannot sort two attributes
+			if self.run_config.require_lowerthanlim:
+				pps_after_ndet = [pp for pp in pps_after_ndet 
+					if pp.get_value('magpsf') < pp.get_value('diffmaglim')]			
+
+
+			if len(pps_after_ndet) < self.run_config.min_ndet_postul:
+				self.logger.info("not enough consecutive detections after last significant UL.",
+					extra={'NDet': len(pps), 'lastUlimJD': last_ulim.get_value('jd')})
+				return False
+
+			# Check mag increase per time range for first detections
+			first_pp_afterUL = sorted(pps_after_ndet, key=lambda x: x.get_value('jd'))[0]
+			# This is only a relevant comparison if the obs after last significant UL is also first detection
+			if self.run_config.cut_fastrise and first_pp_afterUL.get_value('jd') == first_detection:
+				delta_t = first_pp_afterUL.get_value('jd') - last_ulim.get_value('jd')
+				delta_m = - first_pp_afterUL.get_value('magpsf') + last_ulim.get_value('diffmaglim')
+
+				if delta_t < 3.5 and delta_m > 3:
+					self.logger.info("Likely CV", extra={'deltaT': delta_t, 'deltaM': delta_m})
+					return False
+
+
 		# cut on distance to closest solar system object
 		# TODO: how to make this check: ('0.0' in list(phot["ssdistnr"])
 		ssdist = np.array([pp.get_value('ssdistnr') for pp in pps])
@@ -547,20 +577,24 @@ class TNSTalker(AbsT3Unit):
 		for ipp, pp in enumerate(pps[:self.run_config.nphot_submit]):
 			photdict = {	#TODO: do we need to round the numerical values?
 				"obsdate"		: pp.get_value('jd'),
-				"flux"			: pp.get_value('magpsf'),
-				"flux_error"	: pp.get_value('sigmapsf'),
-				"limiting_flux"	: pp.get_value('diffmaglim'),
+				"flux"			: float("{0:.2f}".format( pp.get_value('magpsf') )),
+				"flux_error"	: float("{0:.2f}".format( pp.get_value('sigmapsf') )),
+				"limiting_flux"	: float("{0:.2f}".format( pp.get_value('diffmaglim') )),
 				"filter_value"	: TNSFILTERID.get(pp.get_value('fid'))
 				}
 			if pp.get_value('jd')<atdict["discovery_datetime"]:
 				atdict["discovery_datetime"] = pp.get_value('jd')
 			photdict.update(self.run_config.ztf_tns_at)
-			atdict["photometry"]["photometry_group"][ipp] = photdict
+			atdict["photometry"]["photometry_group"][int(ipp)] = photdict
 		
 		# finally, add remarks based on catalogs adn return
 		remarks = self.add_atreport_remarks(tran_view)
 		if not remarks is None:
 			atdict.update(remarks)
+		if 'remarks' in atdict.keys():
+			atdict['remarks'] = "%s. %s."%(atdict['remarks'],self.run_config.baseremark)
+		else:
+			atdict['remarks'] = self.run_config.baseremark
 		return atdict
 
 	def add(self, transients):
@@ -609,22 +643,6 @@ class TNSTalker(AbsT3Unit):
 			self.logger.info("Added to report list")
 			atreports[tran_view.tran_id] = atreport
 			
-			# TODO MEGADEBUG REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT
-			# REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT
-			# REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT
-			# REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT
-			# REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT
-			# REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT
-			# REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT
-			# REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT
-			#break
-			# REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT
-			# REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT
-			# REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT
-			# REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT
-			# REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT
-			# REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT
-			# REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT REMOVE IT
 		
 		# TODO: we save the atreports to send them to the TNS. 
 		# This is just part of the tesing and will have to go away
@@ -638,9 +656,19 @@ class TNSTalker(AbsT3Unit):
 				extra={'n_reports': len(atreports), 'submit_tns': self.run_config.submit_tns})
 			return journal_updates
 		
+		# atreports is now a dict with tran_id as keys and atreport as keys
+		# what we need is a list of dicts with form {'at_report':atreport }
+                # where an atreport is a dictionary with increasing integer as keys and atreports as values
+		atreport = {}
+		for k, tranid in enumerate( atreports.keys() ):
+			atreport[int(k)] = atreports[tranid]
+		atreportlist = [ {'at_report':atreport} ]
+		tnsreplies = sendTNSreports(atreportlist, self.run_config.tns_api_key, self.logger, sandbox=self.run_config.sandbox)
+
+
 		# Send reports in chunks of size 90 (99 should work)
-		atchunks = list(chunks([atr for atr in atreports.values()], 90))
-		tnsreplies = sendTNSreports(atchunks, self.run_config.tns_api_key, self.logger, sandbox=self.run_config.sandbox)
+		#atchunks = list(chunks([atr for atr in atreports.values()], 90))
+		#tnsreplies = sendTNSreports(atchunks, self.run_config.tns_api_key, self.logger, sandbox=self.run_config.sandbox)
 		
 		# Now go and check and create journal updates for the cases where SN was added
 		for tran_id in atreports.keys():
@@ -651,7 +679,7 @@ class TNSTalker(AbsT3Unit):
 			
 			# Create new journal entry 			#TODO: do we want to add to the journal a failed TNS submit?
 			jup = JournalUpdate(
-					tranId=tran_id,
+					tran_id=tran_id,
 					ext=self.run_config.ext_journal,
 					content={
 						't3unit': self.name,
