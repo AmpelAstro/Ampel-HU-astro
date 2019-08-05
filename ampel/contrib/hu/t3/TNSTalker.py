@@ -117,6 +117,11 @@ class TNSTalker(AbsT3Unit):
 										'value': -10.15
 										}, 
 										{
+										'attribute': 'programid',
+										'operator': '==', 
+										'value': 1
+										}, 
+										{
 										'attribute': 'magfromlim',
 										'operator': '>',
 										'value': 0
@@ -157,7 +162,10 @@ class TNSTalker(AbsT3Unit):
 		jentry = tran_view.get_journal_entries(
 			filterFunc=lambda x: x.get('t3unit')==self.name and 'tnsInternal' in x.keys(),
 			latest=True)
+		self.logger.debug('TNS submit journal entry: %s'%(jentry))
 		tns_name = None if jentry is None else jentry.get("tnsName", None)
+		self.logger.debug('TNS journal name %s'%(tns_name))
+
 
 		# Find internal names
 		jentries = tran_view.get_journal_entries(
@@ -206,6 +214,7 @@ class TNSTalker(AbsT3Unit):
 			look in the TNS for internal names and return them
 		"""
 		
+		# First, look if we already registered a name 
 		tns_name, tns_internals = None, []
 		for tname in tran_view.tran_names:
 
@@ -216,12 +225,14 @@ class TNSTalker(AbsT3Unit):
 				# we remove the 'TNS' part of the name, since this has been 
 				# added by the TNSMatcher T3, plus we skip the prefix
 				tns_name = tname.replace("TNS", "")	# We here assume that the AT/SN suffix is cut				
-				# Not using sandbox (only checking wrt to full system)
-				tns_internals, runstatus = tnsInternal(
+				# Not using sandbox (only checking wrt to full system). This method still only returns a single internal name of the detecting survey
+				tns_internal_single, runstatus = tnsInternal(
 								tns_name,   
 								api_key=self.run_config.tns_api_key,
 								sandbox=False
 							)
+				if not tns_internal_single is None:
+					tns_internals.append(tns_internal_single)
 
 		# be nice with the logging
 		ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
@@ -250,20 +261,23 @@ class TNSTalker(AbsT3Unit):
 		"""
 		
 		ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
-		self.logger.info("looking for TNS name for transient.", extra={'ZTFname': ztf_name})
+		self.logger.info("looking for TNS name", extra={'ZTFname': ztf_name})
 		
 		# first we look in the journal, this is the cheapest option. If we have 
 		# a valid name from the journal and if you do not want to look again in 
 		# the TNS, we are fine. NOTE: in this case you don't return a journal update.
 		tns_name, tns_internals = self.search_journal_tns(tran_view)
+		self.logger.debug('Found tns name in journal: %s'%(tns_name))
 		if (not tns_name is None) and (not self.run_config.get_tns_force):
 			return tns_name, tns_internals, None
 		
 		# second option in case there is no TNS name in the journal: go and look in tran_names
 		# and if you don't find any, go and ask TNS again.
 		tns_name_new, tns_internals_new = self._find_tns_tran_names(tran_view)
+		self.logger.debug('Find tns names added to the ampel name list: %s internal %s'%(tns_name_new, tns_internals_new))
 		if tns_name_new is None:
 			tns_name_new, tns_internals_new = self._query_tns_names(tran_view)
+			self.logger.debug('Proper check of tns done, found name %s'%(tns_name_new))
 		
 		# now, it is possible (if you set self.run_config.get_tns_force) that the
 		# new TNS name is different from the one we had in the journal. We always
@@ -273,11 +287,11 @@ class TNSTalker(AbsT3Unit):
 			
 			# what happen if you have a new name that is different from the old one?
 			if tns_name is not None and not tns_name==tns_name_new:
-				self.logger.info("Adding new TNS name",extra={"tnsOld":tns_name,"tnsNew":new_tns_name})
+				self.logger.info("Adding new TNS name",extra={"tnsOld":tns_name,"tnsNew":tns_name_new})
 			
 				# create content of journal entry. Eventually 
 				# update the list with the new internal names if any are found
-				jcontent = {'t3unit': self.name, 'tnsName': new_tns_name}
+				jcontent = {'t3unit': self.name, 'tnsName': tns_name_new}
 				if tns_internals_new is not None:
 					tns_internals.append(tns_internals_new)
 					for tns_int in tns_internals_new:
@@ -286,7 +300,27 @@ class TNSTalker(AbsT3Unit):
 				# create a journalUpdate and update the tns_name as well. TODO: check with JNo
 				jup = JournalUpdate(tran_id=tran_view.tran_id, ext=self.run_config.ext_journal, content=jcontent)
 				tns_name = tns_name_new
-				tns_internals = tns_internals_new
+
+			elif tns_name is None:
+				# Set the new name 
+				self.logger.info("Adding first TNS name",extra={"tnsNew":tns_name_new})
+			
+				# create content of journal entry. Eventually 
+				# update the list with the new internal names if any are found
+				jcontent = {'t3unit': self.name, 'tnsName': tns_name_new}
+				if tns_internals_new is not None:
+					tns_internals.append(tns_internals_new)
+					for tns_int in tns_internals_new:
+						jcontent.update({'tnsInternal':tns_int})
+				
+				# create a journalUpdate and update the tns_name as well. TODO: check with JNo
+				jup = JournalUpdate(tran_id=tran_view.tran_id, ext=self.run_config.ext_journal, content=jcontent)
+				tns_name = tns_name_new
+				#tns_internals = tns_internals_new
+
+
+
+
 		
 		# bye!
 		return tns_name, tns_internals, jup
@@ -616,27 +650,43 @@ class TNSTalker(AbsT3Unit):
 		for tran_view in transients_to_submit:
 			
 			ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
-			self.logger.info("TNS start", extra={"tranId":tran_view.tran_id, 'ztfName': ztf_name})
+			self.logger.info("TNS check", extra={"tranId":tran_view.tran_id, 'ztfName': ztf_name})
+			self.logger.debug("TNS check for %s"%(ztf_name))
 			
 			# find the TNS name, either from the journal, from tran_names, or 
 			# from TNS itself. If new names are found, create a new JournalUpdate
 			tns_name, tns_internals, jup = self.find_tns_name(tran_view)
 			if not jup is None:
 				journal_updates.append(jup)
+			self.logger.debug("TNS got %s internals %s"%(tns_name,tns_internals))
 			
-			# Chech whether this ID has been submitted (note that we do not check 
-			# whether the same candidate was submitted as different ZTF name) and
-			# depending on what's already on the TNS we can chose to submit or not
-			is_ztfsubmitted = ztf_name in tns_internals
-			if not ( (is_ztfsubmitted and self.run_config.resubmit_tns_ztf) or 
-					 (not is_ztfsubmitted and self.run_config.resubmit_tns_nonztf) ):
-				self.logger.info(
-					"we won't submit candidate.",
-					extra = {
-						'is_ztfsub': is_ztfsubmitted, 
-						'tnsInternals': tns_internals
-						})
-				continue
+			if not tns_name is None:
+
+				# Chech whether this ID has been submitted (note that we do not check 
+				# whether the same candidate was submitted as different ZTF name) and
+				# depending on what's already on the TNS we can chose to submit or not
+				is_ztfsubmitted = ztf_name in tns_internals
+				if is_ztfsubmitted:
+					# Already registered under this name. Only submit if we explicitly configured to do this
+					if not self.run_config.resubmit_tns_ztf:
+						self.logger.info(
+							"ztf submitted",
+							extra = {
+								'ztfSubmitted': is_ztfsubmitted,
+								'tnsInternals': tns_internals
+							})
+						continue
+
+				# Also allow for the option to not submit if someone (anyone) already did this. Not sure why this would be a good idea.
+				if not is_ztfsubmitted and self.run_config.resubmit_tns_nonztf:			
+						self.logger.info(
+							"already in tns, skipping",
+							extra = {
+								'ztfSubmitted': is_ztfsubmitted,
+								'tnsInternals': tns_internals
+							})
+						continue
+
 			
 			# create AT report
 			atreport = self.create_atreport(tran_view)
