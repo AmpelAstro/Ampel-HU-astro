@@ -262,8 +262,14 @@ class RapidBase(AbsT3Unit):
 			self.logger.info("peak magnitude of %.2f outside of range [%.2f, %.2f]"%
 				(peak_mag, self.run_config.min_peak_mag, self.run_config.max_peak_mag))
 			return False
-		info['peakmag'] = peak_mag
-		
+		info['peak_mag'] = peak_mag
+
+		# For rapidly declining sources the latest magnitude is probably more relevant
+		latest_pps = lc.get_photopoints(filters={'attribute':'jd', 'operator':'==', 'value':most_recent_detection})
+		if not len(latest_pps)==1:
+			raise ValueError("Have assumed a unique last photopoint")
+		info['latest_mag'] = latest_pps[0].get_value('magpsf')
+
 		# we should here add a cut based on the mag rise per day (see submitRapid)
 
 		
@@ -275,6 +281,8 @@ class RapidBase(AbsT3Unit):
 			self.logger.info("transient at b=%.2f too close to galactic plane (cut at %.2f)"%
 				(b, self.run_config.min_gal_lat))
 			return False
+		info['ra'] = ra
+		info['dec'] = dec
 		
 		# cut on distance to closest solar system object
 		# TODO: how to make this check: ('0.0' in list(phot["ssdistnr"])
