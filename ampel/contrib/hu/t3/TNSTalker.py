@@ -4,8 +4,8 @@
 # License			: BSD-3-Clause
 # Author			: jnordin@physik.hu-berlin.de
 # Date				: 17.11.2018
-# Last Modified Date: 06.02.2019
-# Last Modified By	: matteo.giomi@desy.de
+# Last Modified Date		: 05.08.2019
+# Last Modified By		: jnordin@physik.hu-berlin.de
 
 import re
 import logging
