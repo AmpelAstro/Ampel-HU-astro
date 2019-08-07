@@ -678,7 +678,7 @@ class TNSTalker(AbsT3Unit):
 						continue
 
 				# Also allow for the option to not submit if someone (anyone) already did this. Not sure why this would be a good idea.
-				if not is_ztfsubmitted and self.run_config.resubmit_tns_nonztf:			
+				if not is_ztfsubmitted and not self.run_config.resubmit_tns_nonztf:			
 						self.logger.info(
 							"already in tns, skipping",
 							extra = {
