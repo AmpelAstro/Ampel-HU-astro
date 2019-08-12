@@ -486,7 +486,7 @@ class TNSTalker(AbsT3Unit):
 		sdss_spec 	= cat_res.get("SDSS_spec", False)
 		if ((nedz and not (self.run_config.min_redshift <  nedz['z'] < self.run_config.max_redshift)) or 
 			(sdss_spec and not (self.run_config.min_redshift < sdss_spec['z'] < self.run_config.max_redshift))):
-			self.logger.info("transient z above limit.", extra={'max_z': self.run_config.max_redshift, 'SDSSspec': sdss_spec, 'NEDz': nedz})
+			self.logger.info("transient z above limit.", extra={'max_z': self.run_config.max_redshift, 'SDSS_spec': sdss_spec, 'NEDz': nedz})
 			return False
 		
 		# another battle in the endless war against stars.
