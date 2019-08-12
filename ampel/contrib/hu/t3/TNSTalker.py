@@ -647,6 +647,16 @@ class TNSTalker(AbsT3Unit):
 		transients_to_submit = [tv for tv in transients if self.accept_tview(tv)]
 		self.logger.info("of the %d transients presented to this task, %d passed selection criteria"%
 			(len(transients), len(transients_to_submit)))
+
+		# Hack to save these for test
+		#import ampel.utils.json_serialization as ampel_serialization
+		#fh = open("/home/jnordin/tmp/t3TransientTalker_testsubmitTV.json","w")
+		#for tv in transients_to_submit:
+		#    fh.write('%s'%(ampel_serialization.AmpelEncoder(lossy=True).encode(tv)))
+		#    fh.write( "\n")
+		#fh.close()	
+
+
 		
 		journal_updates = []	# Will be saved to future journals
 		atreports = {}			# Reports to be sent, indexed by the transient view IDs (so that we can check in the replies)
