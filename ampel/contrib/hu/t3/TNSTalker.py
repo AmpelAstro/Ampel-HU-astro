@@ -182,7 +182,7 @@ class TNSTalker(AbsT3Unit):
 		"""
 		# query the TNS for transient at this position. Note that we check the real TNS for names for compatibility...
 		ra, dec = tran_view.get_latest_lightcurve().get_pos(ret="mean", filters=self.run_config.lc_filters)
-		tns_name, tns_internals = get_tnsname(
+		tns_name, tns_internal = get_tnsname(
 							ra=ra, dec=dec, 
 							api_key=self.run_config.tns_api_key, 
 							logger=self.logger, 
@@ -203,9 +203,9 @@ class TNSTalker(AbsT3Unit):
 				'ra': ra,
 				'dec': dec,
 				'tnsName': tns_name,
-				'tnsInternals': tns_internals,
+				'tnsInternals': [tns_internal],
 			})
-		return tns_name, tns_internals
+		return tns_name, [tns_internal]
 
 
 	def _find_tns_tran_names(self, tran_view):
@@ -232,7 +232,10 @@ class TNSTalker(AbsT3Unit):
 								sandbox=False
 							)
 				if not tns_internal_single is None:
+					# Even if this is a single name, it comes as a list
 					tns_internals.append(tns_internal_single)
+
+
 
 		# be nice with the logging
 		ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
@@ -309,7 +312,7 @@ class TNSTalker(AbsT3Unit):
 				# update the list with the new internal names if any are found
 				jcontent = {'t3unit': self.name, 'tnsName': tns_name_new}
 				if tns_internals_new is not None:
-					tns_internals.append(tns_internals_new)
+					tns_internals.extend(tns_internals_new)
 					for tns_int in tns_internals_new:
 						jcontent.update({'tnsInternal':tns_int})
 				
@@ -431,7 +434,7 @@ class TNSTalker(AbsT3Unit):
 		# TODO: how to make this check: ('0.0' in list(phot["ssdistnr"])
 		ssdist = np.array([pp.get_value('ssdistnr') for pp in pps])
 		ssdist[ssdist==None] = -999
-		#print (ssdist)
+
 
 		close_to_sso = np.logical_and(ssdist < self.run_config.ssdistnr_max, ssdist > 0)
 		if np.any(close_to_sso):
@@ -482,7 +485,7 @@ class TNSTalker(AbsT3Unit):
 		nedz		= cat_res.get('NEDz', False)
 		sdss_spec 	= cat_res.get("SDSS_spec", False)
 		if ((nedz and not (self.run_config.min_redshift <  nedz['z'] < self.run_config.max_redshift)) or 
-			(sdss_spec and not (self.run_config.min_redshift < sdss_spec['z'] > self.run_config.max_redshift))):
+			(sdss_spec and not (self.run_config.min_redshift < sdss_spec['z'] < self.run_config.max_redshift))):
 			self.logger.info("transient z above limit.", extra={'max_z': self.run_config.max_redshift, 'SDSSspec': sdss_spec, 'NEDz': nedz})
 			return False
 		
