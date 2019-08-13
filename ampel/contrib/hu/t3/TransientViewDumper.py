@@ -9,7 +9,7 @@
 
 from ampel.base.TransientView import TransientView
 from ampel.base.abstract.AbsT3Unit import AbsT3Unit
-from ampel.utils.json import AmpelEncoder, object_hook
+from ampel.utils.json_serialization import AmpelEncoder, object_hook
 import json
 import requests
 import uuid

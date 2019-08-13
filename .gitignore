@@ -1,2 +1,5 @@
 /ampel_contrib_hu.egg-info/
 __pycache__
+*.swp
+*.swo
+.DS_Store

@@ -5,6 +5,7 @@
 # Original sample code by Ken Smith (May 2016) modified by Jakob Nordin (Feb 2018)
 # -----------------------------------------------------------------------------
 
+import re
 import requests
 import json
 import logging
@@ -423,7 +424,7 @@ def sendTNSreports(atreportlists, api_key, logger, sandbox=True):
 
 	return reportresult
 
-def get_tnsname(self, ra, dec, api_key, logger, sandbox=True):
+def get_tnsname(ra, dec, api_key, logger, sandbox=True):
 	"""
 		look for names registered at tns for a given position
 	"""

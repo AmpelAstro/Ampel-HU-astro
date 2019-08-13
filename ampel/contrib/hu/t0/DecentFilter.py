@@ -4,8 +4,8 @@
 # License           : BSD-3-Clause
 # Author            : m. giomi <matteo.giomi@desy.de>
 # Date              : 06.06.2018
-# Last Modified Date: 24.10.2018
-# Last Modified By  : vb
+# Last Modified Date: 06.07.2019
+# Last Modified By  : jn
 
 from numpy import exp, array, asarray
 import logging
@@ -46,6 +46,7 @@ class DecentFilter(AbsAlertFilter):
 		MIN_TSPAN 					: float	# minimum duration of alert detection history [days]
 		MAX_TSPAN 					: float # maximum duration of alert detection history [days]
 		MIN_RB						: float # real bogus score
+		MIN_DRB						: float = 0.  # deep learning real bogus score
 		MAX_FWHM					: float # sexctrator FWHM (assume Gaussian) [pix]
 		MAX_ELONG					: float	# Axis ratio of image: aimage / bimage 
 		MAX_MAGDIFF					: float	# Difference: magap - magpsf [mag]
@@ -90,7 +91,9 @@ class DecentFilter(AbsAlertFilter):
 		self.max_elong					= rc_dict['MAX_ELONG']
 		self.max_magdiff				= rc_dict['MAX_MAGDIFF']
 		self.max_nbad					= rc_dict['MAX_NBAD']
-		self.min_rb						= rc_dict['MIN_RB']
+		self.min_rb					= rc_dict['MIN_RB']
+		self.min_drb					= rc_dict['MIN_DRB']
+
 		
 		# astro
 		self.min_ssdistnr	 			= rc_dict['MIN_DIST_TO_SSO']
@@ -108,10 +111,13 @@ class DecentFilter(AbsAlertFilter):
 
 		self.catshtm				= catshtm_server.get_client(base_config['catsHTM.default'])
 
+		# To make this tenable we should create this list dynamically depending on what entries are required
+                # by the filter. Now deciding not to include drb in this list, eg.
 		self.keys_to_check = (
 			'fwhm', 'elong', 'magdiff', 'nbad', 'distpsnr1', 'sgscore1', 'distpsnr2', 
 			'sgscore2', 'distpsnr3', 'sgscore3', 'isdiffpos', 'ra', 'dec', 'rb', 'ssdistnr'
 		)
+		
 
 
 	def _alert_has_keys(self, photop):
@@ -142,6 +148,10 @@ class DecentFilter(AbsAlertFilter):
 			apply combined cut on sgscore1 and distpsnr1 to reject the transient if
 			there is a PS1 star-like object in it's immediate vicinity
 		"""
+		
+		#TODO: consider the case of alert moving wrt to the position of a star
+		# maybe cut on the minimum of the distance!
+		
 		if (transient['distpsnr1'] < self.ps1_sgveto_rad and
 				transient['sgscore1'] > self.ps1_sgveto_th):
 			return True
@@ -260,6 +270,12 @@ class DecentFilter(AbsAlertFilter):
 			#self.logger.debug("rejected: RB score %.2f below threshod (%.2f)"% (latest['rb'], self.min_rb))
 			self.logger.info(None, extra={'rb': latest['rb']})
 			return None
+
+		if self.min_drb > 0. and latest['drb'] < self.min_drb:
+			#self.logger.debug("rejected: RB score %.2f below threshod (%.2f)"% (latest['rb'], self.min_rb))
+			self.logger.info(None, extra={'drb': latest['drb']})
+			return None
+
 		
 		if latest['fwhm'] > self.max_fwhm:
 			#self.logger.debug("rejected: fwhm %.2f above threshod (%.2f)"% (latest['fwhm'], self.max_fwhm))
