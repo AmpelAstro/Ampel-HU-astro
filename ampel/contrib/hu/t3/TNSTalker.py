@@ -41,7 +41,15 @@ def get_catalogmatch_srecs(tran_view, logger):
 
 class TNSTalker(AbsT3Unit):
 	"""
-		Get TNS name if existing, and submit selected candidates
+		Get TNS name if existing, and submit selected candidates. 
+		If submit_tns is true, candidates fulfilling the criteria will be sent to the TNS if:
+		- They are not known to the TNS OR
+		- They are registered by TNS but under a non-ZTF internal name AND resubmit_tns_nonztf set to True OR
+		- They are registered by TNS under a ZTF name AND resubmit_tns_ztf is set to True
+
+		if sandbox is set to True it will try to submit candidates to the TNS sandbox, but this API has been unstable
+		and might not work properly. 
+
 	"""
 	
 	version = 0.1
