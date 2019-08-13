@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from extcats import CatalogQuery
 from pymongo import MongoClient
 
-from ampel.pipeline.logging.AmpelLogger import AmpelLogger
+from ampel.logging.AmpelLogger import AmpelLogger
 from ampel.base.abstract.AbsAlertFilter import AbsAlertFilter
 
 class LensedTransientFilter(AbsAlertFilter):

@@ -16,8 +16,8 @@ from astropy.coordinates import SkyCoord
 
 from ampel.base.abstract.AbsT3Unit import AbsT3Unit
 from ampel.base.dataclass.JournalUpdate import JournalUpdate
-from ampel.pipeline.logging.AmpelLogger import AmpelLogger
-from ampel.ztf.pipeline.common.ZTFUtils import ZTFUtils
+from ampel.logging.AmpelLogger import AmpelLogger
+from ampel.ztf.common.ZTFUtils import ZTFUtils
 
 from ampel.contrib.hu.t3.ampel_tns import sendTNSreports, get_tnsname, TNSFILTERID
 

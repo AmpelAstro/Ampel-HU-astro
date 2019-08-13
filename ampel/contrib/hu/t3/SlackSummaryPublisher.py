@@ -16,10 +16,10 @@ from slackclient.exceptions import SlackClientError
 from pydantic import BaseModel
 from typing import Dict, List, Union
 from ampel.base.abstract.AbsT3Unit import AbsT3Unit
-from ampel.ztf.pipeline.common.ZTFUtils import ZTFUtils
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.logging.AmpelLogger import AmpelLogger
-from ampel.pipeline.config.EncryptedConfig import EncryptedConfig
+from ampel.ztf.common.ZTFUtils import ZTFUtils
+from ampel.common.AmpelUtils import AmpelUtils
+from ampel.logging.AmpelLogger import AmpelLogger
+from ampel.config.EncryptedConfig import EncryptedConfig
 
 class SlackSummaryPublisher(AbsT3Unit):
     """

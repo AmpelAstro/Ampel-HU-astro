@@ -4,8 +4,8 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 11.06.2018
-# Last Modified Date: 12.02.2019
-# Last Modified By  : mg <matteo.giomi@desy.de>
+# Last Modified Date: 09.03.2019
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging
 from pydantic import BaseModel
@@ -89,7 +89,7 @@ class TransientInfoPrinter(AbsT3Unit):
 
 		logger.info("Created: %s" % (created if created is not None else 'Not available'))
 		logger.info("Modified: %s" % (modified if modified is not None else 'Not available'))
-		logger.info("Flags: %s" % (tran.flags if tran.flags is not None else "Not set"))
+		logger.info("Tags: %s" % (tran.tags if tran.tags is not None else "Not set"))
 		logger.info("Latest state: %s" % (
 			tran.latest_state.hex() if tran.latest_state is not None else "Not set"
 		))
