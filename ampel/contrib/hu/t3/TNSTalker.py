@@ -757,7 +757,7 @@ class TNSTalker(AbsT3Unit):
 						'tnsName': tnsreplies[ztf_name][1]["TNSName"],
 						'tnsInternal': ztf_name,
 						'tnsSubmitresult': tnsreplies[ztf_name][0],
-						'tnsSender': tns_api_key
+						'tnsSender': self.run_config.tns_api_key
 					})
 			journal_updates.append(jup)
 		return journal_updates
