@@ -109,7 +109,10 @@ class DecentFilter(AbsAlertFilter):
 		self.ps1_confusion_rad			= rc_dict['PS1_CONFUSION_RAD']
 		self.ps1_confusion_sg_tol		= rc_dict['PS1_CONFUSION_SG_TOL']
 
-		self.catshtm				= catshtm_server.get_client(base_config['catsHTM.default'])
+		if base_config['catsHTM.default'] is None:
+			self.catshtm = None
+		else:
+			self.catshtm				= catshtm_server.get_client(base_config['catsHTM.default'])
 
 		# To make this tenable we should create this list dynamically depending on what entries are required
                 # by the filter. Now deciding not to include drb in this list, eg.
@@ -247,7 +250,7 @@ class DecentFilter(AbsAlertFilter):
 		# cut on length of detection history
 		detections_jds = alert.get_values('jd', upper_limits=False)
 		det_tspan = max(detections_jds) - min(detections_jds)
-		if not (self.min_tspan < det_tspan < self.max_tspan):
+		if not (self.min_tspan <= det_tspan <= self.max_tspan):
 			#self.logger.debug("rejected: detection history is %.3f d long, \
 			# requested between %.3f and %.3f d"% (det_tspan, self.min_tspan, self.max_tspan))
 			self.logger.info(None, extra={'tSpan': det_tspan})
@@ -321,7 +324,7 @@ class DecentFilter(AbsAlertFilter):
 			return None
 		
 		# check with gaia
-		if self.is_star_in_gaia(latest):
+		if self.gaia_rs>0 and self.is_star_in_gaia(latest):
 			#self.logger.debug("rejected: within %.2f arcsec from a GAIA start (PM of PLX)" % (self.gaia_rs))
 			self.logger.info(None, extra={'gaiaIsStar': True})
 			return None
