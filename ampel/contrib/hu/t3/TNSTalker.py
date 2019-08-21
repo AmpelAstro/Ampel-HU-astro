@@ -756,7 +756,8 @@ class TNSTalker(AbsT3Unit):
 						't3unit': self.name,
 						'tnsName': tnsreplies[ztf_name][1]["TNSName"],
 						'tnsInternal': ztf_name,
-						'tnsSubmitresult': tnsreplies[ztf_name][0]
+						'tnsSubmitresult': tnsreplies[ztf_name][0],
+						'tnsSender': tns_api_key
 					})
 			journal_updates.append(jup)
 		return journal_updates
@@ -780,9 +781,9 @@ class TNSTalker(AbsT3Unit):
 		from slackclient import SlackClient
 		from slackclient.exceptions import SlackClientError
 		
-		slack_token		= "xoxb-297846339667-549790069252-FLwKXkra0NL3FNnrvu9XYm4a"
-		slack_channel 		= "#ampel_tns_test"
-		slack_username		= "Ampel_TNS_test"
+		slack_token		= "***REMOVED***"
+		slack_channel 		= "#ztf_tns"
+		slack_username		= "AMPEL"
 		max_slackmsg_size	= 200	# if you have more than this # of reports, send different files
 		
 		sc = SlackClient(slack_token)
@@ -806,7 +807,7 @@ class TNSTalker(AbsT3Unit):
 			api = sc.api_call(
 					'files.upload',
 					channels = [slack_channel],
-					title = "TNSTalker_DEBUG_%s_chunk%d"%(tstamp, ic),
+					title = "TNSTalker_%s_chunk%d"%(tstamp, ic),
 					initial_comment = msg,
 					username = slack_username,
 					as_user = False,
