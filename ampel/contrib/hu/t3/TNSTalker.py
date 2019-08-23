@@ -33,10 +33,10 @@ def chunks(l, n):
 # get the science records for the catalog match
 def get_catalogmatch_srecs(tran_view, logger):
 	cat_res = tran_view.get_science_records(t2_unit_id="CATALOGMATCH")
-	if len(cat_res) == 0 or cat_res is None or cat_res[-1].get_results() is None:
+	if (not cat_res) or (not cat_res[-1].get_results()):
 		logger.info("NO CATALOG MATCH FOR THIS TRANSIENT")
 		return {}
-	return cat_res[-1].get_results()[-1]['output']
+	return cat_res[-1].get_results()[-1].get('output', {})
 
 
 class TNSTalker(AbsT3Unit):
