@@ -16,10 +16,10 @@ setup(name='ampel-contrib-hu',
               'TargetSourceListener = ampel.contrib.hu.TargetSourceListener:TargetSourceListener',
               'TargetSourceListenerSlack = ampel.contrib.hu.TargetSourceListenerSlack:TargetSourceListenerSlack',
           ],
-          'ampel.pipeline.t2.configs' : [
+          'ampel.t2.configs' : [
               'hu = ampel.contrib.hu.channels:load_t2_run_configs',
           ],
-          'ampel.pipeline.t0.units' : [
+          'ampel.t0.units' : [
               'DecentFilter = ampel.contrib.hu.t0.DecentFilter:DecentFilter',
               'SimpleDecentFilter = ampel.contrib.hu.t0.SimpleDecentFilter:SimpleDecentFilter',	#This was just for testing at NERSC 
               'XShooterFilter = ampel.contrib.hu.t0.XShooterFilter:XShooterFilter',
@@ -31,16 +31,16 @@ setup(name='ampel-contrib-hu',
               'NoFilter = ampel.contrib.hu.t0.NoFilter:NoFilter',
               'TransientInEllipticalFilter = ampel.contrib.hu.t0.TransientInEllipticalFilter:TransientInEllipticalFilter',
           ],
-          'ampel.pipeline.t2.units' : [
+          'ampel.t2.units' : [
               'SNCOSMO = ampel.contrib.hu.t2.T2SNCosmo:T2SNCosmo',
               'CATALOGMATCH = ampel.contrib.hu.t2.T2CatalogMatch:T2CatalogMatch',
               'LCQUALITY = ampel.contrib.hu.t2.T2LCQuality:T2LCQuality',
               'MARSHALMONITOR = ampel.contrib.hu.t2.T2MarshalMonitor:T2MarshalMonitor',
           ],
-          'ampel.pipeline.t3.jobs' : [
+          'ampel.t3.jobs' : [
               'hu = ampel.contrib.hu.channels:load_t3_jobs',
           ],
-          'ampel.pipeline.t3.units' : [
+          'ampel.t3.units' : [
               'TransientInfoPrinter = ampel.contrib.hu.t3.TransientInfoPrinter:TransientInfoPrinter',
               'TransientViewDumper = ampel.contrib.hu.t3.TransientViewDumper:TransientViewDumper',
               'ChannelSummaryPublisher = ampel.contrib.hu.t3.ChannelSummaryPublisher:ChannelSummaryPublisher',
@@ -55,7 +55,7 @@ setup(name='ampel-contrib-hu',
               'TNSTalker = ampel.contrib.hu.t3.TNSTalker:TNSTalker',
               'TNSMatcher = ampel.contrib.hu.t3.aiotns:TNSMatcher'
           ],
-          'ampel.pipeline.resources' : [
+          'ampel.resources' : [
               'extcats = ampel.contrib.hu.resources:extcatsURI',
               'catsHTM = ampel.contrib.hu.resources:catsHTMURI',
               'desycloud = ampel.contrib.hu.resources:desyCloudURI',

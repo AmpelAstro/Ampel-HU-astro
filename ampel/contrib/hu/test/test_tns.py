@@ -9,7 +9,7 @@ def test_tnsname(t3_transient_views, mocker):
     assert t3.add(t3_transient_views) is None
 
     collection = MagicMock()
-    mocker.patch('ampel.pipeline.db.AmpelDB.AmpelDB.get_collection').return_value = collection
+    mocker.patch('ampel.db.AmpelDB.AmpelDB.get_collection').return_value = collection
     t3.done()
 
     assert collection.bulk_write.called_once()
