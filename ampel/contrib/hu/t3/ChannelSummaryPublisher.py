@@ -62,10 +62,11 @@ class ChannelSummaryPublisher(AbsT3Unit):
 		
 		out['ztf_name'] = tran_view.tran_names[0]
 		out['tns_names'] = tran_view.tran_names[1:]
-		
-		# sort photopoints
+
+		# skip transient if it has no associated photopoints.
 		if tran_view.photopoints is None or len(tran_view.photopoints) == 0:
-			return out
+			return
+		# sort photopoints
 		pps = sorted([pp.content for pp in tran_view.photopoints], key=lambda x: x['jd'])
 
 		# some metric should only be computed for the latest pp
@@ -96,10 +97,12 @@ class ChannelSummaryPublisher(AbsT3Unit):
 			for tran_view in transients:
 				if isinstance(tran_view.channel, list):
 					raise ValueError("Only single-channel views are supported")
-				self._channels.add(tran_view.channel)
 				info_dict = self.extract_from_transient_view(tran_view)
+				if not info_dict:
+					continue
 				key = info_dict.pop("ztf_name")
 				self.summary[key] = info_dict
+				self._channels.add(tran_view.channel)
 
 	@backoff.on_exception(backoff.expo, TimeoutError)
 	def done(self):
