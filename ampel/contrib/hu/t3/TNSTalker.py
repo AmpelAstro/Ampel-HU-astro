@@ -69,8 +69,10 @@ class TNSTalker(AbsT3Unit):
 		tns_api_key			: str	= None		# Bot api key frm TNS
 		get_tns_force		: bool	= False		# Check for TNS for names even if internal name is known
 		submit_tns	 		: bool	= True		# Submit candidates passing criteria (False gives you a 'dry run')
+		submit_unless_journal   : bool = False    # Submit all candidates we have a note in the Journal that we submitted this. Overrides the resubmit entries!!
 		resubmit_tns_nonztf	: bool	= True		# Resubmit candidate submitted w/o the same ZTF internal ID 
 		resubmit_tns_ztf	: bool	= False		# Resubmit candidates even if they have been added with this name before
+
 		sandbox				: bool	= True		# Submit to TNS sandbox only
 		ext_journal			: bool	= True		# weather journal will go to separate collection.
 		
@@ -174,7 +176,6 @@ class TNSTalker(AbsT3Unit):
 		tns_name = None if jentry is None else jentry.get("tnsName", None)
 		self.logger.debug('TNS journal name %s'%(tns_name))
 
-
 		# Find internal names
 		jentries = tran_view.get_journal_entries(
 			filterFunc=lambda x: x.get('t3unit')==self.name and 'tnsInternal' in x.keys())
@@ -182,6 +183,30 @@ class TNSTalker(AbsT3Unit):
 		self.logger.info('Journal search',extra={'tranId':tran_view.tran_id,'tnsName':tns_name,'tnsInternals':tns_internals})
 
 		return tns_name, tns_internals
+
+
+	def search_journal_submitted(self, tran_view):
+		"""
+			Look through the journal for whether this sender submitted this to TNS.
+                        Assumes journal entries came from this unit, that the TNS name is saved as "tnsName"
+                        and tnsSender stores the api key used ('tnsSender': self.run_config.tns_api_key')
+		"""
+
+		# Find the latest tns name (skipping previous)
+		jentry = tran_view.get_journal_entries(
+			filterFunc=lambda x: 
+				x.get('t3unit')==self.name and 
+				x.get('tnsSender')==self.run_config.tns_api_key and 
+				'tnsSubmitresult' in x.keys(),
+			latest=True)
+		if jentry is None:
+			self.logger.info('Not TNS submitted', extra={'tnsSender':self.run_config.tns_api_key} )
+			return False
+
+		self.logger.info('TNS submitted', extra={'tnsSender':self.run_config.tns_api_key} )
+			
+		return True
+
 
 	def _query_tns_names(self, tran_view):
 		"""
@@ -674,6 +699,31 @@ class TNSTalker(AbsT3Unit):
 			self.logger.info("TNS check", extra={"tranId":tran_view.tran_id, 'ztfName': ztf_name})
 			self.logger.debug("TNS check for %s"%(ztf_name))
 			
+			# Simplest case to check. We wish to submit everything not noted as submitted
+			if self.run_config.submit_unless_journal:
+#				print(tran_view.get_journal_entries(filterFunc=lambda x: x.get('t3unit')==self.name))
+
+#				lc = tran_view.get_latest_lightcurve()		
+#				pps = lc.get_photopoints(filters=self.run_config.lc_filters)
+#				jds = [pp.get_value('jd') for pp in pps]
+#				print(jds)
+
+				if self.search_journal_submitted(tran_view):
+					# Note already submitted
+					self.logger.info(
+						"ztf submitted",
+						extra = {
+							'ztfSubmitted': True
+						})
+
+				else:
+					# create AT report
+					atreport = self.create_atreport(tran_view)
+					self.logger.info("Added to report list")
+					atreports[tran_view.tran_id] = atreport
+
+				continue
+
 			# find the TNS name, either from the journal, from tran_names, or 
 			# from TNS itself. If new names are found, create a new JournalUpdate
 			tns_name, tns_internals, jup = self.find_tns_name(tran_view)
