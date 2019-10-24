@@ -104,7 +104,10 @@ class ChannelSummaryPublisher(AbsT3Unit):
 				self.summary[key] = info_dict
 				self._channels.add(tran_view.channel)
 
-	@backoff.on_exception(backoff.expo, TimeoutError)
+	@backoff.on_exception(backoff.expo,
+	    (TimeoutError, requests.exceptions.HTTPError),
+	    giveup=lambda exc: isinstance(exc,requests.exceptions.HTTPError) and exc.response.status_code not in {400, 403, 405, 423, 500}
+	)
 	def done(self):
 		"""
 		"""
