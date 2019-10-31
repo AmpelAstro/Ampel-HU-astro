@@ -18,7 +18,7 @@ from io import StringIO
 from pydantic import BaseModel
 from typing import List
 
-from ampel.base.abstract.AbsT3Unit import AbsT3Unit
+from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.utils.json import AmpelEncoder
 from ampel.logging.AmpelLogger import AmpelLogger
 

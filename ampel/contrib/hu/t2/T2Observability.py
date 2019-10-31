@@ -13,7 +13,7 @@ from astropy.time import Time
 import astropy.units as u
 
 from ampel.base import Observatory
-from ampel.base.abstract.AbsT2Unit import AbsT2Unit
+from ampel.abstract.AbsT2Unit import AbsT2Unit
 from ampel.core.flags.T2RunStates import T2RunStates
 
 

@@ -16,7 +16,7 @@ from typing import Dict, List
 from astropy.time import Time
 from astropy.coordinates import SkyCoord
 
-from ampel.base.abstract.AbsT3Unit import AbsT3Unit
+from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.base.dataclass.JournalUpdate import JournalUpdate
 from ampel.logging.AmpelLogger import AmpelLogger
 from ampel.ztf.pipeline.common.ZTFUtils import ZTFUtils

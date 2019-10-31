@@ -8,10 +8,10 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 
-from ampel.base.abstract.AbsAlertFilter import AbsAlertFilter
+from ampel.abstract.AbsT0AlertFilter import AbsT0AlertFilter
 from random import uniform
 
-class RandFilter(AbsAlertFilter):
+class RandFilter(AbsT0AlertFilter):
 
 	def __init__(self, on_match_t2_units, base_config=None, run_config=None, logger=None):
 		"""

@@ -14,9 +14,9 @@ from astropy.table import Table
 from pydantic import BaseModel
 
 from ampel.contrib.hu import catshtm_server
-from ampel.base.abstract.AbsAlertFilter import AbsAlertFilter
+from ampel.abstract.AbsT0AlertFilter import AbsT0AlertFilter
 
-class SimpleDecentFilter(AbsAlertFilter):
+class SimpleDecentFilter(AbsT0AlertFilter):
 	"""
 		General-purpose filter with ~ 0.6% acceptance. It selects alerts based on:
 			* numper of previous detections

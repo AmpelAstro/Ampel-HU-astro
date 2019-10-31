@@ -13,9 +13,9 @@ from extcats import CatalogQuery
 from pymongo import MongoClient
 
 from ampel.logging.AmpelLogger import AmpelLogger
-from ampel.base.abstract.AbsAlertFilter import AbsAlertFilter
+from ampel.abstract.AbsT0AlertFilter import AbsT0AlertFilter
 
-class LensedTransientFilter(AbsAlertFilter):
+class LensedTransientFilter(AbsT0AlertFilter):
 	"""
 	"""
 

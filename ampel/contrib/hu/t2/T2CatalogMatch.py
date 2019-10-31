@@ -13,7 +13,7 @@ from astropy.coordinates import SkyCoord
 from astropy.table import Table
 from urllib.parse import urlparse
 
-from ampel.base.abstract.AbsT2Unit import AbsT2Unit
+from ampel.abstract.AbsT2Unit import AbsT2Unit
 from ampel.core.flags.T2RunStates import T2RunStates
 from ampel.contrib.hu.utils import info_as_debug
 

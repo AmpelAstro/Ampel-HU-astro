@@ -7,9 +7,9 @@
 # Last Modified Date: 08.03.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.base.abstract.AbsAlertFilter import AbsAlertFilter
+from ampel.abstract.AbsT0AlertFilter import AbsT0AlertFilter
 
-class NoFilter(AbsAlertFilter):
+class NoFilter(AbsT0AlertFilter):
 	
 	def __init__(self, on_match_t2_units, base_config=None, run_config=None, logger=None):
 		self.on_match_default_t2_units = on_match_t2_units

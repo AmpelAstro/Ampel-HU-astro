@@ -8,7 +8,7 @@
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
 from ampel.base.TransientView import TransientView
-from ampel.base.abstract.AbsT3Unit import AbsT3Unit
+from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.utils.json_serialization import AmpelEncoder, object_hook
 import json
 import requests
