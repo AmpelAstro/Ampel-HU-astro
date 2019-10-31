@@ -9,7 +9,7 @@
 
 import logging
 from typing import Any, Dict, Optional, Set
-from numpy import exp, array, asarray
+from numpy import exp, asarray
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
 
@@ -244,6 +244,7 @@ class DecentFilter(AbsT0AlertFilter):
 				any(gaia_tab['FLAG_PMDec'] == True) or
 				any(gaia_tab['FLAG_Plx'] == True)):
 				return True
+
 		return False
 
 
