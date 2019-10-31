@@ -4,32 +4,33 @@
 # License           : BSD-3-Clause
 # Author            : m. giomi <matteo.giomi@desy.de>
 # Date              : 06.06.2018
-# Last Modified Date: 06.07.2019
-# Last Modified By  : jn
+# Last Modified Date: 31.10.2019
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from numpy import exp, array, asarray
 import logging
-from urllib.parse import urlparse
+from typing import Any, Dict, Optional, Set
+from numpy import exp, array, asarray
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
-from pydantic import BaseModel
 
 from ampel.contrib.hu import catshtm_server
-from ampel.base.abstract.AbsAlertFilter import AbsAlertFilter
+from ampel.base.AmpelAlert import AmpelAlert
+from ampel.abstract.AbsT0AlertFilter import AbsT0AlertFilter
 
-class DecentFilter(AbsAlertFilter):
+
+class DecentFilter(AbsT0AlertFilter):
 	"""
-		General-purpose filter with ~ 0.6% acceptance. It selects alerts based on:
-			* numper of previous detections
-			* positive subtraction flag
-			* loose cuts on image quality (fwhm, elongation, number of bad pixels, and the
-			difference between PSF and aperture magnitude)
-			* distance to known SS objects
-			* real-bogus
-			* detection of proper-motion and paralax for coincidence sources in GAIA DR2
-		
-		The filter has a very weak dependence on the real-bogus score and it is independent
-		on the provided PS1 star-galaxy classification.
+	General-purpose filter with ~ 0.6% acceptance. It selects alerts based on:
+	* numper of previous detections
+	* positive subtraction flag
+	* loose cuts on image quality (fwhm, elongation, number of bad pixels, and the
+	  difference between PSF and aperture magnitude)
+	* distance to known SS objects
+	* real-bogus
+	* detection of proper-motion and paralax for coincidence sources in GAIA DR2
+
+	The filter has a very weak dependence on the real-bogus score and it is independent
+	on the provided PS1 star-galaxy classification.
 	"""
 
 	# Static version info
@@ -37,7 +38,7 @@ class DecentFilter(AbsAlertFilter):
 	resources = ('catsHTM.default',)
 	
 	
-	class RunConfig(BaseModel):
+	class InitConfig(AbsT0AlertFilter.InitConfig):
 		"""
  		Necessary class to validate configuration.
 		"""
@@ -65,64 +66,66 @@ class DecentFilter(AbsAlertFilter):
 		PS1_CONFUSION_SG_TOL		: float	# and if the SG score of all of these 3 sources is within this tolerance to 0.5
 
 
-	def __init__(self, on_match_t2_units, base_config=None, run_config=None, logger=None):
+	def __init__(
+		self, logger: logging.Logger, init_config: Dict[str, Any] = None, 
+		resources: Dict[str, Any] = None
+	):
 		"""
 		"""
-		if run_config is None:
-			raise ValueError("Please check you run configuration")
+		if not init_config:
+			raise ValueError("Please check you init configuration")
 
-		self.on_match_t2_units = on_match_t2_units
+		self.on_match_t2_units = [t2.unit_id for t2 in init_config.t2Compute]
 		self.logger = logger if logger is not None else logging.getLogger()
 		
 		# parse the run config
-		rc_dict = run_config.dict()
-		for k, val in rc_dict.items():
-			self.logger.info("Using %s=%s" % (k, val))
+		for k, val in init_config.dict().items():
+			self.logger.info(f"Using {k}={val}")
 		
-		# ----- set filter proerties ----- #
+		# ----- set filter properties ----- #
 		
 		# history
-		self.min_ndet 					= rc_dict['MIN_NDET'] 
-		self.min_tspan					= rc_dict['MIN_TSPAN']
-		self.max_tspan					= rc_dict['MAX_TSPAN']
+		self.min_ndet 					= init_config.MIN_NDET 
+		self.min_tspan					= init_config.MIN_TSPAN
+		self.max_tspan					= init_config.MAX_TSPAN
 		
 		# Image quality
-		self.max_fwhm					= rc_dict['MAX_FWHM']
-		self.max_elong					= rc_dict['MAX_ELONG']
-		self.max_magdiff				= rc_dict['MAX_MAGDIFF']
-		self.max_nbad					= rc_dict['MAX_NBAD']
-		self.min_rb					= rc_dict['MIN_RB']
-		self.min_drb					= rc_dict['MIN_DRB']
+		self.max_fwhm					= init_config.MAX_FWHM
+		self.max_elong					= init_config.MAX_ELONG
+		self.max_magdiff				= init_config.MAX_MAGDIFF
+		self.max_nbad					= init_config.MAX_NBAD
+		self.min_rb						= init_config.MIN_RB
+		self.min_drb					= init_config.MIN_DRB
 
-		
 		# astro
-		self.min_ssdistnr	 			= rc_dict['MIN_DIST_TO_SSO']
-		self.min_gal_lat				= rc_dict['MIN_GAL_LAT']
-		self.gaia_rs					= rc_dict['GAIA_RS']
-		self.gaia_pm_signif				= rc_dict['GAIA_PM_SIGNIF']
-		self.gaia_plx_signif			= rc_dict['GAIA_PLX_SIGNIF']
-		self.gaia_veto_gmag_min			= rc_dict['GAIA_VETO_GMAG_MIN']
-		self.gaia_veto_gmag_max			= rc_dict['GAIA_VETO_GMAG_MAX']
-		self.gaia_excessnoise_sig_max	= rc_dict['GAIA_EXCESSNOISE_SIG_MAX']
-		self.ps1_sgveto_rad				= rc_dict['PS1_SGVETO_RAD']
-		self.ps1_sgveto_th				= rc_dict['PS1_SGVETO_SGTH']
-		self.ps1_confusion_rad			= rc_dict['PS1_CONFUSION_RAD']
-		self.ps1_confusion_sg_tol		= rc_dict['PS1_CONFUSION_SG_TOL']
+		self.min_ssdistnr	 			= init_config.MIN_DIST_TO_SSO
+		self.min_gal_lat				= init_config.MIN_GAL_LAT
+		self.gaia_rs					= init_config.GAIA_RS
+		self.gaia_pm_signif				= init_config.GAIA_PM_SIGNIF
+		self.gaia_plx_signif			= init_config.GAIA_PLX_SIGNIF
+		self.gaia_veto_gmag_min			= init_config.GAIA_VETO_GMAG_MIN
+		self.gaia_veto_gmag_max			= init_config.GAIA_VETO_GMAG_MAX
+		self.gaia_excessnoise_sig_max	= init_config.GAIA_EXCESSNOISE_SIG_MAX
+		self.ps1_sgveto_rad				= init_config.PS1_SGVETO_RAD
+		self.ps1_sgveto_th				= init_config.PS1_SGVETO_SGTH
+		self.ps1_confusion_rad			= init_config.PS1_CONFUSION_RAD
+		self.ps1_confusion_sg_tol		= init_config.PS1_CONFUSION_SG_TOL
 
-		self.catshtm				= catshtm_server.get_client(base_config['catsHTM.default'])
+		self.catshtm = catshtm_server.get_client(
+			resources['catsHTM.default']
+		)
 
 		# To make this tenable we should create this list dynamically depending on what entries are required
-                # by the filter. Now deciding not to include drb in this list, eg.
+		# by the filter. Now deciding not to include drb in this list, eg.
 		self.keys_to_check = (
 			'fwhm', 'elong', 'magdiff', 'nbad', 'distpsnr1', 'sgscore1', 'distpsnr2', 
 			'sgscore2', 'distpsnr3', 'sgscore3', 'isdiffpos', 'ra', 'dec', 'rb', 'ssdistnr'
 		)
-		
 
 
-	def _alert_has_keys(self, photop):
+	def _alert_has_keys(self, photop) -> bool:
 		"""
-			check that given photopoint contains all the keys needed to filter
+		check that given photopoint contains all the keys needed to filter
 		"""
 		for el in self.keys_to_check:
 			if el not in photop:
@@ -136,81 +139,84 @@ class DecentFilter(AbsAlertFilter):
 
 	def get_galactic_latitude(self, transient):
 		"""
-			compute galactic latitude of the transient
+		compute galactic latitude of the transient
 		"""
 		coordinates = SkyCoord(transient['ra'], transient['dec'], unit='deg')
-		b = coordinates.galactic.b.deg
-		return b
+		return coordinates.galactic.b.deg
 
 
-	def is_star_in_PS1(self, transient):
+	def is_star_in_PS1(self, transient) -> bool:
 		"""
-			apply combined cut on sgscore1 and distpsnr1 to reject the transient if
-			there is a PS1 star-like object in it's immediate vicinity
+		apply combined cut on sgscore1 and distpsnr1 to reject the transient if
+		there is a PS1 star-like object in it's immediate vicinity
 		"""
 		
 		#TODO: consider the case of alert moving wrt to the position of a star
 		# maybe cut on the minimum of the distance!
-		
-		if (transient['distpsnr1'] < self.ps1_sgveto_rad and
-				transient['sgscore1'] > self.ps1_sgveto_th):
-			return True
-		else:
-			return False
+		return transient['distpsnr1'] < self.ps1_sgveto_rad and \
+			transient['sgscore1'] > self.ps1_sgveto_th
 
 
-	def is_confused_in_PS1(self, transient):
+	def is_confused_in_PS1(self, transient) -> bool:
 		"""
-			check in PS1 for source confusion, which can induce subtraction artifatcs. 
-			These cases are selected requiring that all three PS1 cps are in the imediate
-			vicinity of the transient and their sgscore to be close to 0.5 within given tolerance.
+		check in PS1 for source confusion, which can induce subtraction artifatcs. 
+		These cases are selected requiring that all three PS1 cps are in the imediate
+		vicinity of the transient and their sgscore to be close to 0.5 within given tolerance.
 		"""
 		sg1, sg2, sg3 = transient['sgscore1'], transient['sgscore2'], transient['sgscore3']
 		d1, d2, d3 = transient['distpsnr1'], transient['distpsnr2'], transient['distpsnr3']
 		very_close = max([d1, d2, d3]) < self.ps1_confusion_rad
-		sg_confused =  abs( array([sg1, sg2, sg3]) - 0.5 ).max() < self.ps1_confusion_sg_tol
-		if sg_confused and very_close:
-			return True
-		else:
-			return False
+		sg_confused = abs( array([sg1, sg2, sg3]) - 0.5 ).max() < self.ps1_confusion_sg_tol
+		return sg_confused and very_close
 
 
-	def is_star_in_gaia(self, transient):
+	def is_star_in_gaia(self, transient) -> bool:
 		"""
-			match tranient position with GAIA DR2 and uses parallax 
-			and proper motion to evaluate star-likeliness
-			
-			returns: True (is a star) or False otehrwise.
+		match tranient position with GAIA DR2 and uses parallax 
+		and proper motion to evaluate star-likeliness
+		returns: True (is a star) or False otehrwise.
 		"""
 		
-		transient_coords = SkyCoord(transient['ra'], transient['dec'], unit='deg')
+		transient_coords = SkyCoord(
+			transient['ra'], transient['dec'], unit='deg'
+		)
+
 		srcs, colnames, colunits = self.catshtm.cone_search(
-											'GAIADR2',
-											transient_coords.ra.rad, transient_coords.dec.rad,
-											self.gaia_rs)
-		my_keys = ['RA', 'Dec', 'Mag_G', 'PMRA', 'ErrPMRA', 'PMDec', 'ErrPMDec', 'Plx', 'ErrPlx', 'ExcessNoiseSig']
+			'GAIADR2', transient_coords.ra.rad, 
+			transient_coords.dec.rad, self.gaia_rs
+		)
+
+		my_keys = [
+			'RA', 'Dec', 'Mag_G', 'PMRA', 'ErrPMRA', 'PMDec', 
+			'ErrPMDec', 'Plx', 'ErrPlx', 'ExcessNoiseSig'
+		]
+
 		if len(srcs) > 0:
-			gaia_tab					= Table(asarray(srcs), names=colnames)
-			gaia_tab					= gaia_tab[my_keys]
-			gaia_coords					= SkyCoord(gaia_tab['RA'], gaia_tab['Dec'], unit='rad')
+
+			gaia_tab = Table(asarray(srcs), names=colnames)
+			gaia_tab = gaia_tab[my_keys]
+			gaia_coords	= SkyCoord(
+				gaia_tab['RA'], gaia_tab['Dec'], unit='rad'
+			)
 			
 			# compute distance
-			gaia_tab['DISTANCE']		= transient_coords.separation(gaia_coords).arcsec
-			gaia_tab['DISTANCE_NORM']	= (
-				1.8 + 0.6 * exp( (20 - gaia_tab['Mag_G']) / 2.05) > gaia_tab['DISTANCE'])
-			gaia_tab['FLAG_PROX']		= [
-											True if x['DISTANCE_NORM'] == True and 
-											(self.gaia_veto_gmag_min <= x['Mag_G'] <= self.gaia_veto_gmag_max) else 
-											False for x in gaia_tab
-											]
+			gaia_tab['DISTANCE'] = transient_coords.separation(gaia_coords).arcsec
+			gaia_tab['DISTANCE_NORM'] = (
+				1.8 + 0.6 * exp( (20 - gaia_tab['Mag_G']) / 2.05) > gaia_tab['DISTANCE']
+			)
+			gaia_tab['FLAG_PROX'] = [
+				x['DISTANCE_NORM'] and \
+				self.gaia_veto_gmag_min <= x['Mag_G'] <= self.gaia_veto_gmag_max
+				for x in gaia_tab
+			]
 
 			# check for proper motion and parallax conditioned to distance
-			gaia_tab['FLAG_PMRA']		= abs(gaia_tab['PMRA']  / gaia_tab['ErrPMRA']) > self.gaia_pm_signif
-			gaia_tab['FLAG_PMDec']		= abs(gaia_tab['PMDec'] / gaia_tab['ErrPMDec']) > self.gaia_pm_signif
-			gaia_tab['FLAG_Plx']		= abs(gaia_tab['Plx']   / gaia_tab['ErrPlx']) > self.gaia_plx_signif
+			gaia_tab['FLAG_PMRA'] = abs(gaia_tab['PMRA'] / gaia_tab['ErrPMRA']) > self.gaia_pm_signif
+			gaia_tab['FLAG_PMDec'] = abs(gaia_tab['PMDec'] / gaia_tab['ErrPMDec']) > self.gaia_pm_signif
+			gaia_tab['FLAG_Plx'] = abs(gaia_tab['Plx'] / gaia_tab['ErrPlx']) > self.gaia_plx_signif
 			
 			# take into account precison of the astrometric solution via the ExcessNoise key
-			gaia_tab['FLAG_Clean']	= gaia_tab['ExcessNoiseSig']<self.gaia_excessnoise_sig_max
+			gaia_tab['FLAG_Clean'] = gaia_tab['ExcessNoiseSig']<self.gaia_excessnoise_sig_max
 			
 			# select just the sources that are close enough and that are not noisy
 			gaia_tab = gaia_tab[gaia_tab['FLAG_PROX']]
@@ -225,27 +231,28 @@ class DecentFilter(AbsAlertFilter):
 		return False
 
 
-	def apply(self, alert):
+	# Override
+	def apply(self, ampel_alert: AmpelAlert) -> Optional[Set[str]]:
 		"""
 		Mandatory implementation.
 		To exclude the alert, return *None*
 		To accept it, either return
-			* self.on_match_t2_units
-			* or a custom combination of T2 unit names
+		* self.on_match_t2_units
+		* or a custom combination of T2 unit names
 		"""
 		
 		# --------------------------------------------------------------------- #
 		#					CUT ON THE HISTORY OF THE ALERT						#
 		# --------------------------------------------------------------------- #
 		
-		npp = len(alert.pps)
+		npp = len(ampel_alert.pps)
 		if npp < self.min_ndet:
 			#self.logger.debug("rejected: %d photopoints in alert (minimum required %d)"% (npp, self.min_ndet))
 			self.logger.info(None, extra={'nDet': npp})
 			return None
 		
 		# cut on length of detection history
-		detections_jds = alert.get_values('jd', upper_limits=False)
+		detections_jds = ampel_alert.get_values('jd', upper_limits=False)
 		det_tspan = max(detections_jds) - min(detections_jds)
 		if not (self.min_tspan < det_tspan < self.max_tspan):
 			#self.logger.debug("rejected: detection history is %.3f d long, \
@@ -257,7 +264,7 @@ class DecentFilter(AbsAlertFilter):
 		#							IMAGE QUALITY CUTS							#
 		# --------------------------------------------------------------------- #
 		
-		latest = alert.pps[0]
+		latest = ampel_alert.pps[0]
 		if not self._alert_has_keys(latest):
 			return None
 		
@@ -316,7 +323,7 @@ class DecentFilter(AbsAlertFilter):
 			return None
 		
 		if self.is_confused_in_PS1(latest):
-			#self.logger.debug("rejected: three confused PS1 sources within %.2f arcsec from alert."% (self.ps1_confusion_rad))
+			#self.logger.debug("rejected: three confused PS1 sources within %.2f arcsec from ampel_alert."% (self.ps1_confusion_rad))
 			self.logger.info(None, extra={'ps1Confusion': True})
 			return None
 		
@@ -327,7 +334,7 @@ class DecentFilter(AbsAlertFilter):
 			return None
 		
 		# congratulation alert! you made it!
-		#self.logger.debug("Alert %s accepted. Latest pp ID: %d"%(alert.tran_id, latest['candid']))
+		#self.logger.debug("Alert %s accepted. Latest pp ID: %d"%(ampel_alert.tran_id, latest['candid']))
 		self.logger.debug("Alert accepted", extra={'latestPpId': latest['candid']})
 
 		#for key in self.keys_to_check:
