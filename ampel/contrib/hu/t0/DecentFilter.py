@@ -166,7 +166,18 @@ class DecentFilter(AbsT0AlertFilter):
 		sg1, sg2, sg3 = transient['sgscore1'], transient['sgscore2'], transient['sgscore3']
 		d1, d2, d3 = transient['distpsnr1'], transient['distpsnr2'], transient['distpsnr3']
 		very_close = max([d1, d2, d3]) < self.ps1_confusion_rad
-		sg_confused = abs( array([sg1, sg2, sg3]) - 0.5 ).max() < self.ps1_confusion_sg_tol
+		# Update 31.10.19: avoid costly numpy cast 
+		# Old:
+		# In: %timeit abs(array([sg1, sg2, sg3]) - 0.5 ).max()
+		# Out: 5.79 µs ± 80.5 ns per loop (mean ± std. dev. of 7 runs, 100000 loops each)
+		# New:
+		# In: %timeit max(abs(sg1-0.5), abs(sg2-0.5), abs(sg3-0.5))
+		# Out: 449 ns ± 7.01 ns per loop (mean ± std. dev. of 7 runs, 1000000 loops each)
+		sg_confused = max(
+			abs(transient['sgscore1']-0.5), 
+			abs(transient['sgscore2']-0.5), 
+			abs(transient['sgscore3']-0.5)
+		) < self.ps1_confusion_sg_tol
 		return sg_confused and very_close
 
 
