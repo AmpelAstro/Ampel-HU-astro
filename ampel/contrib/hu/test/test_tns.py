@@ -1,9 +1,10 @@
 
 import pytest, logging, re
 from unittest.mock import MagicMock
-from ampel.contrib.hu.t3.aiotns import TNSMatcher
+from ampel.contrib.hu.t3.TNSMatcher import TNSMatcher, TNSClient, TNSMirrorDB, TNSName
 
-def test_tnsname(t3_transient_views, mocker):
+@pytest.mark.skip(reason="requires local TNS mirror")
+def test_query_tnsname(t3_transient_views, mocker):
     t3 = TNSMatcher(logging.getLogger())
 
     assert t3.add(t3_transient_views) is None
@@ -23,3 +24,14 @@ def test_tnsname(t3_transient_views, mocker):
         assert len(op._doc['$addToSet']['tranNames']['$each']) > 0
         for name in op._doc['$addToSet']['tranNames']['$each']:
             assert pattern.match(name)
+
+def test_tnsname():
+    name = '2019tdo'
+    id_name = TNSName.from_str(name)
+    assert id_name.year == 2019
+    assert str(id_name) == name
+    assert str(TNSName.from_index(int(id_name))) == name
+
+    for i in range(1,4):
+        assert TNSName.from_str('2019'+('a'*i)).number == sum(TNSName.BASE**p for p in range(i))
+        assert len(str(TNSName(2019,TNSName.BASE**i))) == 4+i

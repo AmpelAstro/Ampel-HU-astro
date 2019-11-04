@@ -53,7 +53,7 @@ setup(name='ampel-contrib-hu',
               'RapidBase = ampel.contrib.hu.t3.RapidBase:RapidBase',
               'RapidSedm = ampel.contrib.hu.t3.RapidSedm:RapidSedm',
               'TNSTalker = ampel.contrib.hu.t3.TNSTalker:TNSTalker',
-              'TNSMatcher = ampel.contrib.hu.t3.aiotns:TNSMatcher'
+              'TNSMatcher = ampel.contrib.hu.t3.TNSMatcher:TNSMatcher'
           ],
           'ampel.pipeline.resources' : [
               'extcats = ampel.contrib.hu.resources:extcatsURI',
