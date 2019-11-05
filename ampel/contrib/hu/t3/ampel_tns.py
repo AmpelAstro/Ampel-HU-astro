@@ -379,8 +379,8 @@ def sendTNSreports(atreportlists, api_key, logger, sandbox=True):
 	'''
 
 	# Submit to TNS
-	MAX_LOOP = 10
-	SLEEP = 1
+	MAX_LOOP = 25
+	SLEEP = 2
 
 	reportresult = {}
 	for atreport in atreportlists:

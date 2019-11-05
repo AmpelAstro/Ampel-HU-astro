@@ -780,16 +780,22 @@ class TNSTalker(AbsT3Unit):
 		# atreports is now a dict with tran_id as keys and atreport as keys
 		# what we need is a list of dicts with form {'at_report':atreport }
                 # where an atreport is a dictionary with increasing integer as keys and atreports as values
+		atreportlist = []
 		atreport = {}
-		for k, tranid in enumerate( atreports.keys() ):
+		k = 0
+		for tranid in atreports.keys() :
+			if len(atreport)>90:
+				self.logger.info('adding another report to TNS submit')
+				atreportlist.append( {'at_report' : atreport} )
+				atreport = {}
+				k = 0
 			atreport[int(k)] = atreports[tranid]
-		atreportlist = [ {'at_report':atreport} ]
+			k += 1
+		atreportlist.append( {'at_report' : atreport} )
+#		atreportlist = [ {'at_report':atreport} ]
 		tnsreplies = sendTNSreports(atreportlist, self.run_config.tns_api_key, self.logger, sandbox=self.run_config.sandbox)
 
 
-		# Send reports in chunks of size 90 (99 should work)
-		#atchunks = list(chunks([atr for atr in atreports.values()], 90))
-		#tnsreplies = sendTNSreports(atchunks, self.run_config.tns_api_key, self.logger, sandbox=self.run_config.sandbox)
 		
 		# Now go and check and create journal updates for the cases where SN was added
 		for tran_id in atreports.keys():
