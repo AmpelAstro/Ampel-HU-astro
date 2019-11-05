@@ -286,9 +286,10 @@ class T2CatalogMatch(AbsT2Unit):
 							val = src[field].tolist()
 						except AttributeError:
 							val = src[field]
+						except KeyError:
+							continue
 						to_add[field] = val
 					out_dict[catalog].update(to_add)
-#					out_dict[catalog].update({field: src[field] for field in keys_to_append})
 			else:
 				self.logger.debug("no match found in catalog %s within %.2f arcsec from transient"%
 					(catalog, cat_opts['rs_arcsec']))
