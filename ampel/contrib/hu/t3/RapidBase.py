@@ -15,6 +15,8 @@ from typing import Dict, List
 
 from astropy.time import Time
 from astropy.coordinates import SkyCoord
+from astropy.coordinates import Distance
+from astropy.cosmology import Planck15
 
 from ampel.base.abstract.AbsT3Unit import AbsT3Unit
 from ampel.base.dataclass.JournalUpdate import JournalUpdate
@@ -67,17 +69,19 @@ class RapidBase(AbsT3Unit):
 		# Cuts based on T2 catalog redshifts
 		require_catalogmatch : bool = True   # Require a redshift max from a T2 output
 		redshift_catalogs	: List[str] = [] # List of catalog-like output to search for redshift
-		max_redshift	: float	= 0.05	# maximum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
+		max_redshift	: float	= 0.1	# maximum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
 		min_redshift	: float	= 0.001	# minimum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
+		max_absmag	: float	= -13	# max abs mag through peak mag and redshift from catalog mach (require both)
+		min_absmag	: float	= -17	# min abs mag through peak mag and redshift from catalog mach (require both)
 		min_dist	: float = 1.2	# arcsec, minimum distance to remove star matches to transient if found (eg in SDSSDR10)
 		max_dist	: float = 50 	# arcsec, maximum distance 
 
 		# Cut on alert properties
 		min_ndet	: int	= 2		# A candidate need to have at least this many detections
 		min_ndet_postul	: int	= 2		# and if it has this minimum nr of detection after the last significant (max_maglim) UL.
-		max_age		: float = 2.5		# days, If a detection has an age older than this, skip (stars,age).
+		max_age		: float = 3		# days, If a detection has an age older than this, skip (stars,age).
 		min_age		: float = 0		# Min age of detection history
-		min_peak_mag	: float	= 19.5	# range of peak magnitudes for submission
+		min_peak_mag	: float	= 20	# range of peak magnitudes for submission
 		max_peak_mag	: float = 16	#
 		min_n_filters	: int	= 1		# Reported detections in at least this many filters
 		min_gal_lat	: float = 14	# Minimal galactic latitide
@@ -85,7 +89,7 @@ class RapidBase(AbsT3Unit):
 		ps1_sgveto_rad	: float = 1		# reject alert if PS1 star for any pp
 		ps1_sgveto_sgth	: float = 0.8	# 
 		rb_minmed	: float = 0.3	# Minimal median RB.
-		drb_minmed	: float = 0.5	# Minimal median RB.
+		drb_minmed	: float = 0.95	# Minimal median RB.
 		min_magrise     : float = -20   # NOT IMPLEMENTED
 
 		maglim_min	: float = 19.5	# Limiting magnitude to consider upper limits as 'significant'
@@ -306,35 +310,46 @@ class RapidBase(AbsT3Unit):
 		
 
 #		distpsnr1, sgscore1 = zip(*lc.get_tuples('distpsnr1', 'sgscore1', filters=self.run_config.lc_filters))
-		distpsnr1, sgscore1 = zip(*lc.get_tuples('distpsnr1', 'sgscore1'))
-		is_ps1_star = np.logical_and(
+		psdata = lc.get_tuples('distpsnr1', 'sgscore1')
+		if len(psdata)>0:
+			distpsnr1, sgscore1 = zip(*psdata)
+			is_ps1_star = np.logical_and(
 									np.array(distpsnr1) < self.run_config.ps1_sgveto_rad,
 									np.array(sgscore1) > self.run_config.ps1_sgveto_sgth
 								)
-		if np.any(is_ps1_star):
-			self.logger.info(
-				"transient below PS1 SG cut for at least one pp.",
-				extra={'distpsnr1': distpsnr1, 'sgscore1': sgscore1}
-				)
-			return False
+			if np.any(is_ps1_star):
+				self.logger.info(
+					"transient below PS1 SG cut for at least one pp.",
+					extra={'distpsnr1': distpsnr1, 'sgscore1': sgscore1}
+					)
+				return False
+		else:
+			self.logger.info('No PS1 check as no data found.')
 		
 		# cut on median RB and DRB score
 		rbs = [pp.get_value('rb') for pp in pps]
 		if np.median(rbs) < self.run_config.rb_minmed:
 			self.logger.info(
-				"Median RB %below limit.",
+				"RB cut",
 				extra={'median_rd': np.median(rbs), 'rb_minmed': self.run_config.rb_minmed}
 				)
 			return False
+		elif (len(rbs)==0) and self.run_config.rb_minmed>0:
+			self.logger.info("No rb info for significant detection.")
+			return False
+		info['rb'] = np.median(rbs)
 		# drb might not exist
 		drbs = [pp.get_value('drb') for pp in pps if pp.has_parameter('drb')]
 		if len(drbs)>0 and np.median(drbs) < self.run_config.drb_minmed:
 			self.logger.info(
-				"Median DRB %below limit.",
+				"DRB cut",
 				extra={'median_drd': np.median(drbs), 'drb_minmed': self.run_config.drb_minmed}
 				)
 			return False
-		
+		elif (len(drbs)==0) and self.run_config.drb_minmed>0:
+			self.logger.info("No drb info for significant detection.")
+			return False
+		info['drb'] = np.median(drbs)	
 
 
 		# ----------------------------------------------------------------------#
@@ -353,20 +368,30 @@ class RapidBase(AbsT3Unit):
 				return False
 
 			# Loop through listed catalogs for match
-			zmatch = False
+			zmatchs = []
 			for catname in self.run_config.redshift_catalogs:
 				catinfo = cat_res.get(catname, False)
 				if ( catinfo and (self.run_config.min_redshift <  catinfo['z'] < self.run_config.max_redshift) 
 					and (self.run_config.min_dist <  catinfo['dist2transient'] < self.run_config.max_dist) ) :
 						self.logger.info("z matched.", extra= {'catalog': catname,'z':catinfo['z'],'dist':catinfo['dist2transient']})
-						zmatch = True
+						zmatchs.append( [catinfo['z']] )
 						info[catname+'_z'] = catinfo['z']
 						info[catname+'_dist2transient'] = catinfo['dist2transient']
 
-			if not zmatch:
+			if len(zmatchs)==0:
 				self.logger.info('No z match.')
 				return False
+
+			# Determine absolute magnitue
+			sndist = Distance(z = np.mean(zmatchs), cosmology=Planck15)
+			absmag = info['peak_mag'] - sndist.distmod.value 
+			if not (self.run_config.min_absmag < absmag < self.run_config.max_absmag):
+				self.logger.info('Not in absmag range.',extra={'absmag':absmag})
+				#print('TEST z %.3f peakmag %.3f absmag %.3f'%(np.mean(zmatchs), info['peak_mag'],absmag) )
+				return False
+			info['absmag'] = absmag
 		
+
 		# tag AGNs
 		milliquas = cat_res.get('milliquas', False)
 		sdss_spec = cat_res.get('SDSS_spec', False)
