@@ -35,6 +35,10 @@ class TNSMirrorDB:
         """
         :param docs: TNS get/object results
         """
+        # NB: bulk_write() an empty list raises InvalidOperation
+        if not docs:
+            return
+
         ops = []
         for doc in docs:
             doc = self.apply_schema(doc)
