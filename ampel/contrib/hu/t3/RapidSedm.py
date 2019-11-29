@@ -20,7 +20,7 @@ from astropy.time import Time
 from astropy.coordinates import SkyCoord
 
 from ampel.abstract.AbsT3Unit import AbsT3Unit
-from ampel.base.dataclass.JournalUpdate import JournalUpdate
+from ampel.dataclass.JournalUpdate import JournalUpdate
 from ampel.logging.AmpelLogger import AmpelLogger
 from ampel.ztf.pipeline.common.ZTFUtils import ZTFUtils
 from ampel.contrib.hu.t3.RapidBase import RapidBase

@@ -70,7 +70,7 @@ class T2Observability(AbsT2Unit):
 		""" 
 			Parameters
 			-----------
-				light_curve: "ampel.base.LightCurve" instance. 
+				light_curve: "ampel.object.LightCurve" instance. 
 				 See the LightCurve docstring for more info.
 			
 				run_parameters: `dict`
@@ -80,7 +80,7 @@ class T2Observability(AbsT2Unit):
 						
 						run_config = 
 							{
-							'get_lc_pos_kwargs': None, # optional see ampel.base.LightCurve doc
+							'get_lc_pos_kwargs': None, # optional see ampel.object.LightCurve doc
 							'observatories':
 								{
 								'SEDm': 

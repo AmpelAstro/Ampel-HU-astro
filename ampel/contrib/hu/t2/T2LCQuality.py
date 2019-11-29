@@ -166,7 +166,7 @@ class T2LCQuality(AbsT2Unit):
 		""" 
 			Parameters
 			-----------
-				light_curve: `ampel.base.LightCurve` instance. 
+				light_curve: `ampel.object.LightCurve` instance. 
 				 	See the LightCurve docstring for more info.
 			
 				run_config: `dict` or None
@@ -181,7 +181,7 @@ class T2LCQuality(AbsT2Unit):
 					run_config dictionary:
 					
 						lc_filter: `dict` or `list`
-							to be passed to ampel.base.LightCurve.get_tuples.
+							to be passed to ampel.object.LightCurve.get_tuples.
 							if list, the items must be dicts and they'll be combined 
 							with a logical and. Pass an empy list to disable the filter
 							completely (filtering on the ztf bands will still be applied).

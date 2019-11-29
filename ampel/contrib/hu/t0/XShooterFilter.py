@@ -12,7 +12,7 @@ import logging
 from numpy import array
 from astropy.time import Time
 from typing import Any, Dict, Optional, Set
-from ampel.base.AmpelAlert import AmpelAlert
+from ampel.object.AmpelAlert import AmpelAlert
 from ampel.contrib.hu.t0.DecentFilter import DecentFilter
 
 
