@@ -33,7 +33,7 @@ def chunks(l, n):
 # get the science records for the catalog match
 def get_catalogmatch_srecs(tran_view, logger):
 	cat_res = tran_view.get_science_records(t2_unit_id="CATALOGMATCH")
-	if (not cat_res) or (not cat_res[-1].get_results()):
+	if (not cat_res) or (not cat_res[-1]	.get_results()):
 		logger.info("NO CATALOG MATCH FOR THIS TRANSIENT")
 		return {}
 	return cat_res[-1].get_results()[-1].get('output', {})
@@ -78,7 +78,8 @@ class TNSTalker(AbsT3Unit):
 		
 		# AT report config
 		base_at_dict		: Dict = {
-			"groupid":"48", 
+			"reporting_group_id":"48", 
+			"discovery_data_source_id":"48", 
 			"reporter": "J. Nordin, V. Brinnel, M. Giomi, J. van Santen (HU Berlin), A. Gal-Yam, O. Yaron, S. Schulze (Weizmann) on behalf of ZTF",
 			"at_type":"1"
 		}
