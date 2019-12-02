@@ -139,7 +139,7 @@ class RapidBase(AbsT3Unit):
 
 
 		# Document what we did
-		jcontent = {'t3unit': self.name, 'reaction': descrption, 'success':success}
+		jcontent = {'t3unit': self.name, 'reaction': description, 'success':success}
 		jup = JournalUpdate(tran_id=tran_view.tran_id, ext=self.run_config.ext_journal, content=jcontent)
 	
 
