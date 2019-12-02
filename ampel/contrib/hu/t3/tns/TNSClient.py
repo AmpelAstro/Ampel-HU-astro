@@ -7,6 +7,9 @@
 # Last Modified Date: 04.11.2019
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
+import sys
+import traceback
+
 import aiohttp
 import asyncio
 import backoff
