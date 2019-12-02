@@ -85,7 +85,7 @@ class TNSMirrorDB:
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
-    from ampel.contrib.hu.t3.aiotns import TNSClient
+    from ampel.contrib.hu.t3.tns import TNSClient
     import asyncio, logging
     logging.basicConfig(level='INFO')
 
