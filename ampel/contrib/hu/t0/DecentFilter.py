@@ -14,11 +14,11 @@ from astropy.coordinates import SkyCoord
 from astropy.table import Table
 
 from ampel.contrib.hu import catshtm_server
-from ampel.base.AmpelAlert import AmpelAlert
-from ampel.abstract.AbsT0AlertFilter import AbsT0AlertFilter
+from ampel.standard.PhotoAlert import PhotoAlert
+from ampel.abstract.AbsPhotoAlertFilter import AbsPhotoAlertFilter
 
 
-class DecentFilter(AbsT0AlertFilter):
+class DecentFilter(AbsPhotoAlertFilter):
 	"""
 	General-purpose filter with ~ 0.6% acceptance. It selects alerts based on:
 	* numper of previous detections
@@ -38,7 +38,7 @@ class DecentFilter(AbsT0AlertFilter):
 	resources = ('catsHTM.default',)
 	
 	
-	class InitConfig(AbsT0AlertFilter.InitConfig):
+	class InitConfig(AbsPhotoAlertFilter.InitConfig):
 		"""
  		Necessary class to validate configuration.
 		"""
@@ -75,7 +75,7 @@ class DecentFilter(AbsT0AlertFilter):
 		if not init_config:
 			raise ValueError("Please check you init configuration")
 
-		self.on_match_t2_units = [t2.unit_id for t2 in init_config.t2Compute]
+		self.on_match_t2_units = [t2.class_name for t2 in init_config.t2Compute]
 		self.logger = logger if logger is not None else logging.getLogger()
 		
 		# parse the run config
@@ -249,7 +249,7 @@ class DecentFilter(AbsT0AlertFilter):
 
 
 	# Override
-	def apply(self, ampel_alert: AmpelAlert) -> Optional[Set[str]]:
+	def apply(self, alert: PhotoAlert) -> Optional[Set[str]]:
 		"""
 		Mandatory implementation.
 		To exclude the alert, return *None*
@@ -262,14 +262,14 @@ class DecentFilter(AbsT0AlertFilter):
 		#					CUT ON THE HISTORY OF THE ALERT						#
 		# --------------------------------------------------------------------- #
 		
-		npp = len(ampel_alert.pps)
+		npp = len(alert.pps)
 		if npp < self.min_ndet:
 			#self.logger.debug("rejected: %d photopoints in alert (minimum required %d)"% (npp, self.min_ndet))
 			self.logger.info(None, extra={'nDet': npp})
 			return None
 		
 		# cut on length of detection history
-		detections_jds = ampel_alert.get_values('jd', upper_limits=False)
+		detections_jds = alert.get_values('jd', upper_limits=False)
 		det_tspan = max(detections_jds) - min(detections_jds)
 		if not (self.min_tspan < det_tspan < self.max_tspan):
 			#self.logger.debug("rejected: detection history is %.3f d long, \
@@ -281,7 +281,7 @@ class DecentFilter(AbsT0AlertFilter):
 		#							IMAGE QUALITY CUTS							#
 		# --------------------------------------------------------------------- #
 		
-		latest = ampel_alert.pps[0]
+		latest = alert.pps[0]
 		if not self._alert_has_keys(latest):
 			return None
 		
@@ -340,7 +340,7 @@ class DecentFilter(AbsT0AlertFilter):
 			return None
 		
 		if self.is_confused_in_PS1(latest):
-			#self.logger.debug("rejected: three confused PS1 sources within %.2f arcsec from ampel_alert."% (self.ps1_confusion_rad))
+			#self.logger.debug("rejected: three confused PS1 sources within %.2f arcsec from alert."% (self.ps1_confusion_rad))
 			self.logger.info(None, extra={'ps1Confusion': True})
 			return None
 		
@@ -351,7 +351,7 @@ class DecentFilter(AbsT0AlertFilter):
 			return None
 		
 		# congratulation alert! you made it!
-		#self.logger.debug("Alert %s accepted. Latest pp ID: %d"%(ampel_alert.tran_id, latest['candid']))
+		#self.logger.debug("Alert %s accepted. Latest pp ID: %d"%(alert.tran_id, latest['candid']))
 		self.logger.debug("Alert accepted", extra={'latestPpId': latest['candid']})
 
 		#for key in self.keys_to_check:

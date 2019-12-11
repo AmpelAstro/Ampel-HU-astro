@@ -12,7 +12,7 @@ import logging
 from numpy import array
 from astropy.time import Time
 from typing import Any, Dict, Optional, Set
-from ampel.object.AmpelAlert import AmpelAlert
+from ampel.standard.PhotoAlert import PhotoAlert
 from ampel.contrib.hu.t0.DecentFilter import DecentFilter
 
 
@@ -56,13 +56,13 @@ class XShooterFilter(DecentFilter):
 
 
 	# Override
-	def apply(self, ampel_alert: AmpelAlert) -> Optional[Set[str]]:
+	def apply(self, alert: PhotoAlert) -> Optional[Set[str]]:
 		"""
 		run the decent filter on the alert
 		"""
 		
 		# cut on declination
-		latest = ampel_alert.pps[0]
+		latest = alert.pps[0]
 		if latest['dec'] > self.max_dec:
 			self.logger.debug("rejected: declination %.2f deg is above maximum allowed of %.2f deg"% 
 				(latest['dec'], self.max_dec))
@@ -76,7 +76,7 @@ class XShooterFilter(DecentFilter):
 		self.logger.debug("Setting 'now' to JD %.4f to cut on alert history"%now_jd)
 		
 		# check on history 1: detected in the last 6h
-		detection_jds = array(ampel_alert.get_values('jd', upper_limits=False))
+		detection_jds = array(alert.get_values('jd', upper_limits=False))
 		recent_detections = detection_jds > (now_jd - self.det_within)
 		if not any(recent_detections):
 			self.logger.debug("rejected: no detection within the last %.3f days (latest one %.3f days ago)"%
@@ -84,7 +84,7 @@ class XShooterFilter(DecentFilter):
 			return None
 		
 		# check on the history 2: at least one upper limit in the last 5 days
-		ulim_jds = ampel_alert.get_values('jd', upper_limits=True)
+		ulim_jds = alert.get_values('jd', upper_limits=True)
 		if ulim_jds is None:
 			self.logger.debug("rejected: this alert has no upper limits")
 			return None
@@ -102,4 +102,4 @@ class XShooterFilter(DecentFilter):
 			return None
 		
 		# now apply the DecentFilter
-		return super().apply(self, ampel_alert)
+		return super().apply(self, alert)

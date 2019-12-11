@@ -7,33 +7,47 @@
 # Last Modified Date: 14.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-
-from ampel.abstract.AbsT0AlertFilter import AbsT0AlertFilter
+import logging
 from random import uniform
+from typing import Any, Dict
+from pydantic import BaseModel
+from ampel.abstract.AbsPhotoAlertFilter import AbsPhotoAlertFilter
+#from ampel.model.t0.T0FilterModel import T0FilterModel
 
-class RandFilter(AbsT0AlertFilter):
 
-	def __init__(self, on_match_t2_units, base_config=None, run_config=None, logger=None):
+class RandFilter(AbsPhotoAlertFilter):
+
+	class InitConfig(AbsPhotoAlertFilter.InitConfig):
+	#class InitConfig(T0FilterModel):
+		""" """
+		passing_rate: float
+
+
+	# pylint: disable=super-init-not-called
+	def __init__(
+		self, logger: logging.Logger, init_config: BaseModel = None, 
+		resources: Dict[str, Any] = None
+	):
 		"""
 		"""
-		self.on_match_default_t2_units = on_match_t2_units
+		self.on_match_t2_units = init_config.on_match_t2_units
 
-		if run_config is None:
-			raise ValueError("run config required (threshold defined there)")
+		if init_config is None:
+			raise ValueError("Init config is required (threshold defined there)")
 
-		self.passing_rate = run_config['passingRate']
+		self.passing_rate = init_config.passing_rate
 
 		if logger is not None:
-			logger.info("RandFilter with passing rate {}".format(self.passing_rate))
+			logger.info(f"RandFilter with passing rate {self.passing_rate}")
 			self.logger = logger
 
 
-	def apply(self, ampel_alert):
+	def apply(self, alert):
 		"""
 		"""
 
 		rv = uniform(0,1)
 		if rv < self.passing_rate:
-			return self.on_match_default_t2_units
+			return self.on_match_t2_units
 		else:
 			return None

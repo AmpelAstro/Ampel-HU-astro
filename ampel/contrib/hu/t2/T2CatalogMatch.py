@@ -14,7 +14,7 @@ from astropy.table import Table
 from urllib.parse import urlparse
 
 from ampel.abstract.AbsT2Unit import AbsT2Unit
-from ampel.core.flags.T2RunStates import T2RunStates
+from ampel.flags.T2RunStates import T2RunStates
 from ampel.contrib.hu.utils import info_as_debug
 
 from extcats import CatalogQuery
@@ -111,7 +111,7 @@ class T2CatalogMatch(AbsT2Unit):
 		""" 
 			Parameters
 			-----------
-				light_curve: "ampel.object.LightCurve" instance. 
+				light_curve: "ampel.content.LightCurve" instance. 
 				 See the LightCurve docstring for more info.
 			
 				run_parameters: `dict`
@@ -157,7 +157,7 @@ class T2CatalogMatch(AbsT2Unit):
 				
 						run_config = 
 							{
-							'get_lc_pos_kwargs': None, # optional see ampel.object.LightCurve doc
+							'get_lc_pos_kwargs': None, # optional see ampel.content.LightCurve doc
 							'catalogs':
 								{
 								'SDSS_spec': 

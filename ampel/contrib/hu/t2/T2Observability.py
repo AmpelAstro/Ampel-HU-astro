@@ -14,7 +14,7 @@ import astropy.units as u
 
 from ampel.base import Observatory
 from ampel.abstract.AbsT2Unit import AbsT2Unit
-from ampel.core.flags.T2RunStates import T2RunStates
+from ampel.flags.T2RunStates import T2RunStates
 
 
 class T2Observability(AbsT2Unit):
@@ -70,7 +70,7 @@ class T2Observability(AbsT2Unit):
 		""" 
 			Parameters
 			-----------
-				light_curve: "ampel.object.LightCurve" instance. 
+				light_curve: "ampel.content.LightCurve" instance. 
 				 See the LightCurve docstring for more info.
 			
 				run_parameters: `dict`
@@ -80,7 +80,7 @@ class T2Observability(AbsT2Unit):
 						
 						run_config = 
 							{
-							'get_lc_pos_kwargs': None, # optional see ampel.object.LightCurve doc
+							'get_lc_pos_kwargs': None, # optional see ampel.content.LightCurve doc
 							'observatories':
 								{
 								'SEDm': 

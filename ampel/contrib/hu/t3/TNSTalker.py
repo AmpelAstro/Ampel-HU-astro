@@ -17,7 +17,7 @@ from astropy.time import Time
 from astropy.coordinates import SkyCoord
 
 from ampel.abstract.AbsT3Unit import AbsT3Unit
-from ampel.base.dataclass.JournalUpdate import JournalUpdate
+from ampel.dataclass.JournalUpdate import JournalUpdate
 from ampel.logging.AmpelLogger import AmpelLogger
 from ampel.ztf.common.ZTFUtils import ZTFUtils
 
@@ -32,7 +32,7 @@ def chunks(l, n):
 
 # get the science records for the catalog match
 def get_catalogmatch_srecs(tran_view, logger):
-	cat_res = tran_view.get_science_records(t2_unit_id="CATALOGMATCH")
+	cat_res = tran_view.get_science_records(t2_class_name="CATALOGMATCH")
 	if len(cat_res) == 0 or cat_res is None or cat_res[-1].get_results() is None:
 		logger.info("NO CATALOG MATCH FOR THIS TRANSIENT")
 		return {}

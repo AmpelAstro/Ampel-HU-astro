@@ -59,7 +59,7 @@ def test_slacksummary(t3_transient_views, mocker):
 		rows = list(reader)
 
 	# verify that T2 information is in summary
-	t2s = set(t2.t2_unit_id for tv in t3_transient_views for t2 in tv.t2records)
+	t2s = set(t2.t2_class_name for tv in t3_transient_views for t2 in tv.t2records)
 	assert len(t2s) > 0
 
 	# Verify that nested t2 results were extrected

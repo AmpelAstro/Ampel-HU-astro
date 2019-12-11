@@ -17,7 +17,7 @@ from scipy.interpolate import interp1d
 
 from ampel.ztf.common.ZTFUtils import ZTFUtils
 from ampel.abstract.AbsT2Unit import AbsT2Unit
-from ampel.core.flags.T2RunStates import T2RunStates
+from ampel.flags.T2RunStates import T2RunStates
 
 
 class T2LCQuality(AbsT2Unit):
@@ -166,7 +166,7 @@ class T2LCQuality(AbsT2Unit):
 		""" 
 			Parameters
 			-----------
-				light_curve: `ampel.object.LightCurve` instance. 
+				light_curve: `ampel.content.LightCurve` instance. 
 				 	See the LightCurve docstring for more info.
 			
 				run_config: `dict` or None
@@ -181,7 +181,7 @@ class T2LCQuality(AbsT2Unit):
 					run_config dictionary:
 					
 						lc_filter: `dict` or `list`
-							to be passed to ampel.object.LightCurve.get_tuples.
+							to be passed to ampel.content.LightCurve.get_tuples.
 							if list, the items must be dicts and they'll be combined 
 							with a logical and. Pass an empy list to disable the filter
 							completely (filtering on the ztf bands will still be applied).
