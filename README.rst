@@ -1,33 +1,48 @@
 
-Ampel components from HU/DESY group
-===================================
+Contributed Ampel units from HU/DESY group
+==========================================
 
 Contains as of Sept 2018:
 
 T0
 --
+* DecentFilter
+* LensedTransientFilter
 * NoFilter
 * RandFilter
-* DecentFilter
 * SEDmTargetFilter
+* SimpleDecentFilter
 * ToOFilter
-* LensedTransientFilter
-* TransientInEllipticalFilter
 * TransientInClusterFilter
+* TransientInEllipticalFilter
 * XShooterFilter
 
 T2
 --
-* SNCOSMO
-* CatalogMatch
-* LCQuality
-* Observability
+* T2CatalogMatch
+* T2LCQuality
+* T2MarshalMonitor
+* T2Observability
+* T2SNCosmo
 
 T3
 --
+* ChannelSummaryPublisher
+* CompareExternal
+* CompareUli
+* CountSncosmo
 * GrowthMarshalAnnotate
 * MarshalPublisher
+* RapidBase
+* RapidSedm
+* RejectionLogsPublisher
+* SkyPortalPublisher
+* SlackAlertPublisher
+* SlackPublisher
 * SlackSummaryPublisher
+* T3MarshalMonitor
+* TNSTalker
 * TransientInfoPrinter
 * TransientViewDumper
 * TransientWebPublisher
+* aiotns (TNSMatcher)
