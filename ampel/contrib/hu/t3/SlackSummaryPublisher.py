@@ -11,8 +11,8 @@ import pandas as pd
 import numpy as np
 import collections
 import io, pickle, datetime, requests
-from slackclient import SlackClient
-from slackclient.exceptions import SlackClientError
+from slack import WebClient
+from slack.errors import SlackClientError
 from pydantic import BaseModel
 from typing import Dict, List, Union
 from ampel.abstract.AbsT3Unit import AbsT3Unit
@@ -69,7 +69,7 @@ class SlackSummaryPublisher(AbsT3Unit):
    
         date = str(datetime.date.today())
 
-        sc = SlackClient(self.run_config.slackToken)
+        sc = WebClient(self.run_config.slackToken)
 
         m = calculate_excitement(len(self.frames), date=date,
             thresholds=self.run_config.excitement
