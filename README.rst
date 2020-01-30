@@ -2,7 +2,7 @@
 Contributed Ampel units from HU/DESY group
 ==========================================
 
-Contains as of Sept 2018:
+Contains as of Jan 2020:
 
 T0
 --
