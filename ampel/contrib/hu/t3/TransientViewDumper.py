@@ -7,9 +7,9 @@
 # Last Modified Date: 15.08.2018
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
-from ampel.content.TransientView import TransientView
+from ampel.view.TransientView import TransientView
 from ampel.abstract.AbsT3Unit import AbsT3Unit
-from ampel.utils.json_serialization import AmpelEncoder, object_hook
+from ampel.utils.json import AmpelEncoder, object_hook
 import json
 import requests
 import uuid

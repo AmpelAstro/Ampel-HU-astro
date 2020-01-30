@@ -657,7 +657,7 @@ class TNSTalker(AbsT3Unit):
 			(len(transients), len(transients_to_submit)))
 
 		# Hack to save these for test
-		#import ampel.utils.json_serialization as ampel_serialization
+		#import ampel.utils.json as ampel_serialization
 		#fh = open("/home/jnordin/tmp/t3TransientTalker_testsubmitTV.json","w")
 		#for tv in transients_to_submit:
 		#    fh.write('%s'%(ampel_serialization.AmpelEncoder(lossy=True).encode(tv)))

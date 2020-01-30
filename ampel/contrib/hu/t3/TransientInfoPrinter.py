@@ -9,7 +9,7 @@
 
 import logging
 from pydantic import BaseModel
-from ampel.content.TransientView import TransientView
+from ampel.view.TransientView import TransientView
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 
 class TransientInfoPrinter(AbsT3Unit):
