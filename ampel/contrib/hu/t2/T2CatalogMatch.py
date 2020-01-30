@@ -14,7 +14,7 @@ from astropy.table import Table
 from urllib.parse import urlparse
 
 from ampel.abstract.AbsT2Unit import AbsT2Unit
-from ampel.flags.T2RunStates import T2RunStates
+from ampel.flags.T2RunState import T2RunState
 from ampel.contrib.hu.utils import info_as_debug
 
 from extcats import CatalogQuery
@@ -111,7 +111,7 @@ class T2CatalogMatch(AbsT2Unit):
 		""" 
 			Parameters
 			-----------
-				light_curve: "ampel.content.LightCurve" instance. 
+				light_curve: "ampel.view.LightCurve" instance. 
 				 See the LightCurve docstring for more info.
 			
 				run_parameters: `dict`
@@ -157,7 +157,7 @@ class T2CatalogMatch(AbsT2Unit):
 				
 						run_config = 
 							{
-							'get_lc_pos_kwargs': None, # optional see ampel.content.LightCurve doc
+							'get_lc_pos_kwargs': None, # optional see ampel.view.LightCurve doc
 							'catalogs':
 								{
 								'SDSS_spec': 
@@ -210,7 +210,7 @@ class T2CatalogMatch(AbsT2Unit):
 		try:
 			transient_ra, transient_dec = light_curve.get_pos(**lc_get_pos_kwargs)
 		except IndexError:
-			return T2RunStates.MISSING_INFO
+			return T2RunState.MISSING_INFO
 		self.logger.debug("Transient position (ra, dec): %.4f, %.4f deg"%(transient_ra, transient_dec))
 		
 		# initialize the catalog quer(ies). Use instance variable to aviod duplicates
