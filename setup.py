@@ -4,18 +4,19 @@
 # License           : BSD-3-Clause
 # Author            : jvs
 # Date              : Unspecified
-# Last Modified Date: 04.10.2019
+# Last Modified Date: 28.01.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from setuptools import setup, find_packages
+from setuptools import setup, find_namespace_packages
 
 setup(
 	name='ampel-contrib-hu',
 	version='0.7.0',
-	# include all packages under 'ampel'
-	packages=find_packages('ampel'),
-	# if any package contains *.json files, include them
-	package_data = {'': ['*.json']},
+	packages=find_namespace_packages(),
+	package_data = {
+		'': ['*.json'], # include any package containing *.json files
+		'conf': ['*.conf', '**/*.conf', '**/**/*.conf']
+	},
 	entry_points = {
 		'ampel_target_sources' : [
 			'TargetSourceListener = ampel.contrib.hu.TargetSourceListener:TargetSourceListener',
