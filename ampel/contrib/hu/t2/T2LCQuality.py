@@ -15,7 +15,7 @@ from astropy.table import Table
 from scipy.interpolate import interp1d
 
 
-from ampel.ztf.common.ZTFUtils import ZTFUtils
+from ampel.ztf.utils.ZTFUtils import ZTFUtils
 from ampel.abstract.AbsT2Unit import AbsT2Unit
 from ampel.flags.T2RunState import T2RunState
 
