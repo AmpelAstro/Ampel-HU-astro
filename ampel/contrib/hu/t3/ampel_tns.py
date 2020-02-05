@@ -8,7 +8,6 @@
 import re
 import requests
 import json
-import logging
 import time
 from collections import OrderedDict
 

@@ -22,7 +22,7 @@ from astropy.coordinates import SkyCoord
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.dataclass.JournalUpdate import JournalUpdate
 from ampel.logging.AmpelLogger import AmpelLogger
-from ampel.ztf.common.ZTFUtils import ZTFUtils
+from ampel.ztf.utils.ZTFUtils import ZTFUtils
 from ampel.contrib.hu.t3.RapidBase import RapidBase
 
 

@@ -16,7 +16,7 @@ from slack.errors import SlackClientError
 from pydantic import BaseModel
 from typing import Dict, List, Union
 from ampel.abstract.AbsT3Unit import AbsT3Unit
-from ampel.ztf.common.ZTFUtils import ZTFUtils
+from ampel.ztf.utils.ZTFUtils import ZTFUtils
 from ampel.utils.AmpelUtils import AmpelUtils
 from ampel.logging.AmpelLogger import AmpelLogger
 from ampel.config.EncryptedConfig import EncryptedConfig
@@ -66,7 +66,7 @@ class SlackSummaryPublisher(AbsT3Unit):
         """
         if len(self.frames) == 0 and self.run_config.quiet:
             return
-   
+ 
         date = str(datetime.date.today())
 
         sc = WebClient(self.run_config.slackToken)
@@ -74,7 +74,7 @@ class SlackSummaryPublisher(AbsT3Unit):
         m = calculate_excitement(len(self.frames), date=date,
             thresholds=self.run_config.excitement
         )
-        
+ 
         if self.run_config.dryRun:
             self.logger.info(m)
         else:
