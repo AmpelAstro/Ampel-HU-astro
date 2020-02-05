@@ -1,112 +1,98 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t0/XShooterFilter.py
+# File              : Ampel-contrib-HU/ampel/contrib/hu/t0/TransientInClusterFilter.py
 # License           : BSD-3-Clause
 # Author            : m. giomi <matteo.giomi@desy.de>
 # Date              : 28.08.2018
-# Last Modified Date: 28.08.2018
-# Last Modified By  : m. giomi <matteo.giomi@desy.de>
+# Last Modified Date: 05.02.2020
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-
-import logging
 from pymongo import MongoClient
-from urllib.parse import urlparse
-
-from extcats import CatalogQuery
+from extcats.CatalogQuery import CatalogQuery
 from extcats.catquery_utils import get_distances
-
 from ampel.contrib.hu.t0.DecentFilter import DecentFilter
+
 
 class TransientInClusterFilter(DecentFilter):
 	"""
-		Filter derived from the DecentFilter, in addition selecting candidates
-		with position compatible with that of nearby galaxy clusters.
+	Filter derived from the DecentFilter, in addition selecting candidates
+	with position compatible with that of nearby galaxy clusters.
 	"""
 
-	# Static version info
-	version = 1.0
-	resources = ('extcats.reader', 'catsHTM.default')
-	
-	class RunConfig(DecentFilter.RunConfig):
-		BIG_SEARCH_RADIUS_ARCMIN		: float	# conservative search radius around cluster position. Max in RASSEBCS is 16.a arcmin
-		CLUSTER_RADIUS_MULTIPLIER		: float	# if we want to enlarge the search region around each cluster.
-	
-	def __init__(self, on_match_t2_units, base_config=None, run_config=None, logger=None):
-		"""
-		"""
-		if run_config is None:
-			raise ValueError("Please check you run configuration")
+	require = 'extcats.reader', 'catsHTM.default'
 
-		self.on_match_t2_units = on_match_t2_units
-		self.logger = logger if logger is not None else logging.getLogger()
-		
-		# init the parent DecentFilter
-		DecentFilter.__init__(self, self.on_match_t2_units, base_config, run_config, logger=self.logger)
-		
-		# now add the parameters which are relevant for this
-		# new filter. All the others are passed to the DecentFilter
-		rc_dict = run_config.dict()
-		for k, val in rc_dict.items():
-			self.logger.info("Using %s=%s" % (k, val))
-		
-		self.big_search_radius_arcmin			= rc_dict['BIG_SEARCH_RADIUS_ARCMIN']
-		self.cl_rad_multiply					= rc_dict['CLUSTER_RADIUS_MULTIPLIER']
-		
-		# convert the 'big search radius' from arcmin to arcsecs. 
+	big_search_radius_arcmin: float	# conservative search radius around cluster position. Max in RASSEBCS is 16.a arcmin
+	cluserter_rad_multiplier: float # if we want to enlarge the search region around each cluster.
+
+	def post_init(self):
+
+		super().post_init()
+
+		# feedback
+		for k in self.__annotations__:
+			self.logger.info(f"Using {k}={getattr(self, k)}")
+
+		# convert the 'big search radius' from arcmin to arcsecs.
 		# Take into account the multiplier as well
-		self.big_rs_arcsec = self.big_search_radius_arcmin*60*self.cl_rad_multiply
-		self.logger.info("Big search radius to match with RASSEBCS clusters: %.2f arcsec"%
-			self.big_rs_arcsec)
-		
+		self.big_rs_arcsec = self.big_search_radius_arcmin * 60 * self.cluserter_rad_multiplier
+		self.logger.info(
+			f"Big search radius to match with RASSEBCS clusters: {self.big_rs_arcsec:.2f} arcsec"
+		)
+
 		# init the catalog query objects
-		db_client = MongoClient(base_config['extcats.reader'])
-		self.rassebcs_query = CatalogQuery.CatalogQuery(
-													"RASSEBCS",
-													ra_key='RA',
-													dec_key='DEC',
-													logger=self.logger,
-													dbclient=db_client)
-	
+		self.rassebcs_query = CatalogQuery(
+			"RASSEBCS", ra_key = 'RA', dec_key = 'DEC', logger = self.logger,
+			dbclient = MongoClient(self.resrouce['extcats.reader'])
+		)
+
+
 	def apply(self, alert):
 		"""
 		run the filter on the alert. First we run the decent filter, then we match
 		with the cluster catalog.
 		"""
-		
+
 		# if the candidate has passed the decent filter, check if it is compatible
 		# with the position of some nearby galaxy cluster
 		latest = alert.pps[0]
 		alert_ra, alert_dec = latest['ra'], latest['dec']
-		
+
 		# A) find position of all the nearby clusters. If none is found, reject alert.
 		nearby_clusters = self.rassebcs_query.findwithin(
-														alert_ra,
-														alert_dec, 
-														rs_arcsec = self.big_rs_arcsec)
+			alert_ra, alert_dec, rs_arcsec = self.big_rs_arcsec
+		)
+
 		if nearby_clusters is None:
 			self.logger.debug(
-				"rejected: no cluster from RASSEBCS within %.2f arcsec from alert position"% 
-				(self.big_rs_arcsec))
+				f"rejected: no cluster from RASSEBCS within {self.big_rs_arcsec:.2f} arcsec from alert position"
+			)
 			return None
-		
+
 		# B) for all the nearby clusters, compute their distances to the alert
-		clust_dists_2_alert = get_distances(alert_ra, alert_dec, nearby_clusters, "RA", "DEC")
-		clust_dists_2_alert = clust_dists_2_alert/60.	# extcats works in arcsec but ANGULAR_RADIUS is in arcmin
-		
+		# (extcats works in arcsec but ANGULAR_RADIUS is in arcmin)
+		clust_dists_2_alert = get_distances(alert_ra, alert_dec, nearby_clusters, "RA", "DEC") / 60.
+
 		# C) if, for any of the nearby clusters, the distance to the alert is smaller
 		# than the cluster size, count this as a match
-		if not any(nearby_clusters['ANGULAR_RADIUS']>clust_dists_2_alert):
-			self.logger.debug(
-				"rejected: distance to alert is larger than the cluster size for all the nearby clusters")
-			for ii in range(len(nearby_clusters)):
-				self.logger.debug("Angular radius: %.2f, distance to alert: %.2f (both arcmin)"%
-					(nearby_clusters['ANGULAR_RADIUS'][ii], clust_dists_2_alert[ii]))
-			return None
-		
-		for ii in range(len(nearby_clusters)):
-			self.logger.debug("Angular radius: %.2f, distance to alert: %.2f (both arcmin)"%
-				(nearby_clusters['ANGULAR_RADIUS'][ii], clust_dists_2_alert[ii]))
-		
-		# now run the decent filter (faster to do it afterwards ;-)
-		return DecentFilter.apply(self, alert)
+		if not any(nearby_clusters['ANGULAR_RADIUS'] > clust_dists_2_alert):
 
+			self.logger.debug(
+				"rejected: distance to alert is larger than the cluster size for all the nearby clusters"
+			)
+
+			for ii in range(len(nearby_clusters)):
+				self.logger.debug(
+					f"Angular radius: {nearby_clusters['ANGULAR_RADIUS'][ii]:.2f}, "
+					f"distance to alert: {clust_dists_2_alert[ii]:.2f} (both arcmin)"
+				)
+
+			return None
+
+		for ii in range(len(nearby_clusters)):
+			self.logger.debug(
+				f"Angular radius: {nearby_clusters['ANGULAR_RADIUS'][ii]:.2f}, "
+				f"distance to alert: {clust_dists_2_alert[ii]:.2f} (both arcmin)"
+			)
+
+		# now run the decent filter (faster to do it afterwards ;-)
+		return super().apply(alert)
