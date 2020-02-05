@@ -107,14 +107,16 @@ class RapidSedm(RapidBase):
 		max_redshift	: float	= 0.05	# maximum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
 		min_redshift	: float	= 0.001	# minimum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
 		min_dist	: float = 1.2	# arcsec, minimum distance to remove star matches to transient if found (eg in SDSSDR10)
-		max_dist	: float = 50 	# arcsec, maximum distance 
+		max_dist	: float = 30 	# arcsec, maximum distance 
+		max_absmag	: float	= -13	# max abs mag through peak mag and redshift from catalog mach (require both)
+		min_absmag	: float	= -17	# min abs mag through peak mag and redshift from catalog mach (require both)
 
 		# Cut on alert properties
 		min_ndet	: int	= 2		# A candidate need to have at least this many detections
 		min_ndet_postul	: int	= 2		# and if it has this minimum nr of detection after the last significant (max_maglim) UL.
-		max_age		: float = 2.5		# days, If a detection has an age older than this, skip (stars,age).
+		max_age		: float = 1.5		# days, If a detection has an age older than this, skip (stars,age).
 		min_age		: float = 0		# Min age of detection history
-		min_peak_mag	: float	= 19.5	# range of peak magnitudes for submission
+		min_peak_mag	: float	= 19.25	# range of peak magnitudes for submission
 		max_peak_mag	: float = 16	#
 		min_n_filters	: int	= 1		# Reported detections in at least this many filters
 		min_gal_lat	: float = 14	# Minimal galactic latitide
@@ -122,10 +124,10 @@ class RapidSedm(RapidBase):
 		ps1_sgveto_rad	: float = 1		# reject alert if PS1 star for any pp
 		ps1_sgveto_sgth	: float = 0.8	# 
 		rb_minmed	: float = 0.3	# Minimal median RB.
-		drb_minmed	: float = 0.5	# Minimal median RB.
+		drb_minmed	: float = 0.995	# Minimal median RB.
 		min_magrise     : float = -20   # NOT IMPLEMENTED
 
-		maglim_min	: float = 19.5	# Limiting magnitude to consider upper limits as 'significant'
+		maglim_min	: float = 19.25	# Limiting magnitude to consider upper limits as 'significant'
 		maglim_maxago	: float = 2.5	# A limiting magnitude max this time ago
 		
 		

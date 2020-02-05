@@ -32,11 +32,11 @@ def chunks(l, n):
 
 # get the science records for the catalog match
 def get_catalogmatch_srecs(tran_view, logger):
-	cat_res = tran_view.get_science_records(t2_class_name="CATALOGMATCH")
-	if len(cat_res) == 0 or cat_res is None or cat_res[-1].get_results() is None:
+	cat_res = tran_view.get_science_records(t2_unit_id="CATALOGMATCH")
+	if (not cat_res) or (not cat_res[-1]	.get_results()):
 		logger.info("NO CATALOG MATCH FOR THIS TRANSIENT")
 		return {}
-	return cat_res[-1].get_results()[-1]['output']
+	return cat_res[-1].get_results()[-1].get('output', {})
 
 
 class TNSTalker(AbsT3Unit):
@@ -69,14 +69,17 @@ class TNSTalker(AbsT3Unit):
 		tns_api_key			: str	= None		# Bot api key frm TNS
 		get_tns_force		: bool	= False		# Check for TNS for names even if internal name is known
 		submit_tns	 		: bool	= True		# Submit candidates passing criteria (False gives you a 'dry run')
+		submit_unless_journal   : bool = False    # Submit all candidates we have a note in the Journal that we submitted this. Overrides the resubmit entries!!
 		resubmit_tns_nonztf	: bool	= True		# Resubmit candidate submitted w/o the same ZTF internal ID 
 		resubmit_tns_ztf	: bool	= False		# Resubmit candidates even if they have been added with this name before
+
 		sandbox				: bool	= True		# Submit to TNS sandbox only
 		ext_journal			: bool	= True		# weather journal will go to separate collection.
 		
 		# AT report config
 		base_at_dict		: Dict = {
-			"groupid":"48", 
+			"reporting_group_id":"48", 
+			"discovery_data_source_id":"48", 
 			"reporter": "J. Nordin, V. Brinnel, M. Giomi, J. van Santen (HU Berlin), A. Gal-Yam, O. Yaron, S. Schulze (Weizmann) on behalf of ZTF",
 			"at_type":"1"
 		}
@@ -174,7 +177,6 @@ class TNSTalker(AbsT3Unit):
 		tns_name = None if jentry is None else jentry.get("tnsName", None)
 		self.logger.debug('TNS journal name %s'%(tns_name))
 
-
 		# Find internal names
 		jentries = tran_view.get_journal_entries(
 			filterFunc=lambda x: x.get('t3unit')==self.name and 'tnsInternal' in x.keys())
@@ -182,6 +184,30 @@ class TNSTalker(AbsT3Unit):
 		self.logger.info('Journal search',extra={'tranId':tran_view.tran_id,'tnsName':tns_name,'tnsInternals':tns_internals})
 
 		return tns_name, tns_internals
+
+
+	def search_journal_submitted(self, tran_view):
+		"""
+			Look through the journal for whether this sender submitted this to TNS.
+                        Assumes journal entries came from this unit, that the TNS name is saved as "tnsName"
+                        and tnsSender stores the api key used ('tnsSender': self.run_config.tns_api_key')
+		"""
+
+		# Find the latest tns name (skipping previous)
+		jentry = tran_view.get_journal_entries(
+			filterFunc=lambda x: 
+				x.get('t3unit')==self.name and 
+				x.get('tnsSender')==self.run_config.tns_api_key and 
+				'tnsSubmitresult' in x.keys(),
+			latest=True)
+		if jentry is None:
+			self.logger.info('Not TNS submitted', extra={'tnsSender':self.run_config.tns_api_key} )
+			return False
+
+		self.logger.info('TNS submitted', extra={'tnsSender':self.run_config.tns_api_key} )
+			
+		return True
+
 
 	def _query_tns_names(self, tran_view):
 		"""
@@ -674,6 +700,31 @@ class TNSTalker(AbsT3Unit):
 			self.logger.info("TNS check", extra={"tranId":tran_view.tran_id, 'ztfName': ztf_name})
 			self.logger.debug("TNS check for %s"%(ztf_name))
 			
+			# Simplest case to check. We wish to submit everything not noted as submitted
+			if self.run_config.submit_unless_journal:
+#				print(tran_view.get_journal_entries(filterFunc=lambda x: x.get('t3unit')==self.name))
+
+#				lc = tran_view.get_latest_lightcurve()		
+#				pps = lc.get_photopoints(filters=self.run_config.lc_filters)
+#				jds = [pp.get_value('jd') for pp in pps]
+#				print(jds)
+
+				if self.search_journal_submitted(tran_view):
+					# Note already submitted
+					self.logger.info(
+						"ztf submitted",
+						extra = {
+							'ztfSubmitted': True
+						})
+
+				else:
+					# create AT report
+					atreport = self.create_atreport(tran_view)
+					self.logger.info("Added to report list")
+					atreports[tran_view.tran_id] = atreport
+
+				continue
+
 			# find the TNS name, either from the journal, from tran_names, or 
 			# from TNS itself. If new names are found, create a new JournalUpdate
 			tns_name, tns_internals, jup = self.find_tns_name(tran_view)
@@ -730,16 +781,22 @@ class TNSTalker(AbsT3Unit):
 		# atreports is now a dict with tran_id as keys and atreport as keys
 		# what we need is a list of dicts with form {'at_report':atreport }
                 # where an atreport is a dictionary with increasing integer as keys and atreports as values
+		atreportlist = []
 		atreport = {}
-		for k, tranid in enumerate( atreports.keys() ):
+		k = 0
+		for tranid in atreports.keys() :
+			if len(atreport)>90:
+				self.logger.info('adding another report to TNS submit')
+				atreportlist.append( {'at_report' : atreport} )
+				atreport = {}
+				k = 0
 			atreport[int(k)] = atreports[tranid]
-		atreportlist = [ {'at_report':atreport} ]
+			k += 1
+		atreportlist.append( {'at_report' : atreport} )
+#		atreportlist = [ {'at_report':atreport} ]
 		tnsreplies = sendTNSreports(atreportlist, self.run_config.tns_api_key, self.logger, sandbox=self.run_config.sandbox)
 
 
-		# Send reports in chunks of size 90 (99 should work)
-		#atchunks = list(chunks([atr for atr in atreports.values()], 90))
-		#tnsreplies = sendTNSreports(atchunks, self.run_config.tns_api_key, self.logger, sandbox=self.run_config.sandbox)
 		
 		# Now go and check and create journal updates for the cases where SN was added
 		for tran_id in atreports.keys():
@@ -756,7 +813,8 @@ class TNSTalker(AbsT3Unit):
 						't3unit': self.name,
 						'tnsName': tnsreplies[ztf_name][1]["TNSName"],
 						'tnsInternal': ztf_name,
-						'tnsSubmitresult': tnsreplies[ztf_name][0]
+						'tnsSubmitresult': tnsreplies[ztf_name][0],
+						'tnsSender': self.run_config.tns_api_key
 					})
 			journal_updates.append(jup)
 		return journal_updates
@@ -780,9 +838,9 @@ class TNSTalker(AbsT3Unit):
 		from slackclient import SlackClient
 		from slackclient.exceptions import SlackClientError
 		
-		slack_token		= "xoxb-297846339667-549790069252-FLwKXkra0NL3FNnrvu9XYm4a"
-		slack_channel 		= "#ampel_tns_test"
-		slack_username		= "Ampel_TNS_test"
+		slack_token		= "***REMOVED***"
+		slack_channel 		= "#ztf_tns"
+		slack_username		= "AMPEL"
 		max_slackmsg_size	= 200	# if you have more than this # of reports, send different files
 		
 		sc = SlackClient(slack_token)
@@ -806,7 +864,7 @@ class TNSTalker(AbsT3Unit):
 			api = sc.api_call(
 					'files.upload',
 					channels = [slack_channel],
-					title = "TNSTalker_DEBUG_%s_chunk%d"%(tstamp, ic),
+					title = "TNSTalker_%s_chunk%d"%(tstamp, ic),
 					initial_comment = msg,
 					username = slack_username,
 					as_user = False,

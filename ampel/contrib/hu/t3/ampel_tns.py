@@ -378,39 +378,33 @@ def sendTNSreports(atreportlists, api_key, logger, sandbox=True):
 	'''
 
 	# Submit to TNS
-	MAX_LOOP = 10
-	SLEEP = 1
+	MAX_LOOP = 25
+	SLEEP = 2
 
 	reportresult = {}
 	for atreport in atreportlists:
 
 		# Submit a report 
 		counter = 0
-		while True:
+		for _ in range(MAX_LOOP):
 			reportid = addBulkReport(atreport, api_key, logger, sandbox=sandbox)
 			if reportid:
 				logger.info('TNS report ID %s'%(reportid) )
 				break
-			counter += 1
-			if counter>=MAX_LOOP:
-				logger.info('TNS bulk report failed')
-				break
 			time.sleep(SLEEP)
-		if not reportid:
+		else:
+			logger.info('TNS bulk report failed')
 			continue
 
 		# Try to read reply
-		counter = 0
-		while True:
+		for _ in range(MAX_LOOP):
 			time.sleep(SLEEP)
-			try:
-				response = getBulkReportReply(reportid, api_key, logger, sandbox=sandbox)
-			except NameError:
-				logger.info("TNS Report reading failed")
-				response = None
-			counter += 1
-			if isinstance(response, list) or counter >= MAX_LOOP:
+			response = getBulkReportReply(reportid, api_key, logger, sandbox=sandbox)
+			if isinstance(response, list):
 				break
+		else:
+			logger.info("TNS Report reading failed")
+			continue
 
 		# Parse reply for evaluation
 		for k, v in atreport["at_report"].items():

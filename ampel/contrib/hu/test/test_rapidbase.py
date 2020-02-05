@@ -26,6 +26,8 @@ def testrunconfig():
         max_redshift = 0.8, 
         min_ndet = 1, 
         min_ndet_postul = 1, 
+        max_absmag = -10,
+        min_absmag = -20,
         maglim_maxago = 8
     )
 

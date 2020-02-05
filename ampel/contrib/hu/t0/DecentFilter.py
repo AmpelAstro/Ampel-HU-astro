@@ -229,7 +229,7 @@ class DecentFilter(AbsPhotoAlertFilter):
 		# cut on length of detection history
 		detections_jds = alert.get_values('jd')
 		det_tspan = max(detections_jds) - min(detections_jds)
-		if not (self.min_tspan < det_tspan < self.max_tspan):
+		if not (self.min_tspan <= det_tspan <= self.max_tspan):
 			#self.logger.debug("rejected: detection history is %.3f d long, \
 			# requested between %.3f and %.3f d"% (det_tspan, self.min_tspan, self.max_tspan))
 			self.logger.info(None, extra={'tSpan': det_tspan})
@@ -302,7 +302,7 @@ class DecentFilter(AbsPhotoAlertFilter):
 			return None
 
 		# check with gaia
-		if self.is_star_in_gaia(latest):
+		if self.gaia_rs>0 and self.is_star_in_gaia(latest):
 			#self.logger.debug("rejected: within %.2f arcsec from a GAIA start (PM of PLX)" % (self.gaia_rs))
 			self.logger.info(None, extra={'gaiaIsStar': True})
 			return None

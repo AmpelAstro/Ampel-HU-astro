@@ -13,8 +13,9 @@ import requests
 import uuid
 import time, datetime
 from pytz import timezone
+from astropy.time import Time
 from urllib.parse import urlencode
-from io import StringIO
+from io import StringIO, BytesIO
 from pydantic import BaseModel
 from typing import List
 
@@ -43,6 +44,7 @@ class ChannelSummaryPublisher(AbsT3Unit):
 		"""
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 		self.summary = {}
+		self._jd_range = [float('inf'), -float('inf')]
 		
 		self.run_config = run_config if run_config is not None else self.RunConfig()
 		self.dest = base_config['desycloud.default'] + self.run_config.baseDir
@@ -60,10 +62,11 @@ class ChannelSummaryPublisher(AbsT3Unit):
 		
 		out['ztf_name'] = tran_view.tran_names[0]
 		out['tns_names'] = tran_view.tran_names[1:]
-		
-		# sort photopoints
+
+		# skip transient if it has no associated photopoints.
 		if tran_view.photopoints is None or len(tran_view.photopoints) == 0:
-			return out
+			return
+		# sort photopoints
 		pps = sorted([pp.content for pp in tran_view.photopoints], key=lambda x: x['jd'])
 
 		# some metric should only be computed for the latest pp
@@ -78,7 +81,11 @@ class ChannelSummaryPublisher(AbsT3Unit):
 			out['last_detection'] = pps[-1]['jd']
 		if 'detections' in metrics:
 			out['detections'] = len(pps)
-		
+		if pps[-1]['jd'] < self._jd_range[0]:
+			self._jd_range[0] = pps[-1]['jd']
+		if pps[-1]['jd'] > self._jd_range[1]:
+			self._jd_range[1] = pps[-1]['jd']
+
 		return out
 
 
@@ -90,12 +97,17 @@ class ChannelSummaryPublisher(AbsT3Unit):
 			for tran_view in transients:
 				if isinstance(tran_view.channel, list):
 					raise ValueError("Only single-channel views are supported")
-				self._channels.add(tran_view.channel)
 				info_dict = self.extract_from_transient_view(tran_view)
+				if not info_dict:
+					continue
 				key = info_dict.pop("ztf_name")
 				self.summary[key] = info_dict
+				self._channels.add(tran_view.channel)
 
-	@backoff.on_exception(backoff.expo, TimeoutError)
+	@backoff.on_exception(backoff.expo,
+	    (TimeoutError, requests.exceptions.HTTPError),
+	    giveup=lambda exc: isinstance(exc,requests.exceptions.HTTPError) and exc.response.status_code not in {400, 403, 405, 423, 500}
+	)
 	def done(self):
 		"""
 		"""
@@ -104,8 +116,11 @@ class ChannelSummaryPublisher(AbsT3Unit):
 		elif len(self._channels) > 1:
 			raise ValueError("Got multiple channels ({}) in summary".format(list(self._channels)))
 
-		# The latest ZTF night is the yesterday, Pacific time
-		timestamp = datetime.datetime.fromtimestamp(time.time(), timezone('US/Pacific')) - datetime.timedelta(days=1)
+		# Find the date of the most recent observation, in Pacific time
+		timestamp = Time(self._jd_range[-1], format='jd').to_datetime(timezone('US/Pacific'))
+		# If before noon, it belongs to the night that started yesterday
+		if timestamp.hour < 12:
+			timestamp -= datetime.timedelta(days=1)
 		filename = timestamp.strftime("channel-summary-%Y%m%d.json")
 
 		channel = list(self._channels)[0]
@@ -113,11 +128,19 @@ class ChannelSummaryPublisher(AbsT3Unit):
 		rep = self.session.head(basedir)
 		if not (rep.ok or self.run_config.dryRun):
 			self.session.request('MKCOL', basedir).raise_for_status()
+		try:
+			rep = self.session.get('{}/{}'.format(basedir, filename))
+			rep.raise_for_status()
+			partial_summary = next(load(BytesIO(rep.content)))
+			partial_summary.update(self.summary)
+			self.summary = partial_summary
+		except (requests.exceptions.HTTPError, StopIteration):
+			pass
 
 		outfile = StringIO()
 		outfile.write(AmpelEncoder(lossy=True).encode(self.summary))
 		outfile.write('\n')
 		mb = len(outfile.getvalue().encode()) / 2.0 ** 20
-		self.logger.info("{:.1f} MB of JSONy goodness".format(mb))
+		self.logger.info("{}: {} transients {:.1f} MB".format(filename, len(self.summary), mb))
 		if not self.run_config.dryRun:
 			self.session.put('{}/{}'.format(basedir, filename), data=outfile.getvalue()).raise_for_status()
