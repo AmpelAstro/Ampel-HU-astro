@@ -14,9 +14,7 @@ from ampel.abstract.AbsPhotoAlertFilter import AbsPhotoAlertFilter
 
 class LensedTransientFilter(AbsPhotoAlertFilter):
 
-	# Static version info
-	version = 0.1
-	require = ('extcats.reader',)
+	require = ('extcats.reader', )
 
 	min_ndet: int
 	ClusListSearchRadius: float

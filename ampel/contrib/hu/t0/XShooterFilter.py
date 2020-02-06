@@ -23,7 +23,7 @@ class XShooterFilter(DecentFilter):
 	during the last 5 days (and no detection during this time).
 	"""
 
-	resources = ('catsHTM.default',)
+	resources = ('catsHTM.default', )
 
 	max_dec: float # maximum allowed value for the declination
 	det_within: float # the transient must have been detected within the last 'DET_WITHIN' days

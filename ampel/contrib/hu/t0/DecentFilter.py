@@ -32,7 +32,7 @@ class DecentFilter(AbsPhotoAlertFilter):
 	on the provided PS1 star-galaxy classification.
 	"""
 
-	resources = ('catsHTM.default',)
+	require = ('catsHTM.default', )
 
 	# History
 	min_ndet: int # number of previous detections
@@ -302,7 +302,7 @@ class DecentFilter(AbsPhotoAlertFilter):
 			return None
 
 		# check with gaia
-		if self.gaia_rs>0 and self.is_star_in_gaia(latest):
+		if self.gaia_rs > 0 and self.is_star_in_gaia(latest):
 			#self.logger.debug("rejected: within %.2f arcsec from a GAIA start (PM of PLX)" % (self.gaia_rs))
 			self.logger.info(None, extra={'gaiaIsStar': True})
 			return None
