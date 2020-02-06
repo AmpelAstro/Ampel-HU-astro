@@ -1,105 +1,82 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t2/T2LCQuality.py
+# File              : Ampel-contrib-HU/ampel/contrib/hu/t2/T2MinorPlanetCenter.py
 # License           : BSD-3-Clause
 # Author            : jnordin@physik.hu-berlin.de
 # Date              : 10.01.2019
-# Last Modified Date: 10.01.2019
-# Last Modified By  : jnordin@physik.hu-berlin.de
+# Last Modified Date: 05.02.2020
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-
-import logging
-logging.basicConfig()
-
-#from astropy.table import Table, unique
-import numpy as np
-
-
-from ampel.ztf.pipeline.common.ZTFUtils import ZTFUtils
-from ampel.base.abstract.AbsT2Unit import AbsT2Unit
-from ampel.core.flags.T2RunStates import T2RunStates
+from typing import Optional, Dict, List, Union, Any
 from pydantic import BaseModel, BaseConfig
 from astropy.time import Time
+from ampel.view.LightCurve import LightCurve
+from ampel.abstract.AbsT2Unit import AbsT2Unit
+
 
 class T2MinorPlanetCenter(AbsT2Unit):
 	"""
-		Check if the *latest* detection of a transient corresponds
-		matches something known by the MinorPlanetCenter.	
-		
+	Check if the *latest* detection of a transient corresponds
+	matches something known by the MinorPlanetCenter.
 	"""
-	
-	version = 0.1
+
 
 	class RunConfig(BaseModel):
-		"""
- 		Necessary class to validate configuration.
-		"""
+		""" Necessary class to validate configuration.  """
 		class Config(BaseConfig):
-			"""
-			Raise validation errors if extra fields are present
-			"""
+			""" Raise validation errors if extra fields are present """
 			allow_extra = False
 			ignore_extra = False
-		
-		# Ampel config
-		only_latest		: bool	= True		# Will only match the latest photopoint.
 
-		filters			: dict	= None		# Potential filter for photopoint selection
+		# Will only match the latest photopoint
+		only_latest: bool = True
+
+		# Potential filter for photopoint selection
+		filters: Optional[Union[Dict, List[Dict]]] = None
 
 
-
-	def __init__(self, logger, base_config):
+	def post_init(self):
 		"""
 		"""
-		self.logger = logger if logger is not None else logging.getLogger()
-		self.base_config = {} if base_config is None else base_config
-		
-		### Step 1. Base determinations based on combined detections
 		self.logger.debug('Initiated T2MinorPlanetCenter ')
 
 
-	def run(self, light_curve, run_config):
-		""" 
-			Parameters
-			-----------
-				light_curve: `ampel.base.LightCurve` instance. 
-				 	See the LightCurve docstring for more info.
-			
-				run_config: `dict` or None
-
-			Returns
-			-------
-				dict with entries as in class doc string.
-					
-					{
-						'ndet' : 3,
-						...
-					}
+	def run(self, light_curve: LightCurve, run_config: Dict):
 		"""
-		
-		self.logger.debug('Checking %s'%(light_curve.id))
+		:returns: dict with entries as in class doc string.
+		{'ndet' : 3, ...}
+		"""
+
+		self.logger.debug(f'Checking {light_curve.id}')
 
 		run_config = self.RunConfig() if run_config is None else run_config
-		pps = list( light_curve.get_photopoints(filters=run_config.filters) )
+		pps = list(
+			light_curve.get_photopoints(filters=run_config.filters)
+		)
 
-		# Check whether we are running for all or only latest 
+		# Check whether we are running for all or only latest
 		if run_config.only_latest:
-			pps.sort(key=lambda x: x.get_value('obs_date'))
+			pps.sort(key=lambda x: x.body.get('obs_date'))
 			pps = [pps[-1]]
-			self.logger.debug('Restricting to latest PP at %s'%(pps[0].get_value('obs_date')))
-	
+			self.logger.debug(
+				f"Restricting to latest PP at {pps[0].body.get('obs_date')}"
+			)
+
 		# Loop through remaining pps and check with MPC
-		mpc_checks = {}
+		mpc_checks: Dict[str, Any] = {}
 		for pp in pps:
-			print('%s %s %s'%(pp.get_value('ra'),pp.get_value('dec'),pp.get_value('obs_date')))
+			print(
+				'%s %s %s' % (
+					pp.body.get('ra'),
+					pp.body.get('dec'),
+					pp.body.get('obs_date')
+				)
+			)
 			# Convert date to UT
-			t = Time(pp.get_value('obs_date'), format='jd')
+			t = Time(pp.body.get('obs_date'), format='jd')
 			print(t)
 			t.format = 'iso'
 			print(t)
 #			print(t.to_value('ymdhms', scale='ut1') )
 
-	
-
 		return mpc_checks
-
