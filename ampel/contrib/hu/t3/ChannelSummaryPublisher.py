@@ -13,8 +13,9 @@ from typing import List
 from pytz import timezone
 from astropy.time import Time
 from io import StringIO, BytesIO
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Set
 
+from ampel.types import ChannelId
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.utils.json import AmpelEncoder, load
 
@@ -29,9 +30,9 @@ class ChannelSummaryPublisher(AbsT3Unit):
 
 	require = ('desycloud.default', )
 
-	dryRun: bool = False
-	baseDir: str = '/AMPEL/ZTF'
-	alertMetrics: List[str] = [
+	dry_run: bool = False
+	base_dir: str = '/AMPEL/ZTF'
+	alert_metrics: List[str] = [
 		'ztf_name', 'ra', 'dec', 'rb', 'detections',
 		'first_detection', 'last_detection'
 	]
@@ -39,13 +40,13 @@ class ChannelSummaryPublisher(AbsT3Unit):
 
 	def post_init(self, context: Optional[Dict[str, Any]]) -> None:
 
-		self.summary = {}
+		self.summary: Dict[str, Any] = {}
 		self._jd_range = [float('inf'), -float('inf')]
-		self.dest = self.resource['desycloud.default'] + self.run_config.baseDir
+		self.dest = self.resource['desycloud.default'] + self.base_dir
 		self.logger.info(
-			f"Channel summary will include following metrics: {repr(self.alertMetrics)}"
+			f"Channel summary will include following metrics: {repr(self.alert_metrics)}"
 		)
-		self._channels = set()
+		self._channels: Set[ChannelId] = set()
 		self.session = requests.Session()
 
 
@@ -54,7 +55,7 @@ class ChannelSummaryPublisher(AbsT3Unit):
 		given transient view object return a dictionary
 		with the desired metrics
 		"""
-		metrics = set(self.run_config.alertMetrics)
+		metrics = set(self.alert_metrics)
 		out = {}
 		out['ztf_name'] = tran_view.tran_names[0]
 		out['tns_names'] = tran_view.tran_names[1:]
@@ -123,7 +124,7 @@ class ChannelSummaryPublisher(AbsT3Unit):
 		channel = list(self._channels)[0]
 		basedir = '{}/{}'.format(self.dest, channel)
 		rep = self.session.head(basedir)
-		if not (rep.ok or self.run_config.dryRun):
+		if not (rep.ok or self.dry_run):
 			self.session.request('MKCOL', basedir).raise_for_status()
 		try:
 			rep = self.session.get('{}/{}'.format(basedir, filename))
@@ -139,5 +140,5 @@ class ChannelSummaryPublisher(AbsT3Unit):
 		outfile.write('\n')
 		mb = len(outfile.getvalue().encode()) / 2.0 ** 20
 		self.logger.info("{}: {} transients {:.1f} MB".format(filename, len(self.summary), mb))
-		if not self.run_config.dryRun:
+		if not self.dry_run:
 			self.session.put('{}/{}'.format(basedir, filename), data=outfile.getvalue()).raise_for_status()
