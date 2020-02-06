@@ -117,7 +117,7 @@ class RapidBase(AbsT3Unit):
 
 		# Document what we did
 		jcontent = {'t3unit': self.name, 'reaction': description, 'success': success}
-		jup = JournalUpdate(tran_id=tran_view.tran_id, ext=self.run_config.ext_journal, content=jcontent)
+		jup = JournalUpdate(tran_id=tran_view.tran_id, ext=self.ext_journal, content=jcontent)
 
 		return success, jup
 
@@ -134,16 +134,16 @@ class RapidBase(AbsT3Unit):
 		from slack.exceptions import SlackClientError
 
 
-		sc = WebClient(self.run_config.slack_token)
+		sc = WebClient(self.slack_token)
 		ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
-		ra, dec = tran_view.get_latest_lightcurve().get_pos(ret="mean", filters=self.run_config.lc_filters)
+		ra, dec = tran_view.get_latest_lightcurve().get_pos(ret="mean", filters=self.lc_filters)
 		msg = "Pancha says: Look up %s at RA %s DEC %s. Added info %s" % (
 			ztf_name, ra, dec, info)
 		api = sc.api_call(
 			"chat.postMessage",
-			channel = self.run_config.slack_channel,
+			channel = self.slack_channel,
 			text = msg,
-			username = self.run_config.slack_username,
+			username = self.slack_username,
 			as_user = False
 		)
 		if not api['ok']:
@@ -152,12 +152,12 @@ class RapidBase(AbsT3Unit):
 			success = True
 
 		description = 'Sent SLACK msg'
-		self.logger.info(description, extra={'channel': self.run_config.slack_channel})
+		self.logger.info(description, extra={'channel': self.slack_channel})
 
 
 		# Document what we did
 		jcontent = {'t3unit': self.name, 'reaction': description, 'success': success}
-		jup = JournalUpdate(tran_id=tran_view.tran_id, ext=self.run_config.ext_journal, content=jcontent)
+		jup = JournalUpdate(tran_id=tran_view.tran_id, ext=self.ext_journal, content=jcontent)
 
 		return success, jup
 
@@ -180,14 +180,14 @@ class RapidBase(AbsT3Unit):
 		lc = tran_view.get_latest_lightcurve()
 
 		# apply cut on history: consider photophoints which are sharp enough
-		pps = lc.get_photopoints(filters=self.run_config.lc_filters)
-		self.logger.info("%d photop. passed filter %s" % (len(pps), self.run_config.lc_filters))
-#		print("%d photop. passed filter %s" % (len(pps), self.run_config.lc_filters))
+		pps = lc.get_photopoints(filters=self.lc_filters)
+		self.logger.info("%d photop. passed filter %s" % (len(pps), self.lc_filters))
+#		print("%d photop. passed filter %s" % (len(pps), self.lc_filters))
 
 		# cut on number of detection
-		if len(pps) < self.run_config.min_ndet:
+		if len(pps) < self.min_ndet:
 			self.logger.info("not enough detections: got %d, required %d" %
-				(len(pps), self.run_config.min_ndet))
+				(len(pps), self.min_ndet))
 			return False
 		info['detections'] = len(pps)
 
@@ -195,9 +195,9 @@ class RapidBase(AbsT3Unit):
 		jds = [pp.get_value('jd') for pp in pps]
 		most_recent_detection, first_detection = max(jds), min(jds)
 		age = most_recent_detection - first_detection
-		if age > self.run_config.max_age or age < self.run_config.min_age:
+		if age > self.max_age or age < self.min_age:
 			self.logger.info("age of %.2f days outside of range [%.2f, %.2f]" %
-				(age, self.run_config.min_age, self.run_config.max_age))
+				(age, self.min_age, self.max_age))
 			return False
 		info['age'] = age
 
@@ -207,21 +207,21 @@ class RapidBase(AbsT3Unit):
 			filters={
 				'attribute': 'diffmaglim',
 				'operator': '>=',
-				'value': self.run_config.maglim_min
+				'value': self.maglim_min
 			}
 		)
 
 		if len(ulims) > 0:
 			last_ulim_jd = sorted(ulims, key=lambda x: x.get_value('jd'))[-1].get_value('jd')
 			pps_after_ndet = lc.get_photopoints(
-				filters = self.run_config.lc_filters + [{'attribute': 'jd', 'operator': '>=', 'value': last_ulim_jd}])
+				filters = self.lc_filters + [{'attribute': 'jd', 'operator': '>=', 'value': last_ulim_jd}])
 			# Check if there are enough positive detection after the last significant UL
-			if len(pps_after_ndet) < self.run_config.min_ndet_postul:
+			if len(pps_after_ndet) < self.min_ndet_postul:
 				self.logger.info("not enough consecutive detections after last significant UL.",
 					extra={'NDet': len(pps), 'lastUlimJD': last_ulim_jd})
 				return False
 			# Check that there is a recent ul
-			if (most_recent_detection - last_ulim_jd) > self.run_config.maglim_maxago:
+			if (most_recent_detection - last_ulim_jd) > self.maglim_maxago:
 				self.logger.info("No recent UL.",
 					extra={'lastDet': most_recent_detection, 'lastUlimJD': last_ulim_jd})
 				return False
@@ -233,17 +233,17 @@ class RapidBase(AbsT3Unit):
 
 		# cut on number of filters
 		used_filters = set([pp.get_value('fid') for pp in pps])
-		if len(used_filters) < self.run_config.min_n_filters:
+		if len(used_filters) < self.min_n_filters:
 			self.logger.info("requested detections in more than %d bands, got: %d" %
-				(self.run_config.min_n_filters, len(used_filters)))
+				(self.min_n_filters, len(used_filters)))
 			return False
 
 		# cut on range of peak magnitude
 		mags = [pp.get_value('magpsf') for pp in pps]
 		peak_mag = min(mags)
-		if peak_mag > self.run_config.min_peak_mag or peak_mag < self.run_config.max_peak_mag:
+		if peak_mag > self.min_peak_mag or peak_mag < self.max_peak_mag:
 			self.logger.info("peak magnitude of %.2f outside of range [%.2f, %.2f]" %
-				(peak_mag, self.run_config.min_peak_mag, self.run_config.max_peak_mag))
+				(peak_mag, self.min_peak_mag, self.max_peak_mag))
 			return False
 		info['peak_mag'] = peak_mag
 
@@ -257,13 +257,13 @@ class RapidBase(AbsT3Unit):
 
 
 		# cut on galactic coordinates
-		ra, dec = lc.get_pos(ret="mean", filters=self.run_config.lc_filters)
+		ra, dec = lc.get_pos(ret="mean", filters=self.lc_filters)
 		coordinates = SkyCoord(ra, dec, unit='deg')
 		b = coordinates.galactic.b.deg
-		if abs(b) < self.run_config.min_gal_lat:
+		if abs(b) < self.min_gal_lat:
 			self.logger.info(
 				"transient at b=%.2f too close to galactic plane (cut at %.2f)" %
-				(b, self.run_config.min_gal_lat)
+				(b, self.min_gal_lat)
 			)
 			return False
 		info['ra'] = ra
@@ -275,7 +275,7 @@ class RapidBase(AbsT3Unit):
 		ssdist[ssdist is None] = -999
 		#print (ssdist)
 
-		close_to_sso = np.logical_and(ssdist < self.run_config.ssdistnr_max, ssdist > 0)
+		close_to_sso = np.logical_and(ssdist < self.ssdistnr_max, ssdist > 0)
 		if np.any(close_to_sso):
 			self.logger.info("transient too close to solar system object", extra={'ssdistnr': ssdist.tolist()})
 			return False
@@ -287,16 +287,16 @@ class RapidBase(AbsT3Unit):
 #		print(ZTFUtils.to_ztf_id(tran_view.tran_id))
 #		print(lc)
 #		print(lc.get_tuples('distpsnr1', 'sgscore1'))
-#		print(lc.get_tuples('distpsnr1', 'sgscore1', filters=self.run_config.lc_filters))
+#		print(lc.get_tuples('distpsnr1', 'sgscore1', filters=self.lc_filters))
 
 
-#		distpsnr1, sgscore1 = zip(*lc.get_tuples('distpsnr1', 'sgscore1', filters=self.run_config.lc_filters))
+#		distpsnr1, sgscore1 = zip(*lc.get_tuples('distpsnr1', 'sgscore1', filters=self.lc_filters))
 		psdata = lc.get_tuples('distpsnr1', 'sgscore1')
 		if len(psdata) > 0:
 			distpsnr1, sgscore1 = zip(*psdata)
 			is_ps1_star = np.logical_and(
-				np.array(distpsnr1) < self.run_config.ps1_sgveto_rad,
-				np.array(sgscore1) > self.run_config.ps1_sgveto_sgth
+				np.array(distpsnr1) < self.ps1_sgveto_rad,
+				np.array(sgscore1) > self.ps1_sgveto_sgth
 			)
 			if np.any(is_ps1_star):
 				self.logger.info(
@@ -309,28 +309,28 @@ class RapidBase(AbsT3Unit):
 
 		# cut on median RB and DRB score
 		rbs = [pp.get_value('rb') for pp in pps]
-		if np.median(rbs) < self.run_config.rb_minmed:
+		if np.median(rbs) < self.rb_minmed:
 			self.logger.info(
 				"RB cut",
-				extra={'median_rd': np.median(rbs), 'rb_minmed': self.run_config.rb_minmed}
+				extra={'median_rd': np.median(rbs), 'rb_minmed': self.rb_minmed}
 			)
 			return False
-		elif (len(rbs) == 0) and self.run_config.rb_minmed > 0:
+		elif (len(rbs) == 0) and self.rb_minmed > 0:
 			self.logger.info("No rb info for significant detection.")
 			return False
 		info['rb'] = np.median(rbs)
 
 		# drb might not exist
 		drbs = [pp.get_value('drb') for pp in pps if pp.has_parameter('drb')]
-		if len(drbs) > 0 and np.median(drbs) < self.run_config.drb_minmed:
+		if len(drbs) > 0 and np.median(drbs) < self.drb_minmed:
 			self.logger.info(
 				"DRB cut", extra={
 					'median_drd': np.median(drbs),
-					'drb_minmed': self.run_config.drb_minmed
+					'drb_minmed': self.drb_minmed
 				}
 			)
 			return False
-		elif (len(drbs) == 0) and self.run_config.drb_minmed > 0:
+		elif (len(drbs) == 0) and self.drb_minmed > 0:
 			self.logger.info("No drb info for significant detection.")
 			return False
 
@@ -346,7 +346,7 @@ class RapidBase(AbsT3Unit):
 		cat_res = get_catalogmatch_srecs(tran_view, logger=self.logger)
 
 		# check that we got any catalogmatching results (that it was run)
-		if self.run_config.require_catalogmatch:
+		if self.require_catalogmatch:
 
 			if len(cat_res) == 0:
 				self.logger.info("no T2CATALOGMATCH results")
@@ -354,12 +354,12 @@ class RapidBase(AbsT3Unit):
 
 			# Loop through listed catalogs for match
 			zmatchs = []
-			for catname in self.run_config.redshift_catalogs:
+			for catname in self.redshift_catalogs:
 				catinfo = cat_res.get(catname, False)
 				if (
 					catinfo and
-					(self.run_config.min_redshift < catinfo['z'] < self.run_config.max_redshift) and
-					(self.run_config.min_dist < catinfo['dist2transient'] < self.run_config.max_dist)
+					(self.min_redshift < catinfo['z'] < self.max_redshift) and
+					(self.min_dist < catinfo['dist2transient'] < self.max_dist)
 				):
 					self.logger.info(
 						"z matched.", extra = {
@@ -378,7 +378,7 @@ class RapidBase(AbsT3Unit):
 			# Determine absolute magnitue
 			sndist = Distance(z = np.mean(zmatchs), cosmology=Planck15)
 			absmag = info['peak_mag'] - sndist.distmod.value
-			if not (self.run_config.min_absmag < absmag < self.run_config.max_absmag):
+			if not (self.min_absmag < absmag < self.max_absmag):
 				self.logger.info('Not in absmag range.', extra={'absmag': absmag})
 				#print('TEST z %.3f peakmag %.3f absmag %.3f' % (np.mean(zmatchs), info['peak_mag'],absmag))
 				return False
@@ -421,14 +421,14 @@ class RapidBase(AbsT3Unit):
 			self.logger.info("Passed reaction threshold", extra={"tranId": tv.tran_id})
 
 			# Ok, so we have a transient to react to
-			if self.run_config.do_react:
+			if self.do_react:
 				success, jup = self.react(tv, matchinfo)
 				if jup is not None:
 					journal_updates.append(jup)
 
 
 			# Otherwise, test
-			if self.run_config.do_testreact:
+			if self.do_testreact:
 				test_success, jup = self.test_react(tv, matchinfo)
 				if jup is not None:
 					journal_updates.append(jup)
