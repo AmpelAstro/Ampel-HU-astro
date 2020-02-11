@@ -47,7 +47,8 @@ class T2MinorPlanetCenter(AbsT2Unit):
 		
 		# Ampel config
 		only_latest		: bool	= True		# Will only match the latest photopoint.
-
+		searchradius	: float = 1			# Searchradius passed to MPC (arcminutes!!!)
+		maglimit		: float	= 22		# V-band magnitude limit passed to MPC
 		filters			: dict	= None		# Potential filter for photopoint selection
 
 
@@ -97,8 +98,6 @@ class T2MinorPlanetCenter(AbsT2Unit):
 		angular_separation_deg = []
 		mag_vband = []
 
-		searchradius = 1
-		maglim = 22
 		MPC_URL = "https://cgi.minorplanetcenter.net/cgi-bin/mpcheck.cgi"
 		
 		for pp in pps:
@@ -118,8 +117,8 @@ class T2MinorPlanetCenter(AbsT2Unit):
 			radec_skycoord.dec.to_string(u.deg, sep=" ")
 
 			request_data = {"year": f"{year}", "month": f"{month}", "day": f"{day}", "which": "pos",
-				"ra": f"{ra}", "decl": f"{dec}", "TextArea": "", "radius": f"{searchradius}", 
-				"limit": f"{maglim}", "oc": "500", "sort": "d", "mot": "h", 
+				"ra": f"{ra}", "decl": f"{dec}", "TextArea": "", "radius": f"{run_config.searchradius}", 
+				"limit": f"{run_config.maglim}", "oc": "500", "sort": "d", "mot": "h", 
 				"tmot": "s", "pdes": "u", "needed": "f", "ps": "n", "type": "p"}
 
 			# Post the request
