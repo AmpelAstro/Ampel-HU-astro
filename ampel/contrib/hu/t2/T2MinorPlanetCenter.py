@@ -48,7 +48,7 @@ class T2MinorPlanetCenter(AbsT2Unit):
 		# Ampel config
 		only_latest		: bool	= True		# Will only match the latest photopoint.
 		searchradius	: float = 1			# Searchradius passed to MPC (arcminutes!!!)
-		maglimit		: float	= 22		# V-band magnitude limit passed to MPC
+		maglim		: float	= 22		# V-band magnitude limit passed to MPC
 		filters			: dict	= None		# Potential filter for photopoint selection
 
 
@@ -59,7 +59,6 @@ class T2MinorPlanetCenter(AbsT2Unit):
 		self.logger = logger if logger is not None else logging.getLogger()
 		self.base_config = {} if base_config is None else base_config
 		
-		### Step 1. Base determinations based on combined detections
 		self.logger.debug('Initiated T2MinorPlanetCenter ')
 
 
@@ -98,23 +97,30 @@ class T2MinorPlanetCenter(AbsT2Unit):
 		angular_separation_deg = []
 		mag_vband = []
 
-		MPC_URL = "https://cgi.minorplanetcenter.net/cgi-bin/mpcheck.cgi"
+		NEO_URL = "https://cgi.minorplanetcenter.net/cgi-bin/mpcheck.cgi"
+
 		
 		for pp in pps:
-			self.logger.debug(f'Checking MPC for ra = {pp.get_value('ra')} dec = {pp.get_value('dec')} obs_date = {pp.get_value('obs_date')}')
+			ra = pp.get_value('ra')
+			dec = pp.get_value('dec')
+
+			self.logger.debug('Checking MPC',extra={'ra':ra, 'dec':dec,  'obs_date':{pp.get_value('obs_date')} } )
 
 			# Convert date for HTTP request
 			t = time.Time(pp.get_value("obs_date"), format="jd", scale="utc")
 			year = t.strftime("%Y")
 			month = t.strftime("%m")
+			day = t.strftime("%d")
 			daydecimal = t.mjd - np.fix(t.mjd)
-			daydecimal = str(np.around(daydecimal, decimals=2))[-2:]
-			day = t.strftime("%d") + "." + daydecimal
+			daydecimal = str(daydecimal).split(".")[1]
+			day = day + "." + daydecimal
+			day = np.around(np.float(day), decimals=2)
 
 			# Convert coordinates for HTTP request
-			radec_skycoord = SkyCoord(f"{pp.get_value("ra")} {pp.get_value("dec")}", unit=(u.deg, u.deg))
-			radec_skycoord.ra.to_string(u.hour, sep=" ")
-			radec_skycoord.dec.to_string(u.deg, sep=" ")
+			radec_skycoord = SkyCoord(ra, dec, unit=(u.deg, u.deg))
+			ra = radec_skycoord.ra.to_string(u.hour, sep=" ",pad=True)
+			dec = radec_skycoord.dec.to_string(u.deg, sep=" ",pad=True)
+
 
 			request_data = {"year": f"{year}", "month": f"{month}", "day": f"{day}", "which": "pos",
 				"ra": f"{ra}", "decl": f"{dec}", "TextArea": "", "radius": f"{run_config.searchradius}", 
@@ -137,7 +143,7 @@ class T2MinorPlanetCenter(AbsT2Unit):
 						radec = result[25:46]
 						mag = float(result[47:51])
 						skycoord = SkyCoord(radec, unit=(u.hourangle, u.deg))
-						sep = skycoord.separation(astropy_coordinates)
+						sep = skycoord.separation(radec_skycoord)
 						separations.append(sep.deg)
 						mags.append(mag)
 			except IndexError:

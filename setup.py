@@ -36,6 +36,7 @@ setup(name='ampel-contrib-hu',
               'CATALOGMATCH = ampel.contrib.hu.t2.T2CatalogMatch:T2CatalogMatch',
               'LCQUALITY = ampel.contrib.hu.t2.T2LCQuality:T2LCQuality',
               'RiseDeclineStat = ampel.contrib.hu.t2.T2RiseDeclineStat:T2RiseDeclineStat',
+              'MinorPlanetCenter = ampel.contrib.hu.t2.T2MinorPlanetCenter:T2MinorPlanetCenter',
               'MARSHALMONITOR = ampel.contrib.hu.t2.T2MarshalMonitor:T2MarshalMonitor',
           ],
           'ampel.pipeline.t3.jobs' : [
