@@ -2,15 +2,14 @@
 # -*- coding: utf-8 -*-
 # File			  : ampel/contrib/hu/t2/T2LCQuality.py
 # License		   : BSD-3-Clause
-# Author			: jnordin@physik.hu-berlin.de
+# Author			: jnordin@physik.hu-berlin.de, simeon.reusch@desy.de
 # Date			  : 10.01.2019
 # Last Modified Date: 13.02.2019
-# Last Modified By  : jnordin@physik.hu-berlin.de
+# Last Modified By  : simeon.reusch@desy.de
 
 
 import logging
 logging.basicConfig()
-
 import requests
 import numpy as np
 from astropy import units as u
@@ -73,13 +72,18 @@ class T2MinorPlanetCenter(AbsT2Unit):
 
 			Returns
 			-------
-				dict with entries as in class doc string. Each observation date checked gets an entry in the dict which contains the number of individual matches 'ndet', the angular distances of the matches in degree and the magnitudes of the matches.
+				dict with entries as in class doc string. 
+				Each observation date checked gets an entry 
+				in the dict which contains the number of individual 
+				matches 'ndet', the angular distances of the matches
+				in degree and the magnitudes of the matches.
 					
 					{
 						obs_date : 
 						{
 							'ndet': number of detections (float), 
-							'ang_distances_deg': angular distances in degree (list of floats or None), 
+							'ang_distances_deg': angular distances 
+								in degree (list of floats or None), 
 							'mags': mangitudes (list of floats or None)
 						},
 						...
