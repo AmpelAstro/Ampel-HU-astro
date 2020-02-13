@@ -4,7 +4,7 @@
 # License		   : BSD-3-Clause
 # Author			: jnordin@physik.hu-berlin.de
 # Date			  : 10.01.2019
-# Last Modified Date: 10.01.2019
+# Last Modified Date: 13.02.2019
 # Last Modified By  : jnordin@physik.hu-berlin.de
 
 
@@ -73,10 +73,15 @@ class T2MinorPlanetCenter(AbsT2Unit):
 
 			Returns
 			-------
-				dict with entries as in class doc string.
+				dict with entries as in class doc string. Each observation date checked gets an entry in the dict which contains the number of individual matches 'ndet', the angular distances of the matches in degree and the magnitudes of the matches.
 					
 					{
-						'ndet' : 3,
+						obs_date : 
+						{
+							'ndet': number of detections (float), 
+							'ang_distances_deg': angular distances in degree (list of floats or None), 
+							'mags': mangitudes (list of floats or None)
+						},
 						...
 					}
 		"""
