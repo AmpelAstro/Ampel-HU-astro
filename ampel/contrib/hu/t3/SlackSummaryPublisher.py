@@ -190,6 +190,8 @@ class SlackSummaryPublisher(AbsT3Unit):
             tdf["most_recent_detection"] = max(tdf["jd"])
             tdf["first_detection"] = min(tdf["jd"])
             tdf["n_detections"] = len(tdf["jd"])
+            if 'drb' in tdf.columns:
+                tdf["max_drb"] = max(tdf["drb"])
             
             # Parse upper limits if present for the last upper limit prior to detection
 	    # As is, an upper limit between two detections (so after the first) will not reset this clock

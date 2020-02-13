@@ -74,7 +74,9 @@ class RapidBase(AbsT3Unit):
 		max_absmag	: float	= -13	# max abs mag through peak mag and redshift from catalog mach (require both)
 		min_absmag	: float	= -17	# min abs mag through peak mag and redshift from catalog mach (require both)
 		min_dist	: float = 1.2	# arcsec, minimum distance to remove star matches to transient if found (eg in SDSSDR10)
-		max_dist	: float = 50 	# arcsec, maximum distance 
+		max_dist	: float = 50 	# arcsec, maximum distance
+		max_kpc_dist	: float = 999 	# kpc, maximum distance
+ 
 
 		# Cut on alert properties
 		min_ndet	: int	= 2		# A candidate need to have at least this many detections
@@ -374,13 +376,22 @@ class RapidBase(AbsT3Unit):
 				if ( catinfo and (self.run_config.min_redshift <  catinfo['z'] < self.run_config.max_redshift) 
 					and (self.run_config.min_dist <  catinfo['dist2transient'] < self.run_config.max_dist) ) :
 						self.logger.info("z matched.", extra= {'catalog': catname,'z':catinfo['z'],'dist':catinfo['dist2transient']})
+						# Calculate physical distance
+						dst_kpc = catinfo['dist2transient'] * Planck15.kpc_proper_per_arcmin(catinfo['z']).value / 60.
+						if self.run_config.max_kpc_dist>0 and dst_kpc > self.run_config.max_kpc_dist:
+							self.logger.info('Skip, physical distance too large.',extra={'distance_kpc': dst_kpc} )
+							continue
 						zmatchs.append( [catinfo['z']] )
 						info[catname+'_z'] = catinfo['z']
 						info[catname+'_dist2transient'] = catinfo['dist2transient']
+						info[catname+'_dist_kpc'] = dst_kpc
 
 			if len(zmatchs)==0:
 				self.logger.info('No z match.')
 				return False
+
+			# Determine physical distance
+			
 
 			# Determine absolute magnitue
 			sndist = Distance(z = np.mean(zmatchs), cosmology=Planck15)
