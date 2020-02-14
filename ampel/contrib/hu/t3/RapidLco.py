@@ -190,7 +190,7 @@ class RapidLco(RapidBase):
 
 
 		# Document what we did
-		jcontent = {'t3unit': self.name, 'reactDicts': submitted, 'success':success, 'lcoResponses':responses}
+		jcontent = {'t3unit': self.__class__.__name__, 'reactDicts': submitted, 'success':success, 'lcoResponses':responses}
 		jup = JournalUpdate(tran_id=tran_view.tran_id, ext=self.run_config.ext_journal, content=jcontent)
 	
 

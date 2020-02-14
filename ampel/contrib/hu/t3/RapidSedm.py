@@ -179,7 +179,7 @@ class RapidSedm(RapidBase):
 
 
 		# Document what we did
-		jcontent = {'t3unit': self.name, 'reactDict': react_dict, 'success':success}
+		jcontent = {'t3unit': self.__class__.__name__, 'reactDict': react_dict, 'success':success}
 		jup = JournalUpdate(tran_id=tran_view.tran_id, ext=self.run_config.ext_journal, content=jcontent)
 	
 
