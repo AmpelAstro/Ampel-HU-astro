@@ -147,20 +147,6 @@ class RapidSedm(RapidBase):
 										'value': 0
 										}
 									]
-		
-
-	def __init__(self, logger, base_config=None, run_config=None, global_info=None):
-		"""
-		"""
-		
-		self.logger = logger if logger is not None else logging.getLogger()
-		self.base_config = {} if base_config is None else base_config
-		self.run_config = self.RunConfig() if run_config is None else run_config
-		self.name = "RapidSedm"
-		self.logger.info("Initialized T3 RapidSedm instance %s"%self.name)
-		self.logger.info("base_config: %s"%self.base_config)
-		self.logger.info("run_config: %s"%self.run_config)
-		
 
 	def react(self, tran_view, info):
 		"""

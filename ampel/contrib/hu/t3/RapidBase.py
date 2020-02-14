@@ -122,11 +122,7 @@ class RapidBase(AbsT3Unit):
 		self.logger = logger if logger is not None else logging.getLogger()
 		self.base_config = {} if base_config is None else base_config
 		self.run_config = self.RunConfig() if run_config is None else run_config
-		self.name = "RapidBase"
-		self.logger.info("Initialized T3 RapidBase instance %s"%self.name)
-		self.logger.info("base_config: %s"%self.base_config)
-		self.logger.info("run_config: %s"%self.run_config)
-		
+		self.logger.info(f"Initialized T3 {self.__class__.__name__}", extra={'base_config':self.base_config,'run_config':self.run_config.dict()})
 
 	def react(self, tran_view, info):
 		"""
