@@ -106,7 +106,7 @@ class RapidSedm(RapidBase):
 		redshift_catalogs	: List[str] = [] # List of catalog-like output to search for redshift
 		max_redshift	: float	= 0.05	# maximum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
 		min_redshift	: float	= 0.001	# minimum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
-		min_dist	: float = 1.2	# arcsec, minimum distance to remove star matches to transient if found (eg in SDSSDR10)
+		min_dist	: float = 1.5	# arcsec, minimum distance to remove star matches to transient if found (eg in SDSSDR10)
 		max_dist	: float = 30 	# arcsec, maximum distance 
 		max_kpc_dist	: float = 999 	# kpc, maximum distance
 		max_absmag	: float	= -13	# max abs mag through peak mag and redshift from catalog mach (require both)
