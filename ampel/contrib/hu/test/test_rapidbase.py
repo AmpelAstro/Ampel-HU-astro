@@ -40,7 +40,7 @@ def test_run_t3_RapidBase_selected(t3_rapid_tvs, testrunconfig):
     '''
     unit_test = RapidBase.RapidBase(logger=logging.getLogger(),run_config=testrunconfig)
     selected = [tv for tv in t3_rapid_tvs if unit_test.accept_tview(tv)]
-    assert len(selected) == 4
+    assert len(selected) == 3
 
 
 

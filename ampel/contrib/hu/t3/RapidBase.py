@@ -73,7 +73,7 @@ class RapidBase(AbsT3Unit):
 		min_redshift	: float	= 0.001	# minimum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
 		max_absmag	: float	= -13	# max abs mag through peak mag and redshift from catalog mach (require both)
 		min_absmag	: float	= -17	# min abs mag through peak mag and redshift from catalog mach (require both)
-		dist_min	: float = 1.5	# arcsec, minimum distance to remove star matches to transient if found (eg in SDSSDR10)
+		min_dist	: float = 1.5	# arcsec, minimum distance to remove star matches to transient if found (eg in SDSSDR10)
 		max_dist	: float = 50 	# arcsec, maximum distance
 		max_kpc_dist	: float = 999 	# kpc, maximum distance
  
