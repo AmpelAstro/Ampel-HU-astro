@@ -49,6 +49,7 @@ setup(name='ampel-contrib-hu',
               'TransientViewDumper = ampel.contrib.hu.t3.TransientViewDumper:TransientViewDumper',
               'ChannelSummaryPublisher = ampel.contrib.hu.t3.ChannelSummaryPublisher:ChannelSummaryPublisher',
               'TransientWebPublisher = ampel.contrib.hu.t3.TransientWebPublisher:TransientWebPublisher',
+              'DCachePublisher = ampel.contrib.hu.t3.DCachePublisher:DCachePublisher',
               'SlackSummaryPublisher = ampel.contrib.hu.t3.SlackSummaryPublisher:SlackSummaryPublisher',
               'SlackAlertPublisher = ampel.contrib.hu.t3.SlackAlertPublisher:SlackAlertPublisher',
               'SkyPortalPublisher = ampel.contrib.hu.t3.SkyPortalPublisher:SkyPortalPublisher',
@@ -67,6 +68,7 @@ setup(name='ampel-contrib-hu',
               'extcats = ampel.contrib.hu.resources:extcatsURI',
               'catsHTM = ampel.contrib.hu.resources:catsHTMURI',
               'desycloud = ampel.contrib.hu.resources:desyCloudURI',
+              'dcache = ampel.contrib.hu.resources:dCacheURI'
           ],
           'console_scripts' : [
               'catshtmd = ampel.contrib.hu.catshtm_server:run'
