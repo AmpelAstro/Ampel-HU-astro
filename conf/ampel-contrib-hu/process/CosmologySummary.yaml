@@ -1,0 +1,42 @@
+name: CosmologySummary
+schedule: every().day.at('13:00')
+tier: 3
+
+transients:
+  content:
+    docs:
+    - TRANSIENT
+    - COMPOUND
+    - T2RECORD
+    - PHOTOPOINT
+    - UPPERLIMIT
+    t2SubSelection:
+    - SNCOSMO
+    - CATALOGMATCH
+    - MARSHALMONITOR
+    - QSOFIT
+  select:
+    channels:
+      anyOf:
+      - HU_GP_10
+      - HU_GP_59
+      - HU_TNS_MSIP
+    modified:
+      after:
+        match_type: time_last_run
+        process_name: CosmologySummary
+    with_tags: INST_ZTF
+    without_tags: HAS_ERROR
+  state: $latest
+
+tasks:
+- task: CosmoSlack
+  unit: SlackSummaryPublisher
+  config:
+    excitement:
+      High: 300
+      Low: 10
+      Mid: 100
+    full_photometry: true
+    slack_channel: '#ztf_cosmosne'
+    slack_token: ***REMOVED***
