@@ -48,6 +48,9 @@ class T2RiseDeclineStat(AbsT2Unit):
 		* slope_decline_{g,r} : magnitude slope between jd_max and jd_lst. None unless bool_peaked
 		* rb_med : median Real Bogus
 		* drb_med : median dReal Bogus (if available)
+		Additionally, will try to save the following host related properties:
+		'distnr','magnr','classtar','sgscore1','distpsnr1','sgscore2','distpsnr2','neargaia','maggaia'
+		
 
 		Note 1:
 		What is considered "simultaneus" for calculating e.g. colors is determined by the X parameter.
@@ -274,13 +277,13 @@ class T2RiseDeclineStat(AbsT2Unit):
 		o['mag_last'] = float( dets['mag'][ dets['jd']==o['jd_last'] ] )
 		o['t_lc'] = o['jd_last'] - o['jd_det']
 
-		# Check if (d)real bogus present for any of these
-		for rbtype in ['rb','drb']:
-			rbvalues = list( filter(None, light_curve.get_values(rbtype, filters=lc_filter) ) )
-			if len(rbvalues)>0:
-				o['%s_med'%(rbtype)] = np.nanmedian( rbvalues )
+		# Check if (d)real bogus present for any of these + host values
+		for proptype in ['rb','drb','distnr','magnr','classtar','sgscore1','distpsnr1','sgscore2','distpsnr2','neargaia','maggaia']:
+			propvalues = list( filter(None, light_curve.get_values(proptype, filters=lc_filter) ) )
+			if len(propvalues)>0:
+				o['%s_med'%(proptype)] = np.nanmedian( propvalues )
 			else:
-				o['%s_med'%(rbtype)] = None
+				o['%s_med'%(proptype)] = None
 
 
 
@@ -426,7 +429,7 @@ class T2RiseDeclineStat(AbsT2Unit):
 				o[colname] = None
 			
 
-		self.logger.info('Completed RiseDecline stat calc.')
+#		self.logger.info('Completed RiseDecline stat calc.')
 			
 		if self.do_testplot:
 			self.test_plot(dets, ulims, o, self.path_testplot+"/t2risedeclinestat_%s.pdf"%(light_curve.id.hex()) )
