@@ -30,6 +30,7 @@ setup(name='ampel-contrib-hu',
               'SEDmTargetFilter = ampel.contrib.hu.t0.SEDmTargetFilter:SEDmTargetFilter',
               'NoFilter = ampel.contrib.hu.t0.NoFilter:NoFilter',
               'TransientInEllipticalFilter = ampel.contrib.hu.t0.TransientInEllipticalFilter:TransientInEllipticalFilter',
+              'MPALensFilter = ampel.contrib.hu.t0.MPALensFilter:MPALensFilter',
           ],
           'ampel.pipeline.t2.units' : [
               'SNCOSMO = ampel.contrib.hu.t2.T2SNCosmo:T2SNCosmo',
