@@ -39,6 +39,7 @@ setup(name='ampel-contrib-hu',
               'RiseDeclineStat = ampel.contrib.hu.t2.T2RiseDeclineStat:T2RiseDeclineStat',
               'MinorPlanetCenter = ampel.contrib.hu.t2.T2MinorPlanetCenter:T2MinorPlanetCenter',
               'MARSHALMONITOR = ampel.contrib.hu.t2.T2MarshalMonitor:T2MarshalMonitor',
+              'T2RiseDeclineApply = ampel.contrib.hu.t2.T2RiseDeclineApply:T2RiseDeclineApply',
           ],
           'ampel.pipeline.t3.jobs' : [
               'hu = ampel.contrib.hu.channels:load_t3_jobs',
