@@ -183,7 +183,7 @@ class DCachePublisher(AbsT3Unit):
             that is an aiohttp request object
         """
         ssl_context = ssl.create_default_context(
-            capath=os.environ.get("SSL_CERT_DIR", None)
+            capath=os.environ.get("X509_CERT_DIR", None)
         )
         async with TCPConnector(
             limit=self.run_config.maxParallelRequests, ssl_context=ssl_context
@@ -356,7 +356,7 @@ def get_macaroon(
 
     async def fetch():
         ssl_context = ssl.create_default_context(
-            capath=os.environ.get("SSL_CERT_DIR", None)
+            capath=os.environ.get("X509_CERT_DIR", None)
         )
         async with TCPConnector(ssl_context=ssl_context) as connector:
             async with ClientSession(auth=user, connector=connector) as session:
