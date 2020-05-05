@@ -306,8 +306,8 @@ class T2BrightSNProb(AbsT2Unit):
 		# Requires the most recent detection to be significantly fainter than the brightest one
 		# and more than max_tsep to have gone since peak light
 		min_mag = dets['mag'].min()
-		min_mag_jd = float( dets['jd'][ dets['mag']==min_mag ] )
-		min_mag_err = float( dets['magerr'][ dets['mag']==min_mag ] )
+		min_mag_jd = float( dets['jd'][ dets['mag']==min_mag ][-1] )
+		min_mag_err = float( dets['magerr'][ dets['mag']==min_mag ][-1] )
 		try:
 			last_mag_err = float( dets['magerr'][ dets['jd']==o['jd_last'] ] )
 		except TypeError:
