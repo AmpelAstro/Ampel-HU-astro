@@ -64,6 +64,7 @@ class DCachePublisher(AbsT3Unit):
     resources = ("dcache.default",)
 
     class RunConfig(BaseModel):
+        channel: str
         dryRun: bool = False
         baseDir: str = "/ampel/ztf/transient-views"
         maxParallelRequests: int = 8
@@ -84,7 +85,6 @@ class DCachePublisher(AbsT3Unit):
         self.base_dest = (
             parse.ParseResult(query={}, **parts).geturl() + self.run_config.baseDir
         )
-        self.channel = None
 
         self.existing_paths = set()
 
@@ -166,7 +166,7 @@ class DCachePublisher(AbsT3Unit):
 
         channel = tran_view.channel
         assert isinstance(channel, str), "Only single-channel transients are supported"
-        self.channel = channel
+        assert channel == self.run_config.channel
 
         await self.create_directory(request, [channel, *prefix])
         base_dir = os.path.join(self.base_dest, channel, *prefix)
@@ -241,7 +241,7 @@ class DCachePublisher(AbsT3Unit):
             self.dt += time.time() - t0
 
     async def publish_manifest(self, request):
-        prefix = os.path.join(self.base_dest, self.channel)
+        prefix = os.path.join(self.base_dest, self.run_config.channel)
         manifest_dir = os.path.join(prefix, "manifest")
         # create any directories that descend from the base path
         await self.create_directory(
