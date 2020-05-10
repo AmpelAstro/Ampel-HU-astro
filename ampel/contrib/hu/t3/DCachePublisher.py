@@ -196,12 +196,15 @@ class DCachePublisher(AbsT3Unit):
                 if self.run_config.dryRun:
                     session = None
                 else:
-                    # ClientSession.request is a normal function returning an async
-                    # context manager. While this is kind of equivalent to a
-                    # coroutine, it can't be decorated. Wrap it so it can be.
+                    # ClientSession.request is a normal function returning an
+                    # async context manager. While this is kind of equivalent
+                    # to a coroutine, it can't be decorated with backoff. Wrap
+                    # it so it can be.
+                    # Note that it is important to not actually enter the
+                    # context manager here, as this would close the response
+                    # on exit, causing read() to raise ClientConnectionError.
                     async def async_request(*args, **kwargs):
-                        async with session.request(*args, **kwargs) as resp:
-                            return resp
+                        return await session.request(*args, **kwargs)
 
                     # robustify Session.request() against transitory failures
                     request = backoff.on_exception(
@@ -257,28 +260,20 @@ class DCachePublisher(AbsT3Unit):
         previous = None
 
         # Move the previous manifest aside.
-        response = await request("PROPFIND", latest, raise_for_status=False)
-        if response.status < 400:
-            # the underlying connection may be closed before read() is called
-            # if the file is very small, causing read() to fail. reset the
-            # "connection closed" exception in this case.
-            if isinstance(response.content.exception(), ClientConnectionError):
-                response.content.set_exception(None)
-            date = (
-                ElementTree.fromstring(await response.content.read())
-                .find("**/{DAV:}prop/{DAV:}creationdate")
-                .text
-            )
-            previous = os.path.join(manifest_dir, date + ".json.gz")
-            self.logger.info(f"Moving {latest} to {previous}")
-            response = await request(
-                "MOVE",
-                latest,
-                headers={"Destination": previous},
-                raise_for_status=False,
-            )
-            if not response.status < 400:
-                response.raise_for_status()
+        async with await request("PROPFIND", latest, raise_for_status=False) as response:
+            if response.status < 400:
+                date = (
+                    ElementTree.fromstring(await response.text())
+                    .find("**/{DAV:}prop/{DAV:}creationdate")
+                    .text
+                )
+                previous = os.path.join(manifest_dir, date + ".json.gz")
+                self.logger.info(f"Moving {latest} to {previous}")
+                await request(
+                    "MOVE",
+                    latest,
+                    headers={"Destination": previous},
+                )
 
         # Write a new manifest with a link to previous manifest.
         await request(
@@ -302,22 +297,13 @@ class DCachePublisher(AbsT3Unit):
                 "caveats": ["activity:DOWNLOAD,LIST,READ_METADATA"],
                 "validity": "PT48h",
             },
-            raise_for_status=False,
         ) as response:
-            if not response.status < 400:
-                response.raise_for_status()
-            # see note above about short responses
-            if isinstance(response.content.exception(), ClientConnectionError):
-                response.content.set_exception(None)
             authz = await response.json()
         await request(
             "PUT",
             os.path.join(prefix, "macaroon"),
             data=authz["macaroon"],
-            raise_for_status=False,
         )
-        if not response.status < 400:
-            response.raise_for_status()
         self.logger.info(f"Access token: {authz}")
 
     def done(self):
