@@ -20,6 +20,7 @@
 # - ampel.contrib.hu.t3.SlackAlertPublisher
 # - ampel.contrib.hu.t3.SkyPortalPublisher
 - ampel.contrib.hu.t3.MarshalPublisher
+- ampel.contrib.hu.t3.MarshalMirrorUpdater
 # - ampel.contrib.hu.t3.T3MarshalMonitor
 - ampel.contrib.hu.t3.RapidBase
 - ampel.contrib.hu.t3.RapidSedm
