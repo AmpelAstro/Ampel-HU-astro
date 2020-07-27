@@ -29,9 +29,9 @@ def test_slacksummary(t3_transient_views, mocker):
 			"Mid": 200,
 			"High": 400
 		},
-		"slackToken": "xoxoxox",
-		"slackChannel": "#ampel-live",
-		"fullPhotometry": True
+		"slack_token": "xoxoxox",
+		"slack_channel": "#ampel-live",
+		"full_photometry": True
 	})
 	
 	assert len(t3_transient_views) < run_config.excitement['Low'], 'Small number passed'

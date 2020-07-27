@@ -18,8 +18,8 @@ from astropy.coordinates import SkyCoord
 
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.dataclass.JournalUpdate import JournalUpdate
-from ampel.logging.AmpelLogger import AmpelLogger
-from ampel.ztf.utils.ZTFUtils import ZTFUtils
+from ampel.log.AmpelLogger import AmpelLogger
+from ampel.ztf.utils import to_ampel_id, to_ztf_id
 
 from ampel.contrib.hu.t3.ampel_tns import sendTNSreports, get_tnsname, TNSFILTERID, tnsInternal
 
@@ -229,7 +229,7 @@ class TNSTalker(AbsT3Unit):
 			tns_name = re.sub('^SN','',tns_name)
 		
 		# be nice and then go
-		ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
+		ztf_name = to_ztf_id(tran_view.tran_id)
 		self.logger.info(
 			"looking for TNS name in the TNS.",
 			extra={
@@ -272,7 +272,7 @@ class TNSTalker(AbsT3Unit):
 
 
 		# be nice with the logging
-		ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
+		ztf_name = to_ztf_id(tran_view.tran_id)
 		self.logger.info(
 			"looked for TNS name in self.tran_names",
 			extra={
@@ -297,7 +297,7 @@ class TNSTalker(AbsT3Unit):
 				tns_name, tns_internals, jup: tns_name, tns_internal, and journal update
 		"""
 		
-		ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
+		ztf_name = to_ztf_id(tran_view.tran_id)
 		self.logger.info("looking for TNS name", extra={'ZTFname': ztf_name})
 		
 		# first we look in the journal, this is the cheapest option. If we have 
@@ -607,7 +607,7 @@ class TNSTalker(AbsT3Unit):
 		"""
 		
 		self.logger.info("creating AT report for transient.")
-		ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
+		ztf_name = to_ztf_id(tran_view.tran_id)
 		lc = tran_view.get_latest_lightcurve()
 		ra, dec = lc.get_pos(ret="mean", filters=self.run_config.lc_filters)
 		
@@ -683,7 +683,7 @@ class TNSTalker(AbsT3Unit):
 			(len(transients), len(transients_to_submit)))
 
 		# Hack to save these for test
-		#import ampel.utils.json as ampel_serialization
+		#import ampel.util.json as ampel_serialization
 		#fh = open("/home/jnordin/tmp/t3TransientTalker_testsubmitTV.json","w")
 		#for tv in transients_to_submit:
 		#    fh.write('%s'%(ampel_serialization.AmpelEncoder(lossy=True).encode(tv)))
@@ -696,7 +696,7 @@ class TNSTalker(AbsT3Unit):
 		atreports = {}			# Reports to be sent, indexed by the transient view IDs (so that we can check in the replies)
 		for tran_view in transients_to_submit:
 			
-			ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
+			ztf_name = to_ztf_id(tran_view.tran_id)
 			self.logger.info("TNS check", extra={"tranId":tran_view.tran_id, 'ztfName': ztf_name})
 			self.logger.debug("TNS check for %s"%(ztf_name))
 			
@@ -800,7 +800,7 @@ class TNSTalker(AbsT3Unit):
 		
 		# Now go and check and create journal updates for the cases where SN was added
 		for tran_id in atreports.keys():
-			ztf_name = ZTFUtils.to_ztf_id(tran_id)
+			ztf_name = to_ztf_id(tran_id)
 			if not ztf_name in tnsreplies.keys():
 				self.logger.info("No TNS add reply",extra={"tranId":tran_id})
 				continue

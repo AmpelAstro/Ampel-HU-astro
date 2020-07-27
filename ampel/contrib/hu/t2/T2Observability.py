@@ -10,12 +10,13 @@
 import astropy.units as u
 from astropy.time import Time
 from typing import Dict, Any
-from ampel.utils.Observatory import Observatory
+from ampel.util.Observatory import Observatory
 from ampel.view.LightCurve import LightCurve
-from ampel.abstract.AbsT2Unit import AbsT2Unit
+from ampel.type import T2UnitResult
+from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 
 
-class T2Observability(AbsT2Unit):
+class T2Observability(AbsLightCurveT2Unit):
 	"""
 	cross match the position of a transient to those of sources in a set
 	of catalogs and attach the required information to the transient.
@@ -53,7 +54,7 @@ class T2Observability(AbsT2Unit):
 		return obs
 
 
-	def run(self, light_curve: LightCurve, run_config):
+	def run(self, light_curve: LightCurve) -> T2UnitResult:
 		"""
 		:param run_config: configuration parameter for this job.
 		Eg:

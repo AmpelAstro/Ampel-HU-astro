@@ -8,16 +8,16 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from numpy import exp, asarray
-from typing import Optional, Sequence
+from typing import Optional, Union
 from astropy.table import Table
 from astropy.coordinates import SkyCoord
 
 from ampel.contrib.hu import catshtm_server
 from ampel.alert.PhotoAlert import PhotoAlert
-from ampel.abstract.AbsPhotoAlertFilter import AbsPhotoAlertFilter
+from ampel.abstract.AbsAlertFilter import AbsAlertFilter
 
 
-class DecentFilter(AbsPhotoAlertFilter):
+class DecentFilter(AbsAlertFilter[PhotoAlert]):
 	"""
 	General-purpose filter with ~ 0.6% acceptance. It selects alerts based on:
 	* numper of previous detections
@@ -208,7 +208,7 @@ class DecentFilter(AbsPhotoAlertFilter):
 
 
 	# Override
-	def apply(self, alert: PhotoAlert) -> Optional[Sequence[str]]:
+	def apply(self, alert: PhotoAlert) -> Optional[Union[bool, int]]:
 		"""
 		Mandatory implementation.
 		To exclude the alert, return *None*

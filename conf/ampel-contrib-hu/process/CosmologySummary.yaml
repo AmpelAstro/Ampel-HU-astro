@@ -1,26 +1,30 @@
+# File              : Ampel-contrib-HU/conf/ampel-contrib-hu/process/CosmologySummary.yaml
+# License           : BSD-3-Clause
+# Author            : jNo
+# Date              : 06.03.2020
+# Last Modified Date: 06.03.2020
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+
+# This channel is meant for ....
+# More details here
+
+# Name of this process
 name: CosmologySummary
+
+# Process is triggered once a day because...
 schedule: every().day.at('13:00')
+
+# mandatory argument
 tier: 3
 
+# Specifies which transients should be loaded
 transients:
   content:
-    docs:
-    - TRANSIENT
-    - COMPOUND
-    - T2RECORD
-    - PHOTOPOINT
-    - UPPERLIMIT
-    t2SubSelection:
-    - SNCOSMO
-    - CATALOGMATCH
-    - MARSHALMONITOR
-    - QSOFIT
+    docs: [TRANSIENT, COMPOUND, T2RECORD, PHOTOPOINT, UPPERLIMIT]
+    t2SubSelection: [SNCOSMO, CATALOGMATCH, MARSHALMONITOR, QSOFIT]
   select:
     channels:
-      anyOf:
-      - HU_GP_10
-      - HU_GP_59
-      - HU_TNS_MSIP
+      anyOf: [HU_GP_10, HU_GP_59, HU_TNS_MSIP]
     modified:
       after:
         match_type: time_last_run
@@ -29,6 +33,7 @@ transients:
     without_tags: HAS_ERROR
   state: $latest
 
+# Specifies which action should be performed on transients
 tasks:
 - task: CosmoSlack
   unit: SlackSummaryPublisher

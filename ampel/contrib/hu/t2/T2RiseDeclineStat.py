@@ -11,11 +11,12 @@
 import numpy as np
 from astropy.table import Table
 from typing import Dict, List, Any
-from ampel.abstract.AbsT2Unit import AbsT2Unit
+from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 from ampel.view.LightCurve import LightCurve
+from ampel.type import T2UnitResult
 
 
-class T2RiseDeclineStat(AbsT2Unit):
+class T2RiseDeclineStat(AbsLightCurveT2Unit):
 	"""
 	Derive a number of simple metrics describing the rise, peak and decline of a lc.
 
@@ -132,7 +133,7 @@ class T2RiseDeclineStat(AbsT2Unit):
 		plt.clf()
 
 
-	def run(self, light_curve: LightCurve, run_config):
+	def run(self, light_curve: LightCurve) -> T2UnitResult:
 		"""
 		:param run_config: `dict` or None
 		configuration parameter for this job. If none is given, the

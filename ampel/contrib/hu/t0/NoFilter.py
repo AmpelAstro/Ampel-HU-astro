@@ -7,9 +7,11 @@
 # Last Modified Date: 05.02.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.abstract.AbsPhotoAlertFilter import AbsPhotoAlertFilter
+from ampel.abstract.AbsAlertFilter import AbsAlertFilter
+from ampel.alert.PhotoAlert import PhotoAlert
 
-class NoFilter(AbsPhotoAlertFilter):
+
+class NoFilter(AbsAlertFilter[PhotoAlert]):
 
 	def apply(self, alert):
 		return self.on_match_default_t2_units

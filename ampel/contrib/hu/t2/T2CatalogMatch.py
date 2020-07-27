@@ -19,7 +19,7 @@ from extcats.catquery_utils import get_closest
 from numpy import asarray, degrees
 
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
-from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.model.StrictModel import StrictModel
 from ampel.t2.T2RunState import T2RunState
 from ampel.contrib.hu.utils import info_as_debug
 from ampel.contrib.hu import catshtm_server
@@ -27,7 +27,7 @@ from ampel.content.DataPoint import DataPoint
 from ampel.type import T2UnitResult
 
 
-class CatalogModel(AmpelStrictModel):
+class CatalogModel(StrictModel):
 	use: Literal['extcats', 'catsHTM']
 	rs_arcsec: float
 	catq_kwargs: Dict[str, Any]

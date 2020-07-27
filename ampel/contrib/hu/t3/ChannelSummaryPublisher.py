@@ -15,9 +15,9 @@ from astropy.time import Time
 from io import StringIO, BytesIO
 from typing import Optional, Dict, Any, Set
 
-from ampel.types import ChannelId
+from ampel.type import ChannelId
 from ampel.abstract.AbsT3Unit import AbsT3Unit
-from ampel.utils.json import AmpelEncoder, load
+from ampel.util.json import AmpelEncoder, load
 
 
 class ChannelSummaryPublisher(AbsT3Unit):

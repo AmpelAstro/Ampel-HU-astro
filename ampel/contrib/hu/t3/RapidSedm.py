@@ -10,7 +10,7 @@
 import requests, datetime
 from typing import Dict, List, Any
 from ampel.dataclass.JournalUpdate import JournalUpdate
-from ampel.ztf.utils.ZTFUtils import ZTFUtils
+from ampel.ztf.utils import to_ampel_id, to_ztf_id
 from ampel.contrib.hu.t3.RapidBase import RapidBase
 
 
@@ -139,14 +139,14 @@ class RapidSedm(RapidBase):
 		react_dict['obj_ra'] = info['ra']
 		react_dict['obj_dec'] = info['dec']
 		react_dict['obj_mag'] = info['latest_mag']    # Assuming that the object is not declining?
-		react_dict['obj_name'] = ZTFUtils.to_ztf_id(tran_view.tran_id)
+		react_dict['obj_name'] = to_ztf_id(tran_view.tran_id)
 		react_dict['inidate'] = datetime.datetime.utcnow()
 		react_dict['enddate'] = datetime.datetime.utcnow() + datetime.timedelta(days=2)
 
 		# We are still in debug stage, turn down priority
 		#react_dict['priority'] = 1
 
-		self.logger.debug('SEDM trigger for %s w dict %s' % (ZTFUtils.to_ztf_id(tran_view.tran_id), react_dict))
+		self.logger.debug('SEDM trigger for %s w dict %s' % (to_ztf_id(tran_view.tran_id), react_dict))
 
 		# Make the post
 		response = requests.post(

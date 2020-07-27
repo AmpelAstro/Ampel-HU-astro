@@ -15,8 +15,8 @@ from slack import WebClient
 from slack.errors import SlackClientError
 from typing import Dict, List, Union, Optional, Any
 from ampel.abstract.AbsT3Unit import AbsT3Unit
-from ampel.ztf.utils.ZTFUtils import ZTFUtils
-from ampel.utils.AmpelUtils import AmpelUtils
+from ampel.ztf.utils import to_ampel_id, to_ztf_id
+from ampel.util.collections import ampel_iter
 from ampel.model.EncryptedDataModel import EncryptedDataModel
 
 
@@ -26,10 +26,10 @@ class SlackSummaryPublisher(AbsT3Unit):
 
     dryRun: bool = False
     quiet: bool = False
-    slackChannel: str
-    slackToken: Union[str, EncryptedDataModel]
+    slack_channel: str
+    slack_token: Union[str, EncryptedDataModel]
     excitement: Dict[str, int] = {"Low": 50, "Mid": 200, "High": 400}
-    fullPhotometry: bool = False
+    full_photometry: bool = False
     cols: List[str] = [
         "ztf_name", "ra", "dec", "magpsf", "sgscore1", "rb",
         "last_significant_nondet", "first_detection",
@@ -64,7 +64,7 @@ class SlackSummaryPublisher(AbsT3Unit):
 
         date = str(datetime.date.today())
 
-        sc = WebClient(self.run_config.slackToken)
+        sc = WebClient(self.run_config.slack_token)
 
         m = calculate_excitement(len(self.frames), date=date,
             thresholds=self.run_config.excitement
@@ -75,7 +75,7 @@ class SlackSummaryPublisher(AbsT3Unit):
         else:
             api = sc.api_call(
                 "chat.postMessage",
-                channel=self.run_config.slackChannel,
+                channel=self.run_config.slack_channel,
                 text=m,
                 username="AMPEL-live",
                 as_user=False
@@ -99,8 +99,8 @@ class SlackSummaryPublisher(AbsT3Unit):
             df.to_csv(buffer)
 
             param = {
-                'token': self.run_config.slackToken,
-                'channels': self.run_config.slackChannel,
+                'token': self.run_config.slack_token,
+                'channels': self.run_config.slack_channel,
                 'title': 'Summary: ' + date,
                 "username": "AMPEL-live",
                 "as_user": "false",
@@ -123,7 +123,7 @@ class SlackSummaryPublisher(AbsT3Unit):
                 )
                 self.logger.info(r.text)
 
-            if self.run_config.fullPhotometry:
+            if self.run_config.full_photometry:
                 photometry = pd.concat(self.photometry, sort=False)
                 # Set fill value for channel columns to False
                 for channel in self.channels:
@@ -138,8 +138,8 @@ class SlackSummaryPublisher(AbsT3Unit):
                 photometry.to_csv(buffer)
 
                 param = {
-                    'token': self.run_config.slackToken,
-                    'channels': self.run_config.slackChannel,
+                    'token': self.run_config.slack_token,
+                    'channels': self.run_config.slack_channel,
                     'title': 'Full Photometry: ' + date,
                     "username": "AMPEL-live",
                     "as_user": "false",
@@ -181,7 +181,7 @@ class SlackSummaryPublisher(AbsT3Unit):
 
             # use tranId from parent view to compute ZTF name
             tdf['tranId'] = transient.tran_id
-            tdf['ztf_name'] = tdf['tranId'].apply(ZTFUtils.to_ztf_id)
+            tdf['ztf_name'] = tdf['tranId'].apply(to_ztf_id)
             tdf["most_recent_detection"] = max(tdf["jd"])
             tdf["first_detection"] = min(tdf["jd"])
             tdf["n_detections"] = len(tdf["jd"])
@@ -237,7 +237,7 @@ class SlackSummaryPublisher(AbsT3Unit):
                 if "T2-NEDz_z" not in mycols:
                     continue
 
-            for channel in AmpelUtils.iter(transient.channel):
+            for channel in ampel_iter(transient.channel):
                 tdf[channel] = True
                 self.channels.add(channel)
 

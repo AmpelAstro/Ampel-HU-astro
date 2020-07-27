@@ -9,10 +9,11 @@
 
 from extcats import CatalogQuery
 from pymongo import MongoClient
-from ampel.abstract.AbsPhotoAlertFilter import AbsPhotoAlertFilter
+from ampel.abstract.AbsAlertFilter import AbsAlertFilter
+from ampel.alert.PhotoAlert import PhotoAlert
 
 
-class LensedTransientFilter(AbsPhotoAlertFilter):
+class LensedTransientFilter(AbsAlertFilter[PhotoAlert]):
 
 	require = ('extcats.reader', )
 

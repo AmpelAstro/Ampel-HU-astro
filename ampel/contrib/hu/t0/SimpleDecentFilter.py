@@ -9,10 +9,11 @@
 
 from numpy import array
 from astropy.coordinates import SkyCoord
-from ampel.abstract.AbsPhotoAlertFilter import AbsPhotoAlertFilter
+from ampel.abstract.AbsAlertFilter import AbsAlertFilter
+from ampel.alert.PhotoAlert import PhotoAlert
 
 
-class SimpleDecentFilter(AbsPhotoAlertFilter):
+class SimpleDecentFilter(AbsAlertFilter[PhotoAlert]):
 	"""
 	General-purpose filter with ~ 0.6% acceptance. It selects alerts based on:
 	* numper of previous detections

@@ -1,6 +1,6 @@
 import pytest
 from os.path import dirname, join
-from ampel.utils.json import load
+from ampel.util.json import load
 import logging
 
 

@@ -11,10 +11,11 @@ from typing import Optional, Dict, List, Union, Any
 from pydantic import BaseModel, BaseConfig
 from astropy.time import Time
 from ampel.view.LightCurve import LightCurve
-from ampel.abstract.AbsT2Unit import AbsT2Unit
+from ampel.type import T2UnitResult
+from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 
 
-class T2MinorPlanetCenter(AbsT2Unit):
+class T2MinorPlanetCenter(AbsLightCurveT2Unit):
 	"""
 	Check if the *latest* detection of a transient corresponds
 	matches something known by the MinorPlanetCenter.
@@ -41,7 +42,7 @@ class T2MinorPlanetCenter(AbsT2Unit):
 		self.logger.debug('Initiated T2MinorPlanetCenter ')
 
 
-	def run(self, light_curve: LightCurve, run_config: Dict):
+	def run(self, light_curve: LightCurve) -> T2UnitResult:
 		"""
 		:returns: dict with entries as in class doc string.
 		{'ndet' : 3, ...}

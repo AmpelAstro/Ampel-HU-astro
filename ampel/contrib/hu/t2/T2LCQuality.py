@@ -4,20 +4,19 @@
 # License           : BSD-3-Clause
 # Author            : matteo.giomi@desy.de
 # Date              : 11.09.2018
-# Last Modified Date: 05.02.2020
+# Last Modified Date: 06.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-
-import logging
 from typing import Dict, List, Any
 from astropy.table import Table
 from scipy.interpolate import interp1d
-from ampel.abstract.AbsT2Unit import AbsT2Unit
+
+from ampel.type import T2UnitResult
+from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 from ampel.view.LightCurve import LightCurve
-logging.basicConfig()
 
 
-class T2LCQuality(AbsT2Unit):
+class T2LCQuality(AbsLightCurveT2Unit):
 	"""
 	determine the 'quality' of the light curve by computing ratios between
 	the number of detection and that of upper limits.
@@ -50,9 +49,9 @@ class T2LCQuality(AbsT2Unit):
 	"""
 
 	filter_names: Dict = {1: 'g', 2: 'r', 3: 'i'}
-	default_filter_ids: List[int] = [1, 2, 3]
-	default_exclude_ulims_after: bool = True
-	default_lc_filter: List[Dict[str, Any]] = [
+	filter_ids: List[int] = [1, 2, 3]
+	exclude_ulims_after: bool = True
+	lc_filter: List[Dict[str, Any]] = [
 		{
 			'attribute': 'isdiffpos',
 			'operator': '!=',
@@ -87,7 +86,7 @@ class T2LCQuality(AbsT2Unit):
 		return n_strong
 
 
-	def compute_strength_purity(self, dets, ulims, exclude_ulims_after):
+	def compute_strength_purity(self, dets, ulims):
 		"""
 		given the detection and upper limit history, compute the
 		strength and purity of the light curve.
@@ -113,7 +112,7 @@ class T2LCQuality(AbsT2Unit):
 		strength = float(len(dets)) / (len(dets) + len(ulims))
 
 		# for the strong upper limits, eventually exclude those which happends after the last detection
-		if exclude_ulims_after:
+		if self.exclude_ulims_after:
 			ulims = ulims[ulims['jd'] < det_end]
 		n_strong_ulims = self.count_strong_ulims(dets, ulims)
 		purity = float(len(dets)) / (len(dets) + n_strong_ulims)
@@ -151,7 +150,7 @@ class T2LCQuality(AbsT2Unit):
 		plt.show()
 
 
-	def run(self, light_curve: LightCurve, run_config: Dict):
+	def run(self, light_curve: LightCurve) -> T2UnitResult:
 		"""
 		:param run_config: `dict` or None
 		configuration parameter for this job. If none is given, the
@@ -199,20 +198,9 @@ class T2LCQuality(AbsT2Unit):
 		}
 		"""
 
-		# parse some run config params and use default if not given
-		lc_filter = run_config.get('lc_filter')
-		if lc_filter is None:
-			lc_filter = self.default_lc_filter
-		filter_ids = run_config.get('filter_ids')
-		if filter_ids is None:
-			filter_ids = self.default_filter_ids
-		exclude_ulims_after = run_config.get('exclude_ulims_after')
-		if exclude_ulims_after is None:
-			exclude_ulims_after = self.default_exclude_ulims_after
-
 		# run on the single bands individually
 		out_dict = {}
-		for fid in filter_ids:
+		for fid in self.filter_ids:
 
 			self.logger.debug(
 				f"computing light curve quality for filter id {fid} "
@@ -221,13 +209,13 @@ class T2LCQuality(AbsT2Unit):
 
 			# concatenate the filters
 			filters: List[Dict[str, Any]] = [{'attribute': 'fid', 'operator': '==', 'value': fid}]
-			if isinstance(lc_filter, (list, tuple)):
-				filters += lc_filter
-			elif isinstance(lc_filter, dict):
-				filters += [lc_filter]
+			if isinstance(self.lc_filter, (list, tuple)):
+				filters += self.lc_filter
+			elif isinstance(self.lc_filter, dict):
+				filters += [self.lc_filter]
 			else:
 				raise ValueError(
-					f"parameter 'lc_filter' must be either list or tuple. got {type(lc_filter)} instead"
+					f"parameter 'lc_filter' must be either list or tuple. got {type(self.lc_filter)} instead"
 				)
 
 			self.logger.debug(f"applying filter: {repr(filters)}")
@@ -256,7 +244,7 @@ class T2LCQuality(AbsT2Unit):
 			)
 
 			# compute LC metrics and append to output
-			n_strong_ulims, strength, purity = self.compute_strength_purity(dets, ulims, exclude_ulims_after)
+			n_strong_ulims, strength, purity = self.compute_strength_purity(dets, ulims)
 			out_dict[self.filter_names[fid]] = {
 				'strength': strength,
 				'purity': purity,
@@ -266,5 +254,4 @@ class T2LCQuality(AbsT2Unit):
 #			if len(dets)>5:
 #				self.test_plot(dets, ulims, n_strong_ulims, purity, strength, fid)
 
-		# return the info as dictionary
 		return out_dict

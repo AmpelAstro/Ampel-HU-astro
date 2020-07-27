@@ -12,7 +12,7 @@ from typing import Dict, List, Any, Optional
 from astropy.cosmology import Planck15
 from astropy.coordinates import SkyCoord
 from astropy.coordinates import Distance
-from ampel.ztf.utils.ZTFUtils import ZTFUtils
+from ampel.ztf.utils import to_ampel_id, to_ztf_id
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.dataclass.JournalUpdate import JournalUpdate
 
@@ -94,7 +94,6 @@ class RapidBase(AbsT3Unit):
 
 
 	def post_init(self, context: Optional[Dict[str, Any]]) -> None:
-		""" """
 
 		self.name = "RapidBase"
 		self.logger.info(f"Initialized T3 RapidBase instance {self.name}")
@@ -124,18 +123,16 @@ class RapidBase(AbsT3Unit):
 
 
 	def test_react(self, tran_view, info):
-		"""
-		Trigger a test slack report
-		"""
+		""" Trigger a test slack report """
 
 		success = False
 
 		from slack import WebClient
-		from slack.exceptions import SlackClientError
+		from slack.errors import SlackClientError
 
 
 		sc = WebClient(self.slack_token)
-		ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
+		ztf_name = to_ztf_id(tran_view.tran_id)
 		ra, dec = tran_view.get_latest_lightcurve().get_pos(ret="mean", filters=self.lc_filters)
 		msg = "Pancha says: Look up %s at RA %s DEC %s. Added info %s" % (
 			ztf_name, ra, dec, info)
@@ -284,7 +281,7 @@ class RapidBase(AbsT3Unit):
 		# check PS1 sg for the full alert history
 		# Note that we for this check do *not* use the lightcurve filter criteria
 		# TODO: Evaluate whether we should use the filters, and do a check for sufficient number of datapoints remaining
-#		print(ZTFUtils.to_ztf_id(tran_view.tran_id))
+#		print(to_ztf_id(tran_view.tran_id))
 #		print(lc)
 #		print(lc.get_tuples('distpsnr1', 'sgscore1'))
 #		print(lc.get_tuples('distpsnr1', 'sgscore1', filters=self.lc_filters))
