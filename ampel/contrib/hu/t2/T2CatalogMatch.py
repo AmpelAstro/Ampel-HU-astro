@@ -41,7 +41,7 @@ class T2CatalogMatch(AbsPointT2Unit):
 	Cross matches the position of a transient to those of sources in a set of catalogs
 	"""
 
-	resources = 'extcats.reader', 'catsHTM.default'
+	require = 'extcats.reader', 'catsHTM.default'
 	catalogs: Dict[str, CatalogModel]
 
 	def post_init(self):
@@ -75,14 +75,13 @@ class T2CatalogMatch(AbsPointT2Unit):
 		CatalogQuery instances to be created.
 		"""
 
-		# check if the catalog exist as an extcats database
-		if catalog not in self.catq_client.database_names():
-			raise ValueError(f"cannot find {catalog} among installed extcats catalogs")
-
 		# check if you have already init this peculiar query
 		catq = self.catq_objects.get(catalog)
 		if catq is None:
 			self.logger.debug("CatalogQuery object not previously instantiated. Doing it now.")
+			# check if the catalog exist as an extcats database
+			if catalog not in self.catq_client.database_names():
+				raise ValueError(f"cannot find {catalog} among installed extcats catalogs")
 
 			# add catalog specific arguments to the general ones
 			if catq_kwargs is None:
@@ -185,7 +184,7 @@ class T2CatalogMatch(AbsPointT2Unit):
 		try:
 			transient_ra = datapoint['body']['ra']
 			transient_dec = datapoint['body']['dec']
-		except IndexError:
+		except KeyError:
 			return T2RunState.MISSING_INFO
 
 		if self.debug:
@@ -258,8 +257,7 @@ class T2CatalogMatch(AbsPointT2Unit):
 				# requested ones.
 				out_dict[catalog] = {'dist2transient': dist}
 
-				if not cat_opts.keys_to_append:
-					keys_to_append = src.colnames
+				keys_to_append = cat_opts.keys_to_append if cat_opts.keys_to_append else src.colnames
 
 				if len(keys_to_append) > 0:
 					to_add = {}
