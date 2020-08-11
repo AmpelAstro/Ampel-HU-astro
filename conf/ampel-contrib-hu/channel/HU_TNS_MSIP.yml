@@ -29,3 +29,20 @@ t0_filter:
 t2_compute:
   - unit: T2CatalogMatch
     config: '%T2CatalogMatch_general'
+t3_supervise:
+  template: ztf_periodic_summary
+  schedule: every(60).minutes
+  load:
+    - TRANSIENT
+    - DATAPOINT
+    - col: t2
+      query_complement:
+        unit:
+          $in: [T2SNCosmo, T2CatalogMatch, T2QSOFit]
+  run:
+    unit: TNSTalker
+    config:
+      tns_api_key: a3f9bcbbe6a26a1ae97a0eeefe465932e68cba83
+      submit_tns: true
+      sandbox: false
+      needed_catalogs: []
