@@ -1,0 +1,40 @@
+name: RapidReact
+tier: 3
+template: ztf_periodic_summary
+schedule: every(10).minutes
+channel:
+  any_of:
+    - HU_RAPID_SOUTH
+    - HU_RAPID_UL
+    - HU_RAPID
+    - HU_RAPID_SINGLE
+    - HU_GP_16
+load:
+  - TRANSIENT
+  - DATAPOINT
+  - col: t2
+    query_complement:
+      unit: T2CatalogMatch
+run:
+  - unit: RapidBase
+    config:
+      do_react: false
+      do_testreact: true
+      redshift_catalogs:
+        - NEDz
+        - NEDz_extcats
+        - SDSS_spec
+      min_peak_mag: 20
+      max_age: 5
+      max_redshift: 0.2
+      min_ndet: 1
+      min_ndet_postul: 1
+      maglim_maxago: 8
+  - unit: RapidSedm
+    config:
+      do_react: true
+      do_testreact: true
+      redshift_catalogs:
+        - NEDz
+        - NEDz_extcats
+        - SDSS_spec
