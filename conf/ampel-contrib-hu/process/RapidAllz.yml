@@ -1,0 +1,24 @@
+name: RapidAllz
+tier: 3
+template: ztf_periodic_summary
+schedule: every().day.at('13:00')
+channel:
+  any_of:
+    - HU_RAPID_SOUTH
+    - HU_RAPID_UL
+load:
+  - TRANSIENT
+  - DATAPOINT
+  - col: t2
+    query_complement:
+      unit: T2CatalogMatch
+run:
+  - unit: SlackSummaryPublisher
+    config: slack-ztf_general
+    override:
+      slack_channel: '#ztf_rapid'
+  - unit: MarshalPublisher
+    config: marshal-ampelbot
+    override:
+      marshal_program: AmpelRapid
+      marshal_saveprogramid: 67
