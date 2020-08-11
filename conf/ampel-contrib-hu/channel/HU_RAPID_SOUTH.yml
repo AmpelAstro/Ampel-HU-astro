@@ -11,6 +11,4 @@ t0_filter:
     max_tspan: 4
 t2_compute:
   - unit: T2CatalogMatch
-    config: T2CatalogMatch_general
-  - unit: T2MarshalMonitor
-    config: T2MarshalMonitor_simple
+    config: '%T2CatalogMatch_general'

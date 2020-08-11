@@ -32,4 +32,4 @@ t0_filter:
     ps1_confusion_sg_tol: 0.1
 t2_compute:
   - unit: T2CatalogMatch
-    config: T2CatalogMatch_general
+    config: '%T2CatalogMatch_general'

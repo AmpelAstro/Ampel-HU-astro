@@ -35,33 +35,23 @@ t0_filter:
     ps1_sgveto_th: 0.8
     ps1_confusion_rad: 3
     ps1_confusion_sg_tol: 0.1
-t3_supervize:
-  tier: 3
-  name: ToOSummary
-  template: legacy_simple_process
+t3_supervise:
+  template: ztf_periodic_summary
   schedule: every(30).minutes
-  transients:
-    select:
-      created:
-        after:
-          match_type: time_delta
-          days: -40
-      modified:
-        after:
-          match_type: time_last_run
-          process_name: ToOSummary
-    content:
-      docs:
-        - TRANSIENT
-        - COMPOUND
-        - T2RECORD
-        - PHOTOPOINT
-      t2SubSelection:
-        - SNCOSMO
-        - CATALOGMATCH
-  unit: SlackSummaryPublisher
-  config:
-    quiet: true
-    slack_token: ***REMOVED***
-    slack_channel: '#too-metachannel'
-    full_photometry: true
+  load:
+    - TRANSIENT
+    - COMPOUND
+    - PHOTOPOINT
+    - col: t2
+      query_complement:
+        unit:
+          $in:
+            - T2SNCosmo
+            - T2CatalogMatch
+  run:
+    unit: SlackSummaryPublisher
+    config:
+      quiet: true
+      slack_token: ***REMOVED***
+      slack_channel: '#too-metachannel'
+      full_photometry: true
