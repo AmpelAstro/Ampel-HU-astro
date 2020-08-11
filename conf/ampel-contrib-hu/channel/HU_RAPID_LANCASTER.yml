@@ -12,3 +12,31 @@ t0_filter:
 t2_compute:
   - unit: T2CatalogMatch
     config: '%T2CatalogMatch_general'
+t3_supervise:
+  - name: lowz
+    schedule: every(30).minutes
+    template: ztf_periodic_summary
+    filter:
+      t2:
+        unit: T2CatalogMatch
+        match:
+          NEDz.z:
+            $lt: 0.05
+    run:
+      unit: SlackSummaryPublisher
+      config: slack-ampel_alerts
+  - name: daily
+    schedule:
+      - every().day.at('10:00')
+      - every().day.at('15:00')
+    template: ztf_periodic_summary
+    filter:
+      t2:
+        unit: T2CatalogMatch
+        match:
+          NEDz.z:
+            $lt: 0.05
+    run:
+      unit: SlackSummaryPublisher
+      config: slack-ztf_public
+
