@@ -1,0 +1,344 @@
+t0:
+  HU_RAPID:
+    max_dec: 999
+    det_within: 0.25
+    ul_within: 5
+    min_ndet: 2
+    min_tspan: -666
+    max_tspan: 5
+    min_rb: 0.3
+    max_fwhm: 5.5
+    max_elong: 1.4
+    max_magdiff: 1
+    max_nbad: 0
+    min_sso_dist: 20
+    min_gal_lat: 14
+    gaia_rs: 20
+    gaia_pm_signif: 3
+    gaia_plx_signif: 3
+    gaia_veto_gmag_min: 9
+    gaia_veto_gmag_max: 20
+    gaia_excessnoise_sig_max: 999
+    ps1_sgveto_rad: 1
+    ps1_sgveto_th: 0.8
+    ps1_confusion_rad: 3
+    ps1_confusion_sg_tol: 0.1
+t2:
+  T2MarshalMonitor_simple:
+    simple_out: true
+    program(s):
+      AMPEL Test:
+        auth:
+          - AMPELBOT
+          - ***REMOVED***
+        update_every_h: 2
+        include_candidates: false
+        tag: AMPEL
+      Cosmology:
+        auth:
+          - AMPELBOT
+          - ***REMOVED***
+        update_every_h: 2
+        include_candidates: false
+        tag: COSM
+      Redshift Completeness Factor:
+        auth:
+          - MatteoGiomi
+          - Popoloma10!
+        update_every_h: 2
+        include_candidates: false
+        tag: RCF
+  T2CatalogMatch_cosmo:
+    catalogs:
+      SDSS_spec:
+        use: extcats
+        catq_kwargs:
+          ra_key: ra
+          dec_key: dec
+        rs_arcsec: 10
+        keys_to_append:
+          - z
+          - bptclass
+          - subclass
+      NEDz:
+        use: catsHTM
+        catq_kwargs:
+          ra_key: RA
+          dec_key: Dec
+        rs_arcsec: 10
+        keys_to_append:
+          - ObjType
+          - Velocity
+          - z
+      SDSSDR10:
+        use: catsHTM
+        catq_kwargs:
+          ra_key: RA
+          dec_key: Dec
+        rs_arcsec: 3
+        keys_to_append:
+          - type
+          - flags
+      brescia:
+        use: extcats
+        catq_kwargs:
+          ra_key: ra
+          dec_key: dec
+        rs_arcsec: 3
+        keys_to_append:
+          - subclass
+          - z
+      milliquas:
+        use: extcats
+        catq_kwargs:
+          ra_key: ra
+          dec_key: dec
+        rs_arcsec: 3
+        keys_to_append:
+          - broad_type
+          - name
+          - redshift
+          - qso_prob
+      GAIADR2:
+        use: catsHTM
+        catq_kwargs:
+          ra_key: RA
+          dec_key: Dec
+        rs_arcsec: 30
+        keys_to_append:
+          - Mag_G
+          - PMRA
+          - ErrPMRA
+          - PMDec
+          - ErrPMDec
+          - Plx
+          - ErrPlx
+          - ExcessNoise
+          - ExcessNoiseSig
+      CRTS_DR1:
+        use: extcats
+        catq_kwargs:
+          ra_key: RA
+          dec_key: Dec
+        rs_arcsec: 3
+        keys_to_append:
+          - VarType
+      AAVSOVSX:
+        use: extcats
+        catq_kwargs:
+          ra_key: RA
+          dec_key: DEC
+        rs_arcsec: 3
+        keys_to_append:
+          - TYPE
+      LAMOSTDR4:
+        use: extcats
+        catq_kwargs:
+          ra_key: ra
+          dec_key: dec
+        rs_arcsec: 3
+        keys_to_append:
+          - objtype
+          - class
+          - subclass
+          - snrg
+      GLADEv23:
+        use: extcats
+        catq_kwargs:
+          ra_key: RA
+          dec_key: dec
+        rs_arcsec: 10
+        keys_to_append:
+          - z
+          - dist
+          - dist_err
+          - flag1
+          - flag2
+          - flag3
+      allWISE_skymotion:
+        use: extcats
+        catq_kwargs:
+          ra_key: RA
+          dec_key: DEC
+        rs_arcsec: 30
+        keys_to_append:
+          - pmRA
+          - e_pmRA
+          - pmDE
+          - e_pmDE
+      voidGalPan:
+        use: extcats
+        catq_kwargs:
+          ra_key: ra
+          dec_key: dec
+        rs_arcsec: 30
+        keys_to_append:
+          - z
+          - voidid1
+          - voidid2
+          - voidid3
+      NEDz_extcats:
+        use: extcats
+        catq_kwargs:
+          ra_key: RA
+          dec_key: Dec
+        rs_arcsec: 60
+        post_filter:
+          z:
+            $lte: 0.03
+            $gte: 0.005
+        keys_to_append:
+          - ObjType
+          - Velocity
+          - z
+  '%T2CatalogMatch_general':
+    catalogs:
+      SDSS_spec:
+        use: extcats
+        catq_kwargs:
+          ra_key: ra
+          dec_key: dec
+        rs_arcsec: 10
+        keys_to_append:
+          - z
+          - bptclass
+          - subclass
+      NEDz:
+        use: catsHTM
+        catq_kwargs:
+          ra_key: RA
+          dec_key: Dec
+        rs_arcsec: 10
+        keys_to_append:
+          - ObjType
+          - Velocity
+          - z
+      SDSSDR10:
+        use: catsHTM
+        catq_kwargs:
+          ra_key: RA
+          dec_key: Dec
+        rs_arcsec: 3
+        keys_to_append:
+          - type
+          - flags
+      brescia:
+        use: extcats
+        catq_kwargs:
+          ra_key: ra
+          dec_key: dec
+        rs_arcsec: 3
+        keys_to_append:
+          - subclass
+          - z
+      milliquas:
+        use: extcats
+        catq_kwargs:
+          ra_key: ra
+          dec_key: dec
+        rs_arcsec: 3
+        keys_to_append:
+          - broad_type
+          - name
+          - redshift
+          - qso_prob
+      GAIADR2:
+        use: catsHTM
+        catq_kwargs:
+          ra_key: RA
+          dec_key: Dec
+        rs_arcsec: 30
+        keys_to_append:
+          - Mag_G
+          - PMRA
+          - ErrPMRA
+          - PMDec
+          - ErrPMDec
+          - Plx
+          - ErrPlx
+          - ExcessNoise
+          - ExcessNoiseSig
+      CRTS_DR1:
+        use: extcats
+        catq_kwargs:
+          ra_key: RA
+          dec_key: Dec
+        rs_arcsec: 3
+        keys_to_append:
+          - VarType
+      AAVSOVSX:
+        use: extcats
+        catq_kwargs:
+          ra_key: RA
+          dec_key: DEC
+        rs_arcsec: 3
+        keys_to_append:
+          - TYPE
+      LAMOSTDR4:
+        use: extcats
+        catq_kwargs:
+          ra_key: ra
+          dec_key: dec
+        rs_arcsec: 3
+        keys_to_append:
+          - objtype
+          - class
+          - subclass
+          - snrg
+      GLADEv23:
+        use: extcats
+        catq_kwargs:
+          ra_key: RA
+          dec_key: dec
+        rs_arcsec: 10
+        keys_to_append:
+          - z
+          - dist
+          - dist_err
+          - flag1
+          - flag2
+          - flag3
+      allWISE_skymotion:
+        use: extcats
+        catq_kwargs:
+          ra_key: RA
+          dec_key: DEC
+        rs_arcsec: 30
+        keys_to_append:
+          - pmRA
+          - e_pmRA
+          - pmDE
+          - e_pmDE
+      NEDz_extcats:
+        use: extcats
+        catq_kwargs:
+          ra_key: RA
+          dec_key: Dec
+        rs_arcsec: 60
+        post_filter:
+          z:
+            $lte: 0.03
+            $gte: 0.005
+        keys_to_append:
+          - ObjType
+          - Velocity
+          - z
+t3:
+  slack-ampel_alerts:
+    excitement:
+      Low: 1
+      Mid: 5
+      High: 10
+    slack_token: ***REMOVED***
+    slack_channel: '#ampel_alerts'
+    full_photometry: true
+    quiet: true
+  slack-ztf_public:
+    excitement:
+      Low: 1
+      Mid: 5
+      High: 10
+    slack_token: ***REMOVED***
+    slack_channel: '#ztf_public'
+    full_photometry: true
+    quiet: true
