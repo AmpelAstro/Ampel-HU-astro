@@ -1,0 +1,44 @@
+channel: HU_GP_stars
+contact: ampel@desy.de
+active: false
+auto_complete: live
+template: ztf_uw_private
+t0_filter:
+  unit: DecentFilter
+  config:
+    max_tspan: 666
+    gaia_rs: 0
+    max_fwhm: 5.5
+    min_rb: 0.3
+    max_nbad: 2
+    min_tspan: 8
+    min_sso_dist: 20
+    ps1_sgveto_th: 0.8
+    min_ndet: 4
+    ps1_sgveto_rad: 0
+    min_gal_lat: 14
+    gaia_veto_gmag_max: 20
+    gaia_plx_signif: 3
+    ps1_confusion_rad: 0
+    gaia_pm_signif: 3
+    max_magdiff: 1
+    gaia_veto_gmag_min: 9
+    max_elong: 1.4
+    ps1_confusion_sg_tol: 0.1
+    gaia_excessnoise_sig_max: 1.7976931348623153e+308
+t2_compute:
+  - unit: T2SNCosmo
+    config:
+      model: salt2
+      upper_limits: false
+  - unit: T2LCQuality
+    config:
+      filter_ids:
+        - 1
+        - 2
+        - 3
+      exclude_ulims_after: true
+  - unit: T2CatalogMatch
+    config: T2CatalogMatch_general
+  - unit: T2MarshalMonitor
+    config: T2MarshalMonitor_simple

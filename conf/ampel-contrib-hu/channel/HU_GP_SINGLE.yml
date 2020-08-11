@@ -1,0 +1,35 @@
+channel: HU_GP_SINGLE
+contact: ampel@desy.de
+active: true
+auto_complete: false
+template: ztf_uw_private
+t0_filter:
+  unit: XShooterFilter
+  config:
+    max_dec: 999
+    det_within: 0.25
+    ul_within: 4
+    min_ndet: 1
+    min_tspan: -666
+    max_tspan: 2
+    min_rb: 0.3
+    MIN_DRB: 0.5
+    max_fwhm: 4.5
+    max_elong: 1.4
+    max_magdiff: 1
+    max_nbad: 0
+    min_sso_dist: 20
+    min_gal_lat: 14
+    gaia_rs: 20
+    gaia_pm_signif: 3
+    gaia_plx_signif: 3
+    gaia_veto_gmag_min: 9
+    gaia_veto_gmag_max: 20
+    gaia_excessnoise_sig_max: 999
+    ps1_sgveto_rad: 2
+    ps1_sgveto_th: 0.8
+    ps1_confusion_rad: 3
+    ps1_confusion_sg_tol: 0.1
+t2_compute:
+  - unit: T2CatalogMatch
+    config: T2CatalogMatch_general

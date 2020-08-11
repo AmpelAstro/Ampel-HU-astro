@@ -1,0 +1,16 @@
+channel: HU_RAPID_SOUTH
+contact: ampel@desy.de
+active: true
+auto_complete: false
+template: ztf_uw_public
+t0_filter:
+  unit: XShooterFilter
+  config: HU_RAPID
+  override:
+    max_dec: 30
+    max_tspan: 4
+t2_compute:
+  - unit: T2CatalogMatch
+    config: T2CatalogMatch_general
+  - unit: T2MarshalMonitor
+    config: T2MarshalMonitor_simple

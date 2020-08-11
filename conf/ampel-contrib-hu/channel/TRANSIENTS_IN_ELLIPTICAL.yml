@@ -1,0 +1,16 @@
+channel: TRANSIENTS_IN_ELLIPTICAL
+contact: ampel@desy.de
+active: false
+auto_complete: live
+template: ztf_uw_public
+t0_filter:
+  unit: TransientInEllipticalFilter
+  config:
+    absmag_thresh: -19.5
+    search_radius: 5
+    rb_th: 0.2
+t2_compute:
+  - unit: T2SNCosmo
+    config:
+      model: salt2
+      upper_limits: false
