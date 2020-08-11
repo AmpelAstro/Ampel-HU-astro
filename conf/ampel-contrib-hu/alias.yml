@@ -341,6 +341,13 @@ t3:
     slack_token: ***REMOVED***
     full_photometry: true
     quiet: true
+  slack-mpa:
+    excitement:
+      Low: 10
+      Mid: 100
+      High: 300
+    slack_token: ***REMOVED***
+    slack_channel: '#ampel'
   marshal-ampelbot:
     marshal_auth:
       - AMPELBOT

@@ -33,3 +33,17 @@ t2_compute:
       upper_limits: false
   - unit: T2CatalogMatch
     config: '%T2CatalogMatch_general'
+t3_supervise:
+  template: ztf_periodic_summary
+  schedule: every().day.at('14:30')
+  load:
+    - TRANSIENT
+    - DATAPOINT
+    - col: t2
+      query_complement:
+        unit:
+          $in: [T2SNCosmo, T2CatalogMatch]
+  run:
+    unit: SlackSummaryPublisher
+    config: slack-mpa
+  
