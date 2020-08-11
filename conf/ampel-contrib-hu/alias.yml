@@ -333,12 +333,11 @@ t3:
     slack_channel: '#ampel_alerts'
     full_photometry: true
     quiet: true
-  slack-ztf_public:
+  slack-ztf_general:
     excitement:
       Low: 1
       Mid: 5
       High: 10
     slack_token: ***REMOVED***
-    slack_channel: '#ztf_public'
     full_photometry: true
     quiet: true

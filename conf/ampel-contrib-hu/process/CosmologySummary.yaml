@@ -2,8 +2,8 @@
 # License           : BSD-3-Clause
 # Author            : jNo
 # Date              : 06.03.2020
-# Last Modified Date: 06.03.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# Last Modified Date: 11.08.2020
+# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
 # This channel is meant for ....
 # More details here
@@ -17,31 +17,31 @@ schedule: every().day.at('13:00')
 # mandatory argument
 tier: 3
 
+# select transients modified since last run
+template: ztf_periodic_summary
+
 # Specifies which transients should be loaded
-transients:
-  content:
-    docs: [TRANSIENT, COMPOUND, T2RECORD, PHOTOPOINT, UPPERLIMIT]
-    t2SubSelection: [SNCOSMO, CATALOGMATCH, MARSHALMONITOR, QSOFIT]
-  select:
-    channels:
-      anyOf: [HU_GP_10, HU_GP_59, HU_TNS_MSIP]
-    modified:
-      after:
-        match_type: time_last_run
-        process_name: CosmologySummary
-    with_tags: INST_ZTF
-    without_tags: HAS_ERROR
-  state: $latest
+channel:
+  any_of: [HU_GP_10, HU_GP_59, HU_TNS_MSIP]
+
+# Specifies which documents to load for each transient
+load:
+  - TRANSIENT
+  - COMPOUND
+  - DATAPOINT
+  - col: t2
+    query_complement:
+      unit:
+        $in: [T2SNCosmo, T2CatalogMatch, T2QSOFit]
 
 # Specifies which action should be performed on transients
-tasks:
-- task: CosmoSlack
+run:
   unit: SlackSummaryPublisher
-  config:
+  config: slack-ztf_general
+  override:
+    slack_channel: '#ztf_cosmosne'
     excitement:
-      High: 300
       Low: 10
       Mid: 100
-    full_photometry: true
-    slack_channel: '#ztf_cosmosne'
-    slack_token: ***REMOVED***
+      High: 300
+    quiet: false

@@ -25,6 +25,8 @@ t3_supervise:
     run:
       unit: SlackSummaryPublisher
       config: slack-ampel_alerts
+      override:
+        slack_channel: '#ampel_alerts'
   - name: daily
     schedule:
       - every().day.at('10:00')
@@ -38,5 +40,7 @@ t3_supervise:
             $lt: 0.05
     run:
       unit: SlackSummaryPublisher
-      config: slack-ztf_public
+      config: slack-ztf_general
+      override:
+        slack_channel: '#ztf_public'
 
