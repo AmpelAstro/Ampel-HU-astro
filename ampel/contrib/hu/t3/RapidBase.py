@@ -14,7 +14,7 @@ from astropy.coordinates import SkyCoord
 from astropy.coordinates import Distance
 from ampel.ztf.utils import to_ampel_id, to_ztf_id
 from ampel.abstract.AbsT3Unit import AbsT3Unit
-from ampel.dataclass.JournalUpdate import JournalUpdate
+from ampel.struct.JournalExtra import JournalExtra
 
 
 # get the science records for the catalog match

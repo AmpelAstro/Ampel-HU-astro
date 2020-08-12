@@ -9,7 +9,7 @@
 
 import requests, datetime
 from typing import Dict, List, Any
-from ampel.dataclass.JournalUpdate import JournalUpdate
+from ampel.struct.JournalExtra import JournalExtra
 from ampel.ztf.utils import to_ampel_id, to_ztf_id
 from ampel.contrib.hu.t3.RapidBase import RapidBase
 
@@ -120,7 +120,7 @@ class RapidSedm(RapidBase):
 	]
 
 
-	def post_ini(self, logger, base_config=None, run_config=None, global_info=None):
+	def post_init(self, logger, base_config=None, run_config=None, global_info=None):
 		"""
 		"""
 		self.name = "RapidSedm"
