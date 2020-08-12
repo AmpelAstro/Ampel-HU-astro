@@ -17,7 +17,7 @@ from astropy.time import Time
 from astropy.coordinates import SkyCoord
 
 from ampel.abstract.AbsT3Unit import AbsT3Unit
-from ampel.dataclass.JournalUpdate import JournalUpdate
+from ampel.struct.JournalExtra import JournalExtra
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.ztf.utils import to_ampel_id, to_ztf_id
 
@@ -54,95 +54,84 @@ class TNSTalker(AbsT3Unit):
 	
 	version = 0.1
 	
-	class RunConfig(BaseModel):
-		"""
- 		Necessary class to validate configuration.
-		"""
-		class Config(BaseConfig):
-			"""
-			Raise validation errors if extra fields are present
-			"""
-			allow_extra = False
-			ignore_extra = False
-		
-		# TNS config
-		tns_api_key			: str	= None		# Bot api key frm TNS
-		get_tns_force		: bool	= False		# Check for TNS for names even if internal name is known
-		submit_tns	 		: bool	= True		# Submit candidates passing criteria (False gives you a 'dry run')
-		submit_unless_journal   : bool = False    # Submit all candidates we have a note in the Journal that we submitted this. Overrides the resubmit entries!!
-		resubmit_tns_nonztf	: bool	= True		# Resubmit candidate submitted w/o the same ZTF internal ID 
-		resubmit_tns_ztf	: bool	= False		# Resubmit candidates even if they have been added with this name before
+	# TNS config
+	tns_api_key			: str	= None		# Bot api key frm TNS
+	get_tns_force		: bool	= False		# Check for TNS for names even if internal name is known
+	submit_tns	 		: bool	= True		# Submit candidates passing criteria (False gives you a 'dry run')
+	submit_unless_journal   : bool = False    # Submit all candidates we have a note in the Journal that we submitted this. Overrides the resubmit entries!!
+	resubmit_tns_nonztf	: bool	= True		# Resubmit candidate submitted w/o the same ZTF internal ID 
+	resubmit_tns_ztf	: bool	= False		# Resubmit candidates even if they have been added with this name before
 
-		sandbox				: bool	= True		# Submit to TNS sandbox only
-		ext_journal			: bool	= True		# weather journal will go to separate collection.
-		
-		# AT report config
-		base_at_dict		: Dict = {
-			"reporting_group_id":"48", 
-			"discovery_data_source_id":"48", 
-			"reporter": "J. Nordin, V. Brinnel, M. Giomi, J. van Santen (HU Berlin), A. Gal-Yam, O. Yaron, S. Schulze (Weizmann) on behalf of ZTF",
-			"at_type":"1"
-		}
-		ztf_tns_at			: Dict = {	# Default values to tag ZTF detections / ulims
-										"flux_units":"1",
-										"instrument_value":"196",
-										"exptime":"30",
-										"Observer":"Robot"
-								}
-		baseremark : str = "See arXiv:1904.05922 for selection criteria."
-		max_maglim			: float = 19.5	# Limiting magnitude to consider upper limits as 'significant'
-		nphot_submit		: int	= 2		# Number of photometric detection we include in the TNS AT report
-		
-		# cuts on T2 catalogs
-		needed_catalogs	: List[str]	= []# reject candidates if they don't have matching in this list of T2CATALOGMATCH catalogs
-		require_catalogmatch : bool = True
-		max_redshift	: float	= 1.15	# maximum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
-		min_redshift	: float	= 0		# minimum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
-		start_dist		: float = 1.5 	# arcsec, minimum distance to remove star matches to transient if found (eg in SDSSDR10)
-		max_gaia_neighbour_gmag : float = 11 # reject transient if the GAIA source brighter than this is nearby.
-		
-		# cut on alert properties
-		min_ndet		: int	= 2		# A candidate need to have at least this many detections
-		min_ndet_postul	: int	= 2		# and if it has this minimum nr of detection after the last significant (max_maglim) UL.
-		max_age			: float = 5		# days, If a detection has an age older than this, skip (stars,age).
-		min_age			: float = 0		# Min age of detection history
-		min_peak_mag	: float	= 19.5	# range of peak magnitudes for submission
-		max_peak_mag	: float = 13	#
-		min_n_filters	: int	= 1		# Reported detections in at least this many filters
-		min_gal_lat		: float = 14	# Minimal galactic latitide
-		ssdistnr_max	: float = 1		# reject alert if ssdistnr smaller than this value for any pp
-		ps1_sgveto_rad	: float = 1		# reject alert if PS1 star for any pp
-		ps1_sgveto_sgth	: float = 0.8	# 
-		rb_minmed		: float = 0.3	# Minimal median RB.
-		cut_fastrise  : bool = True   # Try to reject likely CV through rejecting objects that quickly get very bright
-		require_lowerthanlim : bool = True # Require each PP to have a magpsf lower than the diffmaglim
-		
-		
-		# Cut to apply to all the photopoints in the light curve.
-		# This will affect most operations, i.e. evaluating the position, 
-		# computing number of detections ecc.
-		lc_filters		: List[Dict]= [
-										{
-										'attribute': 'sharpnr',
-										'operator': '>=', 
-										'value': -10.15
-										}, 
-										{
-										'attribute': 'programid',
-										'operator': '==', 
-										'value': 1
-										}, 
-										{
-										'attribute': 'magfromlim',
-										'operator': '>',
-										'value': 0
-										}
-									]
-		
-		# parameters for adding remarks to AT reports
-		nuclear_dist	: float = -1.	# Tag objects this close to SDSS galaxies as nuclear. Use negative to disable
-		aav_dist		: float = 1.	# Required distance to match with aav catalog. TODO: move?
-		max_gaia_noise	: float = 2.	# (sigma!) if GAIA match is noisier than this, add a remark
+	sandbox				: bool	= True		# Submit to TNS sandbox only
+	ext_journal			: bool	= True		# weather journal will go to separate collection.
+	
+	# AT report config
+	base_at_dict		: Dict = {
+		"reporting_group_id":"48", 
+		"discovery_data_source_id":"48", 
+		"reporter": "J. Nordin, V. Brinnel, M. Giomi, J. van Santen (HU Berlin), A. Gal-Yam, O. Yaron, S. Schulze (Weizmann) on behalf of ZTF",
+		"at_type":"1"
+	}
+	ztf_tns_at			: Dict = {	# Default values to tag ZTF detections / ulims
+									"flux_units":"1",
+									"instrument_value":"196",
+									"exptime":"30",
+									"Observer":"Robot"
+							}
+	baseremark : str = "See arXiv:1904.05922 for selection criteria."
+	max_maglim			: float = 19.5	# Limiting magnitude to consider upper limits as 'significant'
+	nphot_submit		: int	= 2		# Number of photometric detection we include in the TNS AT report
+	
+	# cuts on T2 catalogs
+	needed_catalogs	: List[str]	= []# reject candidates if they don't have matching in this list of T2CATALOGMATCH catalogs
+	require_catalogmatch : bool = True
+	max_redshift	: float	= 1.15	# maximum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
+	min_redshift	: float	= 0		# minimum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
+	start_dist		: float = 1.5 	# arcsec, minimum distance to remove star matches to transient if found (eg in SDSSDR10)
+	max_gaia_neighbour_gmag : float = 11 # reject transient if the GAIA source brighter than this is nearby.
+	
+	# cut on alert properties
+	min_ndet		: int	= 2		# A candidate need to have at least this many detections
+	min_ndet_postul	: int	= 2		# and if it has this minimum nr of detection after the last significant (max_maglim) UL.
+	max_age			: float = 5		# days, If a detection has an age older than this, skip (stars,age).
+	min_age			: float = 0		# Min age of detection history
+	min_peak_mag	: float	= 19.5	# range of peak magnitudes for submission
+	max_peak_mag	: float = 13	#
+	min_n_filters	: int	= 1		# Reported detections in at least this many filters
+	min_gal_lat		: float = 14	# Minimal galactic latitide
+	ssdistnr_max	: float = 1		# reject alert if ssdistnr smaller than this value for any pp
+	ps1_sgveto_rad	: float = 1		# reject alert if PS1 star for any pp
+	ps1_sgveto_sgth	: float = 0.8	# 
+	rb_minmed		: float = 0.3	# Minimal median RB.
+	cut_fastrise  : bool = True   # Try to reject likely CV through rejecting objects that quickly get very bright
+	require_lowerthanlim : bool = True # Require each PP to have a magpsf lower than the diffmaglim
+	
+	
+	# Cut to apply to all the photopoints in the light curve.
+	# This will affect most operations, i.e. evaluating the position, 
+	# computing number of detections ecc.
+	lc_filters		: List[Dict]= [
+									{
+									'attribute': 'sharpnr',
+									'operator': '>=', 
+									'value': -10.15
+									}, 
+									{
+									'attribute': 'programid',
+									'operator': '==', 
+									'value': 1
+									}, 
+									{
+									'attribute': 'magfromlim',
+									'operator': '>',
+									'value': 0
+									}
+								]
+	
+	# parameters for adding remarks to AT reports
+	nuclear_dist	: float = -1.	# Tag objects this close to SDSS galaxies as nuclear. Use negative to disable
+	aav_dist		: float = 1.	# Required distance to match with aav catalog. TODO: move?
+	max_gaia_noise	: float = 2.	# (sigma!) if GAIA match is noisier than this, add a remark
 
 	def __init__(self, logger, base_config=None, run_config=None, global_info=None):
 		"""
