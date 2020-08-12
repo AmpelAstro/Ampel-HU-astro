@@ -13,7 +13,7 @@ t0_filter:
     min_tspan: -666
     max_tspan: 2
     min_rb: 0.3
-    MIN_DRB: 0.5
+    min_drb: 0.5
     max_fwhm: 4.5
     max_elong: 1.4
     max_magdiff: 1
