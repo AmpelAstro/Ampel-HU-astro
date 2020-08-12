@@ -1,0 +1,26 @@
+name: TNSCompleteSummary
+tier: 3
+template: ztf_periodic_summary
+schedule: every(60).minutes
+channel:
+  any_of:
+    - HU_GP_10
+    - HU_GP_59
+load:
+  - TRANSIENT
+  - DATAPOINT
+  - col: t2
+    query_complement:
+      unit:
+        $in:
+          - T2SNCosmo
+          - T2CatalogMatch
+          - T2QSOFit
+run:
+  unit: TNSTalker
+  config:
+    tns_api_key: ***REMOVED***
+    submit_tns: true
+    sandbox: false
+    max_age: 30
+    needed_catalogs: []
