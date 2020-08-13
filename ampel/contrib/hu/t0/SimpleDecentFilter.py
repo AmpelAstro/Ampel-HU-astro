@@ -110,7 +110,7 @@ class SimpleDecentFilter(AbsAlertFilter[PhotoAlert]):
 		return False
 
 
-	def apply(self, alert):
+	def apply(self, alert: PhotoAlert):
 		"""
 		Mandatory implementation.
 		To exclude the alert, return *None*
@@ -129,7 +129,7 @@ class SimpleDecentFilter(AbsAlertFilter[PhotoAlert]):
 			return None
 
 		# cut on length of detection history
-		detections_jds = alert.get_values('jd', target_upper_limits=False)
+		detections_jds = alert.get_values('jd', data='pps')
 		det_tspan = max(detections_jds) - min(detections_jds)
 		if not (self.min_tspan < det_tspan < self.max_tspan):
 			#self.logger.debug("rejected: detection history is %.3f d long, \
