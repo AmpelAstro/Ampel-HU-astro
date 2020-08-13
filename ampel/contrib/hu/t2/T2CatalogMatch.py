@@ -41,6 +41,11 @@ class T2CatalogMatch(AbsPointT2Unit):
 	Cross matches the position of a transient to those of sources in a set of catalogs
 	"""
 
+	# run only on first datapoint by default
+	# FIXME: this does not distinguish between detections and upper limits, and
+	# so will fail for any transient with upper limits before first detection
+	ingest = {'eligible': 'first'}
+
 	require = 'extcats.reader', 'catsHTM.default'
 	catalogs: Dict[str, CatalogModel]
 
