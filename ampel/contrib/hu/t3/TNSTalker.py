@@ -133,24 +133,6 @@ class TNSTalker(AbsT3Unit):
 	aav_dist		: float = 1.	# Required distance to match with aav catalog. TODO: move?
 	max_gaia_noise	: float = 2.	# (sigma!) if GAIA match is noisier than this, add a remark
 
-	def __init__(self, logger, base_config=None, run_config=None, global_info=None):
-		"""
-		"""
-		
-		self.logger = logger if logger is not None else logging.getLogger()
-		self.base_config = {} if base_config is None else base_config
-		self.run_config = self.RunConfig() if run_config is None else run_config
-		self.name = "TNSTalker"
-		self.logger.info("Initialized T3 TNSTalker instance %s"%self.name)
-		self.logger.info("base_config: %s"%self.base_config)
-		self.logger.info("run_config: %s"%self.run_config)
-		
-#		# TODO: do we want to leave this
-#		if self.api_key is None:
-#			#raise KeyError("No TNS api_key, cannot run.")
-#			self.logger.info("No TNS api_key, using default + sandbox")	
-#			self.api_key = "a3f9bcbbe6a26a1ae97a0eeefe465932e68cba83"
-#			self.sandbox = True
 
 	def search_journal_tns(self, tran_view):
 		"""
