@@ -42,7 +42,7 @@ class TransientInClusterFilter(DecentFilter):
 		# init the catalog query objects
 		self.rassebcs_query = CatalogQuery(
 			"RASSEBCS", ra_key = 'RA', dec_key = 'DEC', logger = self.logger,
-			dbclient = MongoClient(self.resrouce['extcats.reader'])
+			dbclient = MongoClient(self.resource['extcats.reader'])
 		)
 
 
