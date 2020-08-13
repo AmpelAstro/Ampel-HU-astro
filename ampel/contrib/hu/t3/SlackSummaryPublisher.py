@@ -24,7 +24,7 @@ class SlackSummaryPublisher(AbsT3Unit):
     """
     """
 
-    dryRun: bool = False
+    dry_run: bool = False
     quiet: bool = False
     slack_channel: str
     slack_token: Union[str, EncryptedDataModel]
@@ -41,11 +41,12 @@ class SlackSummaryPublisher(AbsT3Unit):
     requireNEDz: bool = False
 
 
-    def post_init(self, context: Optional[Dict[str, Any]]) -> None:
+    def post_init(self) -> None:
         """ """
         self.frames = []
         self.photometry = []
         self.channels = set()
+        assert self.dry_run
 
 
     def add(self, transients):
@@ -59,23 +60,24 @@ class SlackSummaryPublisher(AbsT3Unit):
     def done(self):
         """
         """
-        if len(self.frames) == 0 and self.run_config.quiet:
+        if len(self.frames) == 0 and self.quiet:
             return
 
         date = str(datetime.date.today())
 
-        sc = WebClient(self.run_config.slack_token)
+        sc = WebClient(self.slack_token)
 
         m = calculate_excitement(len(self.frames), date=date,
-            thresholds=self.run_config.excitement
+            thresholds=self.excitement
         )
 
-        if self.run_config.dryRun:
+        if self.dry_run:
+            print(m, self.logger)
             self.logger.info(m)
         else:
             api = sc.api_call(
                 "chat.postMessage",
-                channel=self.run_config.slack_channel,
+                channel=self.slack_channel,
                 text=m,
                 username="AMPEL-live",
                 as_user=False
@@ -99,8 +101,8 @@ class SlackSummaryPublisher(AbsT3Unit):
             df.to_csv(buffer)
 
             param = {
-                'token': self.run_config.slack_token,
-                'channels': self.run_config.slack_channel,
+                'token': self.slack_token,
+                'channels': self.slack_channel,
                 'title': 'Summary: ' + date,
                 "username": "AMPEL-live",
                 "as_user": "false",
@@ -108,7 +110,7 @@ class SlackSummaryPublisher(AbsT3Unit):
 
             }
 
-            if self.run_config.dryRun:
+            if self.dry_run:
                 # log only first two lines
                 csv = buffer.getvalue()
                 idx = 0
@@ -123,7 +125,7 @@ class SlackSummaryPublisher(AbsT3Unit):
                 )
                 self.logger.info(r.text)
 
-            if self.run_config.full_photometry:
+            if self.full_photometry:
                 photometry = pd.concat(self.photometry, sort=False)
                 # Set fill value for channel columns to False
                 for channel in self.channels:
@@ -138,15 +140,15 @@ class SlackSummaryPublisher(AbsT3Unit):
                 photometry.to_csv(buffer)
 
                 param = {
-                    'token': self.run_config.slack_token,
-                    'channels': self.run_config.slack_channel,
+                    'token': self.slack_token,
+                    'channels': self.slack_channel,
                     'title': 'Full Photometry: ' + date,
                     "username": "AMPEL-live",
                     "as_user": "false",
                     "filename": filename
                 }
 
-                if self.run_config.dryRun:
+                if self.dry_run:
                     csv = buffer.getvalue()
                     idx = 0
                     for _ in range(2):
@@ -170,17 +172,18 @@ class SlackSummaryPublisher(AbsT3Unit):
 
         for transient in transients:
 
-            mycols = list(self.run_config.cols)
+            mycols = list(self.cols)
 
-            if not transient.photopoints:
+            if not transient.t0:
                 continue
 
             tdf = pd.DataFrame(
-                [x.content for x in transient.photopoints]
+                [x["body"] for x in transient.t0]
             )
 
+            # NB: photopoint fields like jd, diffmaglim, fid are ZTF (IPAC) specific
             # use tranId from parent view to compute ZTF name
-            tdf['tranId'] = transient.tran_id
+            tdf['tranId'] = transient.id
             tdf['ztf_name'] = tdf['tranId'].apply(to_ztf_id)
             tdf["most_recent_detection"] = max(tdf["jd"])
             tdf["first_detection"] = min(tdf["jd"])
@@ -191,53 +194,48 @@ class SlackSummaryPublisher(AbsT3Unit):
             # It can be discussed whether this is the requested behaviour (see jd>min(tdf["first_detection"]) ) below
             # For example case, look at ZTF19abejaiy
             # Only include "significant" (limit deeper than 19.5)
-            if transient.upperlimits is not None:
+            upper_limits = [pp for pp in transient.t0 if pp['_id'] < 0]
+            if upper_limits is not None:
                 jd_last_nondet = 0
                 mag_last_nondet = 99
                 filter_last_nondet = 99
-                for ulim in transient.upperlimits:
-                    jd = ulim.get_value("obs_date")
+                for ulim in upper_limits:
+                    jd = ulim["body"]["jd"]
                     if jd < jd_last_nondet or jd > min(tdf["first_detection"]):
                         continue
-                    ul = ulim.get_mag_lim()
+                    ul = ulim["body"]["diffmaglim"]
                     if ul < 19.5:
                         continue
                     jd_last_nondet = jd
                     mag_last_nondet = ul
-                    filter_last_nondet = ulim.get_value("filter_id")
+                    filter_last_nondet = ulim["body"]["fid"]
                 if jd_last_nondet > 0:
                     tdf["last_significant_nondet_jd"] = jd_last_nondet
                     tdf["last_significant_nondet_mag"] = mag_last_nondet
                     tdf["last_significant_nondet_fid"] = filter_last_nondet
 
-            try:
-                if transient.t2records is not None:
-                    for j, t2record in enumerate(transient.t2records):
-                        if not t2record.results:
-                            continue
-                        res = (t2record.results[-1])
-                        if "output" not in res:
-                            continue
+            if transient.t2:
+                for j, t2record in enumerate(transient.t2):
+                    if not (output := t2record.get("body", [{}])[-1].get("result")):
+                        continue
 
-                        # Flatten T2 output dictionary
-                        # If this is not a dictionry it will be through
-                        res_flat = flat_dict(res['output'], prefix='T2-')
+                    # Flatten T2 output dictionary
+                    # If this is not a dictionry it will be through
+                    res_flat = flat_dict(output, prefix='T2-')
 
-                        # Add these to the dataframe (could we just join the dictionaries?)
-                        for key, value in res_flat.items():
-                            try:
-                                tdf[key] = str(value)
-                                mycols.append(key)
-                            except ValueError as ve:
-                                self.logger.error(ve)
-            except Exception:
-                pass
+                    # Add these to the dataframe (could we just join the dictionaries?)
+                    for key, value in res_flat.items():
+                        try:
+                            tdf[key] = str(value)
+                            mycols.append(key)
+                        except ValueError as ve:
+                            self.logger.error(ve)
 
-            if self.run_config.requireNEDz:
+            if self.requireNEDz:
                 if "T2-NEDz_z" not in mycols:
                     continue
 
-            for channel in ampel_iter(transient.channel):
+            for channel in ampel_iter(transient.stock["channel"]):
                 tdf[channel] = True
                 self.channels.add(channel)
 
