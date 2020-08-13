@@ -2,7 +2,7 @@ channel: HU_RAPID_SOUTH
 contact: ampel@desy.de
 active: true
 auto_complete: false
-template: ztf_uw_public
+template: ztf_uw_private
 t0_filter:
   unit: XShooterFilter
   config: HU_RAPID

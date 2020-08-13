@@ -2,7 +2,7 @@ channel: OKC_LENSED
 contact: ampel@desy.de
 active: true
 auto_complete: live
-template: ztf_uw_public
+template: ztf_uw_private
 t0_filter:
   unit: LensedTransientFilter
   config:

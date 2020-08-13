@@ -2,7 +2,7 @@ channel: NERSC_TEST
 contact: ampel@desy.de
 active: true
 auto_complete: live
-template: ztf_uw_private
+template: ztf_uw_public
 t0_filter:
   unit: SimpleDecentFilter
   config:

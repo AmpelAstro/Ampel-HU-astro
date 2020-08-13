@@ -2,7 +2,7 @@ channel: HU_GP_CLEAN
 contact: ampel@desy.de
 active: false
 auto_complete: live
-template: ztf_uw_private
+template: ztf_uw_public
 t0_filter:
   unit: DecentFilter
   config:
