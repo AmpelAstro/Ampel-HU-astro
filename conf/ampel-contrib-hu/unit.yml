@@ -25,4 +25,6 @@
 - ampel.contrib.hu.t3.RapidBase
 - ampel.contrib.hu.t3.RapidSedm
 - ampel.contrib.hu.t3.TNSTalker
-- ampel.contrib.hu.t3.TNSMatcher
+- ampel.contrib.hu.t3.TNSMirrorUpdater
+- ampel.contrib.hu.t3.complement.AddTNSNames
+

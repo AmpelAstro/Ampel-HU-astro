@@ -1,0 +1,8 @@
+name: UpdateTNSMirror
+tier: 3
+template: ztf_periodic_summary
+schedule: every().hour
+run:
+  unit: TNSMirrorUpdater
+  config:
+    api_key: a3f9bcbbe6a26a1ae97a0eeefe465932e68cba83
