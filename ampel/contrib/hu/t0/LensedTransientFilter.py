@@ -92,7 +92,7 @@ class LensedTransientFilter(AbsAlertFilter[PhotoAlert]):
 			rs = self.search_radiuses[cat]
 			if catquery.binaryserach(latest["ra"], latest["dec"], rs):
 				self.logger.debug("searching matches in %s within %.2f arcsec" % (cat, rs))
-				return self.on_match_t2_units
+				return True
 
 		self.logger.debug("rejected: alert position did not match any lens in the catalogs.")
 
