@@ -11,11 +11,12 @@ import re
 import logging
 import numpy as np
 from pydantic import BaseModel, BaseConfig
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from astropy.time import Time
 from astropy.coordinates import SkyCoord
 
+from ampel.model.Secret import Secret
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.struct.JournalExtra import JournalExtra
 from ampel.log.AmpelLogger import AmpelLogger
@@ -55,7 +56,7 @@ class TNSTalker(AbsT3Unit):
 	version = 0.1
 	
 	# TNS config
-	tns_api_key			: str	= None		# Bot api key frm TNS
+	tns_api_key			: Optional[Secret] = None		# Bot api key frm TNS
 	get_tns_force		: bool	= False		# Check for TNS for names even if internal name is known
 	submit_tns	 		: bool	= True		# Submit candidates passing criteria (False gives you a 'dry run')
 	submit_unless_journal   : bool = False    # Submit all candidates we have a note in the Journal that we submitted this. Overrides the resubmit entries!!
@@ -132,6 +133,11 @@ class TNSTalker(AbsT3Unit):
 	nuclear_dist	: float = -1.	# Tag objects this close to SDSS galaxies as nuclear. Use negative to disable
 	aav_dist		: float = 1.	# Required distance to match with aav catalog. TODO: move?
 	max_gaia_noise	: float = 2.	# (sigma!) if GAIA match is noisier than this, add a remark
+
+	slack_token: Optional[Secret] = None
+	slack_channel 		= "#ztf_tns"
+	slack_username		= "AMPEL"
+	max_slackmsg_size	= 200	# if you have more than this # of reports, send different files
 
 
 	def search_journal_tns(self, tran_view):
@@ -809,17 +815,12 @@ class TNSTalker(AbsT3Unit):
 		from slackclient import SlackClient
 		from slackclient.exceptions import SlackClientError
 		
-		slack_token		= "***REMOVED***"
-		slack_channel 		= "#ztf_tns"
-		slack_username		= "AMPEL"
-		max_slackmsg_size	= 200	# if you have more than this # of reports, send different files
-		
-		sc = SlackClient(slack_token)
+		sc = SlackClient(self.slack_token.get())
 		
 		tstamp = datetime.datetime.today().strftime("%Y-%m-%d-%X")
 		atlist = list(self.atreports.values())
 		last = 0
-		for ic, atrep in enumerate(chunks(atlist, max_slackmsg_size)):
+		for ic, atrep in enumerate(chunks(atlist, self.max_slackmsg_size)):
 			
 			# add the atreport to a file
 			self.logger.info("Posting chunk #%d"%ic)
@@ -834,10 +835,10 @@ class TNSTalker(AbsT3Unit):
 				(len(self.atreports), ic, first, last))
 			api = sc.api_call(
 					'files.upload',
-					channels = [slack_channel],
+					channels = [self.slack_channel],
 					title = "TNSTalker_%s_chunk%d"%(tstamp, ic),
 					initial_comment = msg,
-					username = slack_username,
+					username = self.slack_username,
 					as_user = False,
 					filename =  filename,
 					filetype = 'javascript',

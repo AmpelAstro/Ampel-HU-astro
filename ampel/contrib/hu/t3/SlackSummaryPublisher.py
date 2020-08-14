@@ -17,7 +17,7 @@ from typing import Dict, List, Union, Optional, Any
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.ztf.utils import to_ampel_id, to_ztf_id
 from ampel.util.collections import ampel_iter
-from ampel.model.EncryptedDataModel import EncryptedDataModel
+from ampel.model.Secret import Secret
 
 
 class SlackSummaryPublisher(AbsT3Unit):
@@ -27,7 +27,7 @@ class SlackSummaryPublisher(AbsT3Unit):
     dry_run: bool = False
     quiet: bool = False
     slack_channel: str
-    slack_token: Union[str, EncryptedDataModel]
+    slack_token: Secret
     excitement: Dict[str, int] = {"Low": 50, "Mid": 200, "High": 400}
     full_photometry: bool = False
     cols: List[str] = [
@@ -65,7 +65,7 @@ class SlackSummaryPublisher(AbsT3Unit):
 
         date = str(datetime.date.today())
 
-        sc = WebClient(self.slack_token)
+        sc = WebClient(self.slack_token.get())
 
         m = calculate_excitement(len(self.frames), date=date,
             thresholds=self.excitement
@@ -101,7 +101,7 @@ class SlackSummaryPublisher(AbsT3Unit):
             df.to_csv(buffer)
 
             param = {
-                'token': self.slack_token,
+                'token': self.slack_token.get(),
                 'channels': self.slack_channel,
                 'title': 'Summary: ' + date,
                 "username": "AMPEL-live",
@@ -140,7 +140,7 @@ class SlackSummaryPublisher(AbsT3Unit):
                 photometry.to_csv(buffer)
 
                 param = {
-                    'token': self.slack_token,
+                    'token': self.slack_token.get(),
                     'channels': self.slack_channel,
                     'title': 'Full Photometry: ' + date,
                     "username": "AMPEL-live",

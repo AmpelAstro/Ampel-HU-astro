@@ -50,8 +50,9 @@ t3_supervise:
             - T2CatalogMatch
   run:
     unit: SlackSummaryPublisher
-    config:
+    config: 
       quiet: true
-      slack_token: ***REMOVED***
+      slack_token:
+        key: slack/ztf_berlin/ToO
       slack_channel: '#too-metachannel'
       full_photometry: true

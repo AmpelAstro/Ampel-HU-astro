@@ -11,7 +11,7 @@ import requests, datetime
 from typing import Dict, List, Any
 from ampel.struct.JournalExtra import JournalExtra
 from ampel.ztf.utils import to_ampel_id, to_ztf_id
-from ampel.contrib.hu.t3.RapidBase import RapidBase
+from ampel.contrib.hu.t3.RapidBase import RapidBase, Secret
 
 
 class RapidSedm(RapidBase):
@@ -21,19 +21,6 @@ class RapidSedm(RapidBase):
 
 	This version reacts by setting a target for SEDM observatoins
 	"""
-
-	# whether journal will go to separate collection
-	ext_journal: bool = True
-
-	# React config
-	do_react: bool			# Unless set, no full reaction will be triggered
-
-	# Test react config
-	do_testreact: bool			# If set, will post trigger to slack
-	slack_token: str = "***REMOVED***"
-	slack_channel: str = "#ztf_auto"
-	slack_username: str = "AMPEL"
-
 
 	# Base SEDM trigger info
 	sedm_url: str = 'http://pharos.caltech.edu/request'
@@ -70,8 +57,8 @@ class RapidSedm(RapidBase):
 		'user_id': 284
 	}
 
-	sedm_username: str = 'jnordin'
-	sedm_password: str = '***REMOVED***'
+	sedm_username: str
+	sedm_password: Secret
 
 	# Cuts based on T2 catalog redshifts
 	require_catalogmatch: bool = True   # Require a redshift max from a T2 output
@@ -152,7 +139,7 @@ class RapidSedm(RapidBase):
 		response = requests.post(
 			self.sedm_url,
 			data=react_dict,
-			auth=(self.sedm_username, self.sedm_password)
+			auth=(self.sedm_username, self.sedm_password.get())
 		)
 
 		# Check result

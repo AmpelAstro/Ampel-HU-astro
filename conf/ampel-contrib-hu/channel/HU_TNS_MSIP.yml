@@ -42,7 +42,8 @@ t3_supervise:
   run:
     unit: TNSTalker
     config:
-      tns_api_key: a3f9bcbbe6a26a1ae97a0eeefe465932e68cba83
+      tns_api_key:
+        key: tns/jnordin
       submit_tns: true
       sandbox: false
       needed_catalogs: []

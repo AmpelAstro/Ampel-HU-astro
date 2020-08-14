@@ -19,7 +19,8 @@ load:
 run:
   unit: TNSTalker
   config:
-    tns_api_key: ***REMOVED***
+    tns_api_key:
+      key: tns/jnordin
     submit_tns: true
     sandbox: false
     max_age: 30

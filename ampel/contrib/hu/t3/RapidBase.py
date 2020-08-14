@@ -15,6 +15,7 @@ from astropy.coordinates import Distance
 from ampel.ztf.utils import to_ampel_id, to_ztf_id
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.struct.JournalExtra import JournalExtra
+from ampel.model.Secret import Secret
 
 
 # get the science records for the catalog match
@@ -41,7 +42,7 @@ class RapidBase(AbsT3Unit):
 
 	# # If set, will post trigger to slack
 	do_testreact: bool
-	slack_token: str = "***REMOVED***"
+	slack_token: Secret
 	slack_channel: str = "#ztf_auto"
 	slack_username: str = "AMPEL"
 
@@ -131,7 +132,7 @@ class RapidBase(AbsT3Unit):
 		from slack.errors import SlackClientError
 
 
-		sc = WebClient(self.slack_token)
+		sc = WebClient(self.slack_token.get())
 		ztf_name = to_ztf_id(tran_view.tran_id)
 		ra, dec = tran_view.get_latest_lightcurve().get_pos(ret="mean", filters=self.lc_filters)
 		msg = "Pancha says: Look up %s at RA %s DEC %s. Added info %s" % (

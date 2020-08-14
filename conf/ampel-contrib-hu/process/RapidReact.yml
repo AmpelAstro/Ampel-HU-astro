@@ -30,6 +30,8 @@ run:
       min_ndet: 1
       min_ndet_postul: 1
       maglim_maxago: 8
+      slack_token:
+        key: slack/ztf_general/jno
   - unit: RapidSedm
     config:
       do_react: true
@@ -38,3 +40,8 @@ run:
         - NEDz
         - NEDz_extcats
         - SDSS_spec
+      sedm_username: jnordin
+      sedm_password:
+        key: sedm/jnordin
+      slack_token:
+        key: slack/ztf_general/jno
