@@ -20,6 +20,7 @@ from numpy import asarray, degrees
 
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.model.StrictModel import StrictModel
+from ampel.model.Secret import Secret
 from ampel.t2.T2RunState import T2RunState
 from ampel.contrib.hu.utils import info_as_debug
 from ampel.contrib.hu import catshtm_server
@@ -45,7 +46,8 @@ class T2CatalogMatch(AbsPointT2Unit):
 	# NB: this assumes that docs are created by DualPointT2Ingester
 	ingest: Dict = {'eligible': {'pps': 'first'}}
 
-	require = 'extcats.reader', 'catsHTM.default'
+	require = 'extcats', 'catsHTM'
+	extcats_auth: Secret = {'key': 'extcats/reader'}
 	catalogs: Dict[str, CatalogModel]
 
 	def post_init(self):
@@ -55,8 +57,11 @@ class T2CatalogMatch(AbsPointT2Unit):
 		self.debug = self.logger.verbose > 1
 
 		# initialize the catsHTM paths and the extcats query client.
-		self.catshtm_client = catshtm_server.get_client(self.resource['catsHTM.default'])
-		self.catq_client = MongoClient(self.resource['extcats.reader'])
+		self.catshtm_client = catshtm_server.get_client(self.resource['catsHTM'])
+		self.catq_client = MongoClient(
+			self.resource['extcats'],
+			**self.extcats_auth.get()
+		)
 		self.catq_kwargs_global = {
 			'logger': info_as_debug(self.logger),
 			'dbclient': self.catq_client,
