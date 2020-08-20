@@ -329,7 +329,8 @@ t3:
       Low: 1
       Mid: 5
       High: 10
-    slack_token: ***REMOVED***
+    slack_token:
+      key: slack/ztf_berlin/jno
     slack_channel: '#ampel_alerts'
     full_photometry: true
     quiet: true
@@ -338,7 +339,8 @@ t3:
       Low: 1
       Mid: 5
       High: 10
-    slack_token: ***REMOVED***
+    slack_token:
+      key: slack/ztf_general/jno
     full_photometry: true
     quiet: true
   slack-mpa:
@@ -346,12 +348,12 @@ t3:
       Low: 10
       Mid: 100
       High: 300
-    slack_token: ***REMOVED***
+    slack_token:
+      key: slack/mpa/jno
     slack_channel: '#ampel'
   marshal-ampelbot:
     marshal_auth:
-      - AMPELBOT
-      - ***REMOVED***
+      key: marshal/ampelbot
     marshal_save: true
     use_candidates: false
     check_avro_ingest: false
