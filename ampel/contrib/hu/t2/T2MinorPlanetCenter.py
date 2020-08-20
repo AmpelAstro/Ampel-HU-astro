@@ -8,56 +8,44 @@
 # Last Modified By  : simeon.reusch@desy.de
 
 
-import logging
-logging.basicConfig()
-import requests
-import numpy as np
-from astropy import units as u
-from astropy.coordinates import SkyCoord
-from astropy import time
-from bs4 import BeautifulSoup
-
-from ampel.ztf.pipeline.common.ZTFUtils import ZTFUtils
-from ampel.base.abstract.AbsT2Unit import AbsT2Unit
-from ampel.core.flags.T2RunStates import T2RunStates
+from typing import Optional, Dict, List, Union, Any
 from pydantic import BaseModel, BaseConfig
 from astropy.time import Time
+from ampel.view.LightCurve import LightCurve
+from ampel.type import T2UnitResult
+from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 
 
-class T2MinorPlanetCenter(AbsT2Unit):
+class T2MinorPlanetCenter(AbsLightCurveT2Unit):
 	"""
-		Check if the *latest* detection of a transient corresponds
-		matches something known by the MinorPlanetCenter.	
-		
+	Check if the *latest* detection of a transient corresponds
+	matches something known by the MinorPlanetCenter.
 	"""
-	
-	version = 0.1
+
 
 	class RunConfig(BaseModel):
-		"""
- 		Necessary class to validate configuration.
-		"""
+		""" Necessary class to validate configuration.  """
 		class Config(BaseConfig):
-			"""
-			Raise validation errors if extra fields are present
-			"""
+			""" Raise validation errors if extra fields are present """
 			allow_extra = False
 			ignore_extra = False
 		
-		# Ampel config
-		only_latest		: bool	= True		# Will only match the latest photopoint.
-		searchradius	: float = 1			# Searchradius passed to MPC (arcminutes!!!)
-		maglim		: float	= 22		# V-band magnitude limit passed to MPC
-		filters			: dict	= None		# Potential filter for photopoint selection
+		# Will only match the latest photopoint.
+		only_latest		: bool	= True		
+		# Search radius passed to MPC (arcminutes!!!)
+		searchradius	: float = 1			
+		# V-band magnitude limit passed to MPC
+		maglim		: float	= 22		
+		# Potential filter for photopoint selection
+		filters: Optional[Union[Dict, List[Dict]]] = None
+
+		# Potential filter for photopoint selection
+		filters: Optional[Union[Dict, List[Dict]]] = None
 
 
-
-	def __init__(self, logger, base_config):
+	def post_init(self):
 		"""
-		"""
-		self.logger = logger if logger is not None else logging.getLogger()
-		self.base_config = {} if base_config is None else base_config
-		
+		"""		
 		self.logger.debug('Initiated T2MinorPlanetCenter ')
 
 
@@ -86,18 +74,22 @@ class T2MinorPlanetCenter(AbsT2Unit):
 						...
 					}
 		"""
-		
-		self.logger.debug('Checking %s'%(light_curve.id))
+
+		self.logger.debug(f'Checking {light_curve.id}')
 
 		run_config = self.RunConfig() if run_config is None else run_config
-		pps = list( light_curve.get_photopoints(filters=run_config.filters) )
+		pps = list(
+			light_curve.get_photopoints(filters=run_config.filters)
+		)
 
-		# Check whether we are running for all or only latest 
+		# Check whether we are running for all or only latest
 		if run_config.only_latest:
-			pps.sort(key=lambda x: x.get_value('obs_date'))
+			pps.sort(key=lambda x: x.body.get('obs_date'))
 			pps = [pps[-1]]
-			self.logger.debug('Restricting to latest PP at %s'%(pps[0].get_value('obs_date')))
-	
+			self.logger.debug(
+				f"Restricting to latest PP at {pps[0].body.get('obs_date')}"
+			)
+
 		# Loop through remaining pps and check with MPC
 		mpc_checks = {}
 		angular_separation_deg = []

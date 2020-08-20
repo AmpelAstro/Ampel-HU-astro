@@ -1,0 +1,34 @@
+channel: NERSC_TEST
+contact: ampel@desy.de
+active: true
+auto_complete: live
+template: ztf_uw_public
+t0_filter:
+  unit: SimpleDecentFilter
+  config:
+    min_ndet: 3
+    min_tspan: 1
+    max_tspan: 666
+    min_rb: 0.3
+    max_fwhm: 5.5
+    max_elong: 1.8
+    max_magdiff: 1
+    max_nbad: 1
+    min_sso_dist: 20
+    min_gal_lat: 14
+    ps1_sgveto_rad: 1
+    ps1_sgveto_th: 0.8
+    ps1_confusion_rad: 3
+    ps1_confusion_sg_tol: 0.1
+t2_compute:
+  - unit: T2SNCosmo
+    config:
+      model: salt2
+      upper_limits: false
+  - unit: T2LCQuality
+    config:
+      filter_ids:
+        - 1
+        - 2
+        - 3
+      exclude_ulims_after: true

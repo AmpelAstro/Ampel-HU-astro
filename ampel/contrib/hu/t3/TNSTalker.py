@@ -11,15 +11,16 @@ import re
 import logging
 import numpy as np
 from pydantic import BaseModel, BaseConfig
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from astropy.time import Time
 from astropy.coordinates import SkyCoord
 
-from ampel.base.abstract.AbsT3Unit import AbsT3Unit
-from ampel.base.dataclass.JournalUpdate import JournalUpdate
-from ampel.pipeline.logging.AmpelLogger import AmpelLogger
-from ampel.ztf.pipeline.common.ZTFUtils import ZTFUtils
+from ampel.model.Secret import Secret
+from ampel.abstract.AbsT3Unit import AbsT3Unit
+from ampel.struct.JournalExtra import JournalExtra
+from ampel.log.AmpelLogger import AmpelLogger
+from ampel.ztf.utils import to_ampel_id, to_ztf_id
 
 from ampel.contrib.hu.t3.ampel_tns import sendTNSreports, get_tnsname, TNSFILTERID, tnsInternal
 
@@ -54,114 +55,90 @@ class TNSTalker(AbsT3Unit):
 	
 	version = 0.1
 	
-	class RunConfig(BaseModel):
-		"""
- 		Necessary class to validate configuration.
-		"""
-		class Config(BaseConfig):
-			"""
-			Raise validation errors if extra fields are present
-			"""
-			allow_extra = False
-			ignore_extra = False
-		
-		# TNS config
-		tns_api_key			: str	= None		# Bot api key frm TNS
-		get_tns_force		: bool	= False		# Check for TNS for names even if internal name is known
-		submit_tns	 		: bool	= True		# Submit candidates passing criteria (False gives you a 'dry run')
-		submit_unless_journal   : bool = False    # Submit all candidates we have a note in the Journal that we submitted this. Overrides the resubmit entries!!
-		resubmit_tns_nonztf	: bool	= True		# Resubmit candidate submitted w/o the same ZTF internal ID 
-		resubmit_tns_ztf	: bool	= False		# Resubmit candidates even if they have been added with this name before
+	# TNS config
+	tns_api_key			: Optional[Secret] = None		# Bot api key frm TNS
+	get_tns_force		: bool	= False		# Check for TNS for names even if internal name is known
+	submit_tns	 		: bool	= True		# Submit candidates passing criteria (False gives you a 'dry run')
+	submit_unless_journal   : bool = False    # Submit all candidates we have a note in the Journal that we submitted this. Overrides the resubmit entries!!
+	resubmit_tns_nonztf	: bool	= True		# Resubmit candidate submitted w/o the same ZTF internal ID 
+	resubmit_tns_ztf	: bool	= False		# Resubmit candidates even if they have been added with this name before
 
-		sandbox				: bool	= True		# Submit to TNS sandbox only
-		ext_journal			: bool	= True		# weather journal will go to separate collection.
-		
-		# AT report config
-		base_at_dict		: Dict = {
-			"reporting_group_id":"48", 
-			"discovery_data_source_id":"48", 
-			"reporter": "J. Nordin, V. Brinnel, M. Giomi, J. van Santen (HU Berlin), A. Gal-Yam, O. Yaron, S. Schulze (Weizmann) on behalf of ZTF",
-			"at_type":"1"
-		}
-		ztf_tns_at			: Dict = {	# Default values to tag ZTF detections / ulims
-										"flux_units":"1",
-										"instrument_value":"196",
-										"exptime":"30",
-										"Observer":"Robot"
-								}
-		baseremark : str = "See arXiv:1904.05922 for selection criteria."
-		max_maglim			: float = 19.5	# Limiting magnitude to consider upper limits as 'significant'
-		nphot_submit		: int	= 2		# Number of photometric detection we include in the TNS AT report
-		
-		# cuts on T2 catalogs
-		needed_catalogs	: List[str]	= []# reject candidates if they don't have matching in this list of T2CATALOGMATCH catalogs
-		require_catalogmatch : bool = True
-		max_redshift	: float	= 1.15	# maximum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
-		min_redshift	: float	= 0		# minimum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
-		start_dist		: float = 1.5 	# arcsec, minimum distance to remove star matches to transient if found (eg in SDSSDR10)
-		max_gaia_neighbour_gmag : float = 11 # reject transient if the GAIA source brighter than this is nearby.
-		
-		# cut on alert properties
-		min_ndet		: int	= 2		# A candidate need to have at least this many detections
-		min_ndet_postul	: int	= 2		# and if it has this minimum nr of detection after the last significant (max_maglim) UL.
-		max_age			: float = 5		# days, If a detection has an age older than this, skip (stars,age).
-		min_age			: float = 0		# Min age of detection history
-		min_peak_mag	: float	= 19.5	# range of peak magnitudes for submission
-		max_peak_mag	: float = 13	#
-		min_n_filters	: int	= 1		# Reported detections in at least this many filters
-		min_gal_lat		: float = 14	# Minimal galactic latitide
-		ssdistnr_max	: float = 1		# reject alert if ssdistnr smaller than this value for any pp
-		ps1_sgveto_rad	: float = 1		# reject alert if PS1 star for any pp
-		ps1_sgveto_sgth	: float = 0.8	# 
-		rb_minmed		: float = 0.3	# Minimal median RB.
-		cut_fastrise  : bool = True   # Try to reject likely CV through rejecting objects that quickly get very bright
-		require_lowerthanlim : bool = True # Require each PP to have a magpsf lower than the diffmaglim
-		
-		
-		# Cut to apply to all the photopoints in the light curve.
-		# This will affect most operations, i.e. evaluating the position, 
-		# computing number of detections ecc.
-		lc_filters		: List[Dict]= [
-										{
-										'attribute': 'sharpnr',
-										'operator': '>=', 
-										'value': -10.15
-										}, 
-										{
-										'attribute': 'programid',
-										'operator': '==', 
-										'value': 1
-										}, 
-										{
-										'attribute': 'magfromlim',
-										'operator': '>',
-										'value': 0
-										}
-									]
-		
-		# parameters for adding remarks to AT reports
-		nuclear_dist	: float = -1.	# Tag objects this close to SDSS galaxies as nuclear. Use negative to disable
-		aav_dist		: float = 1.	# Required distance to match with aav catalog. TODO: move?
-		max_gaia_noise	: float = 2.	# (sigma!) if GAIA match is noisier than this, add a remark
+	sandbox				: bool	= True		# Submit to TNS sandbox only
+	ext_journal			: bool	= True		# weather journal will go to separate collection.
+	
+	# AT report config
+	base_at_dict		: Dict = {
+		"reporting_group_id":"48", 
+		"discovery_data_source_id":"48", 
+		"reporter": "J. Nordin, V. Brinnel, M. Giomi, J. van Santen (HU Berlin), A. Gal-Yam, O. Yaron, S. Schulze (Weizmann) on behalf of ZTF",
+		"at_type":"1"
+	}
+	ztf_tns_at			: Dict = {	# Default values to tag ZTF detections / ulims
+									"flux_units":"1",
+									"instrument_value":"196",
+									"exptime":"30",
+									"Observer":"Robot"
+							}
+	baseremark : str = "See arXiv:1904.05922 for selection criteria."
+	max_maglim			: float = 19.5	# Limiting magnitude to consider upper limits as 'significant'
+	nphot_submit		: int	= 2		# Number of photometric detection we include in the TNS AT report
+	
+	# cuts on T2 catalogs
+	needed_catalogs	: List[str]	= []# reject candidates if they don't have matching in this list of T2CATALOGMATCH catalogs
+	require_catalogmatch : bool = True
+	max_redshift	: float	= 1.15	# maximum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
+	min_redshift	: float	= 0		# minimum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
+	start_dist		: float = 1.5 	# arcsec, minimum distance to remove star matches to transient if found (eg in SDSSDR10)
+	max_gaia_neighbour_gmag : float = 11 # reject transient if the GAIA source brighter than this is nearby.
+	
+	# cut on alert properties
+	min_ndet		: int	= 2		# A candidate need to have at least this many detections
+	min_ndet_postul	: int	= 2		# and if it has this minimum nr of detection after the last significant (max_maglim) UL.
+	max_age			: float = 5		# days, If a detection has an age older than this, skip (stars,age).
+	min_age			: float = 0		# Min age of detection history
+	min_peak_mag	: float	= 19.5	# range of peak magnitudes for submission
+	max_peak_mag	: float = 13	#
+	min_n_filters	: int	= 1		# Reported detections in at least this many filters
+	min_gal_lat		: float = 14	# Minimal galactic latitide
+	ssdistnr_max	: float = 1		# reject alert if ssdistnr smaller than this value for any pp
+	ps1_sgveto_rad	: float = 1		# reject alert if PS1 star for any pp
+	ps1_sgveto_sgth	: float = 0.8	# 
+	rb_minmed		: float = 0.3	# Minimal median RB.
+	cut_fastrise  : bool = True   # Try to reject likely CV through rejecting objects that quickly get very bright
+	require_lowerthanlim : bool = True # Require each PP to have a magpsf lower than the diffmaglim
+	
+	
+	# Cut to apply to all the photopoints in the light curve.
+	# This will affect most operations, i.e. evaluating the position, 
+	# computing number of detections ecc.
+	lc_filters		: List[Dict]= [
+									{
+									'attribute': 'sharpnr',
+									'operator': '>=', 
+									'value': -10.15
+									}, 
+									{
+									'attribute': 'programid',
+									'operator': '==', 
+									'value': 1
+									}, 
+									{
+									'attribute': 'magfromlim',
+									'operator': '>',
+									'value': 0
+									}
+								]
+	
+	# parameters for adding remarks to AT reports
+	nuclear_dist	: float = -1.	# Tag objects this close to SDSS galaxies as nuclear. Use negative to disable
+	aav_dist		: float = 1.	# Required distance to match with aav catalog. TODO: move?
+	max_gaia_noise	: float = 2.	# (sigma!) if GAIA match is noisier than this, add a remark
 
-	def __init__(self, logger, base_config=None, run_config=None, global_info=None):
-		"""
-		"""
-		
-		self.logger = logger if logger is not None else logging.getLogger()
-		self.base_config = {} if base_config is None else base_config
-		self.run_config = self.RunConfig() if run_config is None else run_config
-		self.name = "TNSTalker"
-		self.logger.info("Initialized T3 TNSTalker instance %s"%self.name)
-		self.logger.info("base_config: %s"%self.base_config)
-		self.logger.info("run_config: %s"%self.run_config)
-		
-#		# TODO: do we want to leave this
-#		if self.api_key is None:
-#			#raise KeyError("No TNS api_key, cannot run.")
-#			self.logger.info("No TNS api_key, using default + sandbox")	
-#			self.api_key = "a3f9bcbbe6a26a1ae97a0eeefe465932e68cba83"
-#			self.sandbox = True
+	slack_token: Optional[Secret] = None
+	slack_channel 		= "#ztf_tns"
+	slack_username		= "AMPEL"
+	max_slackmsg_size	= 200	# if you have more than this # of reports, send different files
+
 
 	def search_journal_tns(self, tran_view):
 		"""
@@ -229,7 +206,7 @@ class TNSTalker(AbsT3Unit):
 			tns_name = re.sub('^SN','',tns_name)
 		
 		# be nice and then go
-		ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
+		ztf_name = to_ztf_id(tran_view.tran_id)
 		self.logger.info(
 			"looking for TNS name in the TNS.",
 			extra={
@@ -272,7 +249,7 @@ class TNSTalker(AbsT3Unit):
 
 
 		# be nice with the logging
-		ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
+		ztf_name = to_ztf_id(tran_view.tran_id)
 		self.logger.info(
 			"looked for TNS name in self.tran_names",
 			extra={
@@ -297,7 +274,7 @@ class TNSTalker(AbsT3Unit):
 				tns_name, tns_internals, jup: tns_name, tns_internal, and journal update
 		"""
 		
-		ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
+		ztf_name = to_ztf_id(tran_view.tran_id)
 		self.logger.info("looking for TNS name", extra={'ZTFname': ztf_name})
 		
 		# first we look in the journal, this is the cheapest option. If we have 
@@ -607,7 +584,7 @@ class TNSTalker(AbsT3Unit):
 		"""
 		
 		self.logger.info("creating AT report for transient.")
-		ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
+		ztf_name = to_ztf_id(tran_view.tran_id)
 		lc = tran_view.get_latest_lightcurve()
 		ra, dec = lc.get_pos(ret="mean", filters=self.run_config.lc_filters)
 		
@@ -683,7 +660,7 @@ class TNSTalker(AbsT3Unit):
 			(len(transients), len(transients_to_submit)))
 
 		# Hack to save these for test
-		#import ampel.utils.json_serialization as ampel_serialization
+		#import ampel.util.json as ampel_serialization
 		#fh = open("/home/jnordin/tmp/t3TransientTalker_testsubmitTV.json","w")
 		#for tv in transients_to_submit:
 		#    fh.write('%s'%(ampel_serialization.AmpelEncoder(lossy=True).encode(tv)))
@@ -696,7 +673,7 @@ class TNSTalker(AbsT3Unit):
 		atreports = {}			# Reports to be sent, indexed by the transient view IDs (so that we can check in the replies)
 		for tran_view in transients_to_submit:
 			
-			ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
+			ztf_name = to_ztf_id(tran_view.tran_id)
 			self.logger.info("TNS check", extra={"tranId":tran_view.tran_id, 'ztfName': ztf_name})
 			self.logger.debug("TNS check for %s"%(ztf_name))
 			
@@ -800,7 +777,7 @@ class TNSTalker(AbsT3Unit):
 		
 		# Now go and check and create journal updates for the cases where SN was added
 		for tran_id in atreports.keys():
-			ztf_name = ZTFUtils.to_ztf_id(tran_id)
+			ztf_name = to_ztf_id(tran_id)
 			if not ztf_name in tnsreplies.keys():
 				self.logger.info("No TNS add reply",extra={"tranId":tran_id})
 				continue
@@ -838,17 +815,12 @@ class TNSTalker(AbsT3Unit):
 		from slackclient import SlackClient
 		from slackclient.exceptions import SlackClientError
 		
-		slack_token		= "***REMOVED***"
-		slack_channel 		= "#ztf_tns"
-		slack_username		= "AMPEL"
-		max_slackmsg_size	= 200	# if you have more than this # of reports, send different files
-		
-		sc = SlackClient(slack_token)
+		sc = SlackClient(self.slack_token.get())
 		
 		tstamp = datetime.datetime.today().strftime("%Y-%m-%d-%X")
 		atlist = list(self.atreports.values())
 		last = 0
-		for ic, atrep in enumerate(chunks(atlist, max_slackmsg_size)):
+		for ic, atrep in enumerate(chunks(atlist, self.max_slackmsg_size)):
 			
 			# add the atreport to a file
 			self.logger.info("Posting chunk #%d"%ic)
@@ -863,10 +835,10 @@ class TNSTalker(AbsT3Unit):
 				(len(self.atreports), ic, first, last))
 			api = sc.api_call(
 					'files.upload',
-					channels = [slack_channel],
+					channels = [self.slack_channel],
 					title = "TNSTalker_%s_chunk%d"%(tstamp, ic),
 					initial_comment = msg,
-					username = slack_username,
+					username = self.slack_username,
 					as_user = False,
 					filename =  filename,
 					filetype = 'javascript',

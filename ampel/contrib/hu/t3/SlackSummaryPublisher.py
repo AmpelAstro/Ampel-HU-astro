@@ -10,48 +10,44 @@
 import pandas as pd
 import numpy as np
 import collections
-import io, pickle, datetime, requests
-from slackclient import SlackClient
-from slackclient.exceptions import SlackClientError
-from pydantic import BaseModel
-from typing import Dict, List, Union
-from ampel.base.abstract.AbsT3Unit import AbsT3Unit
-from ampel.ztf.pipeline.common.ZTFUtils import ZTFUtils
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.logging.AmpelLogger import AmpelLogger
-from ampel.pipeline.config.EncryptedConfig import EncryptedConfig
+import io, datetime, requests
+from slack import WebClient
+from slack.errors import SlackClientError
+from typing import Dict, List, Union, Optional, Any
+from ampel.abstract.AbsT3Unit import AbsT3Unit
+from ampel.ztf.utils import to_ampel_id, to_ztf_id
+from ampel.util.collections import ampel_iter
+from ampel.model.Secret import Secret
+
 
 class SlackSummaryPublisher(AbsT3Unit):
     """
     """
 
-    class RunConfig(BaseModel):
-        class Config:
-            ignore_extra = False
-        dryRun: bool = False
-        quiet: bool = False
-        slackChannel: str 
-        slackToken: Union[str, EncryptedConfig] 
-        excitement: Dict[str, int] = {"Low": 50,"Mid": 200,"High": 400}
-        fullPhotometry: bool = False
-        cols: List[str] = [
-            "ztf_name","ra","dec","magpsf","sgscore1","rb", "last_significant_nondet", "first_detection",
-            "most_recent_detection","n_detections",
-            "distnr","distpsnr1","isdiffpos","_id"
-            ]
-        requireNoAGN: bool = False
-        requireNoSDSStar: bool = False
-        requireNEDz: bool = False
+    dry_run: bool = False
+    quiet: bool = False
+    slack_channel: str
+    slack_token: Secret
+    excitement: Dict[str, int] = {"Low": 50, "Mid": 200, "High": 400}
+    full_photometry: bool = False
+    cols: List[str] = [
+        "ztf_name", "ra", "dec", "magpsf", "sgscore1", "rb",
+        "last_significant_nondet", "first_detection",
+        "most_recent_detection", "n_detections",
+        "distnr", "distpsnr1", "isdiffpos", "_id"
+    ]
+    requireNoAGN: bool = False
+    requireNoSDSStar: bool = False
+    requireNEDz: bool = False
 
 
-    def __init__(self, logger, base_config=None, run_config=None, global_info=None):
-        """
-        """
-        self.logger = AmpelLogger.get_logger() if logger is None else logger
-        self.run_config = run_config
+    def post_init(self) -> None:
+        """ """
         self.frames = []
         self.photometry = []
         self.channels = set()
+        assert self.dry_run
+
 
     def add(self, transients):
         """
@@ -64,23 +60,24 @@ class SlackSummaryPublisher(AbsT3Unit):
     def done(self):
         """
         """
-        if len(self.frames) == 0 and self.run_config.quiet:
+        if len(self.frames) == 0 and self.quiet:
             return
-   
+
         date = str(datetime.date.today())
 
-        sc = SlackClient(self.run_config.slackToken)
+        sc = WebClient(self.slack_token.get())
 
         m = calculate_excitement(len(self.frames), date=date,
-            thresholds=self.run_config.excitement
+            thresholds=self.excitement
         )
-        
-        if self.run_config.dryRun:
+
+        if self.dry_run:
+            print(m, self.logger)
             self.logger.info(m)
         else:
             api = sc.api_call(
                 "chat.postMessage",
-                channel=self.run_config.slackChannel,
+                channel=self.slack_channel,
                 text=m,
                 username="AMPEL-live",
                 as_user=False
@@ -104,8 +101,8 @@ class SlackSummaryPublisher(AbsT3Unit):
             df.to_csv(buffer)
 
             param = {
-                'token': self.run_config.slackToken,
-                'channels': self.run_config.slackChannel,
+                'token': self.slack_token.get(),
+                'channels': self.slack_channel,
                 'title': 'Summary: ' + date,
                 "username": "AMPEL-live",
                 "as_user": "false",
@@ -113,13 +110,13 @@ class SlackSummaryPublisher(AbsT3Unit):
 
             }
 
-            if self.run_config.dryRun:
+            if self.dry_run:
                 # log only first two lines
                 csv = buffer.getvalue()
                 idx = 0
                 for _ in range(2):
-                    idx = csv.find('\n',idx)+1
-                self.logger.info({"files": {"file": csv[:idx]+'...'}, **param})
+                    idx = csv.find('\n', idx) + 1
+                self.logger.info({"files": {"file": csv[:idx] + '...'}, **param})
             else:
                 r = requests.post(
                     "https://slack.com/api/files.upload",
@@ -128,7 +125,7 @@ class SlackSummaryPublisher(AbsT3Unit):
                 )
                 self.logger.info(r.text)
 
-            if self.run_config.fullPhotometry:
+            if self.full_photometry:
                 photometry = pd.concat(self.photometry, sort=False)
                 # Set fill value for channel columns to False
                 for channel in self.channels:
@@ -143,20 +140,20 @@ class SlackSummaryPublisher(AbsT3Unit):
                 photometry.to_csv(buffer)
 
                 param = {
-                    'token': self.run_config.slackToken,
-                    'channels': self.run_config.slackChannel,
+                    'token': self.slack_token.get(),
+                    'channels': self.slack_channel,
                     'title': 'Full Photometry: ' + date,
                     "username": "AMPEL-live",
                     "as_user": "false",
                     "filename": filename
                 }
 
-                if self.run_config.dryRun:
+                if self.dry_run:
                     csv = buffer.getvalue()
                     idx = 0
                     for _ in range(2):
-                        idx = csv.find('\n',idx)+1
-                    self.logger.info({"files": {"file": csv[:idx]+'...'}, **param})
+                        idx = csv.find('\n', idx) + 1
+                    self.logger.info({"files": {"file": csv[:idx] + '...'}, **param})
                 else:
                     r = requests.post(
                         "https://slack.com/api/files.upload",
@@ -175,18 +172,19 @@ class SlackSummaryPublisher(AbsT3Unit):
 
         for transient in transients:
 
-            mycols = list(self.run_config.cols)
+            mycols = list(self.cols)
 
-            if not transient.photopoints:
+            if not transient.t0:
                 continue
 
             tdf = pd.DataFrame(
-                [x.content for x in transient.photopoints]
+                [x["body"] for x in transient.t0]
             )
 
+            # NB: photopoint fields like jd, diffmaglim, fid are ZTF (IPAC) specific
             # use tranId from parent view to compute ZTF name
-            tdf['tranId'] = transient.tran_id
-            tdf['ztf_name'] = tdf['tranId'].apply(ZTFUtils.to_ztf_id)
+            tdf['tranId'] = transient.id
+            tdf['ztf_name'] = tdf['tranId'].apply(to_ztf_id)
             tdf["most_recent_detection"] = max(tdf["jd"])
             tdf["first_detection"] = min(tdf["jd"])
             tdf["n_detections"] = len(tdf["jd"])
@@ -194,59 +192,52 @@ class SlackSummaryPublisher(AbsT3Unit):
                 tdf["max_drb"] = max(tdf["drb"])
             
             # Parse upper limits if present for the last upper limit prior to detection
-	    # As is, an upper limit between two detections (so after the first) will not reset this clock
+            # As is, an upper limit between two detections (so after the first) will not reset this clock
             # It can be discussed whether this is the requested behaviour (see jd>min(tdf["first_detection"]) ) below
             # For example case, look at ZTF19abejaiy
             # Only include "significant" (limit deeper than 19.5)
-            if transient.upperlimits is not None:
+            upper_limits = [pp for pp in transient.t0 if pp['_id'] < 0]
+            if upper_limits is not None:
                 jd_last_nondet = 0
                 mag_last_nondet = 99
                 filter_last_nondet = 99
-                for ulim in transient.upperlimits:
-                    jd = ulim.get_value("obs_date")
-                    if jd<jd_last_nondet or jd>min(tdf["first_detection"]):
+                for ulim in upper_limits:
+                    jd = ulim["body"]["jd"]
+                    if jd < jd_last_nondet or jd > min(tdf["first_detection"]):
                         continue
-                    ul = ulim.get_mag_lim()
-                    if ul<19.5:
+                    ul = ulim["body"]["diffmaglim"]
+                    if ul < 19.5:
                         continue
                     jd_last_nondet = jd
                     mag_last_nondet = ul
-                    filter_last_nondet = ulim.get_value("filter_id")
-                if jd_last_nondet>0:
+                    filter_last_nondet = ulim["body"]["fid"]
+                if jd_last_nondet > 0:
                     tdf["last_significant_nondet_jd"] = jd_last_nondet
                     tdf["last_significant_nondet_mag"] = mag_last_nondet
                     tdf["last_significant_nondet_fid"] = filter_last_nondet
 
+            if transient.t2:
+                for j, t2record in enumerate(transient.t2):
+                    if not (output := t2record.get("body", [{}])[-1].get("result")):
+                        continue
 
-            
-            try:
-                if transient.t2records is not None:
-                    for j, t2record in enumerate(transient.t2records):
-                        if not t2record.results:
-                            continue
-                        res = (t2record.results[-1])
-                        if not "output" in res:
-                            continue
+                    # Flatten T2 output dictionary
+                    # If this is not a dictionry it will be through
+                    res_flat = flat_dict(output, prefix='T2-')
 
-                        # Flatten T2 output dictionary
-                        # If this is not a dictionry it will be through
-                        res_flat = flat_dict(res['output'],prefix='T2-')
+                    # Add these to the dataframe (could we just join the dictionaries?)
+                    for key, value in res_flat.items():
+                        try:
+                            tdf[key] = str(value)
+                            mycols.append(key)
+                        except ValueError as ve:
+                            self.logger.error(ve)
 
-                        # Add these to the dataframe (could we just join the dictionaries?)                        
-                        for key, value in res_flat.items():
-                            try:
-                                tdf[key] = str(value)
-                                mycols.append(key)
-                            except ValueError as ve:
-                                self.logger.error(ve)
-            except:
-                pass
-
-            if self.run_config.requireNEDz:
-                if not "T2-NEDz_z" in mycols:
+            if self.requireNEDz:
+                if "T2-NEDz_z" not in mycols:
                     continue
 
-            for channel in AmpelUtils.iter(transient.channel):
+            for channel in ampel_iter(transient.stock["channel"]):
                 tdf[channel] = True
                 self.channels.add(channel)
 
@@ -254,7 +245,7 @@ class SlackSummaryPublisher(AbsT3Unit):
             missing = set(mycols).difference(tdf.columns.values)
 
             # deduplicate mycols, preserving order
-            mycols = list(dict.fromkeys([x for x in mycols if not x in missing]))
+            mycols = list(dict.fromkeys([x for x in mycols if x not in missing]))
             # remove stupid columns and save to table
             frames.append(tdf[mycols][:1])
             photometry.append(tdf)
@@ -329,16 +320,15 @@ def flat_dict(d, prefix = ''):
     Recurse if encountered value is a nested dictionary.
     '''
 
-    
-    if not isinstance(d,collections.Mapping):
+    if not isinstance(d, collections.Mapping):
         return d
-    
+
     ret = {}
 
     for key, val in d.items():
         if isinstance(val, collections.Mapping):
-            ret = {**ret, **flat_dict(val, prefix = prefix+str(key)+'_') }
+            ret = {**ret, **flat_dict(val, prefix = prefix + str(key) + '_')}
         else:
-            ret[ prefix+str(key) ] = val
+            ret[prefix + str(key)] = val
 
     return ret

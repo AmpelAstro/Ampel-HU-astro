@@ -1,99 +1,83 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t3/TransientInfoPrinter.py
+# File              : Ampel-contrib-HU/ampel/contrib/hu/t3/TransientInfoPrinter.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 11.06.2018
-# Last Modified Date: 12.02.2019
-# Last Modified By  : mg <matteo.giomi@desy.de>
+# Last Modified Date: 10.06.2020
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging
-from pydantic import BaseModel
-from ampel.base.TransientView import TransientView
-from ampel.base.abstract.AbsT3Unit import AbsT3Unit
+from typing import Optional, Tuple, Any
+from ampel.type import T3AddResult
+from ampel.view.TransientView import TransientView
+from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
 
-class TransientInfoPrinter(AbsT3Unit):
-	"""
-	"""
-	
-	class RunConfig(BaseModel):
-		"""
-		"""
-		logfile		: str = None	# logging (INFO and onwards) goes to this file.
-	
-	def __init__(self, logger, base_config=None, run_config=None, global_info=None):
-		"""
-		"""
-		self.logger = logger
+class TransientInfoPrinter(AbsPhotoT3Unit):
+
+	logfile: Optional[str]	# logging (INFO and onwards) goes to this file.
+
+	def post_init(self) -> None:
+
 		self.count = 0
-		
-		# add logging to file if so configured
-		logfile = None if run_config is None else run_config.logfile
-		if not logfile is None:
-			fh = logging.FileHandler(logfile)
+
+		# log to file if so configured
+		if self.logfile:
+			fh = logging.FileHandler(self.logfile)
 			fh.setLevel(logging.INFO)
-			self.logger.addHandler(fh)
-			self.logger.info("added logging handle to: %s"%logfile)
-			
-		if global_info is not None:
-			self.logger.info(
-				"Provided global info: %s" % 
-				global_info
-			)
+			self.logger.add_handler(fh)
+			self.logger.info("Added logging handle to: {logfile}")
 
-	def add(self, transients):
-		"""
-		"""
-		if transients is None:
+		if self.context:
+			self.logger.info(f"Context: {self.context}")
+
+
+	def add(self, transients: Tuple[TransientView, ...]) -> T3AddResult:
+
+		if not transients:
 			self.logger.info("No transient provided")
-			return
+			return None
 
-		self.logger.info(
-			"Printing info of %i transient(s)" % 
-			len(transients)
-		)
-
+		self.logger.info(f"Printing info of {len(transients)} transient(s)")
 		self.count += len(transients)
 
-		ret=[]
 		for tran_view in transients:
 			TransientInfoPrinter._print_info(tran_view, self.logger)
 
-		return ret
+		return None
 
 
 	def done(self):
-		"""
-		"""
-		self.logger.info(
-			"Total number of transient printed: %i" % 
-			self.count
-		)
+		self.logger.info(f"Total number of transient printed: {self.count}")
 
 
 	@staticmethod
-	def _print_info(tran, logger):
-		""" 
-		"""
-		logger.info("Ampel ID: %i" % tran.tran_id)
+	def _print_info(tran: TransientView, logger: Any):
 
-		logger.info("Transient names: %s" % tran.tran_names)
+		logger.info(f"Ampel ID: {tran.id}") # type: ignore
+		if tran.extra and 'name' in tran.extra:
+			logger.info(f"Transient names: {tran.extra['name']}")
 
-		if tran.channel is not None:
-			logger.info("Channel: %s" % str(tran.channel))
+		if tran.stock:
+			logger.info(f"Channel: {tran.stock['channel']}")
 
-		created = tran.get_time_created(True)
-		modified = tran.get_time_modified(True)
+		print(tran.stock)
+		created = tran.get_time_created()
+		modified = tran.get_time_modified()
 
 		logger.info("Created: %s" % (created if created is not None else 'Not available'))
 		logger.info("Modified: %s" % (modified if modified is not None else 'Not available'))
-		logger.info("Flags: %s" % (tran.flags if tran.flags is not None else "Not set"))
-		logger.info("Latest state: %s" % (
-			tran.latest_state.hex() if tran.latest_state is not None else "Not set"
-		))
+
+		if tran.stock:
+			logger.info(f"Tags: {tran.stock['tag']}")
+
 		logger.info("Content: %s" % TransientView.content_summary(tran))
 
-		# should be timely sorted
-		logger.info("Journal:")
-		for el in tran.journal: 
-			logger.info(str(el))
+		if tran.extra:
+			logger.info(f"Extra: {tran.extra}")
+
+		if tran.stock:
+			# should be timely sorted
+			logger.info("Journal:")
+			for el in tran.stock['journal']:
+				logger.info(str(el))

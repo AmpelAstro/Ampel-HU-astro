@@ -29,9 +29,9 @@ def test_slacksummary(t3_transient_views, mocker):
 			"Mid": 200,
 			"High": 400
 		},
-		"slackToken": "xoxoxox",
-		"slackChannel": "#ampel-live",
-		"fullPhotometry": True
+		"slack_token": "xoxoxox",
+		"slack_channel": "#ampel-live",
+		"full_photometry": True
 	})
 	
 	assert len(t3_transient_views) < run_config.excitement['Low'], 'Small number passed'
@@ -59,7 +59,7 @@ def test_slacksummary(t3_transient_views, mocker):
 		rows = list(reader)
 
 	# verify that T2 information is in summary
-	t2s = set(t2.t2_unit_id for tv in t3_transient_views for t2 in tv.t2records)
+	t2s = set(t2.t2_class_name for tv in t3_transient_views for t2 in tv.t2records)
 	assert len(t2s) > 0
 
 	# Verify that nested t2 results were extrected

@@ -1,0 +1,81 @@
+name: RapidReact
+tier: 3
+template: ztf_periodic_summary
+schedule: every(10).minutes
+channel:
+  any_of:
+    - HU_RAPID_SOUTH
+    - HU_RAPID_UL
+    - HU_RAPID
+    - HU_RAPID_SINGLE
+    - HU_GP_16
+load:
+  - TRANSIENT
+  - DATAPOINT
+  - col: t2
+    query_complement:
+      unit: T2CatalogMatch
+run:
+  - unit: RapidBase
+    config:
+      do_react: false
+      do_testreact: true
+      redshift_catalogs:
+        - NEDz
+        - NEDz_extcats
+        - SDSS_spec
+      min_peak_mag: 20.0
+      max_age: 3.0
+      max_redshift: 0.1
+      min_ndet: 1
+      min_ndet_postul: 1
+      maglim_maxago: 3.5
+      max_dist: 50
+      min_absmag: -20
+      max_absmag: -12
+      drb_minmed: 0.9
+      slack_token:
+        key: slack/ztf_general/jno
+  - unit: RapidSedm
+    config:
+      do_react: true
+      do_testreact: true
+      redshift_catalogs:
+        - NEDz
+        - NEDz_extcats
+        - SDSS_spec
+      min_peak_mag: 19.25
+      max_age: 1.0
+      max_redshift: 0.05
+      min_ndet: 1
+      min_ndet_postul: 1
+      maglim_maxago: 1.5
+      max_dist: 30
+      max_kpc_dist: 40
+      min_absmag: -17
+      max_absmag: -13
+      drb_minmed: 0.995
+      sedm_username: jnordin
+      sedm_password:
+        key: sedm/jnordin
+      slack_token:
+        key: slack/ztf_general/jno
+  - unit: RapidLco
+    config:
+      do_react: true
+      do_testreact: true
+      redshift_catalogs:
+        - NEDz
+        - NEDz_extcats
+        - SDSS_spec
+      min_peak_mag: 19.75
+      max_age: 1.0
+      max_redshift: 0.05
+      min_ndet: 1
+      min_ndet_postul: 1
+      maglim_maxago: 1.5
+      max_kpc_dist: 40
+      max_dist: 30
+      min_absmag: -17
+      max_absmag: -13
+      drb_minmed: 0.995

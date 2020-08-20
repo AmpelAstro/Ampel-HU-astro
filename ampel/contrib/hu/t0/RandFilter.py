@@ -1,39 +1,30 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t0/RandFilter.py
+# File              : Ampel-contrib-HU/ampel/contrib/hu/t0/RandFilter.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 14.11.2018
+# Last Modified Date: 08.03.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-
-from ampel.base.abstract.AbsAlertFilter import AbsAlertFilter
 from random import uniform
-
-class RandFilter(AbsAlertFilter):
-
-	def __init__(self, on_match_t2_units, base_config=None, run_config=None, logger=None):
-		"""
-		"""
-		self.on_match_default_t2_units = on_match_t2_units
-
-		if run_config is None:
-			raise ValueError("run config required (threshold defined there)")
-
-		self.passing_rate = run_config['passingRate']
-
-		if logger is not None:
-			logger.info("RandFilter with passing rate {}".format(self.passing_rate))
-			self.logger = logger
+from typing import Any
+from ampel.abstract.AbsAlertFilter import AbsAlertFilter
 
 
-	def apply(self, ampel_alert):
-		"""
-		"""
+class RandFilter(AbsAlertFilter[Any]):
 
-		rv = uniform(0,1)
-		if rv < self.passing_rate:
-			return self.on_match_default_t2_units
-		else:
-			return None
+	version: float = 1.0
+	passing_rate: float
+
+
+	def post_init(self):
+		self.logger.info(f"RandFilter initialized with passing rate {self.passing_rate}")
+
+
+	def apply(self, alert: Any) -> bool:
+
+		if uniform(0, 1) < self.passing_rate:
+			return True
+
+		return False

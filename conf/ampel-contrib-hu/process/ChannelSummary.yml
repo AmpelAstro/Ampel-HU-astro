@@ -1,0 +1,32 @@
+name: ChannelSummary
+tier: 3
+schedule:
+  - every().day.at('15:00')
+processor:
+  unit: T3Processor
+  config:
+    process_name: ChannelSummary
+    directives:
+      - select:
+          unit: T3StockSelector
+          config:
+            modified:
+              after:
+                match_type: time_last_run
+                process_name: ChannelSummary
+              before:
+                match_type: time_delta
+            tag:
+              with: ZTF
+              without: HAS_ERROR
+        load:
+          unit: T3LatestStateDataLoader
+          config:
+            directives:
+              - TRANSIENT
+              - COMPOUND
+        run:
+          unit: T3DynamicUnitRunner
+          config:
+            execute:
+              - unit: ChannelSummaryPublisher

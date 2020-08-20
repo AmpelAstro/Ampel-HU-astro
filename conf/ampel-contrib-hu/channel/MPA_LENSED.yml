@@ -1,0 +1,42 @@
+channel: MPA_LENSED
+contact: ampel@desy.de
+active: true
+auto_complete: false
+template: ztf_uw_public
+t0_filter:
+  unit: MPALensFilter
+  config:
+    MIN_NDET: 1
+    MIN_DRB: 0.95
+    MIN_DIST_TO_SSO: -1
+    MIN_GAL_LAT: -1
+    LensSearchRadius: 10
+t2_compute:
+  - unit: T2SNCosmo
+    config:
+      model: salt2
+      upper_limits: false
+  - unit: T2CatalogMatch
+    config:
+      catalogs:
+        MPAlensing:
+          use: extcats
+          catq_kwargs:
+            ra_key: ra
+            dec_key: dec
+          rs_arcsec: 10
+          keys_to_append:
+            - system_name
+t3_supervise:
+  template: ztf_periodic_summary
+  schedule: every().day.at('15:45')
+  load:
+    - TRANSIENT
+    - DATAPOINT
+    - col: t2
+      query_complement:
+        unit:
+          $in: [T2CatalogMatch]
+  run:
+    unit: SlackSummaryPublisher
+    config: slack-mpa

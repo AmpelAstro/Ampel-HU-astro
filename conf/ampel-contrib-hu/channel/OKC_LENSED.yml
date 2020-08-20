@@ -1,0 +1,19 @@
+channel: OKC_LENSED
+contact: ampel@desy.de
+active: true
+auto_complete: live
+template: ztf_uw_private
+t0_filter:
+  unit: LensedTransientFilter
+  config:
+    min_ndet: 2
+    ClusListSearchRadius: 60
+    MasterlensSearchRadius: 10
+    CaslteQSOSearchRadius: 10
+t2_compute:
+  - unit: T2SNCosmo
+    config:
+      model: salt2
+      upper_limits: false
+  - unit: T2CatalogMatch
+    config: '%T2CatalogMatch_general'
