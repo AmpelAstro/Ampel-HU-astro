@@ -6,11 +6,11 @@ template: ztf_uw_public
 t0_filter:
   unit: MPALensFilter
   config:
-    MIN_NDET: 1
-    MIN_DRB: 0.95
-    MIN_DIST_TO_SSO: -1
-    MIN_GAL_LAT: -1
-    LensSearchRadius: 10
+    min_ndet: 1
+    min_drb: 0.95
+    min_dist_to_sso: -1
+    min_gal_lat: -1
+    lens_search_radius: 10
 t2_compute:
   - unit: T2SNCosmo
     config:
