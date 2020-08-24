@@ -4,8 +4,8 @@
 # License           : BSD-3-Clause
 # Author            : m. giomi <matteo.giomi@desy.de>
 # Date              : 28.08.2018
-# Last Modified Date: 05.02.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# Last Modified Date: 24.08.2020
+# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
 
 from numpy import array
@@ -22,8 +22,6 @@ class XShooterFilter(DecentFilter):
 	are accepted if they are detected during the last 6h, at least one non-detection
 	during the last 5 days (and no detection during this time).
 	"""
-
-	resources = ('catsHTM.default', )
 
 	max_dec: float # maximum allowed value for the declination
 	det_within: float # the transient must have been detected within the last 'DET_WITHIN' days

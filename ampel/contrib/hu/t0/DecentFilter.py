@@ -4,20 +4,20 @@
 # License           : BSD-3-Clause
 # Author            : m. giomi <matteo.giomi@desy.de>
 # Date              : 06.06.2018
-# Last Modified Date: 05.02.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# Last Modified Date: 24.08.2020
+# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
 from numpy import exp, asarray
 from typing import Optional, Union
 from astropy.table import Table
 from astropy.coordinates import SkyCoord
 
-from ampel.contrib.hu import catshtm_server
 from ampel.alert.PhotoAlert import PhotoAlert
 from ampel.abstract.AbsAlertFilter import AbsAlertFilter
+from ampel.contrib.hu.base.CatsHTMUnit import CatsHTMUnit
 
 
-class DecentFilter(AbsAlertFilter[PhotoAlert]):
+class DecentFilter(CatsHTMUnit, AbsAlertFilter[PhotoAlert]):
 	"""
 	General-purpose filter with ~ 0.6% acceptance. It selects alerts based on:
 	* numper of previous detections
@@ -31,8 +31,6 @@ class DecentFilter(AbsAlertFilter[PhotoAlert]):
 	The filter has a very weak dependence on the real-bogus score and it is independent
 	on the provided PS1 star-galaxy classification.
 	"""
-
-	require = ('catsHTM.default', )
 
 	# History
 	min_ndet: int # number of previous detections
@@ -71,10 +69,6 @@ class DecentFilter(AbsAlertFilter[PhotoAlert]):
 		# feedback
 		for k in self.__annotations__:
 			self.logger.info(f"Using {k}={getattr(self, k)}")
-
-		self.catshtm = catshtm_server.get_client(
-			self.resource['catsHTM.default']
-		)
 
 		# To make this tenable we should create this list dynamically depending on what entries are required
 		# by the filter. Now deciding not to include drb in this list, eg.

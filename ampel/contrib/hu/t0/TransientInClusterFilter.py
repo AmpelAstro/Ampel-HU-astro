@@ -4,45 +4,40 @@
 # License           : BSD-3-Clause
 # Author            : m. giomi <matteo.giomi@desy.de>
 # Date              : 28.08.2018
-# Last Modified Date: 05.02.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# Last Modified Date: 24.08.2020
+# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
-from pymongo import MongoClient
-from extcats.CatalogQuery import CatalogQuery
+from functools import partial
+
 from extcats.catquery_utils import get_distances
+
+from ampel.contrib.hu.base.ExtcatsUnit import ExtcatsUnit
 from ampel.contrib.hu.t0.DecentFilter import DecentFilter
 
 
-class TransientInClusterFilter(DecentFilter):
+class TransientInClusterFilter(ExtcatsUnit, DecentFilter):
 	"""
 	Filter derived from the DecentFilter, in addition selecting candidates
 	with position compatible with that of nearby galaxy clusters.
 	"""
 
-	require = 'extcats.reader', 'catsHTM.default'
-
 	big_search_radius_arcmin: float	# conservative search radius around cluster position. Max in RASSEBCS is 16.a arcmin
 	cluserter_rad_multiplier: float # if we want to enlarge the search region around each cluster.
 
-	def post_init(self):
-
-		super().post_init()
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 
 		# feedback
 		for k in self.__annotations__:
 			self.logger.info(f"Using {k}={getattr(self, k)}")
 
-		# convert the 'big search radius' from arcmin to arcsecs.
-		# Take into account the multiplier as well
-		self.big_rs_arcsec = self.big_search_radius_arcmin * 60 * self.cluserter_rad_multiplier
-		self.logger.info(
-			f"Big search radius to match with RASSEBCS clusters: {self.big_rs_arcsec:.2f} arcsec"
-		)
-
-		# init the catalog query objects
-		self.rassebcs_query = CatalogQuery(
-			"RASSEBCS", ra_key = 'RA', dec_key = 'DEC', logger = self.logger,
-			dbclient = MongoClient(self.resource['extcats.reader'])
+		self.rassebcs_query = partial(
+			self.get_extcats_query(
+				"RASSEBCS",
+				ra_key="RA",
+				dec_key="DEC"
+				).findwithin,
+			rs_arcsec=self.big_search_radius_arcmin * 60 * self.cluserter_rad_multiplier
 		)
 
 
@@ -58,13 +53,11 @@ class TransientInClusterFilter(DecentFilter):
 		alert_ra, alert_dec = latest['ra'], latest['dec']
 
 		# A) find position of all the nearby clusters. If none is found, reject alert.
-		nearby_clusters = self.rassebcs_query.findwithin(
-			alert_ra, alert_dec, rs_arcsec = self.big_rs_arcsec
-		)
+		nearby_clusters = self.rassebcs_query(alert_ra, alert_dec)
 
 		if nearby_clusters is None:
 			self.logger.debug(
-				f"rejected: no cluster from RASSEBCS within {self.big_rs_arcsec:.2f} arcsec from alert position"
+				f"rejected: no cluster from RASSEBCS within {self.big_search_radius_arcmin*60:.2f} arcsec from alert position"
 			)
 			return None
 

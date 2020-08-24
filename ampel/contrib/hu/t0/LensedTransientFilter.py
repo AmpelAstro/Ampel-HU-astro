@@ -4,18 +4,17 @@
 # License           : BSD-3-Clause
 # Author            : m. giomi <matteo.giomi@desy.de>
 # Date              : 04.27.2018
-# Last Modified Date: 05.02.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# Last Modified Date: 24.08.2020
+# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
-from extcats import CatalogQuery
-from pymongo import MongoClient
+from functools import partial
+
 from ampel.abstract.AbsAlertFilter import AbsAlertFilter
 from ampel.alert.PhotoAlert import PhotoAlert
+from ampel.contrib.hu.base.ExtcatsUnit import ExtcatsUnit
 
 
-class LensedTransientFilter(AbsAlertFilter[PhotoAlert]):
-
-	require = ('extcats.reader', )
+class LensedTransientFilter(ExtcatsUnit, AbsAlertFilter[PhotoAlert]):
 
 	min_ndet: int
 	ClusListSearchRadius: float
@@ -23,44 +22,24 @@ class LensedTransientFilter(AbsAlertFilter[PhotoAlert]):
 	CaslteQSOSearchRadius: float
 
 
-	def post_init(self):
-		"""
-		This filter reject candidates if they have less than a certain number
-		of detection or if they are not positive subtractions (reference lower than sci),
-		or if they do not match with the position of kwokn lenses.
-		"""
-
-		self.search_radiuses = {
-			'cluslist': self.ClusListSearchRadius,
-			'masterlens': self.MasterlensSearchRadius,
-			'castleqso': self.CaslteQSOSearchRadius
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		searches = {
+			'cluslist': (self.ClusListSearchRadius, 'ra_deg', 'dec_deg'),
+			'masterlens': (self.MasterlensSearchRadius, 'ra_coord', 'dec_coord'),
+			'castleqso': (self.CaslteQSOSearchRadius, 'ra', 'dec'),
 		}
-
-		# init the catalog query objects for the different lens catalogs
-		catq_kwargs = {
-			'logger': self.logger,
-			'dbclient': MongoClient(self.resource['extcats.reader'])
+		self.queries = {
+			k: partial(
+				self.get_extcats_query(
+					k,
+					ra_key=ra_key,
+					dec_key=dec_key
+				).binaryserach, # sic
+				rs_arcsec=radius
+			)
+			for k, (radius, ra_key, dec_key) in searches.items()
 		}
-		cluslist_query = CatalogQuery.CatalogQuery(
-			"cluslist", ra_key = 'ra_deg', dec_key = 'dec_deg', **catq_kwargs
-		)
-		mlens_query = CatalogQuery.CatalogQuery(
-			"masterlens", ra_key = 'ra_coord', dec_key = 'dec_coord', **catq_kwargs
-		)
-		castle_query = CatalogQuery.CatalogQuery(
-			"castleqso", ra_key = 'ra', dec_key = 'dec', **catq_kwargs
-		)
-
-		# group the catalogs together
-		self.catqueries = {
-			'cluslist': cluslist_query,
-			'masterlens': mlens_query,
-			'castleqso': castle_query
-		}
-
-		# Feedback
-		for cat, rs in self.search_radiuses.items():
-			self.logger.info("Catalog: %s --> Search radius: %.2e arcsec" % (cat, rs))
 
 
 	def apply(self, alert):
@@ -88,12 +67,8 @@ class LensedTransientFilter(AbsAlertFilter[PhotoAlert]):
 			return None
 
 		# and match with the catalogs using position of latest photopoint
-		for cat, catquery in self.catqueries.items():
-			rs = self.search_radiuses[cat]
-			if catquery.binaryserach(latest["ra"], latest["dec"], rs):
-				self.logger.debug("searching matches in %s within %.2f arcsec" % (cat, rs))
+		for cat, query in self.queries.items():
+			if query(latest["ra"], latest["dec"]):
 				return True
-
-		self.logger.debug("rejected: alert position did not match any lens in the catalogs.")
 
 		return None
