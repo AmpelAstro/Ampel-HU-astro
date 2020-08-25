@@ -4,26 +4,21 @@
 # License           : BSD-3-Clause
 # Author            : matteo.giomi@desy.de
 # Date              : 24.08.2018
-# Last Modified Date: 13.06.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# Last Modified Date: 24.08.2020
+# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
-import backoff
 from typing import Sequence, Dict, Any, Optional, Literal
-from pymongo import MongoClient
-from pymongo.errors import AutoReconnect
 from astropy.table import Table
 from astropy.coordinates import SkyCoord
-from zerorpc.exceptions import LostRemote
-from extcats import CatalogQuery
 from extcats.catquery_utils import get_closest
 from numpy import asarray, degrees
 
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.model.StrictModel import StrictModel
-from ampel.model.Secret import Secret
 from ampel.t2.T2RunState import T2RunState
-from ampel.contrib.hu.utils import info_as_debug
-from ampel.contrib.hu import catshtm_server
+from ampel.contrib.hu.base.ExtcatsUnit import ExtcatsUnit
+from ampel.contrib.hu.base.CatsHTMUnit import CatsHTMUnit
+
 from ampel.content.DataPoint import DataPoint
 from ampel.type import T2UnitResult
 
@@ -37,7 +32,7 @@ class CatalogModel(StrictModel):
 	post_filter: Optional[Dict[str, Any]]
 
 
-class T2CatalogMatch(AbsPointT2Unit):
+class T2CatalogMatch(ExtcatsUnit, CatsHTMUnit, AbsPointT2Unit):
 	"""
 	Cross matches the position of a transient to those of sources in a set of catalogs
 	"""
@@ -46,8 +41,6 @@ class T2CatalogMatch(AbsPointT2Unit):
 	# NB: this assumes that docs are created by DualPointT2Ingester
 	ingest: Dict = {'eligible': {'pps': 'first'}}
 
-	require = 'extcats', 'catsHTM'
-	extcats_auth: Secret = {'key': 'extcats/reader'}
 	catalogs: Dict[str, CatalogModel]
 
 	def post_init(self):
@@ -56,28 +49,8 @@ class T2CatalogMatch(AbsPointT2Unit):
 		self.catq_objects = {}
 		self.debug = self.logger.verbose > 1
 
-		# initialize the catsHTM paths and the extcats query client.
-		self.catshtm_client = catshtm_server.get_client(self.resource['catsHTM'])
-		self.catq_client = MongoClient(
-			self.resource['extcats'],
-			**self.extcats_auth.get()
-		)
-		self.catq_kwargs_global = {
-			'logger': info_as_debug(self.logger),
-			'dbclient': self.catq_client,
-			'ra_key': 'ra', 'dec_key': 'dec'
-		}
 
-		# decorate run() so that it retries with exponential backoff on
-		# failed reconnects
-		self.run = backoff.on_exception(backoff.expo,
-			(AutoReconnect, LostRemote),
-			logger=self.logger,
-			max_time=300,
-		)(self.run)
-
-
-	def init_extcats_query(self, catalog, catq_kwargs=None) -> CatalogQuery:
+	def init_extcats_query(self, catalog, **kwargs) -> 'CatalogQuery':
 		"""
 		Return the extcats.CatalogQuery object corresponding to the desired
 		catalog. Repeated requests to the same catalog will not cause new duplicated
@@ -85,28 +58,9 @@ class T2CatalogMatch(AbsPointT2Unit):
 		"""
 
 		# check if you have already init this peculiar query
-		catq = self.catq_objects.get(catalog)
-		if catq is None:
-			self.logger.debug("CatalogQuery object not previously instantiated. Doing it now.")
-			# check if the catalog exist as an extcats database
-			if catalog not in self.catq_client.database_names():
-				raise ValueError(f"cannot find {catalog} among installed extcats catalogs")
-
-			# add catalog specific arguments to the general ones
-			if catq_kwargs is None:
-				catq_kwargs = self.catq_kwargs_global
-			else:
-				merged_kwargs = self.catq_kwargs_global.copy()
-				merged_kwargs.update(catq_kwargs)
-
-			self.logger.debug(f"Using arguments: {repr(merged_kwargs)}")
-
-			# init the catalog query and remember it
-			catq = CatalogQuery.CatalogQuery(catalog, **merged_kwargs)
+		if not (catq := self.catq_objects.get(catalog)):
+			catq = self.get_extcats_query(catalog, **kwargs)
 			self.catq_objects[catalog] = catq
-			return catq
-
-		self.logger.debug(f"CatalogQuery object for catalog {catalog} already exists.")
 		return catq
 
 
@@ -214,7 +168,7 @@ class T2CatalogMatch(AbsPointT2Unit):
 
 				# get the catalog query object and do the query
 				catq = self.init_extcats_query(
-					catalog, catq_kwargs=cat_opts.catq_kwargs
+					catalog, **cat_opts.catq_kwargs
 				)
 
 				src, dist = catq.findclosest(
@@ -227,7 +181,7 @@ class T2CatalogMatch(AbsPointT2Unit):
 
 				# catshtm needs coordinates in radians
 				transient_coords = SkyCoord(transient_ra, transient_dec, unit='deg')
-				srcs, colnames, colunits = self.catshtm_client.cone_search(
+				srcs, colnames, colunits = self.catshtm.cone_search(
 					catalog, transient_coords.ra.rad,
 					transient_coords.dec.rad, cat_opts.rs_arcsec
 				)
