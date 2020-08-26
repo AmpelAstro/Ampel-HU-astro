@@ -2,7 +2,7 @@
 import pytest
 from ampel.contrib.hu.t3.SlackSummaryPublisher import SlackSummaryPublisher
 
-import requests, slackclient
+#import requests, slackclient
 import csv
 from io import StringIO
 

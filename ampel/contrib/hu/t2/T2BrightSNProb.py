@@ -17,13 +17,13 @@ import numpy as np
 #import xgboost as xgb
 import pkgutil
 
-from ampel.ztf.pipeline.common.ZTFUtils import ZTFUtils
-from ampel.base.abstract.AbsT2Unit import AbsT2Unit
-from ampel.core.flags.T2RunStates import T2RunStates
+# from ampel.ztf.pipeline.common.ZTFUtils import ZTFUtils
+from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
+from ampel.t2.T2RunState import T2RunState
 import ampel.contrib.hu.t2.xgb_trees as xgb_trees
 
 
-class T2BrightSNProb(AbsT2Unit):
+class T2BrightSNProb(AbsLightCurveT2Unit):
 	"""
 		Derive a number of simple metrics describing the rise, peak and decline of a lc.
 		Run a XGB tree trained to check whether this transient are likely to be an RCF SN.
@@ -153,7 +153,7 @@ class T2BrightSNProb(AbsT2Unit):
 		self.xgb_tree = xgb_trees.xgboost_tree()
 
 
-	def run(self, light_curve, run_config):
+	def run(self, light_curve):
 		""" 
 			Parameters
 			-----------

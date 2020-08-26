@@ -1,7 +1,7 @@
 
 import pytest, logging, re
 from unittest.mock import MagicMock
-from ampel.contrib.hu.t3.TNSMatcher import TNSMatcher, TNSClient, TNSMirrorDB, TNSName
+from ampel.contrib.hu.t3.tns import TNSClient, TNSMirrorDB, TNSName
 
 @pytest.mark.skip(reason="requires local TNS mirror")
 def test_query_tnsname(t3_transient_views, mocker):

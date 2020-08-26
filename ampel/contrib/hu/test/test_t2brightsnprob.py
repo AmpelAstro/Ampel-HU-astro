@@ -6,7 +6,6 @@ import pkg_resources
 from os.path import dirname, join
 
 from ampel.contrib.hu.t2.T2BrightSNProb import T2BrightSNProb
-from ampel.utils.json_serialization import object_hook
 
 @pytest.fixture
 def lightcurve():
