@@ -812,10 +812,10 @@ class TNSTalker(AbsT3Unit):
 		self.logger.warning("Posting collected ATreports to Slack. I'm still running as a test!")
 		
 		import datetime, io, json
-		from slackclient import SlackClient
-		from slackclient.exceptions import SlackClientError
+		from slack import WebClient
+		from slack.errors import SlackClientError
 		
-		sc = SlackClient(self.slack_token.get())
+		sc = WebClient(token=self.slack_token.get())
 		
 		tstamp = datetime.datetime.today().strftime("%Y-%m-%d-%X")
 		atlist = list(self.atreports.values())
