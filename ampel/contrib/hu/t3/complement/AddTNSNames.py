@@ -8,7 +8,7 @@
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
 
-from typing import Iterable
+from typing import Iterable, List
 
 import numpy
 from pydantic import Field
@@ -18,7 +18,7 @@ from ampel.core.AmpelBuffer import AmpelBuffer
 from ampel.core.AmpelContext import AmpelContext
 from ampel.t3.complement.AbsT3DataAppender import AbsT3DataAppender
 
-from ..tns import TNSMirrorDB
+from ampel.contrib.hu.t3.tns.TNSMirrorDB import TNSMirrorDB
 
 
 class AddTNSNames(AbsT3DataAppender):
@@ -37,27 +37,24 @@ class AddTNSNames(AbsT3DataAppender):
         )
 
     def complement(self, records: Iterable[AmpelBuffer]) -> None:
-        for record in filter(self.nameable, records):
-            coords = [pp.get_tuple("ra", "dec") for pp in record.get("t0")]
+        for record in records:
+            if not isinstance((stock := record["stock"]), dict):
+                continue
+            if (stock_name := stock["name"]) and any((isinstance(name, str) and name.startswith("TNS") for name in stock_name)):
+                continue
+            if not (photopoints := record["t0"]):
+                continue
+            coords = [(pp['body']['ra'],pp['body']['dec']) for pp in photopoints]
             ra, dec = map(numpy.mean, zip(*coords))
-            names = [
+            names: List[str] = [
                 "TNS" + str(n)
                 for n in self.tns.get_names_for_location(ra, dec, self.search_radius)
             ]
             if not names:
                 continue
-            stock = record["stock"]
-            if not stock.get("name"):
+            elif stock_name is None:
                 stock["name"] = names
             else:
-                stock["name"] = list(stock["names"]) + names
-
-    @staticmethod
-    def nameable(item: AmpelBuffer) -> bool:
-        if not isinstance((stock := item.get("stock", None)), dict):
-            return False
-        if any(name.startswith("TNS") for name in stock.get("name", [])):
-            return False
-        if not item.get("datapoints"):
-            return False
-        return True
+                stock_name = list(stock_name)
+                stock_name += names
+                stock["name"] = stock_name
