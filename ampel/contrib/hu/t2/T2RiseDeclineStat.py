@@ -7,16 +7,18 @@
 # Last Modified Date: 28.12.2018
 # Last Modified By  : jnordin@physik.hu-berlin.de
 
-
-import numpy as np
-from astropy.table import Table
 from typing import Dict, List, Any
+
+from astropy.table import Table
+import numpy as np
+
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 from ampel.view.LightCurve import LightCurve
+from ampel.log.AmpelLogger import AmpelLogger
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.type import T2UnitResult
 
-
-class T2RiseDeclineStat(AbsLightCurveT2Unit):
+class T2RiseDeclineBase(AmpelBaseModel):
 	"""
 	Derive a number of simple metrics describing the rise, peak and decline of a lc.
 
@@ -62,16 +64,14 @@ class T2RiseDeclineStat(AbsLightCurveT2Unit):
 	Only positive detections (isdiffpos) are included.
 	Further control of what observations are included can be obtained through the lc filter
 	run parameter.
-
-	Parameter values not yet converted into RunConfig pydantic (coming).
 	"""
 
-	default_filter_names: Dict[int, str] = {1: 'g', 2: 'r', 3: 'i'}
-	default_filter_ids: List[int] = [1, 2]
-	default_max_tsep: int = 2
-	default_min_UL: int = 20
-	default_max_tgap: int = 30
-	default_lc_filter: List[Dict[str, Any]] = [
+	filter_names: Dict[int, str] = {1: 'g', 2: 'r', 3: 'i'}
+	filter_ids: List[int] = [1, 2]
+	max_tsep: int = 2
+	min_UL: int = 20
+	max_tgap: int = 30
+	lc_filter: List[Dict[str, Any]] = [
 		{
 			'attribute': 'isdiffpos',
 			'operator': '!=',
@@ -83,8 +83,8 @@ class T2RiseDeclineStat(AbsLightCurveT2Unit):
 			'value': '0'
 		}
 	]
-	do_testplot: bool = False
-	path_testplot: str = '/home/jnordin/tmp/t2test/'
+
+	logger: AmpelLogger
 
 	# For some reason we have duplicate photopoints. Why!!!
 	# Through setting this we manually just keep the first of each occurance
@@ -93,112 +93,7 @@ class T2RiseDeclineStat(AbsLightCurveT2Unit):
 	# ZTF18aaaorhy is another funny case with a repeated mag.
 	del_duplicate_rows: bool = True
 
-
-	def test_plot(self, dets, ulims, outdict, path):
-		"""
-			but useful for debugging
-		"""
-
-		import matplotlib.pyplot as plt
-
-		# Lightcurve
-		for filtid in self.default_filter_ids:
-			filter_det = dets[dets['filter'] == filtid]
-			plt.plot(filter_det['jd'], filter_det['mag'], 'o', label="Filt %s" % (self.default_filter_names[filtid]))
-
-		plt.plot(ulims['jd'], ulims['diffmaglim'], 'o', label="ulims")
-		#plt.plot(jd_int, interp_lc(jd_int), label="interp")
-		plt.gca().invert_yaxis()
-
-		# Detection props
-		if outdict['jd_max'] is not None:
-			plt.axvline(outdict['jd_max'], label='Peak')
-		if outdict['jd_det'] is not None:
-			plt.axvline(outdict['jd_det'], label='Det')
-		if outdict['jd_last'] is not None:
-			plt.axvline(outdict['jd_last'], label='Last')
-
-		plt.legend()
-		plt.xlabel("JD")
-		plt.ylabel("Mag")
-
-		# Create text string
-		title = 'ndet: %s rb %.2f drb %.2f ' % (
-			outdict['ndet'], outdict['rb_med'], outdict['drb_med']
-		)
-
-		for boolprop in ['peaked', 'pure', 'rising', 'norise', 'hasgaps']:
-			if outdict[f'bool_{boolprop}']:
-				title += f'{boolprop} '
-
-		plt.title(title)
-		plt.savefig(path)
-		plt.clf()
-
-
-	def run(self, light_curve: LightCurve) -> T2UnitResult:
-		"""
-		:param run_config: `dict` or None
-		configuration parameter for this job. If none is given, the
-		default behaviour would be to compute the metrics for the light
-		curve based on g and r with filter ID as for ZTF, to exclude points
-		with negative detectiions (having isdiffpos in ['f', 0]),
-		to consider upper limits larger than 20 and using detections within 2
-		days when determining roughly same time claculations.
-
-		These defaults can be changed by the following keys of the
-		run_config dictionary:
-
-		lc_filter: `dict` or `list`
-			to be passed to ampel.base.LightCurve.get_tuples.
-			if list, the items must be dicts and they'll be combined
-			with a logical and. Pass an empy list to disable the filter
-			completely (filtering on the ztf bands will still be applied).
-			A sample usage would be RB / dRB cuts.
-			This cut is not applied to upper limits.
-
-		filter_ids: `list` or `tuple`
-		filter_names: `dict`
-			Pair of IDs of filter for which calculations are done
-			with their names provided by filter_names
-
-		min_UL : `float`
-			Min upper limit mag for cosndieration.
-
-		max_tsep : `float`
-			Max obs time difference for "simulataneus" calc.
-
-		max_tgap : `float`
-			Max time between detections for no gaps
-
-		:returns: dict with entries as in class doc string.
-		{'ndet' : 3, ...}
-		"""
-
-		# parse some run config params and use default if not given
-		lc_filter = run_config.get('lc_filter')
-		if lc_filter is None:
-			lc_filter = self.default_lc_filter
-		filter_ids = run_config.get('filter_ids')
-
-		if filter_ids is None:
-			filter_ids = self.default_filter_ids
-		filter_names = run_config.get('filter_names')
-
-		if filter_names is None:
-			filter_names = self.default_filter_names
-		min_UL = run_config.get('min_UL')
-
-		if min_UL is None:
-			min_UL = self.default_min_UL
-		max_tsep = run_config.get('max_tsep')
-
-		if max_tsep is None:
-			max_tsep = self.default_max_tsep
-		max_tgap = run_config.get('max_tgap')
-
-		if max_tgap is None:
-			max_tgap = self.default_max_tgap
+	def compute_stats(self, light_curve: LightCurve) -> Dict[str,Any]:
 
 		# Output dict that we will start to populate
 		o: Dict[str, Any] = {}
@@ -207,14 +102,14 @@ class T2RiseDeclineStat(AbsLightCurveT2Unit):
 		self.logger.debug('Starting joint band RiseDeclineStat estimations')
 
 		# Detection photo-points
-		pps = light_curve.get_ntuples(['obs_date', 'fid', 'mag', 'magerr', 'rb'], filters=lc_filter)
+		pps = light_curve.get_ntuples(['obs_date', 'fid', 'mag', 'magerr', 'rb'], filters=self.lc_filter)
 		# Check if no datapoints fulfill initial lc criteria
 		if not pps:
 			return {'success': False, 'cause': 'No data survive selection criteria'}
 
 
 		# Get observation times for non-detection limits
-		ulfilter = [{'attribute': 'diffmaglim', 'operator': '>=', 'value': min_UL}]
+		ulfilter = [{'attribute': 'diffmaglim', 'operator': '>=', 'value': self.min_UL}]
 		uls = light_curve.get_tuples(
 			'obs_date', 'diffmaglim', filters=ulfilter, of_upper_limits=True
 		)
@@ -262,8 +157,11 @@ class T2RiseDeclineStat(AbsLightCurveT2Unit):
 
 		# Check if (d)real bogus present for any of these + host values
 		for proptype in ['rb','drb','distnr','magnr','classtar','sgscore1','distpsnr1','sgscore2','distpsnr2','neargaia','maggaia']:
-			propvalues = list( filter(None, light_curve.get_values(proptype, filters=lc_filter) ) )
-			o[f'{proptype}_med'] if propvalues else None
+			o[f'{proptype}_med'] = (
+				np.nanmedian(list(propvalues))
+				if (propvalues := light_curve.get_values(proptype, filters=self.lc_filter))
+				else None
+			)
 
 
 		# Look at upper limits
@@ -287,7 +185,7 @@ class T2RiseDeclineStat(AbsLightCurveT2Unit):
 
 		# Has the lightcurve peaked?
 		# Requires the most recent detection to be significantly fainter than the brightest one
-		# and more than max_tsep to have gone since peak light
+		# and more than self.max_tsep to have gone since peak light
 		min_mag = dets['mag'].min()
 		min_mag_jd = float(dets['jd'][dets['mag'] == min_mag])
 		min_mag_err = float(dets['magerr'][dets['mag'] == min_mag])
@@ -301,7 +199,7 @@ class T2RiseDeclineStat(AbsLightCurveT2Unit):
 			last_mag_err = float(dets['magerr'][dets['mag'] == o['mag_last']])
 
 		det_mag_err = float(dets['magerr'][dets['jd'] == o['jd_det']])
-		if (o['jd_last'] - min_mag_jd) < max_tsep:
+		if (o['jd_last'] - min_mag_jd) < self.max_tsep:
 			self.logger.info('Latest detection too close to peak light to calculate peak stats')
 			o['bool_peaked'] = False
 		else:
@@ -337,7 +235,7 @@ class T2RiseDeclineStat(AbsLightCurveT2Unit):
 				o['bool_norise'] = True
 
 			# Here it makese sense to check whether it is still rising
-			if (o['jd_last'] - min_mag_jd) < max_tsep:
+			if (o['jd_last'] - min_mag_jd) < self.max_tsep:
 				o['bool_rising'] = True
 			else:
 				o['bool_rising'] = False
@@ -345,7 +243,7 @@ class T2RiseDeclineStat(AbsLightCurveT2Unit):
 		# Are there long gaps among the detections?
 		jdsorted = np.unique(dets['jd'])
 		if len(jdsorted) > 1:
-			if (jdsorted[1:] - jdsorted[0:-1]).max() > max_tgap:
+			if (jdsorted[1:] - jdsorted[0:-1]).max() > self.max_tgap:
 				o['bool_hasgaps'] = True
 			else:
 				o['bool_hasgaps'] = False
@@ -356,7 +254,7 @@ class T2RiseDeclineStat(AbsLightCurveT2Unit):
 		# Look at filter dependent qualities
 
 		# Slopes
-		for filtid in filter_ids:
+		for filtid in self.filter_ids:
 
 			self.logger.debug(f'Starting slope fit filt {filtid}')
 			filter_det = dets[dets['filter'] == filtid]
@@ -369,28 +267,28 @@ class T2RiseDeclineStat(AbsLightCurveT2Unit):
 				# Rise
 				# Check that lc had rise with sufficient detections
 				if o['bool_norise'] or filter_det_rise['jd'].size < 2:
-					o[f'slope_rise_{filter_names[filtid]}'] = None
+					o[f'slope_rise_{self.filter_names[filtid]}'] = None
 				else:
 					p = np.polyfit(filter_det_rise['jd'], filter_det_rise['mag'], 1,
 						w = 1. / filter_det_rise['magerr'])
-					o[f'slope_rise_{filter_names[filtid]}'] = p[0]
+					o[f'slope_rise_{self.filter_names[filtid]}'] = p[0]
 
 				# Decline
 				# Only makes sense to check this if lc peaked and declined for significant time
-				if filter_det_fall['jd'].size > 1 and (filter_det['jd'].max() - o['jd_max']) > max_tsep:
+				if filter_det_fall['jd'].size > 1 and (filter_det['jd'].max() - o['jd_max']) > self.max_tsep:
 					p = np.polyfit(filter_det_fall['jd'], filter_det_fall['mag'], 1,
 							w = 1. / filter_det_fall['magerr'])
-					o[f'slope_fall_{filter_names[filtid]}'] = p[0]
+					o[f'slope_fall_{self.filter_names[filtid]}'] = p[0]
 				else:
-					o[f'slope_fall_{filter_names[filtid]}'] = None
+					o[f'slope_fall_{self.filter_names[filtid]}'] = None
 			else:
 				# Will use all the data to fit rise parameter, set others to none
 				if o['bool_norise'] or filter_det['jd'].size < 2:
-					o[f'slope_rise_{filter_names[filtid]}'] = None
+					o[f'slope_rise_{self.filter_names[filtid]}'] = None
 				else:
 					p = np.polyfit(filter_det['jd'], filter_det['mag'], 1,
 						w = 1./ filter_det['magerr'])
-					o[f'slope_rise_{filter_names[filtid]}'] = p[0]
+					o[f'slope_rise_{self.filter_names[filtid]}'] = p[0]
 
 		# Colors at specific phases
 		for coljd, colname in zip([o['jd_det'], o['jd_last'], o['jd_max']], ['col_det', 'col_last', 'col_peak']):
@@ -399,23 +297,65 @@ class T2RiseDeclineStat(AbsLightCurveT2Unit):
 			if coljd is None:
 				o[colname] = None
 				continue
-			dets_attime = dets[np.abs(dets['jd'] - coljd) <= max_tsep]
-			if np.any(dets_attime['filter'] == filter_ids[0]) and np.any(dets_attime['filter'] == filter_ids[1]):
-				col = np.mean(dets_attime['mag'][dets_attime['filter'] == filter_ids[0]])
-				col -= np.mean(dets_attime['mag'][dets_attime['filter'] == filter_ids[1]])
+			dets_attime = dets[np.abs(dets['jd'] - coljd) <= self.max_tsep]
+			if np.any(dets_attime['filter'] == self.filter_ids[0]) and np.any(dets_attime['filter'] == self.filter_ids[1]):
+				col = np.mean(dets_attime['mag'][dets_attime['filter'] == self.filter_ids[0]])
+				col -= np.mean(dets_attime['mag'][dets_attime['filter'] == self.filter_ids[1]])
 				o[colname] = col
 			else:
 				o[colname] = None
 
-
-#		self.logger.info('Completed RiseDecline stat calc.')
-			
-		if self.do_testplot:
-			self.test_plot(
-				dets, ulims, o,
-				f"{self.path_testplot}/t2risedeclinestat_{light_curve.id.hex()}.pdf"
-			)
-
-		# return the info as dictionary
 		o['success'] = True
 		return o
+
+
+class T2RiseDeclineStat(AbsLightCurveT2Unit, T2RiseDeclineBase):
+
+	do_testplot: bool = False
+	path_testplot: str = '/home/jnordin/tmp/t2test/'
+
+	def test_plot(self, dets, ulims, outdict, path):
+		"""
+			but useful for debugging
+		"""
+
+		import matplotlib.pyplot as plt
+
+		# Lightcurve
+		for filtid in self.default_filter_ids:
+			filter_det = dets[dets['filter'] == filtid]
+			plt.plot(filter_det['jd'], filter_det['mag'], 'o', label="Filt %s" % (self.default_filter_names[filtid]))
+
+		plt.plot(ulims['jd'], ulims['diffmaglim'], 'o', label="ulims")
+		#plt.plot(jd_int, interp_lc(jd_int), label="interp")
+		plt.gca().invert_yaxis()
+
+		# Detection props
+		if outdict['jd_max'] is not None:
+			plt.axvline(outdict['jd_max'], label='Peak')
+		if outdict['jd_det'] is not None:
+			plt.axvline(outdict['jd_det'], label='Det')
+		if outdict['jd_last'] is not None:
+			plt.axvline(outdict['jd_last'], label='Last')
+
+		plt.legend()
+		plt.xlabel("JD")
+		plt.ylabel("Mag")
+
+		# Create text string
+		title = 'ndet: %s rb %.2f drb %.2f ' % (
+			outdict['ndet'], outdict['rb_med'], outdict['drb_med']
+		)
+
+		for boolprop in ['peaked', 'pure', 'rising', 'norise', 'hasgaps']:
+			if outdict[f'bool_{boolprop}']:
+				title += f'{boolprop} '
+
+		plt.title(title)
+		plt.savefig(path)
+		plt.clf()
+
+
+	def run(self, light_curve: LightCurve) -> T2UnitResult:
+
+		return self.compute_stats(light_curve)
