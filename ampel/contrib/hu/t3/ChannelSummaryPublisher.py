@@ -42,6 +42,7 @@ class ChannelSummaryPublisher(AbsT3Unit):
 
 		self.summary: Dict[str, Any] = {}
 		self._jd_range = [float('inf'), -float('inf')]
+		assert self.resource
 		self.dest = self.resource['desycloud.default'] + self.base_dir
 		self.logger.info(
 			f"Channel summary will include following metrics: {repr(self.alert_metrics)}"
