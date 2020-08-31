@@ -10,7 +10,7 @@
 
 from numpy import array
 from astropy.time import Time
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Union
 from ampel.alert.PhotoAlert import PhotoAlert
 from ampel.contrib.hu.t0.DecentFilter import DecentFilter
 
@@ -35,7 +35,7 @@ class XShooterFilter(DecentFilter):
 
 
 	# Override
-	def apply(self, alert: PhotoAlert) -> Optional[Sequence[str]]:
+	def apply(self, alert: PhotoAlert) -> Optional[Union[bool, int]]:
 		"""
 		run the decent filter on the alert
 		"""
@@ -66,7 +66,7 @@ class XShooterFilter(DecentFilter):
 			return None
 
 		# check on the history 2: at least one upper limit in the last 5 days
-		ulim_jds = alert.get_values('jd', field='uls')
+		ulim_jds = alert.get_values('jd', data='uls')
 		if ulim_jds is None:
 			self.logger.debug("Rejected: this alert has no upper limits")
 			return None
