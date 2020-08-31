@@ -1,0 +1,17 @@
+
+# ampel-interface
+# ampel-core
+# ampel-alerts
+# ampel-photometry
+# ampel-ztf
+
+catsHTM
+extcats
+sncosmo
+iminuit
+sfdmap
+xgboost
+astropy
+numpy
+scipy
+beautifulsoup4
