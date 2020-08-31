@@ -7,7 +7,7 @@
 # Last Modified Date: 24.08.2020
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
-from typing import Sequence, Dict, Any, Optional, Literal
+from typing import Sequence, Dict, Any, Optional, Literal, TYPE_CHECKING
 from astropy.table import Table
 from astropy.coordinates import SkyCoord
 from extcats.catquery_utils import get_closest
@@ -22,6 +22,8 @@ from ampel.contrib.hu.base.CatsHTMUnit import CatsHTMUnit
 from ampel.content.DataPoint import DataPoint
 from ampel.type import T2UnitResult
 
+if TYPE_CHECKING:
+	from extcats.CatalogQuery import CatalogQuery
 
 class CatalogModel(StrictModel):
 	use: Literal['extcats', 'catsHTM']
