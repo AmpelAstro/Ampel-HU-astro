@@ -10,11 +10,26 @@
 import astropy.units as u
 from astropy.time import Time
 from typing import Dict, Any
+from ampel.model.StrictModel import StrictModel
 from ampel.util.Observatory import Observatory
 from ampel.view.LightCurve import LightCurve
 from ampel.type import T2UnitResult
+from ampel.t2.T2RunState import T2RunState
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 
+class VisibilityConstraintModel(StrictModel):
+	airmass_th: float = 2
+	sun_alt_th: float = -12
+	min_moon_dist: float = 30
+
+class ObservatoryLocationModel(StrictModel):
+	lat: float
+	long: float
+	alt: float
+
+class ObservatoryModel(StrictModel):
+	pos: ObservatoryLocationModel
+	constraints: VisibilityConstraintModel = VisibilityConstraintModel()
 
 class T2Observability(AbsLightCurveT2Unit):
 	"""
@@ -23,35 +38,32 @@ class T2Observability(AbsLightCurveT2Unit):
 	"""
 
 	# empty dict of named EarthLocation objetcs.
-	observatories: Dict = {}
+	observatories: Dict[str,ObservatoryModel]
 
 	# default parameters for LightCurve.get_pos method
-	lc_get_pos_defaults: Dict[str, Any] = {'ret': "brightest", 'filters': None}
+	lc_get_pos_kwargs: Dict[str, Any] = {'ret': "brightest", 'filters': None}
 
-	# default parameters for visibility
-	visibility_defaults: Dict[str, Any] = {'airmass_th': 2, 'sun_alt_th': -12, 'min_moon_dist': 30}
+	def post_init(self):
+		self._observatories: Dict[str, Observatory] = {}
 
-
-	def init_observatory(self, name, position) -> Observatory:
+	def init_observatory(self, name, pos: ObservatoryLocationModel) -> Observatory:
 		"""
 		Return the earth location object corresponding to the desired observatory.
 		Repeated requests to the same instance will not cause new duplicates.
 		"""
 
 		# check if the observatory has already been init
-		obs = self.observatories.get(name)
-		if obs is None:
+		if not (obs := self._observatories.get(name)):
 			self.logger.debug(
 				f"Observatory {name} not previously instantiated. Doing it now."
 			)
 
 			# init your obs depending on the position
-			obs = Observatory(name, *position, logger=self.logger)
-			self.observatories[name] = obs
+			self._observatories[name] = Observatory(name, logger=self.logger, **pos.dict())
+			return self._observatories[name]
+		else:
+			self.logger.debug(f"Observatory {name} already exists.")
 			return obs
-
-		self.logger.debug(f"Observatory {name} already exists.")
-		return obs
 
 
 	def run(self, light_curve: LightCurve) -> T2UnitResult:
@@ -100,17 +112,14 @@ class T2Observability(AbsLightCurveT2Unit):
 		}
 		"""
 
-		# get ra and dec from lightcurve object
-		lc_get_pos_kwargs = run_config.get('lc_get_pos_kwargs')
-
-		if lc_get_pos_kwargs is None:
-			lc_get_pos_kwargs = self.lc_get_pos_defaults
-
 		self.logger.debug(
-			f"getting transient position from lightcurve using args: {lc_get_pos_kwargs}"
+			f"getting transient position from lightcurve using args: {self.lc_get_pos_kwargs}"
 		)
 
-		transient_ra, transient_dec = light_curve.get_pos(**lc_get_pos_kwargs)
+		if pos := light_curve.get_pos(**self.lc_get_pos_kwargs):
+			transient_ra, transient_dec = pos
+		else:
+			return T2RunState.MISSING_INFO
 
 		self.logger.debug(
 			f"Transient position (ra, dec): {transient_ra:.4f}, {transient_dec:.4f} deg"
@@ -118,14 +127,10 @@ class T2Observability(AbsLightCurveT2Unit):
 
 		# initialize the catalog quer(ies). Use instance variable to aviod duplicates
 		out_dict: Dict[str, Any] = {}
-		observatories = run_config.get('observatories')
 
-		if observatories is None:
-			raise KeyError("run_config missing list of observatories.")
+		for name, observatory in self.observatories.items():
 
-		for name, observatory in observatories.items():
-
-			my_obs = self.init_observatory(name, observatory['pos'])
+			my_obs = self.init_observatory(name, observatory.pos)
 
 			for k in range(3):
 				trange = [
@@ -133,9 +138,9 @@ class T2Observability(AbsLightCurveT2Unit):
 					(Time.now() + (k + 1) * u.day).iso[:10]
 				]
 
-			ret = my_obs.compute_observability(
+			ret = my_obs.compute_visibility(
 				transient_ra, transient_dec,
-				trange, **observatory['constraints']
+				trange, **observatory.constraints.dict()
 			)
 
 			out_dict[name][f'night{k+1}'] = {
