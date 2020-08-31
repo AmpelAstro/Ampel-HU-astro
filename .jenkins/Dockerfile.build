@@ -18,6 +18,9 @@ RUN pip install -r /Ampel-alerts/requirements.txt /Ampel-alerts
 ADD .jenkins/Ampel-photometry /Ampel-photometry
 RUN pip install /Ampel-photometry
 
+ADD .jenkins/Ampel-ZTF /Ampel-ZTF
+RUN pip install -r /Ampel-ZTF/requirements.txt /Ampel-ZTF
+
 ADD requirements.txt /
 RUN pip install -r /requirements.txt
 
