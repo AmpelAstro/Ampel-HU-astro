@@ -12,7 +12,8 @@ import datetime
 
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 
-from .tns import TNSClient, TNSMirrorDB
+from ampel.contrib.hu.t3.tns.TNSClient import TNSClient
+from ampel.contrib.hu.t3.tns.TNSMirrorDB import TNSMirrorDB
 
 
 class TNSMirrorUpdater(AbsT3Unit):
@@ -31,7 +32,10 @@ class TNSMirrorUpdater(AbsT3Unit):
         ...
 
     def done(self) -> None:
-        last_run = datetime.datetime.fromtimestamp(self.context["last_run"])
+        if self.context and "last_run" in self.context:
+            last_run = datetime.datetime.fromtimestamp(self.context["last_run"])
+        else:
+            last_run = datetime.datetime(2020,9,1)
 
         async def fetch():
             tns = TNSClient(
@@ -41,5 +45,6 @@ class TNSMirrorUpdater(AbsT3Unit):
 
         new_reports = asyncio.get_event_loop().run_until_complete(fetch())
 
+        assert self.resource
         db = TNSMirrorDB(self.resource["extcats.writer"], logger=self.logger)
         db.add_sources(new_reports)
