@@ -17,13 +17,12 @@ import sys
 import time
 import traceback
 from functools import partial
-from typing import List
-from urllib import parse
+from typing import Any, Dict, Iterable, List, Set, Tuple, Union
 from xml.etree import ElementTree
 
 import backoff
 import pytz
-from aiohttp import ClientSession, TCPConnector, helpers
+from aiohttp import ClientSession, helpers, TCPConnector
 from aiohttp.client_exceptions import (
     ClientConnectionError,
     ClientConnectorError,
@@ -31,11 +30,12 @@ from aiohttp.client_exceptions import (
     ClientResponseError,
     ServerDisconnectedError,
 )
-from pydantic import BaseModel
 
-from ampel.base.abstract.AbsT3Unit import AbsT3Unit
-from ampel.utils.json_serialization import AmpelEncoder
-from ampel.ztf.pipeline.common.ZTFUtils import ZTFUtils
+from ampel.abstract.AbsT3Unit import AbsT3Unit
+from ampel.model.Secret import Secret
+from ampel.util.json import AmpelEncoder
+from ampel.view.SnapView import SnapView
+from ampel.ztf.utils import to_ztf_id
 
 
 class DCachePublisher(AbsT3Unit):
@@ -60,41 +60,31 @@ class DCachePublisher(AbsT3Unit):
         python -m ampel.contrib.hu.t3.DCachePublisher macaroon -u 'USER:PASS' --validity PT1h
     """
 
-    version = 0.1
-    resources = ("dcache.default",)
+    require = ("dcache",)
 
-    class RunConfig(BaseModel):
-        channel: str
-        dryRun: bool = False
-        baseDir: str = "/ampel/ztf/transient-views"
-        maxParallelRequests: int = 8
+    channel: str
+    dry_run: bool = False
+    base_dir: str = "/ampel/ztf/transient-views"
+    max_parallel_requests: int = 8
+    authz: Secret[str] = {"key": "dcache/macaroon"}  # type: ignore[assignment]
 
-    def __init__(self, logger, base_config=None, run_config=None, global_info=None):
-        self.logger = logger
-        self.updated_urls = []
-        self.dt = 0
+    def post_init(self) -> None:
+        self.updated_urls: List[str] = []
+        self.existing_paths: Set[Tuple[str, ...]] = set()
+        self.dt = 0.0
 
         # don't bother preserving immutable types
         self.encoder = AmpelEncoder(lossy=True)
+        assert self.resource
+        self.base_dest = self.resource["dcache"] + self.base_dir
 
-        self.run_config = run_config if run_config is not None else self.RunConfig()
-
-        # strip authentication token from URL
-        parts = parse.urlparse(base_config["dcache.default"])._asdict()
-        self.auth = parse.parse_qs(parts.pop("query"))["authz"][0]
-        self.base_dest = (
-            parse.ParseResult(query={}, **parts).geturl() + self.run_config.baseDir
-        )
-
-        self.existing_paths = set()
-
-    def serialize(self, tran_view):
+    def serialize(self, tran_view: Union[SnapView,Dict[str,Any]]) -> bytes:
         buf = io.BytesIO()
         with gzip.GzipFile(fileobj=buf, mode="w") as f:
             f.write(self.encoder.encode(tran_view).encode("utf-8"))
         return buf.getvalue()
 
-    async def create_directory(self, request, path_parts):
+    async def create_directory(self, request, path_parts) -> None:
         path = []
         while len(path_parts) > 0:
             # NB: os.path.join drops any parts before those that start with /
@@ -102,7 +92,7 @@ class DCachePublisher(AbsT3Unit):
             if tuple(path) in self.existing_paths:
                 continue
 
-            if not self.run_config.dryRun:
+            if not self.dry_run:
                 url = os.path.join(self.base_dest, *path)
                 if not await self.exists(request, url):
                     resp = await request("MKCOL", url, raise_for_status=False)
@@ -112,12 +102,12 @@ class DCachePublisher(AbsT3Unit):
             self.existing_paths.add(tuple(path))
 
     async def put(self, request, url, data, timeout=1.0):
-        if self.run_config.dryRun:
+        if self.dry_run:
             return
         await request("PUT", url, data=data)
 
     async def exists(self, request, url):
-        if self.run_config.dryRun:
+        if self.dry_run:
             return
         resp = await request("HEAD", url, raise_for_status=False)
         return resp.status in {200, 201, 204}
@@ -158,18 +148,15 @@ class DCachePublisher(AbsT3Unit):
             },
         )
 
-    async def publish_transient(self, request, tran_view):
+    async def publish_transient(self, request, tran_view: SnapView) -> str:
 
-        ztf_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
+        assert isinstance(tran_view.id, int)
+        ztf_name = to_ztf_id(tran_view.id)
         # group such that there are a maximum of 17576 in the same directory
         prefix = [ztf_name[:7], ztf_name[7:9]]
 
-        channel = tran_view.channel
-        assert isinstance(channel, str), "Only single-channel transients are supported"
-        assert channel == self.run_config.channel
-
-        await self.create_directory(request, [channel, *prefix])
-        base_dir = os.path.join(self.base_dest, channel, *prefix)
+        await self.create_directory(request, [self.channel, *prefix])
+        base_dir = os.path.join(self.base_dest, self.channel, *prefix)
         fname = base_dir + f"/{ztf_name}.json.gz"
         await self.put(request, fname, data=self.serialize(tran_view))
 
@@ -186,14 +173,14 @@ class DCachePublisher(AbsT3Unit):
             capath=os.environ.get("X509_CERT_DIR", None)
         )
         async with TCPConnector(
-            limit=self.run_config.maxParallelRequests, ssl_context=ssl_context
+            limit=self.max_parallel_requests, ssl_context=ssl_context
         ) as connector:
             async with ClientSession(
                 connector=connector,
-                headers={"Authorization": f"BEARER {self.auth}"},
+                headers={"Authorization": f"BEARER {self.authz.get()}"},
                 raise_for_status=True,
             ) as session:
-                if self.run_config.dryRun:
+                if self.dry_run:
                     session = None
                 else:
                     # ClientSession.request is a normal function returning an
@@ -225,7 +212,7 @@ class DCachePublisher(AbsT3Unit):
                 tasks = [task(request) for task in unbound_tasks]
                 return await asyncio.gather(*tasks)
 
-    def add(self, transients):
+    def add(self, transients: Iterable[SnapView]) -> None:
         """
         Publish a transient batch
         """
@@ -243,8 +230,8 @@ class DCachePublisher(AbsT3Unit):
             )
             self.dt += time.time() - t0
 
-    async def publish_manifest(self, request):
-        prefix = os.path.join(self.base_dest, self.run_config.channel)
+    async def publish_manifest(self, request) -> None:
+        prefix = os.path.join(self.base_dest, self.channel)
         manifest_dir = os.path.join(prefix, "manifest")
         # create any directories that descend from the base path
         await self.create_directory(
@@ -260,20 +247,20 @@ class DCachePublisher(AbsT3Unit):
         previous = None
 
         # Move the previous manifest aside.
-        async with await request("PROPFIND", latest, raise_for_status=False) as response:
-            if response.status < 400:
-                date = (
-                    ElementTree.fromstring(await response.text())
-                    .find("**/{DAV:}prop/{DAV:}creationdate")
-                    .text
+        async with await request(
+            "PROPFIND", latest, raise_for_status=False
+        ) as response:
+            if response.status < 400 and (
+                element := ElementTree.fromstring(await response.text()).find(
+                    "**/{DAV:}prop/{DAV:}creationdate"
                 )
-                previous = os.path.join(manifest_dir, date + ".json.gz")
-                self.logger.info(f"Moving {latest} to {previous}")
-                await request(
-                    "MOVE",
-                    latest,
-                    headers={"Destination": previous},
-                )
+            ):
+                if date := element.text:
+                    previous = os.path.join(manifest_dir, date + ".json.gz")
+                    self.logger.info(f"Moving {latest} to {previous}")
+                    await request(
+                        "MOVE", latest, headers={"Destination": previous},
+                    )
 
         # Write a new manifest with a link to previous manifest.
         await request(
@@ -300,20 +287,18 @@ class DCachePublisher(AbsT3Unit):
         ) as response:
             authz = await response.json()
         await request(
-            "PUT",
-            os.path.join(prefix, "macaroon"),
-            data=authz["macaroon"],
+            "PUT", os.path.join(prefix, "macaroon"), data=authz["macaroon"],
         )
         self.logger.info(f"Access token: {authz}")
 
-    def done(self):
+    def done(self) -> None:
         """
         Finish publishing
         """
         self.logger.info(
             f"Published {len(self.updated_urls)} transients in {self.dt:.1f} s"
         )
-        if not self.run_config.dryRun:
+        if not self.dry_run:
             asyncio.get_event_loop().run_until_complete(
                 self.send_requests([self.publish_manifest])
             )
@@ -336,7 +321,7 @@ def get_macaroon(
         caveats.append(f'activity:{",".join(activity)}')
     if ip:
         caveats.append(f'ip:{",".join(ip)}')
-    body = {"validity": validity}
+    body: Dict[str, Any] = {"validity": validity}
     if caveats:
         body["caveats"] = caveats
 
