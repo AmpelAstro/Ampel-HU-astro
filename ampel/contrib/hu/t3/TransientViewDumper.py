@@ -7,94 +7,104 @@
 # Last Modified Date: 15.08.2018
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
-from ampel.view.TransientView import TransientView
-from ampel.abstract.AbsT3Unit import AbsT3Unit
-from ampel.util.json import AmpelEncoder, object_hook
 import json
-import requests
 import uuid
-from urllib.parse import urlencode, urlparse, urlunparse, ParseResult
-from xml.etree import ElementTree
-from io import StringIO, BytesIO
 from gzip import GzipFile
+from io import BytesIO, StringIO
+from typing import Optional, Tuple
+from urllib.parse import ParseResult, urlencode, urlparse, urlunparse
+from xml.etree import ElementTree
+
+import requests
 from pydantic import BaseModel
 
+from ampel.abstract.AbsT3Unit import AbsT3Unit
+from ampel.model.Secret import Secret
+from ampel.util.json import AmpelEncoder, object_hook
+from ampel.view.SnapView import SnapView
+from ampel.view.TransientView import TransientView
+
+
 def strip_auth_from_url(url):
-	try:
-		auth = requests.utils.get_auth_from_url(url)
-		scheme, netloc, path, params, query, fragment = urlparse(url)
-		netloc = netloc[netloc.index('@')+1:]
-		url = urlunparse(ParseResult(scheme, netloc, path, params, query, fragment))
-		return url, auth
-	except KeyError:
-		return url, None
+    try:
+        auth = requests.utils.get_auth_from_url(url)
+        scheme, netloc, path, params, query, fragment = urlparse(url)
+        netloc = netloc[netloc.index("@") + 1 :]
+        url = urlunparse(ParseResult(scheme, netloc, path, params, query, fragment))
+        return url, auth
+    except KeyError:
+        return url, None
+
 
 def strip_path_from_url(url):
-	scheme, netloc, path, params, query, fragment = urlparse(url)
-	return urlunparse(ParseResult(scheme, netloc, '/', None, None, None))
+    scheme, netloc, path, params, query, fragment = urlparse(url)
+    return urlunparse(ParseResult(scheme, netloc, "/", None, None, None))
+
 
 class TransientViewDumper(AbsT3Unit):
-	"""
-	"""
+    """"""
 
-	version = 0.1
-	resources = ('desycloud.default',)
+    version = 0.1
+    resources = ("desycloud",)
 
-	class RunConfig(BaseModel):
-		outputfile: str = None
+    outputfile: Optional[str] = None
+    desycloud_auth: Secret[dict] = {"key": "desycloud"}  # type: ignore[assignment]
 
-	def __init__(self, logger, base_config=None, run_config=None, global_info=None):
-		"""
-		"""
-		self.logger = logger
-		self.count = 0
-		self.config = run_config or self.RunConfig()
-		if not self.config.outputfile:
-			self.outfile = GzipFile(fileobj=BytesIO(), mode='w')
-			self.path = '/AMPEL/dumps/' + str(uuid.uuid1()) + '.json.gz'
-			url, auth = strip_auth_from_url(base_config['desycloud.default'])
-			self.session = requests.Session()
-			self.auth = auth
-			self.webdav_base = url
-			self.ocs_base = strip_path_from_url(url) + '/ocs/v1.php/apps/files_sharing/api/v1'
-		else:
-			self.outfile = GzipFile(self.config.outputfile+".json.gz", mode='w')
-		# don't bother preserving immutable types
-		self.encoder = AmpelEncoder(lossy=True)
+    def post_init(self) -> None:
+        self.count = 0
+        if not self.outputfile:
+            self.outfile = GzipFile(fileobj=BytesIO(), mode="w")
+            self.path = "/AMPEL/dumps/" + str(uuid.uuid1()) + ".json.gz"
+            self.session = requests.Session()
+            assert self.resource
+            self.webdav_base = self.resource["desycloud"]
+            self.ocs_base = (
+                strip_path_from_url(self.resource["desycloud"])
+                + "/ocs/v1.php/apps/files_sharing/api/v1"
+            )
+        else:
+            self.outfile = GzipFile(self.outputfile + ".json.gz", mode="w")
+        # don't bother preserving immutable types
+        self.encoder = AmpelEncoder(lossy=True)
 
-	def add(self, transients):
-		"""
-		"""
-		if transients is not None:
+    def add(self, transients: Tuple[SnapView, ...]) -> None:
+        """"""
+        if transients is not None:
 
-			batch_count = len(transients)
-			self.count += batch_count
+            batch_count = len(transients)
+            self.count += batch_count
 
-			for tran_view in transients:
-				self.outfile.write(self.encoder.encode(tran_view).encode('utf-8'))
-				self.outfile.write(b"\n")
+            for tran_view in transients:
+                self.outfile.write(self.encoder.encode(tran_view).encode("utf-8"))
+                self.outfile.write(b"\n")
 
-
-	def done(self):
-		"""
-		"""
-		self.outfile.flush()
-		self.logger.info("Total number of transient printed: %i" % self.count)
-		if self.config.outputfile:
-			self.outfile.close()
-			self.logger.info(self.config.outputfile+".json.gz")
-		else:
-			mb = len(self.outfile.fileobj.getvalue()) / 2.0 ** 20
-			self.logger.info("{:.1f} MB of gzipped JSONy goodness".format(mb))
-			self.session.put(self.webdav_base + self.path, data=self.outfile.fileobj.getvalue(), auth=self.auth).raise_for_status()
-			response = self.session.post(self.ocs_base + '/shares',
-			    data=dict(path=self.path, shareType=3),
-			    auth=self.auth, 
-			    headers={'OCS-APIRequest': 'true'} # i'm not a CSRF attack, i swear
-			)
-			self.outfile.close()
-			if response.ok:
-				public = ElementTree.fromstring(response.text).find('data/url').text
-				self.logger.info(public)
-			else:
-				response.raise_for_status()
+    def done(self) -> None:
+        """"""
+        self.outfile.flush()
+        self.logger.info("Total number of transient printed: %i" % self.count)
+        if self.outputfile:
+            self.outfile.close()
+            self.logger.info(self.outputfile + ".json.gz")
+        else:
+            assert isinstance(self.outfile.fileobj, BytesIO)
+            mb = len(self.outfile.fileobj.getvalue()) / 2.0 ** 20
+            self.logger.info("{:.1f} MB of gzipped JSONy goodness".format(mb))
+            self.session.put(
+                self.webdav_base + self.path,
+                data=self.outfile.fileobj.getvalue(),
+                auth=self.desycloud_auth.get(),
+            ).raise_for_status()
+            response = self.session.post(
+                self.ocs_base + "/shares",
+                data=dict(path=self.path, shareType=3),
+                auth=self.desycloud_auth.get(),
+                headers={"OCS-APIRequest": "true"},  # i'm not a CSRF attack, i swear
+            )
+            self.outfile.close()
+            if response.ok and (
+                element := ElementTree.fromstring(response.text).find("data/url")
+            ):
+                if element.text:
+                    self.logger.info(element.text)
+            else:
+                response.raise_for_status()
