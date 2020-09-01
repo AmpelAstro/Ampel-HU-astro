@@ -7,13 +7,19 @@
 # Last Modified Date: 20.08.2020
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
-from typing import Any, Dict, List
+import datetime
+from typing import Any, Dict, List, Optional, Tuple
+
+import requests
 
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.contrib.hu.t3.RapidBase import RapidBase
 from ampel.model.Secret import Secret
-
-from .RapidBase import RapidBase
+from ampel.struct.JournalExtra import JournalExtra
+from ampel.type import StockId
+from ampel.util.freeze import recursive_unfreeze
+from ampel.view.TransientView import TransientView
+from ampel.ztf.utils import to_ampel_id, to_ztf_id
 
 
 class RapidLco(RapidBase):
@@ -24,7 +30,7 @@ class RapidLco(RapidBase):
     version = 0.1
 
     # LCO trigger info
-    lco_api: Secret[str] = {"key": "lco/jnordin"}
+    lco_api: Secret[str] = {"key": "lco/jnordin"}  # type: ignore[assignment]
     # A dict of LCO API triggers to be sent for each SN that fulfills all
     # criteria. Assumed to have the following key content:
     # 'trigger_name': {'start_delay':X (days), 'end_delay':Y (days), 'api_form':Z}
@@ -171,73 +177,26 @@ class RapidLco(RapidBase):
         },
     }
 
-    # Cuts based on T2 catalog redshifts
-    # Require a redshift max from a T2 output
-    require_catalogmatch: bool = True
-    # List of catalog-like output to search for redshift
-    redshift_catalogs: List[str] = []
     # maximum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
     max_redshift: float = 0.05
-    # minimum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
-    min_redshift: float = 0.001
-    # arcsec, minimum distance to remove star matches to transient if found (eg in SDSSDR10)
-    min_dist: float = 1.5
     # arcsec, maximum distance
-    max_dist: float = 30
-    # kpc, maximum distance
-    max_kpc_dist: float = 999
-    # max abs mag through peak mag and redshift from catalog mach (require both)
-    max_absmag: float = -13
-    # min abs mag through peak mag and redshift from catalog mach (require both)
-    min_absmag: float = -17
-
-    # Cut on alert properties
-    # A candidate need to have at least this many detections
-    min_ndet: int = 2
-    # and if it has this minimum nr of detection after the last significant (max_maglim) UL.
-    min_ndet_postul: int = 2
-    # days, If a detection has an age older than this, skip (stars,age).
-    max_age: float = 1.5
-    # Min age of detection history
-    min_age: float = 0
+    max_dist: float = 30.0
     # range of peak magnitudes for submission
     min_peak_mag: float = 19.25
-    max_peak_mag: float = 16
-    # Reported detections in at least this many filters
-    min_n_filters: int = 1
-    # Minimal galactic latitide
-    min_gal_lat: float = 14
-    # reject alert if ssdistnr smaller than this value for any pp
-    ssdistnr_max: float = 1
-    # reject alert if PS1 star for any pp
-    ps1_sgveto_rad: float = 1
-    ps1_sgveto_sgth: float = 0.8
-    # Minimal median RB.
-    rb_minmed: float = 0.3
     # Minimal median RB.
     drb_minmed: float = 0.995
-    # NOT IMPLEMENTED
-    min_magrise: float = -20
-
     # Limiting magnitude to consider upper limits as 'significant'
     maglim_min: float = 19.25
-    # A limiting magnitude max this time ago
-    maglim_maxago: float = 2.5
 
-    # Cut to apply to all the photopoints in the light curve.
-    # This will affect most operations, i.e. evaluating the position,
-    # computing number of detections ecc.
-    lc_filters: List[Dict] = [
-        {"attribute": "sharpnr", "operator": ">=", "value": -10.15},
-        {"attribute": "magfromlim", "operator": ">", "value": 0},
-    ]
-
-    def react(self, tran_view, info):
+    def react(
+        self, tran_view: TransientView, info: Dict[str, Any]
+    ) -> Tuple[bool, Optional[JournalExtra]]:
         """
         Send a trigger to the LCO
         """
 
-        transient_name = ZTFUtils.to_ztf_id(tran_view.tran_id)
+        assert isinstance(tran_view.id, int)
+        transient_name = to_ztf_id(tran_view.id)
 
         # Step through all LCO submit forms
         success = True  # Will be set to false if any submit fails
@@ -247,7 +206,7 @@ class RapidLco(RapidBase):
         for submit_name, submit_info in self.lco_payload.items():
 
             # Create submit dictionary
-            react_dict = AmpelConfig.recursive_unfreeze(submit_info["api_form"])
+            react_dict = recursive_unfreeze(submit_info["api_form"])
 
             # Update with information
             react_dict["name"] = submit_name + "_" + transient_name
@@ -330,18 +289,15 @@ class RapidLco(RapidBase):
 
         # Document what we did
         jcontent = {
-            "t3unit": self.__class__.__name__,
             "reactDicts": submitted,
             "success": success,
             "lcoResponses": responses,
         }
-        jup = JournalUpdate(
-            tran_id=tran_view.tran_id, ext=self.ext_journal, content=jcontent
-        )
+        jup = JournalExtra(extra=jcontent)
 
         return success, jup
 
-    def add(self, transients):
+    def add(self, transients: Tuple[TransientView, ...]) -> Dict[StockId, JournalExtra]:
         """
         Loop through transients and check for TNS names and/or candidates to submit
         """
@@ -350,7 +306,7 @@ class RapidLco(RapidBase):
             self.logger.info("no transients for this task execution")
             return []
 
-        journal_updates = []
+        journal_updates: Dict[StockId, JournalExtra] = {}
         # We will here loop through transients and react individually
         for tv in transients:
             matchinfo = self.accept_tview(tv)
@@ -362,14 +318,15 @@ class RapidLco(RapidBase):
             # Add some more info for display
             matchinfo["LCO paths"] = []
 
-            self.logger.info("Passed reaction threshold", extra={"tranId": tv.tran_id})
+            self.logger.info("Passed reaction threshold", extra={"tranId": tv.id})
 
             # Ok, so we have a transient to react to
             if self.do_react:
                 success, jup = self.react(tv, matchinfo)
                 if not jup is None:
-                    journal_updates.append(jup)
-                    for response in jup.content["lcoResponses"]:
+                    assert jup.extra
+                    journal_updates[tv.id] = jup
+                    for response in jup.extra["lcoResponses"]:
                         matchinfo["LCO paths"].append(
                             "https://observe.lco.global/userrequests/{}/".format(
                                 response["id"]
@@ -378,12 +335,12 @@ class RapidLco(RapidBase):
                 if success:
                     self.logger.info(
                         "React success",
-                        extra={"tranId": tv.tran_id, "success": success},
+                        extra={"tranId": tv.id, "success": success},
                     )
                 else:
                     self.logger.info(
                         "React failure",
-                        extra={"tranId": tv.tran_id, "success": success},
+                        extra={"tranId": tv.id, "success": success},
                     )
             else:
                 success = False
@@ -394,13 +351,12 @@ class RapidLco(RapidBase):
             if self.do_testreact:
                 test_success, jup = self.test_react(tv, matchinfo)
                 if not jup is None:
-                    journal_updates.append(jup)
+                    journal_updates[tv.id] = jup
 
         return journal_updates
 
     def done(self):
-        """
-        """
+        """"""
 
         # Should possibly do some accounting or verification
         self.logger.info("done running T3")
