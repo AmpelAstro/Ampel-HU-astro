@@ -17,8 +17,3 @@ run:
     config: slack-ztf_general
     override:
       slack_channel: '#ztf_rapid'
-  - unit: MarshalPublisher
-    config: marshal-ampelbot
-    override:
-      marshal_program: AmpelRapid
-      marshal_saveprogramid: 67

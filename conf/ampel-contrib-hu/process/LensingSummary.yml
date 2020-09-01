@@ -15,8 +15,3 @@ run:
     config: slack-ztf_general
     override:
       slack_channel: '#ztf_lensing'
-  - unit: MarshalPublisher
-    config: marshal-ampelbot
-    override:
-      marshal_program: Gravitational Lenses
-      marshal_saveprogramid: 43
