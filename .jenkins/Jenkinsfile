@@ -28,6 +28,7 @@ pipeline {
         }
       }
       steps {
+        sh 'ampel-config build -v >/dev/null'
         sh 'rm mypy.*.xml || true'
         sh 'run_mypy.sh ampel'
       }
