@@ -103,7 +103,7 @@ class T2RiseDeclineBase(AmpelBaseModel):
 		self.logger.debug('Starting joint band RiseDeclineStat estimations')
 
 		# Detection photo-points
-		pps = light_curve.get_ntuples(['obs_date', 'fid', 'mag', 'magerr', 'rb'], filters=self.lc_filter)
+		pps = light_curve.get_ntuples(['jd', 'fid', 'magpsf', 'sigmapsf', 'rb'], filters=self.lc_filter)
 		# Check if no datapoints fulfill initial lc criteria
 		if not pps:
 			return {'success': False, 'cause': 'No data survive selection criteria'}
@@ -112,13 +112,13 @@ class T2RiseDeclineBase(AmpelBaseModel):
 		# Get observation times for non-detection limits
 		ulfilter = [{'attribute': 'diffmaglim', 'operator': '>=', 'value': self.min_UL}]
 		uls = light_curve.get_tuples(
-			'obs_date', 'diffmaglim', filters=ulfilter, of_upper_limits=True
+			'jd', 'diffmaglim', filters=ulfilter, of_upper_limits=True
 		)
 
 
 		# cast to tables for convenience
 		try:
-			dets = Table(rows = pps, names=('jd', 'filter', 'mag', 'magerr', 'rb'))
+			dets = Table(rows = pps, names=('jd', 'filter', 'magpsf', 'sigmapsf', 'rb'))
 			o['cut_pp'] = 0
 			if self.del_duplicate_rows:
 				unique_jd, counts = np.unique(dets['jd'], return_counts=True)
@@ -136,7 +136,7 @@ class T2RiseDeclineBase(AmpelBaseModel):
 		except ValueError:
 			print('debug')
 			print(pps)
-			dets = Table(rows = pps, names=('jd', 'filter', 'mag', 'magerr'))
+			dets = Table(rows = pps, names=('jd', 'filter', 'magpsf', 'sigmapsf'))
 
 
 		# First set of properties to derive
@@ -145,15 +145,15 @@ class T2RiseDeclineBase(AmpelBaseModel):
 		o['ndet'] = dets['jd'].size
 
 		try:
-			o['mag_det'] = float(dets['mag'][dets['jd'] == o['jd_det']])
+			o['mag_det'] = float(dets['magpsf'][dets['jd'] == o['jd_det']])
 		except TypeError:
 			print('debug')
 			print(dets)
 			print(o['jd_det'])
 			print(dets['jd'] == o['jd_det'])
-			o['mag_det'] = float(dets['mag'][dets['jd'] == o['jd_det']])
+			o['mag_det'] = float(dets['magpsf'][dets['jd'] == o['jd_det']])
 
-		o['mag_last'] = float(dets['mag'][dets['jd'] == o['jd_last']])
+		o['mag_last'] = float(dets['magpsf'][dets['jd'] == o['jd_last']])
 		o['t_lc'] = o['jd_last'] - o['jd_det']
 
 		# Check if (d)real bogus present for any of these + host values
@@ -187,19 +187,19 @@ class T2RiseDeclineBase(AmpelBaseModel):
 		# Has the lightcurve peaked?
 		# Requires the most recent detection to be significantly fainter than the brightest one
 		# and more than self.max_tsep to have gone since peak light
-		min_mag = dets['mag'].min()
-		min_mag_jd = float(dets['jd'][dets['mag'] == min_mag][-1])
-		min_mag_err = float(dets['magerr'][dets['mag'] == min_mag][-1])
+		min_mag = dets['magpsf'].min()
+		min_mag_jd = float(dets['jd'][dets['magpsf'] == min_mag][-1])
+		min_mag_err = float(dets['sigmapsf'][dets['magpsf'] == min_mag][-1])
 		try:
-			last_mag_err = float(dets['magerr'][dets['jd'] == o['jd_last']])
+			last_mag_err = float(dets['sigmapsf'][dets['jd'] == o['jd_last']])
 		except TypeError:
 			print('last mag err')
 			print(dets)
 			print(o)
-			print(dets['mag'] == o['mag_last'])
-			last_mag_err = float(dets['magerr'][dets['mag'] == o['mag_last']])
+			print(dets['magpsf'] == o['mag_last'])
+			last_mag_err = float(dets['sigmapsf'][dets['magpsf'] == o['mag_last']])
 
-		det_mag_err = float(dets['magerr'][dets['jd'] == o['jd_det']])
+		det_mag_err = float(dets['sigmapsf'][dets['jd'] == o['jd_det']])
 		if (o['jd_last'] - min_mag_jd) < self.max_tsep:
 			self.logger.info('Latest detection too close to peak light to calculate peak stats')
 			o['bool_peaked'] = False
@@ -270,15 +270,15 @@ class T2RiseDeclineBase(AmpelBaseModel):
 				if o['bool_norise'] or filter_det_rise['jd'].size < 2:
 					o[f'slope_rise_{self.filter_names[filtid]}'] = None
 				else:
-					p = np.polyfit(filter_det_rise['jd'], filter_det_rise['mag'], 1,
-						w = 1. / filter_det_rise['magerr'])
+					p = np.polyfit(filter_det_rise['jd'], filter_det_rise['magpsf'], 1,
+						w = 1. / filter_det_rise['sigmapsf'])
 					o[f'slope_rise_{self.filter_names[filtid]}'] = p[0]
 
 				# Decline
 				# Only makes sense to check this if lc peaked and declined for significant time
 				if filter_det_fall['jd'].size > 1 and (filter_det['jd'].max() - o['jd_max']) > self.max_tsep:
-					p = np.polyfit(filter_det_fall['jd'], filter_det_fall['mag'], 1,
-							w = 1. / filter_det_fall['magerr'])
+					p = np.polyfit(filter_det_fall['jd'], filter_det_fall['magpsf'], 1,
+							w = 1. / filter_det_fall['sigmapsf'])
 					o[f'slope_fall_{self.filter_names[filtid]}'] = p[0]
 				else:
 					o[f'slope_fall_{self.filter_names[filtid]}'] = None
@@ -287,8 +287,8 @@ class T2RiseDeclineBase(AmpelBaseModel):
 				if o['bool_norise'] or filter_det['jd'].size < 2:
 					o[f'slope_rise_{self.filter_names[filtid]}'] = None
 				else:
-					p = np.polyfit(filter_det['jd'], filter_det['mag'], 1,
-						w = 1./ filter_det['magerr'])
+					p = np.polyfit(filter_det['jd'], filter_det['magpsf'], 1,
+						w = 1./ filter_det['sigmapsf'])
 					o[f'slope_rise_{self.filter_names[filtid]}'] = p[0]
 
 		# Colors at specific phases
@@ -300,8 +300,8 @@ class T2RiseDeclineBase(AmpelBaseModel):
 				continue
 			dets_attime = dets[np.abs(dets['jd'] - coljd) <= self.max_tsep]
 			if np.any(dets_attime['filter'] == self.filter_ids[0]) and np.any(dets_attime['filter'] == self.filter_ids[1]):
-				col = np.mean(dets_attime['mag'][dets_attime['filter'] == self.filter_ids[0]])
-				col -= np.mean(dets_attime['mag'][dets_attime['filter'] == self.filter_ids[1]])
+				col = np.mean(dets_attime['magpsf'][dets_attime['filter'] == self.filter_ids[0]])
+				col -= np.mean(dets_attime['magpsf'][dets_attime['filter'] == self.filter_ids[1]])
 				o[colname] = None if np.isnan(col) else col
 			else:
 				o[colname] = None
@@ -325,7 +325,7 @@ class T2RiseDeclineStat(AbsLightCurveT2Unit, T2RiseDeclineBase):
 		# Lightcurve
 		for filtid in self.default_filter_ids:
 			filter_det = dets[dets['filter'] == filtid]
-			plt.plot(filter_det['jd'], filter_det['mag'], 'o', label="Filt %s" % (self.default_filter_names[filtid]))
+			plt.plot(filter_det['jd'], filter_det['magpsf'], 'o', label="Filt %s" % (self.default_filter_names[filtid]))
 
 		plt.plot(ulims['jd'], ulims['diffmaglim'], 'o', label="ulims")
 		#plt.plot(jd_int, interp_lc(jd_int), label="interp")
