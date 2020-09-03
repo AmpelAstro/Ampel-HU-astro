@@ -4,10 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : jnordin@physik.hu-berlin.de
 # Date              : 28.12.2018
-# Last Modified Date: 28.12.2018
-# Last Modified By  : jnordin@physik.hu-berlin.de
+# Last Modified Date: 03.08.2020
+# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
-from typing import Dict, List, Any
+from typing import Dict, List, Any, TYPE_CHECKING
 
 from astropy.table import Table
 import numpy as np
@@ -84,7 +84,8 @@ class T2RiseDeclineBase(AmpelBaseModel):
 		}
 	]
 
-	logger: AmpelLogger
+	if TYPE_CHECKING:
+		logger: AmpelLogger
 
 	# For some reason we have duplicate photopoints. Why!!!
 	# Through setting this we manually just keep the first of each occurance
@@ -187,8 +188,8 @@ class T2RiseDeclineBase(AmpelBaseModel):
 		# Requires the most recent detection to be significantly fainter than the brightest one
 		# and more than self.max_tsep to have gone since peak light
 		min_mag = dets['mag'].min()
-		min_mag_jd = float(dets['jd'][dets['mag'] == min_mag])
-		min_mag_err = float(dets['magerr'][dets['mag'] == min_mag])
+		min_mag_jd = float(dets['jd'][dets['mag'] == min_mag][-1])
+		min_mag_err = float(dets['magerr'][dets['mag'] == min_mag][-1])
 		try:
 			last_mag_err = float(dets['magerr'][dets['jd'] == o['jd_last']])
 		except TypeError:
@@ -301,7 +302,7 @@ class T2RiseDeclineBase(AmpelBaseModel):
 			if np.any(dets_attime['filter'] == self.filter_ids[0]) and np.any(dets_attime['filter'] == self.filter_ids[1]):
 				col = np.mean(dets_attime['mag'][dets_attime['filter'] == self.filter_ids[0]])
 				col -= np.mean(dets_attime['mag'][dets_attime['filter'] == self.filter_ids[1]])
-				o[colname] = col
+				o[colname] = None if np.isnan(col) else col
 			else:
 				o[colname] = None
 

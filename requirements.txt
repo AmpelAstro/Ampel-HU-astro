@@ -10,7 +10,6 @@ extcats
 sncosmo
 iminuit
 sfdmap
-xgboost
 astropy
 numpy
 scipy
