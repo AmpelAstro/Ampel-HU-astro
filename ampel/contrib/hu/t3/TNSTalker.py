@@ -1,14 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t3/T3MarshalMonitor
+# File              : ampel/contrib/hu/t3/TNSTalker.py
 # License           : BSD-3-Clause
 # Author            : jnordin@physik.hu-berlin.de
 # Date              : 17.11.2018
-# Last Modified Date: 05.08.2019
-# Last Modified By  : jnordin@physik.hu-berlin.de
+# Last Modified Date: 04.09.2029
+# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
 import re
-from typing import Dict, List, Optional
+from itertools import islice
+from typing import (
+    Any,
+    Dict,
+    Generator,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    TYPE_CHECKING,
+)
 
 import numpy as np
 from astropy.coordinates import SkyCoord
@@ -21,24 +31,39 @@ from ampel.contrib.hu.t3.ampel_tns import (
     tnsInternal,
 )
 from ampel.model.Secret import Secret
+from ampel.struct.JournalExtra import JournalExtra
+from ampel.type import StockId
+from ampel.view.TransientView import TransientView
 from ampel.ztf.utils import to_ztf_id
 
+if TYPE_CHECKING:
+    from ampel.content.JournalRecord import JournalRecord
+    from ampel.log.AmpelLogger import AmpelLogger
 
-# Create a function called "chunks" with two arguments, l and n:
-def chunks(l, n):
-    # For item i in a range that is a length of l,
-    for i in range(0, len(l), n):
-        # Create an index range for l of n items:
-        yield l[i : i + n]
+
+def chunks(l: Iterable, n: int) -> Generator[List, None, None]:
+    source = iter(l)
+    while True:
+        chunk = list(islice(source, n))
+        yield chunk
+        if len(chunk) < n:
+            break
 
 
 # get the science records for the catalog match
-def get_catalogmatch_srecs(tran_view, logger):
-    cat_res = tran_view.get_science_records(t2_unit_id="CATALOGMATCH")
-    if (not cat_res) or (not cat_res[-1].get_results()):
-        logger.info("NO CATALOG MATCH FOR THIS TRANSIENT")
-        return {}
-    return cat_res[-1].get_results()[-1].get("output", {})
+def get_catalogmatch_srecs(
+    tran_view: TransientView, logger: "AmpelLogger"
+) -> Dict[str, Any]:
+    if cat_res := [
+        record
+        for record in (tran_view.get_t2_records(unit_id="CATALOGMATCH") or [])
+        if record["body"] is not None and record["body"][-1]["result"]
+    ]:
+        if (body := cat_res[-1]["body"]) is not None:
+            return body[-1]["result"]
+
+    logger.info("NO CATALOG MATCH FOR THIS TRANSIENT")
+    return {}
 
 
 class TNSTalker(AbsT3Unit):
@@ -158,34 +183,36 @@ class TNSTalker(AbsT3Unit):
     # if you have more than this # of reports, send different files
     max_slackmsg_size = 200
 
-    def search_journal_tns(self, tran_view):
+    def search_journal_tns(
+        self, tran_view: TransientView
+    ) -> Tuple[Optional[str], List[str]]:
         """
         Look through the journal for a TNS name.
         Assumes journal entries came from this unit, that the TNS name is saved as "tnsName"
         and internal names as "tnsInternal"
         """
-        # Find the latest tns name (skipping previous)
-        jentry = tran_view.get_journal_entries(
-            filterFunc=lambda x: x.get("t3unit") == self.name
-            and "tnsInternal" in x.keys(),
-            latest=True,
-        )
-        self.logger.debug("TNS submit journal entry: %s" % (jentry))
-        tns_name = None if jentry is None else jentry.get("tnsName", None)
-        self.logger.debug("TNS journal name %s" % (tns_name))
+        tns_name, tns_internals = None, []
 
-        # Find internal names
-        jentries = tran_view.get_journal_entries(
-            filterFunc=lambda x: x.get("t3unit") == self.name
-            and "tnsInternal" in x.keys()
-        )
-        tns_internals = (
-            [] if jentries is None else [j.get("tnsInternal", None) for j in jentries]
-        )
+        def select(entry: "JournalRecord") -> bool:
+            return bool(
+                (entry["extra"] is not None and ("tnsInternal" in entry["extra"]))
+                and entry["unit"]
+                and entry["unit"] == self.__class__.__name__
+            )
+
+        if jentries := tran_view.get_journal_entries(tier=3, filter_func=select):
+            if jentries[-1]["extra"] is not None:
+                tns_name = jentries[-1]["extra"].get("tnsName", None)
+            tns_internals = [
+                entry["extra"].get("tnsInternal", None)
+                for entry in jentries
+                if entry["extra"] is not None
+            ]
+
         self.logger.info(
             "Journal search",
             extra={
-                "tranId": tran_view.tran_id,
+                "tranId": tran_view.id,
                 "tnsName": tns_name,
                 "tnsInternals": tns_internals,
             },
@@ -193,45 +220,55 @@ class TNSTalker(AbsT3Unit):
 
         return tns_name, tns_internals
 
-    def search_journal_submitted(self, tran_view):
+    def search_journal_submitted(self, tran_view: TransientView) -> bool:
         """
         Look through the journal for whether this sender submitted this to TNS.
         Assumes journal entries came from this unit, that the TNS name is saved as "tnsName"
-        and tnsSender stores the api key used ('tnsSender': self.run_config.tns_api_key')
+        and tnsSender stores the api key used ('tnsSender': self.tns_api_key')
         """
 
-        # Find the latest tns name (skipping previous)
-        jentry = tran_view.get_journal_entries(
-            filterFunc=lambda x: x.get("t3unit") == self.name
-            and x.get("tnsSender") == self.run_config.tns_api_key
-            and "tnsSubmitresult" in x.keys(),
-            latest=True,
-        )
-        if jentry is None:
-            self.logger.info(
-                "Not TNS submitted", extra={"tnsSender": self.run_config.tns_api_key}
+        def select(entry: "JournalRecord") -> bool:
+            return bool(
+                (
+                    entry["extra"] is not None
+                    and (entry["extra"].get("tnsSender") == self.tns_api_key)
+                    and "tnsSubmitResult" in entry["extra"]
+                )
+                and entry["unit"]
+                and entry["unit"] == self.__class__.__name__
             )
+
+        # Find the latest tns name (skipping previous)
+        if jentry := tran_view.get_journal_entries(
+            tier=3,
+            filter_func=select,
+            latest=True,
+        ):
+            self.logger.info("TNS submitted", extra={"tnsSender": self.tns_api_key})
+            return True
+        else:
+            self.logger.info("Not TNS submitted", extra={"tnsSender": self.tns_api_key})
             return False
 
-        self.logger.info(
-            "TNS submitted", extra={"tnsSender": self.run_config.tns_api_key}
-        )
-
-        return True
-
-    def _query_tns_names(self, tran_view):
+    def _query_tns_names(self, tran_view: TransientView) -> Tuple[Optional[str], List]:
         """
         query the TNS for names and internals at the position
         of the transient.
         """
         # query the TNS for transient at this position. Note that we check the real TNS for names for compatibility...
-        ra, dec = tran_view.get_latest_lightcurve().get_pos(
-            ret="mean", filters=self.run_config.lc_filters
-        )
+        if tran_view.lightcurve:
+            lc = tran_view.lightcurve[-1]
+            if pos := lc.get_pos(ret="mean", filters=self.lc_filters):
+                ra, dec = pos
+            else:
+                return None, []
+        else:
+            return None, []
+
         tns_name, tns_internal = get_tnsname(
             ra=ra,
             dec=dec,
-            api_key=self.run_config.tns_api_key,
+            api_key=self.tns_api_key,
             logger=self.logger,
             sandbox=False,
         )
@@ -242,7 +279,7 @@ class TNSTalker(AbsT3Unit):
             tns_name = re.sub("^SN", "", tns_name)
 
         # be nice and then go
-        ztf_name = to_ztf_id(tran_view.tran_id)
+        ztf_name = to_ztf_id(tran_view.id)
         self.logger.info(
             "looking for TNS name in the TNS.",
             extra={
@@ -255,7 +292,9 @@ class TNSTalker(AbsT3Unit):
         )
         return tns_name, [tns_internal]
 
-    def _find_tns_tran_names(self, tran_view):
+    def _find_tns_tran_names(
+        self, tran_view: TransientView
+    ) -> Tuple[Optional[str], List[str]]:
         """
         search for TNS name in tran_view.tran_names. If found,
         look in the TNS for internal names and return them
@@ -263,43 +302,49 @@ class TNSTalker(AbsT3Unit):
 
         # First, look if we already registered a name
         tns_name, tns_internals = None, []
-        for tname in tran_view.tran_names:
+        names: List[str] = (
+            [str(name) for name in (tran_view.stock["name"] or [])]
+            if tran_view.stock
+            else []
+        )
+        for tname in names:
 
-            if "TNS" in tname and (not self.run_config.get_tns_force):
+            if "TNS" in tname and (not self.get_tns_force):
                 self.logger.info(
                     "found TNS name in tran_names.",
-                    extra={"TNSname": tname, "TransNames": tran_view.tran_names},
+                    extra={"TNSname": tname, "TransNames": names},
                 )
                 # as TNS to give you the internal names.
                 # we remove the 'TNS' part of the name, since this has been
                 # added by the TNSMatcher T3, plus we skip the prefix
-                tns_name = tname.replace(
-                    "TNS", ""
-                )  # We here assume that the AT/SN suffix is cut
+                # We here assume that the AT/SN suffix is cut
+                tns_name = tname.replace("TNS", "")
                 # Not using sandbox (only checking wrt to full system). This method still only returns a single internal name of the detecting survey
                 tns_internal_single, runstatus = tnsInternal(
-                    tns_name, api_key=self.run_config.tns_api_key, sandbox=False
+                    tns_name, api_key=self.tns_api_key, sandbox=False
                 )
                 if not tns_internal_single is None:
                     # Even if this is a single name, it comes as a list
                     tns_internals.append(tns_internal_single)
 
         # be nice with the logging
-        ztf_name = to_ztf_id(tran_view.tran_id)
+        ztf_name = to_ztf_id(tran_view.id)
         self.logger.info(
             "looked for TNS name in self.tran_names",
             extra={
                 "ZTFname": ztf_name,
                 "tnsName": tns_name,
                 "tnsInternals": tns_internals,
-                "TransNames": tran_view.tran_names,
+                "TransNames": names,
             },
         )
 
         # if you make it till here, no match was found
         return tns_name, tns_internals
 
-    def find_tns_name(self, tran_view):
+    def find_tns_name(
+        self, tran_view: TransientView
+    ) -> Tuple[Optional[str], List[str], Optional[JournalExtra]]:
         """
         extensive search for TNS names in:
         - tran_view.tran_names (if added by TNSMatcher)
@@ -311,7 +356,7 @@ class TNSTalker(AbsT3Unit):
             tns_name, tns_internals, jup: tns_name, tns_internal, and journal update
         """
 
-        ztf_name = to_ztf_id(tran_view.tran_id)
+        ztf_name = to_ztf_id(tran_view.id)
         self.logger.info("looking for TNS name", extra={"ZTFname": ztf_name})
 
         # first we look in the journal, this is the cheapest option. If we have
@@ -319,7 +364,7 @@ class TNSTalker(AbsT3Unit):
         # the TNS, we are fine. NOTE: in this case you don't return a journal update.
         tns_name, tns_internals = self.search_journal_tns(tran_view)
         self.logger.debug("Found tns name in journal: %s" % (tns_name))
-        if (not tns_name is None) and (not self.run_config.get_tns_force):
+        if (not tns_name is None) and (not self.get_tns_force):
             return tns_name, tns_internals, None
 
         # second option in case there is no TNS name in the journal: go and look in tran_names
@@ -335,7 +380,7 @@ class TNSTalker(AbsT3Unit):
                 "Proper check of tns done, found name %s" % (tns_name_new)
             )
 
-        # now, it is possible (if you set self.run_config.get_tns_force) that the
+        # now, it is possible (if you set self.get_tns_force) that the
         # new TNS name is different from the one we had in the journal. We always
         # use the most recent one. In this case we also create a JournalUpdate
         jup = None
@@ -350,18 +395,14 @@ class TNSTalker(AbsT3Unit):
 
                 # create content of journal entry. Eventually
                 # update the list with the new internal names if any are found
-                jcontent = {"t3unit": self.name, "tnsName": tns_name_new}
+                jcontent = {"tnsName": tns_name_new}
                 if tns_internals_new is not None:
-                    tns_internals.append(tns_internals_new)
+                    tns_internals.extend(tns_internals_new)
                     for tns_int in tns_internals_new:
                         jcontent.update({"tnsInternal": tns_int})
 
                 # create a journalUpdate and update the tns_name as well. TODO: check with JNo
-                jup = JournalUpdate(
-                    tran_id=tran_view.tran_id,
-                    ext=self.run_config.ext_journal,
-                    content=jcontent,
-                )
+                jup = JournalExtra(extra=jcontent)
                 tns_name = tns_name_new
 
             elif tns_name is None:
@@ -372,25 +413,21 @@ class TNSTalker(AbsT3Unit):
 
                 # create content of journal entry. Eventually
                 # update the list with the new internal names if any are found
-                jcontent = {"t3unit": self.name, "tnsName": tns_name_new}
+                jcontent = {"tnsName": tns_name_new}
                 if tns_internals_new is not None:
                     tns_internals.extend(tns_internals_new)
                     for tns_int in tns_internals_new:
                         jcontent.update({"tnsInternal": tns_int})
 
                 # create a journalUpdate and update the tns_name as well. TODO: check with JNo
-                jup = JournalUpdate(
-                    tran_id=tran_view.tran_id,
-                    ext=self.run_config.ext_journal,
-                    content=jcontent,
-                )
+                jup = JournalExtra(extra=jcontent)
                 tns_name = tns_name_new
                 # tns_internals = tns_internals_new
 
         # bye!
         return tns_name, tns_internals, jup
 
-    def accept_tview(self, tran_view):
+    def accept_tview(self, tran_view: TransientView) -> bool:
         """
         decide weather or not this transient is worth submitting to TNS
         or not.
@@ -407,121 +444,117 @@ class TNSTalker(AbsT3Unit):
         """
 
         # get the latest light curve
-        lc = tran_view.get_latest_lightcurve()
+        assert tran_view.lightcurve
+        lc = tran_view.lightcurve[-1]
 
         # apply cut on history: consider photophoints which are sharp enough
-        pps = lc.get_photopoints(filters=self.run_config.lc_filters)
+        if not (pps := lc.get_photopoints(filters=self.lc_filters)):
+            return False
         # Current filters cannot sort two attributes
-        if self.run_config.require_lowerthanlim:
-            pps = [
-                pp for pp in pps if pp.get_value("magpsf") < pp.get_value("diffmaglim")
-            ]
-        self.logger.info(
-            "%d photop. passed filter %s" % (len(pps), self.run_config.lc_filters)
-        )
+        if self.require_lowerthanlim:
+            pps = [pp for pp in pps if pp["body"]["magpsf"] < pp["body"]["diffmaglim"]]
+        self.logger.info("%d photop. passed filter %s" % (len(pps), self.lc_filters))
 
         # cut on number of detection
-        if len(pps) < self.run_config.min_ndet:
+        if len(pps) < self.min_ndet:
             self.logger.info(
                 ", not enough detections: got %d, required %d"
-                % (len(pps), self.run_config.min_ndet)
+                % (len(pps), self.min_ndet)
             )
             return False
 
         # cut on number of filters
-        used_filters = set([pp.get_value("fid") for pp in pps])
-        if len(used_filters) < self.run_config.min_n_filters:
+        used_filters = set([pp["body"]["fid"] for pp in pps])
+        if len(used_filters) < self.min_n_filters:
             self.logger.info(
                 "requested detections in more than %d bands, got: %d"
-                % (self.run_config.min_n_filters, len(used_filters))
+                % (self.min_n_filters, len(used_filters))
             )
             return False
 
         # cut on range of peak magnitude
-        mags = [pp.get_value("magpsf") for pp in pps]
+        mags = [pp["body"]["magpsf"] for pp in pps]
         peak_mag = min(mags)
-        if (
-            peak_mag > self.run_config.min_peak_mag
-            or peak_mag < self.run_config.max_peak_mag
-        ):
+        if peak_mag > self.min_peak_mag or peak_mag < self.max_peak_mag:
             self.logger.info(
                 "peak magnitude of %.2f outside of range [%.2f, %.2f]"
-                % (peak_mag, self.run_config.min_peak_mag, self.run_config.max_peak_mag)
+                % (peak_mag, self.min_peak_mag, self.max_peak_mag)
             )
             return False
 
         # cut on age
-        jds = [pp.get_value("jd") for pp in pps]
+        jds = [pp["body"]["jd"] for pp in pps]
         most_recent_detection, first_detection = max(jds), min(jds)
         # age = Time.now().jd - min(jds)
         age = most_recent_detection - first_detection
-        if age > self.run_config.max_age or age < self.run_config.min_age:
+        if age > self.max_age or age < self.min_age:
             self.logger.info(
                 "age of %.2f days outside of range [%.2f, %.2f]"
-                % (age, self.run_config.min_age, self.run_config.max_age)
+                % (age, self.min_age, self.max_age)
             )
             return False
 
         # cut on galactic coordinates
-        ra, dec = lc.get_pos(ret="mean", filters=self.run_config.lc_filters)
+        if pos := lc.get_pos(ret="mean", filters=self.lc_filters):
+            ra, dec = pos
+        else:
+            return False
         coordinates = SkyCoord(ra, dec, unit="deg")
         b = coordinates.galactic.b.deg
-        if abs(b) < self.run_config.min_gal_lat:
+        if abs(b) < self.min_gal_lat:
             self.logger.info(
                 "transient at b=%.2f too close to galactic plane (cut at %.2f)"
-                % (b, self.run_config.min_gal_lat)
+                % (b, self.min_gal_lat)
             )
             return False
 
         # cut on number of detection after last SIGNIFICANT UL or r
-        ulims = lc.get_upperlimits(
+        if ulims := lc.get_upperlimits(
             filters={
                 "attribute": "diffmaglim",
                 "operator": ">=",
-                "value": self.run_config.max_maglim,
+                "value": self.max_maglim,
             }
-        )
-        if len(ulims) > 0:
-            last_ulim = sorted(ulims, key=lambda x: x.get_value("jd"))[-1]
-            pps_after_ndet = lc.get_photopoints(
-                filters=self.run_config.lc_filters
-                + [
-                    {
-                        "attribute": "jd",
-                        "operator": ">=",
-                        "value": last_ulim.get_value("jd"),
-                    }
-                ]
+        ):
+            last_ulim = sorted(ulims, key=lambda x: x["body"]["jd"])[-1]
+            pps_after_ndet = (
+                lc.get_photopoints(
+                    filters=self.lc_filters
+                    + [
+                        {
+                            "attribute": "jd",
+                            "operator": ">=",
+                            "value": last_ulim["body"]["jd"],
+                        }
+                    ]
+                )
+                or []
             )
             # Can this work? - It does not seem like it
-            # filters = self.run_config.lc_filters + [{'attribute': 'jd', 'operator': '>=', 'value': last_ulim.get_value('jd')}, {'attribute': 'magpsf', 'operator': '<', 'attribute': 'diffmaglim'}]
+            # filters = self.lc_filters + [{'attribute': 'jd', 'operator': '>=', 'value': last_ulim["body"]['jd']}, {'attribute': 'magpsf', 'operator': '<', 'attribute': 'diffmaglim'}]
             # Current filters cannot sort two attributes
-            if self.run_config.require_lowerthanlim:
+            if self.require_lowerthanlim:
                 pps_after_ndet = [
                     pp
                     for pp in pps_after_ndet
-                    if pp.get_value("magpsf") < pp.get_value("diffmaglim")
+                    if pp["body"]["magpsf"] < pp["body"]["diffmaglim"]
                 ]
 
-            if len(pps_after_ndet) < self.run_config.min_ndet_postul:
+            if len(pps_after_ndet) < self.min_ndet_postul:
                 self.logger.info(
                     "not enough consecutive detections after last significant UL.",
-                    extra={"NDet": len(pps), "lastUlimJD": last_ulim.get_value("jd")},
+                    extra={"NDet": len(pps), "lastUlimJD": last_ulim["body"]["jd"]},
                 )
                 return False
 
             # Check mag increase per time range for first detections
-            first_pp_afterUL = sorted(pps_after_ndet, key=lambda x: x.get_value("jd"))[
-                0
-            ]
+            first_pp_afterUL = sorted(pps_after_ndet, key=lambda x: x["body"]["jd"])[0]
             # This is only a relevant comparison if the obs after last significant UL is also first detection
-            if (
-                self.run_config.cut_fastrise
-                and first_pp_afterUL.get_value("jd") == first_detection
-            ):
-                delta_t = first_pp_afterUL.get_value("jd") - last_ulim.get_value("jd")
-                delta_m = -first_pp_afterUL.get_value("magpsf") + last_ulim.get_value(
-                    "diffmaglim"
+            if self.cut_fastrise and first_pp_afterUL["body"]["jd"] == first_detection:
+                delta_t = first_pp_afterUL["body"]["jd"] - last_ulim["body"]["jd"]
+                delta_m = (
+                    -first_pp_afterUL["body"]["magpsf"]
+                    + last_ulim["body"]["diffmaglim"]
                 )
 
                 if delta_t < 3.5 and delta_m > 3:
@@ -532,10 +565,10 @@ class TNSTalker(AbsT3Unit):
 
         # cut on distance to closest solar system object
         # TODO: how to make this check: ('0.0' in list(phot["ssdistnr"])
-        ssdist = np.array([pp.get_value("ssdistnr") for pp in pps])
+        ssdist = np.array([pp["body"]["ssdistnr"] for pp in pps])
         ssdist[ssdist == None] = -999
 
-        close_to_sso = np.logical_and(ssdist < self.run_config.ssdistnr_max, ssdist > 0)
+        close_to_sso = np.logical_and(ssdist < self.ssdistnr_max, ssdist > 0)
         if np.any(close_to_sso):
             self.logger.info(
                 "transient too close to solar system object",
@@ -546,11 +579,14 @@ class TNSTalker(AbsT3Unit):
         # check PS1 sg for the full alert history
         # Note that we for this check do *not* use the lightcurve filter criteria
         # TODO: Evaluate whether we should use the filters, and do a check for sufficient number of datapoints remaining
-        # distpsnr1, sgscore1 = zip(*lc.get_tuples('distpsnr1', 'sgscore1', filters=self.run_config.lc_filters))
-        distpsnr1, sgscore1 = zip(*lc.get_tuples("distpsnr1", "sgscore1"))
+        # distpsnr1, sgscore1 = zip(*lc.get_tuples('distpsnr1', 'sgscore1', filters=self.lc_filters))
+        if tups := lc.get_tuples("distpsnr1", "sgscore1"):
+            distpsnr1, sgscore1 = zip(*tups)
+        else:
+            return False
         is_ps1_star = np.logical_and(
-            np.array(distpsnr1) < self.run_config.ps1_sgveto_rad,
-            np.array(sgscore1) > self.run_config.ps1_sgveto_sgth,
+            np.array(distpsnr1) < self.ps1_sgveto_rad,
+            np.array(sgscore1) > self.ps1_sgveto_sgth,
         )
         if np.any(is_ps1_star):
             self.logger.info(
@@ -560,29 +596,29 @@ class TNSTalker(AbsT3Unit):
             return False
 
         # cut on median RB score
-        rbs = [pp.get_value("rb") for pp in pps]
-        if np.median(rbs) < self.run_config.rb_minmed:
+        rbs = [pp["body"]["rb"] for pp in pps]
+        if np.median(rbs) < self.rb_minmed:
             self.logger.info(
                 "Median RB %below limit.",
                 extra={
                     "median_rd": np.median(rbs),
-                    "rb_minmed": self.run_config.rb_minmed,
+                    "rb_minmed": self.rb_minmed,
                 },
             )
             return False
 
-        # ----------------------------------------------------------------------#
-        #    CUTS ON T2 RECORDS                                                #
-        # ----------------------------------------------------------------------#
+        # -------------------------- #
+        #    CUTS ON T2 RECORDS      #
+        # -------------------------- #
         cat_res = get_catalogmatch_srecs(tran_view, logger=self.logger)
 
         # check that we got any catalogmatching results (that it was run)
-        if self.run_config.require_catalogmatch and len(cat_res) == 0:
+        if self.require_catalogmatch and len(cat_res) == 0:
             self.logger.info("no T2CATALOGMATCH results")
             return False
 
         # check that you have positive match in all of the necessary cataslogs:
-        for needed_cat in self.run_config.needed_catalogs:
+        for needed_cat in self.needed_catalogs:
             if not cat_res.get(needed_cat, False):
                 self.logger.info(
                     "no T2CATALOGMATCH results for %s" % needed_cat,
@@ -592,23 +628,13 @@ class TNSTalker(AbsT3Unit):
 
         nedz = cat_res.get("NEDz", False)
         sdss_spec = cat_res.get("SDSS_spec", False)
-        if (
-            nedz
-            and not (
-                self.run_config.min_redshift < nedz["z"] < self.run_config.max_redshift
-            )
-        ) or (
-            sdss_spec
-            and not (
-                self.run_config.min_redshift
-                < sdss_spec["z"]
-                < self.run_config.max_redshift
-            )
+        if (nedz and not (self.min_redshift < nedz["z"] < self.max_redshift)) or (
+            sdss_spec and not (self.min_redshift < sdss_spec["z"] < self.max_redshift)
         ):
             self.logger.info(
                 "transient z above limit.",
                 extra={
-                    "max_z": self.run_config.max_redshift,
+                    "max_z": self.max_redshift,
                     "SDSS_spec": sdss_spec,
                     "NEDz": nedz,
                 },
@@ -617,18 +643,14 @@ class TNSTalker(AbsT3Unit):
 
         # another battle in the endless war against stars.
         # here we define a dict to treat each catalog in the same way
-        star_filters = {
+        star_filters: Dict[str, Dict[str, Any]] = {
             "SDSSDR10": {"class_col": "type", "star_val": 6},
             "LAMOSTDr4": {"class_col": "class", "star_val": "STAR"},
         }
         for cat_name, sfilter in star_filters.items():
             cat = cat_res.get(cat_name, False)
             cname, sval = sfilter["class_col"], sfilter["star_val"]
-            if (
-                cat
-                and cat[cname] == sval
-                and cat["dist2transient"] < self.run_config.start_dist
-            ):
+            if cat and cat[cname] == sval and cat["dist2transient"] < self.start_dist:
                 self.logger.info(
                     "transient matched with star in catalog.",
                     extra={"cat_name": cat_name, "cat_res": cat},
@@ -637,7 +659,7 @@ class TNSTalker(AbsT3Unit):
 
         # cut matches with variable star catalog
         aavsovsx = cat_res.get("AAVSOVSX", False)
-        if aavsovsx and aavsovsx["dist2transient"] < self.run_config.start_dist:
+        if aavsovsx and aavsovsx["dist2transient"] < self.start_dist:
             self.logger.info("transient too close to AAVSOVSX sorce", extra=aavsovsx)
             return False
 
@@ -646,7 +668,7 @@ class TNSTalker(AbsT3Unit):
         if (
             gaia_dr2
             and gaia_dr2["Mag_G"] > 0
-            and gaia_dr2["Mag_G"] < self.run_config.max_gaia_neighbour_gmag
+            and gaia_dr2["Mag_G"] < self.max_gaia_neighbour_gmag
         ):
             self.logger.info("transient close to bright GAIA source", extra=gaia_dr2)
             return False
@@ -654,7 +676,9 @@ class TNSTalker(AbsT3Unit):
         # congratulation TransientView, you made it!
         return True
 
-    def add_atreport_remarks(self, tran_view):
+    def add_atreport_remarks(
+        self, tran_view: TransientView
+    ) -> Optional[Dict[str, Any]]:
         """
         create additional remarks based, i.e. on catalog matching data
         """
@@ -674,7 +698,7 @@ class TNSTalker(AbsT3Unit):
             self.logger.info(
                 "Transient is SDSS BPT or Milliquas AGN.",
                 extra={
-                    "tranId": tran_view.tran_id,
+                    "tranId": tran_view.id,
                     "milliquas": milliquas,
                     "SDSS_spec": sdss_spec,
                 },
@@ -686,120 +710,125 @@ class TNSTalker(AbsT3Unit):
         if (
             sdss_dr10
             and sdss_dr10["type"] == 3
-            and sdss_dr10["dist2transient"] < self.run_config.nuclear_dist
+            and sdss_dr10["dist2transient"] < self.nuclear_dist
         ):
             self.logger.info(
                 "Transient close to SDSS photometric galaxy - possibly nuclear",
-                extra={"tranId": tran_view.tran_id, "SDSSDR10": sdss_dr10},
+                extra={"tranId": tran_view.id, "SDSSDR10": sdss_dr10},
             )
             return {"remarks": "Close to core of SDSS DR10 galaxy", "at_type": 4}
 
         # tag noisy gaia
-        lc = tran_view.get_latest_lightcurve()
-        distpsnr1, sgscore1 = zip(
-            *lc.get_tuples("distpsnr1", "sgscore1", filters=self.run_config.lc_filters)
-        )
-        galaxylike_ps1 = np.logical_and(
-            np.array(distpsnr1) < 1.5, np.array(sgscore1) < 0.5
-        )
-        gaia_dr2 = cat_res.get("GAIADR2", False)
-        nedz = cat_res.get("NEDz", False)
-        if (
-            (
-                gaia_dr2
-                and gaia_dr2["ExcessNoise"] > self.run_config.max_gaia_noise
-                and gaia_dr2["dist2transient"] < 1
+        if tran_view.lightcurve and (
+            tups := tran_view.lightcurve[-1].get_tuples(
+                "distpsnr1", "sgscore1", filters=self.lc_filters
             )
-            and (nedz and not (nedz["z"] > 0.01 and nedz["dist2transient"] < 1))
-            and (  # if it's extragalactic
-                sdss_dr10
-                and not (sdss_dr10["type"] == 3 and sdss_dr10["dist2transient"] < 3)
-            )
-            and (  # and if it's not a galaxy
-                not np.any(galaxylike_ps1)
-            )  # TODO: check the logic
         ):
-            self.logger.info(
-                "Significant noise in Gaia DR2 - variable star cannot be excluded.",
-                extra={
-                    "tranId": tran_view.tran_id,
-                    "GAIADR2": gaia_dr2,
-                    "NEDz": nedz,
-                    "SDSSDR10": sdss_dr10,
-                },
+            distpsnr1, sgscore1 = zip(*tups)
+            galaxylike_ps1 = np.logical_and(
+                np.array(distpsnr1) < 1.5, np.array(sgscore1) < 0.5
             )
-            return {
-                "remarks": "Significant noise in Gaia DR2 - variable star cannot be excluded."
-            }
+            gaia_dr2 = cat_res.get("GAIADR2", False)
+            nedz = cat_res.get("NEDz", False)
+            if (
+                (
+                    gaia_dr2
+                    and gaia_dr2["ExcessNoise"] > self.max_gaia_noise
+                    and gaia_dr2["dist2transient"] < 1
+                )
+                and (nedz and not (nedz["z"] > 0.01 and nedz["dist2transient"] < 1))
+                and (  # if it's extragalactic
+                    sdss_dr10
+                    and not (sdss_dr10["type"] == 3 and sdss_dr10["dist2transient"] < 3)
+                )
+                and (  # and if it's not a galaxy
+                    not np.any(galaxylike_ps1)
+                )  # TODO: check the logic
+            ):
+                self.logger.info(
+                    "Significant noise in Gaia DR2 - variable star cannot be excluded.",
+                    extra={
+                        "tranId": tran_view.id,
+                        "GAIADR2": gaia_dr2,
+                        "NEDz": nedz,
+                        "SDSSDR10": sdss_dr10,
+                    },
+                )
+                return {
+                    "remarks": "Significant noise in Gaia DR2 - variable star cannot be excluded."
+                }
+        return None
 
-    def create_atreport(self, tran_view):
+    def create_atreport(self, tran_view: TransientView) -> Optional[Dict[str, Any]]:
         """
         Collect the data needed for the atreport. Return None in case
         you have to skip this transient for some reason.
         """
 
         self.logger.info("creating AT report for transient.")
-        ztf_name = to_ztf_id(tran_view.tran_id)
-        lc = tran_view.get_latest_lightcurve()
-        ra, dec = lc.get_pos(ret="mean", filters=self.run_config.lc_filters)
+        ztf_name = to_ztf_id(tran_view.id)
+        if (
+            tran_view.lightcurve
+            and (lc := tran_view.lightcurve[-1])
+            and (pos := lc.get_pos(ret="mean", filters=self.lc_filters))
+        ):
+            ra, dec = pos
+        else:
+            return None
 
         # Start defining AT dict: name and position
         atdict = {}
-        atdict.update(self.run_config.base_at_dict)
+        atdict.update(self.base_at_dict)
         atdict["internal_name"] = ztf_name
         atdict["ra"] = {"value": ra, "error": 1.0, "units": "arcsec"}
         atdict["dec"] = {"value": dec, "error": 1.0, "units": "arcsec"}
 
         # Add information on the latest SIGNIFICANT non detection. TODO: check!
-        ulims = lc.get_upperlimits(
+        last_non_obs = 0
+        if ulims := lc.get_upperlimits(
             filters={
                 "attribute": "diffmaglim",
                 "operator": ">=",
-                "value": self.run_config.max_maglim,
+                "value": self.max_maglim,
             }
-        )
-        last_non_obs = 0
-        if len(ulims) == 0:
+        ):
+            last_ulim = sorted(ulims, key=lambda x: x["body"]["jd"])[-1]
+            last_non_obs = last_ulim["body"]["jd"]
+            filter_name = TNSFILTERID.get(last_ulim["body"]["fid"])
+            atdict["non_detection"] = {
+                "obsdate": last_ulim["body"]["jd"],
+                "limiting_flux": last_ulim["body"]["diffmaglim"],
+                "filter_value": filter_name,
+            }
+        else:
             atdict["non_detection"] = {
                 "archiveid": "0",
                 "archival_remarks": "ZTF non-detection limits not available",
             }
-        else:
-            last_ulim = sorted(ulims, key=lambda x: x.get_value("jd"))[-1]
-            last_non_obs = last_ulim.get_value("jd")
-            filter_name = TNSFILTERID.get(last_ulim.get_value("fid"))
-            atdict["non_detection"] = {
-                "obsdate": last_ulim.get_value("jd"),
-                "limiting_flux": last_ulim.get_value("diffmaglim"),
-                "filter_value": filter_name,
-            }
-        atdict["non_detection"].update(
-            self.run_config.ztf_tns_at
-        )  # Add the default ZTF values
+
+        atdict["non_detection"].update(self.ztf_tns_at)  # Add the default ZTF values
 
         # now add info on photometric detections: consider only candidates which
         # have some consecutive detection after the last ulim
-        pps = lc.get_photopoints(
-            filters=self.run_config.lc_filters
+        if pps := lc.get_photopoints(
+            filters=self.lc_filters
             + [{"attribute": "jd", "operator": ">=", "value": last_non_obs}]
-        )
-        # TODO: pps are those sorted in time?
-
-        # Lets create a few photometry points: TODO: should they be the latest or the first?
-        atdict["photometry"] = {"photometry_group": {}}
-        atdict["discovery_datetime"] = 10 ** 30
-        for ipp, pp in enumerate(pps[: self.run_config.nphot_submit]):
-            photdict = {  # TODO: do we need to round the numerical values?
-                "obsdate": pp.get_value("jd"),
-                "flux": float("{0:.2f}".format(pp.get_value("magpsf"))),
-                "flux_error": float("{0:.2f}".format(pp.get_value("sigmapsf"))),
-                "limiting_flux": float("{0:.2f}".format(pp.get_value("diffmaglim"))),
-                "filter_value": TNSFILTERID.get(pp.get_value("fid")),
-            }
-            if pp.get_value("jd") < atdict["discovery_datetime"]:
-                atdict["discovery_datetime"] = pp.get_value("jd")
-            photdict.update(self.run_config.ztf_tns_at)
-            atdict["photometry"]["photometry_group"][int(ipp)] = photdict
+        ):
+            # Lets create a few photometry points: TODO: should they be the latest or the first?
+            atdict["photometry"] = {"photometry_group": {}}
+            atdict["discovery_datetime"] = 10 ** 30
+            for ipp, pp in enumerate(pps[: self.nphot_submit]):
+                photdict = {  # TODO: do we need to round the numerical values?
+                    "obsdate": pp["body"]["jd"],
+                    "flux": float("{0:.2f}".format(pp["body"]["magpsf"])),
+                    "flux_error": float("{0:.2f}".format(pp["body"]["sigmapsf"])),
+                    "limiting_flux": float("{0:.2f}".format(pp["body"]["diffmaglim"])),
+                    "filter_value": TNSFILTERID.get(pp["body"]["fid"]),
+                }
+                if pp["body"]["jd"] < atdict["discovery_datetime"]:
+                    atdict["discovery_datetime"] = pp["body"]["jd"]
+                photdict.update(self.ztf_tns_at)
+                atdict["photometry"]["photometry_group"][int(ipp)] = photdict
 
         # finally, add remarks based on catalogs adn return
         remarks = self.add_atreport_remarks(tran_view)
@@ -808,20 +837,20 @@ class TNSTalker(AbsT3Unit):
         if "remarks" in atdict.keys():
             atdict["remarks"] = "%s. %s." % (
                 atdict["remarks"],
-                self.run_config.baseremark,
+                self.baseremark,
             )
         else:
-            atdict["remarks"] = self.run_config.baseremark
+            atdict["remarks"] = self.baseremark
         return atdict
 
-    def add(self, transients):
+    def add(self, transients: Tuple[TransientView, ...]) -> Dict[StockId, JournalExtra]:
         """
         Loop through transients and check for TNS names and/or candidates to submit
         """
 
         if transients is None:
             self.logger.info("no transients for this task execution")
-            return []
+            return {}
 
         # select the transients
         transients_to_submit = [tv for tv in transients if self.accept_tview(tv)]
@@ -831,19 +860,19 @@ class TNSTalker(AbsT3Unit):
         )
 
         # Will be saved to future journals
-        journal_updates = []
+        journal_updates: Dict[StockId, JournalExtra] = {}
         # Reports to be sent, indexed by the transient view IDs (so that we can check in the replies)
-        atreports = {}
+        atreports: Dict[StockId, Dict[str, Any]] = {}
         for tran_view in transients_to_submit:
 
-            ztf_name = to_ztf_id(tran_view.tran_id)
+            ztf_name = to_ztf_id(tran_view.id)
             self.logger.info(
-                "TNS check", extra={"tranId": tran_view.tran_id, "ztfName": ztf_name}
+                "TNS check", extra={"tranId": tran_view.id, "ztfName": ztf_name}
             )
             self.logger.debug("TNS check for %s" % (ztf_name))
 
             # Simplest case to check. We wish to submit everything not noted as submitted
-            if self.run_config.submit_unless_journal:
+            if self.submit_unless_journal:
 
                 if self.search_journal_submitted(tran_view):
                     # Note already submitted
@@ -851,9 +880,9 @@ class TNSTalker(AbsT3Unit):
 
                 else:
                     # create AT report
-                    atreport = self.create_atreport(tran_view)
-                    self.logger.info("Added to report list")
-                    atreports[tran_view.tran_id] = atreport
+                    if atreport := self.create_atreport(tran_view):
+                        self.logger.info("Added to report list")
+                        atreports[tran_view.id] = atreport
 
                 continue
 
@@ -861,7 +890,7 @@ class TNSTalker(AbsT3Unit):
             # from TNS itself. If new names are found, create a new JournalUpdate
             tns_name, tns_internals, jup = self.find_tns_name(tran_view)
             if not jup is None:
-                journal_updates.append(jup)
+                journal_updates[tran_view.id] = jup
             self.logger.debug("TNS got %s internals %s" % (tns_name, tns_internals))
 
             if not tns_name is None:
@@ -872,7 +901,7 @@ class TNSTalker(AbsT3Unit):
                 is_ztfsubmitted = ztf_name in tns_internals
                 if is_ztfsubmitted:
                     # Already registered under this name. Only submit if we explicitly configured to do this
-                    if not self.run_config.resubmit_tns_ztf:
+                    if not self.resubmit_tns_ztf:
                         self.logger.info(
                             "ztf submitted",
                             extra={
@@ -883,7 +912,7 @@ class TNSTalker(AbsT3Unit):
                         continue
 
                 # Also allow for the option to not submit if someone (anyone) already did this. Not sure why this would be a good idea.
-                if not is_ztfsubmitted and not self.run_config.resubmit_tns_nonztf:
+                if not is_ztfsubmitted and not self.resubmit_tns_nonztf:
                     self.logger.info(
                         "already in tns, skipping",
                         extra={
@@ -894,9 +923,9 @@ class TNSTalker(AbsT3Unit):
                     continue
 
             # create AT report
-            atreport = self.create_atreport(tran_view)
-            self.logger.info("Added to report list")
-            atreports[tran_view.tran_id] = atreport
+            if atreport := self.create_atreport(tran_view):
+                self.logger.info("Added to report list")
+                atreports[tran_view.id] = atreport
 
         # TODO: we save the atreports to send them to the TNS.
         # This is just part of the tesing and will have to go away
@@ -905,12 +934,12 @@ class TNSTalker(AbsT3Unit):
         self.logger.info("collected %d AT reports to post" % len(atreports))
 
         # If we do not want to submit anything, or if there's nothing to submit
-        if len(atreports) == 0 or (not self.run_config.submit_tns):
+        if len(atreports) == 0 or (not self.submit_tns):
             self.logger.info(
                 "submit_tns config parameter is False or there's nothing to submit",
                 extra={
                     "n_reports": len(atreports),
-                    "submit_tns": self.run_config.submit_tns,
+                    "submit_tns": self.submit_tns,
                 },
             )
             return journal_updates
@@ -918,23 +947,20 @@ class TNSTalker(AbsT3Unit):
         # atreports is now a dict with tran_id as keys and atreport as keys
         # what we need is a list of dicts with form {'at_report':atreport }
         # where an atreport is a dictionary with increasing integer as keys and atreports as values
-        atreportlist = []
-        atreport = {}
-        k = 0
-        for tranid in atreports.keys():
-            if len(atreport) > 90:
-                self.logger.info("adding another report to TNS submit")
-                atreportlist.append({"at_report": atreport})
-                atreport = {}
-                k = 0
-            atreport[int(k)] = atreports[tranid]
-            k += 1
-        atreportlist.append({"at_report": atreport})
+        atreportlist = [
+            {
+                "at_report": {
+                    i: report
+                    for chunk in chunks(atreports.values(), 90)
+                    for i, report in chunk
+                }
+            }
+        ]
         tnsreplies = sendTNSreports(
             atreportlist,
-            self.run_config.tns_api_key,
+            self.tns_api_key,
             self.logger,
-            sandbox=self.run_config.sandbox,
+            sandbox=self.sandbox,
         )
 
         # Now go and check and create journal updates for the cases where SN was added
@@ -946,31 +972,30 @@ class TNSTalker(AbsT3Unit):
 
             # Create new journal entry
             # TODO: do we want to add to the journal a failed TNS submit?
-            jup = JournalUpdate(
-                tran_id=tran_id,
-                ext=self.run_config.ext_journal,
-                content={
-                    "t3unit": self.name,
+            jup = JournalExtra(
+                extra={
                     "tnsName": tnsreplies[ztf_name][1]["TNSName"],
                     "tnsInternal": ztf_name,
                     "tnsSubmitresult": tnsreplies[ztf_name][0],
-                    "tnsSender": self.run_config.tns_api_key,
+                    "tnsSender": self.tns_api_key,
                 },
             )
-            journal_updates.append(jup)
+            journal_updates[tran_view.id] = jup
         return journal_updates
 
-    def done(self):
+    def done(self) -> None:
         self.logger.info("done running T3")
 
         if not hasattr(self, "atreports"):
             self.logger.info("No atreports collected.")
             return
+        elif self.slack_token is None:
+            return
 
         # TODO: to help debugging and verification, we post the collected atreports
         # to the slack, so that we can compare them with what JNo script is doing
         # ALL THE CONTENT OF THIS METHOD SHOULD GO AWAY AS SOON AS WE TRUST THIS T3
-        self.logger.warning(
+        self.logger.warn(
             "Posting collected ATreports to Slack. I'm still running as a test!"
         )
 
@@ -980,6 +1005,7 @@ class TNSTalker(AbsT3Unit):
 
         from slack import WebClient
         from slack.errors import SlackClientError
+        from slack.web.slack_reponse import SlackResponse
 
         sc = WebClient(token=self.slack_token.get())
 
@@ -1001,8 +1027,7 @@ class TNSTalker(AbsT3Unit):
                 "A total of %d atreports found by TNSTalker T3. Here's chunk #%d (reports from %d to %d)"
                 % (len(self.atreports), ic, first, last)
             )
-            api = sc.api_call(
-                "files.upload",
+            api = sc.files_upload(
                 channels=[self.slack_channel],
                 title="TNSTalker_%s_chunk%d" % (tstamp, ic),
                 initial_comment=msg,
@@ -1012,9 +1037,10 @@ class TNSTalker(AbsT3Unit):
                 filetype="javascript",
                 file=fbuffer.getvalue(),
             )
+            assert isinstance(api, SlackResponse)
             if not api["ok"]:
                 raise SlackClientError(api["error"])
 
-        self.logger.warning(
-            "DONE DEBUG Slack posting. Look at %s for the results" % slack_channel
+        self.logger.warn(
+            f"DONE DEBUG Slack posting. Look at {self.slack_channel} for the results"
         )
