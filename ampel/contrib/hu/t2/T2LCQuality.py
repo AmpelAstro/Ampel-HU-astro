@@ -7,251 +7,257 @@
 # Last Modified Date: 06.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, List, Any
+from typing import Any, Dict, List
+
 from astropy.table import Table
 from scipy.interpolate import interp1d
 
-from ampel.type import T2UnitResult
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
+from ampel.type import T2UnitResult
 from ampel.view.LightCurve import LightCurve
 
 
 class T2LCQuality(AbsLightCurveT2Unit):
-	"""
-	determine the 'quality' of the light curve by computing ratios between
-	the number of detection and that of upper limits.
+    """
+    determine the 'quality' of the light curve by computing ratios between
+    the number of detection and that of upper limits.
 
-	The LC 'quality' is measured by two numbers:
-	* 'detection strenght' = n_det / n_obs
-	* 'detection purity' = n_det / n_det + n_strong_ulims
+    The LC 'quality' is measured by two numbers:
+    * 'detection strenght' = n_det / n_obs
+    * 'detection purity' = n_det / n_det + n_strong_ulims
 
-	where:
-	n_det:
-		total number of detections
+    where:
+    n_det:
+            total number of detections
 
-	n_obs:
-		number of observations (detections + upper lims) computed
-		from the time of the first detection.
+    n_obs:
+            number of observations (detections + upper lims) computed
+            from the time of the first detection.
 
-	n_strong_ulims:
-		number of upper limits which are below (higher magnitude) than
-		what expected from a simple interpolation between the detections.
+    n_strong_ulims:
+            number of upper limits which are below (higher magnitude) than
+            what expected from a simple interpolation between the detections.
 
-		That is, be interp_lc the function that iterpolates the detections
-		(returning magnitude and accepting a time), an upper limit at
-		time jd_ul of magnitude mag_ul is considered 'strong' if:
-		interp_lc(jd_ul) < mag_ul
+            That is, be interp_lc the function that iterpolates the detections
+            (returning magnitude and accepting a time), an upper limit at
+            time jd_ul of magnitude mag_ul is considered 'strong' if:
+            interp_lc(jd_ul) < mag_ul
 
-	NOTE that in the calculations of the strength, all the upper limits happening after
-	the first detection are considered, while for the 'purity' metric, the default behaviour
-	is to just consider ulims happening after the first, and before the last detection. This
-	behaviour can be changed via the 'exclude_ulims' parameter of the run_config dictionary.
-	"""
+    NOTE that in the calculations of the strength, all the upper limits happening after
+    the first detection are considered, while for the 'purity' metric, the default behaviour
+    is to just consider ulims happening after the first, and before the last detection. This
+    behaviour can be changed via the 'exclude_ulims' parameter of the run_config dictionary.
+    """
 
-	filter_names: Dict = {1: 'g', 2: 'r', 3: 'i'}
-	filter_ids: List[int] = [1, 2, 3]
-	exclude_ulims_after: bool = True
-	lc_filter: List[Dict[str, Any]] = [
-		{
-			'attribute': 'isdiffpos',
-			'operator': '!=',
-			'value': 'f'
-		},
-		{
-			'attribute': 'isdiffpos',
-			'operator': '!=',
-			'value': '0'
-		}
-	]
+    filter_names: Dict = {1: "g", 2: "r", 3: "i"}
+    filter_ids: List[int] = [1, 2, 3]
+    exclude_ulims_after: bool = True
+    lc_filter: List[Dict[str, Any]] = [
+        {"attribute": "isdiffpos", "operator": "!=", "value": "f"},
+        {"attribute": "isdiffpos", "operator": "!=", "value": "0"},
+    ]
 
+    def count_strong_ulims(self, det_tab, ulim_tab):
+        """
+        compute the number of strong upper limts in the light curve. This is
+        defined as the number of upper limits which are below (higher magnitude) than
+        what expected from a simple interpolation between the detections.
+        """
 
-	def count_strong_ulims(self, det_tab, ulim_tab):
-		"""
-		compute the number of strong upper limts in the light curve. This is
-		defined as the number of upper limits which are below (higher magnitude) than
-		what expected from a simple interpolation between the detections.
-		"""
+        # interpolate detections
+        interp_lc = interp1d(
+            det_tab["jd"], det_tab["magpsf"], kind="zero", fill_value="extrapolate"
+        )
 
-		# interpolate detections
-		interp_lc = interp1d(det_tab['jd'], det_tab['mag'], kind="zero", fill_value="extrapolate")
+        # loop on uls and count the strong ones
+        n_strong = 0
+        for ul in ulim_tab:
+            expected_mag = interp_lc(ul["jd"])
+            # 			self.logger.debug("upper limit at jd %f is at %f, source should be at %f"%
+            # 				(ul['jd'], ul['mag'], expected_mag))
+            if ul["magpsf"] > expected_mag:
+                n_strong += 1
+        return n_strong
 
-		# loop on uls and count the strong ones
-		n_strong = 0
-		for ul in ulim_tab:
-			expected_mag = interp_lc(ul['jd'])
-#			self.logger.debug("upper limit at jd %f is at %f, source should be at %f"%
-#				(ul['jd'], ul['mag'], expected_mag))
-			if ul['mag'] > expected_mag:
-				n_strong += 1
-		return n_strong
+    def compute_strength_purity(self, dets, ulims):
+        """
+        given the detection and upper limit history, compute the
+        strength and purity of the light curve.
 
+        exclude_ul is a dict of the {'before': bool, 'after': bool} type, with
+        flags can be used to mask out upper limts that happends before the
+        first detections and/or after the last one.
+        """
 
-	def compute_strength_purity(self, dets, ulims):
-		"""
-		given the detection and upper limit history, compute the
-		strength and purity of the light curve.
+        # compute time of first and last detection and mask out upper before first detection
+        det_start, det_end = dets["jd"].min(), dets["jd"].max()
+        ulims = ulims[ulims["jd"] > det_start]
+        self.logger.debug(
+            f"retained {len(ulims)} upper limits from start of detection (at {det_start} jd)"
+        )
 
-		exclude_ul is a dict of the {'before': bool, 'after': bool} type, with
-		flags can be used to mask out upper limts that happends before the
-		first detections and/or after the last one.
-		"""
+        # if you don't have any upper limit to consider, easy
+        if len(ulims) == 0:
+            return 0, 1, 1
 
-		# compute time of first and last detection and mask out upper before first detection
-		det_start, det_end = dets['jd'].min(), dets['jd'].max()
-		ulims = ulims[ulims['jd'] > det_start]
-		self.logger.debug(
-			f"retained {len(ulims)} upper limits from start of detection (at {det_start} jd)"
-		)
+        # compute number of detections, total observations, and upper limts.
+        # for the strength, use all ulims from first detection on
+        strength = float(len(dets)) / (len(dets) + len(ulims))
 
-		# if you don't have any upper limit to consider, easy
-		if len(ulims) == 0:
-			return 0, 1, 1
+        # for the strong upper limits, eventually exclude those which happends after the last detection
+        if self.exclude_ulims_after:
+            ulims = ulims[ulims["jd"] < det_end]
+        n_strong_ulims = self.count_strong_ulims(dets, ulims)
+        purity = float(len(dets)) / (len(dets) + n_strong_ulims)
 
-		# compute number of detections, total observations, and upper limts.
-		# for the strength, use all ulims from first detection on
-		strength = float(len(dets)) / (len(dets) + len(ulims))
+        # return
+        return n_strong_ulims, strength, purity
 
-		# for the strong upper limits, eventually exclude those which happends after the last detection
-		if self.exclude_ulims_after:
-			ulims = ulims[ulims['jd'] < det_end]
-		n_strong_ulims = self.count_strong_ulims(dets, ulims)
-		purity = float(len(dets)) / (len(dets) + n_strong_ulims)
+    def test_plot(self, dets, ulims, n_strong_ulims, purity, strength, fid):
+        """
+        but useful for debugging
+        """
 
-		# return
-		return n_strong_ulims, strength, purity
+        import matplotlib.pyplot as plt
+        import numpy as np
 
+        interp_lc = interp1d(
+            dets["jd"], dets["magpsf"], kind="zero", fill_value="extrapolate"
+        )
 
-	def test_plot(self, dets, ulims, n_strong_ulims, purity, strength, fid):
-		"""
-		but useful for debugging
-		"""
+        min_t = min([dets["jd"].min(), ulims["jd"].min()])
+        max_t = max([dets["jd"].max(), ulims["jd"].max()])
+        jd_int = np.arange(min_t, max_t, 0.1)
+        plt.plot(dets["jd"], dets["magpsf"], "o", label="data")
+        plt.plot(ulims["jd"], ulims["magpsf"], "o", label="ulims")
+        plt.plot(jd_int, interp_lc(jd_int), label="interp")
+        plt.gca().invert_yaxis()
+        plt.legend()
+        plt.xlabel("JD")
+        plt.ylabel("Mag")
 
-		import matplotlib.pyplot as plt
-		import numpy as np
+        # add text
+        textstr = (
+            "$n_{det}$: %d, $n_{lim}$: %d, $n_{lim}^{strong}$: %d, purity: %.3f, strength: %.3f"
+            % (len(dets), len(ulims), n_strong_ulims, purity, strength)
+        )
+        plt.title("filter: %d " % fid + textstr)
+        plt.show()
 
-		interp_lc = interp1d(dets['jd'], dets['mag'], kind='zero', fill_value="extrapolate")
+    def run(self, light_curve: LightCurve) -> T2UnitResult:
+        """
+        :param run_config: `dict` or None
+        configuration parameter for this job. If none is given, the
+        default behaviour would be to compute the metrics for the light
+        curve in all the three bands (if the corresponding light curves have
+        some detection), to use zero-order (step-like) interpoaltion
+        between the LC points, and to exclude points with negative detections
+        (having isdiffpos in ['f', 0]).
 
-		min_t = min([dets['jd'].min(), ulims['jd'].min()])
-		max_t = max([dets['jd'].max(), ulims['jd'].max()])
-		jd_int = np.arange(min_t, max_t, 0.1)
-		plt.plot(dets['jd'], dets['mag'], 'o', label="data")
-		plt.plot(ulims['jd'], ulims['mag'], 'o', label="ulims")
-		plt.plot(jd_int, interp_lc(jd_int), label="interp")
-		plt.gca().invert_yaxis()
-		plt.legend()
-		plt.xlabel("JD")
-		plt.ylabel("Mag")
+        These defaults can be changed by the following keys of the run_config dictionary:
 
-		# add text
-		textstr = '$n_{det}$: %d, $n_{lim}$: %d, $n_{lim}^{strong}$: %d, purity: %.3f, strength: %.3f' % (
-			len(dets), len(ulims), n_strong_ulims, purity, strength
-		)
-		plt.title("filter: %d " % fid + textstr)
-		plt.show()
+        lc_filter: `dict` or `list`
+                to be passed to ampel.view.LightCurve.get_tuples.
+                if list, the items must be dicts and they'll be combined
+                with a logical and. Pass an empy list to disable the filter
+                completely (filtering on the ztf bands will still be applied).
 
+        filter_ids: `list` or `tuple`
+                list of ints in the range 1 to 3 that specify the filter
+                ids for which this job has to run. 1=g, 2=r, and 3=i
 
-	def run(self, light_curve: LightCurve) -> T2UnitResult:
-		"""
-		:param run_config: `dict` or None
-		configuration parameter for this job. If none is given, the
-		default behaviour would be to compute the metrics for the light
-		curve in all the three bands (if the corresponding light curves have
-		some detection), to use zero-order (step-like) interpoaltion
-		between the LC points, and to exclude points with negative detections
-		(having isdiffpos in ['f', 0]).
+        exclude_ulims_after: `bool`
+                specifies weather to consider upper limits that happens after
+                the first last detection.
 
-		These defaults can be changed by the following keys of the run_config dictionary:
+        :returns: dict with the strength, purity, and number of detections computed
+        for the light curve in each of the band specified by the run_config
+        (default is all of them). E.g.:
+        {
+                'g': {
+                        'strength': 0,
+                        'purity': 0,
+                        'ndet': 0
+                },
+                'r': {
+                        'strength': 1,
+                        'purity': 1,
+                        'ndet': 1
+                },
+                'i': {
+                        'strength': 0,
+                        'purity': 0,
+                        'ndet': 0
+                }
+        }
+        """
 
-		lc_filter: `dict` or `list`
-			to be passed to ampel.view.LightCurve.get_tuples.
-			if list, the items must be dicts and they'll be combined
-			with a logical and. Pass an empy list to disable the filter
-			completely (filtering on the ztf bands will still be applied).
+        # run on the single bands individually
+        out_dict = {}
+        for fid in self.filter_ids:
 
-		filter_ids: `list` or `tuple`
-			list of ints in the range 1 to 3 that specify the filter
-			ids for which this job has to run. 1=g, 2=r, and 3=i
+            self.logger.debug(
+                f"computing light curve quality for filter id {fid} "
+                f"({self.filter_names[fid]}-band)"
+            )
 
-		exclude_ulims_after: `bool`
-			specifies weather to consider upper limits that happens after
-			the first last detection.
+            # concatenate the filters
+            filters: List[Dict[str, Any]] = [
+                {"attribute": "fid", "operator": "==", "value": fid}
+            ]
+            if isinstance(self.lc_filter, (list, tuple)):
+                filters += self.lc_filter
+            elif isinstance(self.lc_filter, dict):
+                filters += [self.lc_filter]
+            else:
+                raise ValueError(
+                    f"parameter 'lc_filter' must be either list or tuple. got {type(self.lc_filter)} instead"
+                )
 
-		:returns: dict with the strength, purity, and number of detections computed
-		for the light curve in each of the band specified by the run_config
-		(default is all of them). E.g.:
-		{
-			'g': {
-				'strength': 0,
-				'purity': 0,
-				'ndet': 0
-			},
-			'r': {
-				'strength': 1,
-				'purity': 1,
-				'ndet': 1
-			},
-			'i': {
-				'strength': 0,
-				'purity': 0,
-				'ndet': 0
-			}
-		}
-		"""
+            self.logger.debug(f"applying filter: {repr(filters)}")
 
-		# run on the single bands individually
-		out_dict = {}
-		for fid in self.filter_ids:
+            # get upper limits and detections time series
+            pps = light_curve.get_tuples("jd", "magpsf", filters=filters)
+            uls = light_curve.get_tuples(
+                "jd", "diffmaglim", filters=filters, of_upper_limits=True
+            )
 
-			self.logger.debug(
-				f"computing light curve quality for filter id {fid} "
-				f"({self.filter_names[fid]}-band)"
-			)
+            # if you have no detections, you're done
+            if not pps:
+                self.logger.debug("No detections in light curve for this band")
+                out_dict[self.filter_names[fid]] = {
+                    "strength": 0,
+                    "purity": 0,
+                    "ndet": 0,
+                }
+                continue
 
-			# concatenate the filters
-			filters: List[Dict[str, Any]] = [{'attribute': 'fid', 'operator': '==', 'value': fid}]
-			if isinstance(self.lc_filter, (list, tuple)):
-				filters += self.lc_filter
-			elif isinstance(self.lc_filter, dict):
-				filters += [self.lc_filter]
-			else:
-				raise ValueError(
-					f"parameter 'lc_filter' must be either list or tuple. got {type(self.lc_filter)} instead"
-				)
+            # also easy
+            if not uls:
+                self.logger.debug("No upper limits in light curve for this band")
+                out_dict[self.filter_names[fid]] = {
+                    "strength": 1,
+                    "purity": 1,
+                    "ndet": len(pps),
+                }
+                continue
 
-			self.logger.debug(f"applying filter: {repr(filters)}")
+            # cast to tables for convenience
+            dets = Table(rows=pps, names=("jd", "magpsf"))
+            ulims = Table(rows=uls, names=("jd", "magpsf"))
+            self.logger.debug(
+                f"got {len(dets)} detections and {len(ulims)} ulims for lightcurve"
+            )
 
-			# get upper limits and detections time series
-			pps = light_curve.get_tuples('obs_date', 'magpsf', filters=filters)
-			uls = light_curve.get_tuples('obs_date', 'diffmaglim', filters=filters, of_upper_limits=True)
+            # compute LC metrics and append to output
+            n_strong_ulims, strength, purity = self.compute_strength_purity(dets, ulims)
+            out_dict[self.filter_names[fid]] = {
+                "strength": strength,
+                "purity": purity,
+                "ndet": len(dets),
+            }
 
-			# if you have no detections, you're done
-			if not pps:
-				self.logger.debug("No detections in light curve for this band")
-				out_dict[self.filter_names[fid]] = {'strength': 0, 'purity': 0, 'ndet': 0}
-				continue
+        # 			if len(dets)>5:
+        # 				self.test_plot(dets, ulims, n_strong_ulims, purity, strength, fid)
 
-			# also easy
-			if not uls:
-				self.logger.debug("No upper limits in light curve for this band")
-				out_dict[self.filter_names[fid]] = {'strength': 1, 'purity': 1, 'ndet': len(pps)}
-				continue
-
-			# cast to tables for convenience
-			dets = Table(rows = pps, names=('jd', 'mag'))
-			ulims = Table(rows = uls, names=('jd', 'mag'))
-			self.logger.debug(
-				f"got {len(dets)} detections and {len(ulims)} ulims for lightcurve"
-			)
-
-			# compute LC metrics and append to output
-			n_strong_ulims, strength, purity = self.compute_strength_purity(dets, ulims)
-			out_dict[self.filter_names[fid]] = {
-				'strength': strength,
-				'purity': purity,
-				'ndet': len(dets)
-			}
-
-#			if len(dets)>5:
-#				self.test_plot(dets, ulims, n_strong_ulims, purity, strength, fid)
-
-		return out_dict
+        return out_dict
