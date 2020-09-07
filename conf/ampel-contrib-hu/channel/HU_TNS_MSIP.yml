@@ -47,6 +47,7 @@ t3_supervise:
           $gt: 0.5
         ndet:
           $lt: 7
+  complement: TNSNames
   run:
     - unit: SlackSummaryPublisher
       config: slack-ztf_general

@@ -16,6 +16,7 @@ load:
           - T2SNCosmo
           - T2CatalogMatch
           - T2QSOFit
+complement: TNSNames
 run:
   unit: TNSTalker
   config:
