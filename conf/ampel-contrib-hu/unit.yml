@@ -23,4 +23,4 @@
 - ampel.contrib.hu.t3.RapidLco
 - ampel.contrib.hu.t3.TNSTalker
 - ampel.contrib.hu.t3.TNSMirrorUpdater
-- ampel.contrib.hu.t3.complement.AddTNSNames
+- ampel.contrib.hu.t3.complement.TNSNames
