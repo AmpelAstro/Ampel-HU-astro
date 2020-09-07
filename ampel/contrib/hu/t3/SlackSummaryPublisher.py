@@ -80,7 +80,6 @@ class SlackSummaryPublisher(AbsT3Unit):
         )
 
         if self.dry_run:
-            print(m, self.logger)
             self.logger.info(m)
         else:
             api = sc.api_call(
@@ -123,7 +122,13 @@ class SlackSummaryPublisher(AbsT3Unit):
                 idx = 0
                 for _ in range(2):
                     idx = csv.find("\n", idx) + 1
-                self.logger.info({"files": {"file": csv[:idx] + "..."}, **param})
+                self.logger.info(
+                    {
+                        "files": {"file": csv[:idx] + "..."},
+                        "token": param["token"][:8] + "...",
+                        **{k: v for (k, v) in param.items() if k != "token"},
+                    }
+                )
             else:
                 r = requests.post(
                     "https://slack.com/api/files.upload",
