@@ -28,4 +28,4 @@ repos:
     rev: 20.8b1
     hooks:
     -   id: black
-fail_fast: true
+fail_fast: false
