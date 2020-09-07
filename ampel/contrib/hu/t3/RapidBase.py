@@ -30,7 +30,7 @@ def get_catalogmatch_srecs(tran_view, logger):
     return cat_res[-1].get_results()[-1]["output"]
 
 
-class RapidBase(AbsT3Unit, abstract=True):
+class RapidBase(AbsT3Unit):
     """
     Select transients for rapid reactions. Intended as base class where the react method can be
     implemented as wished and a testreact method posts test reactions to Slack
@@ -120,14 +120,14 @@ class RapidBase(AbsT3Unit, abstract=True):
         for k in self.__annotations__:
             self.logger.info(f"Using {k}={getattr(self, k)}")
 
-    @abstractmethod
     def react(
         self, tran_view: TransientView, info: Dict[str, Any]
     ) -> Tuple[bool, Optional[JournalExtra]]:
         """
         Replace with react method adopted to particular facility or output
         """
-        ...
+        raise NotImplementedError("No real reaction implemented in RapidBase")
+        return self.test_react(tran_view)
 
     def test_react(
         self, tran_view: TransientView, info: Dict[str, Any]
