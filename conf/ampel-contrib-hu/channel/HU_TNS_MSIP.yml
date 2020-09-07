@@ -29,6 +29,7 @@ t0_filter:
 t2_compute:
   - unit: T2CatalogMatch
     config: '%T2CatalogMatch_general'
+  - unit: T2BrightSNProb
 t3_supervise:
   template: ztf_periodic_summary
   schedule: every(60).minutes
