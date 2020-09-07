@@ -10,10 +10,12 @@
 import asyncio
 import datetime
 
-from ampel.abstract.AbsT3Unit import AbsT3Unit
+from pymongo import MongoClient
 
+from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.contrib.hu.t3.tns.TNSClient import TNSClient
 from ampel.contrib.hu.t3.tns.TNSMirrorDB import TNSMirrorDB
+from ampel.model.Secret import Secret
 
 
 class TNSMirrorUpdater(AbsT3Unit):
@@ -21,9 +23,10 @@ class TNSMirrorUpdater(AbsT3Unit):
     Sync a local mirror of the TNS database
     """
 
-    require = ("extcats.writer",)
+    require = ("extcats",)
 
-    api_key: str
+    extcats_auth: Secret[dict] = {"key": "extcats/writer"}  # type: ignore[assignment]
+    api_key: Secret[str]
     timeout: float = 60.0
     max_parallel_requests: int = 8
     dry_run: bool = False
@@ -35,7 +38,7 @@ class TNSMirrorUpdater(AbsT3Unit):
         if self.context and "last_run" in self.context:
             last_run = datetime.datetime.fromtimestamp(self.context["last_run"])
         else:
-            last_run = datetime.datetime(2020,9,1)
+            last_run = datetime.datetime(2020, 9, 6)
 
         async def fetch():
             tns = TNSClient(
@@ -43,8 +46,17 @@ class TNSMirrorUpdater(AbsT3Unit):
             )
             return [item async for item in tns.search(public_timestamp=str(last_run))]
 
-        new_reports = asyncio.get_event_loop().run_until_complete(fetch())
+        if self.dry_run:
+            new_reports = []
+        else:
+            new_reports = asyncio.get_event_loop().run_until_complete(fetch())
 
         assert self.resource
-        db = TNSMirrorDB(self.resource["extcats.writer"], logger=self.logger)
-        db.add_sources(new_reports)
+        db = TNSMirrorDB(
+            MongoClient(self.resource["extcats"], **self.extcats_auth.get()),
+            logger=self.logger,
+        )
+        if self.dry_run:
+            self.logger.warn(new_reports)
+        else:
+            db.add_sources(new_reports)

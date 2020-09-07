@@ -1,8 +1,18 @@
 name: UpdateTNSMirror
 tier: 3
-template: ztf_periodic_summary
-schedule: every().hour
-run:
-  unit: TNSMirrorUpdater
+schedule:
+- every().hour
+processor:
+  unit: T3Processor
   config:
-    api_key: a3f9bcbbe6a26a1ae97a0eeefe465932e68cba83
+    process_name: UpdateTNSMirror
+    directives:
+    - run:
+        unit: T3UnitRunner
+        config:
+          directives:
+          - execute:
+            - unit: TNSMirrorUpdater
+              config:
+                api_key:
+                  key: tns/jnordin
