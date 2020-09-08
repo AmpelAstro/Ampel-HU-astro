@@ -42,7 +42,10 @@ class TNSMirrorUpdater(AbsT3Unit):
 
         async def fetch():
             tns = TNSClient(
-                self.api_key, self.timeout, self.max_parallel_requests, self.logger
+                self.api_key.get(),
+                self.timeout,
+                self.max_parallel_requests,
+                self.logger,
             )
             return [item async for item in tns.search(public_timestamp=str(last_run))]
 
