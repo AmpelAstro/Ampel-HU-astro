@@ -57,6 +57,6 @@ class TNSMirrorUpdater(AbsT3Unit):
             logger=self.logger,
         )
         if self.dry_run:
-            self.logger.warn(new_reports)
+            self.logger.warn(str(new_reports))
         else:
             db.add_sources(new_reports)
