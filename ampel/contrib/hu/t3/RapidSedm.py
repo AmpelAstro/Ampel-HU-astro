@@ -76,7 +76,7 @@ class RapidSedm(RapidBase):
     # Limiting magnitude to consider upper limits as 'significant'
     maglim_min: float = 19.25
 
-    def post_init(self, logger, base_config=None, run_config=None, global_info=None):
+    def post_init(self):
         """"""
         self.name = "RapidSedm"
         super().post_init()

@@ -111,7 +111,7 @@ class RapidBase(AbsT3Unit):
         {"attribute": "magfromlim", "operator": ">", "value": 0},
     ]
 
-    def post_init(self, context: Optional[Dict[str, Any]]) -> None:
+    def post_init(self) -> None:
 
         self.name = "RapidBase"
         self.logger.info(f"Initialized T3 RapidBase instance {self.name}")
