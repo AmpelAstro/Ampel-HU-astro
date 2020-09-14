@@ -52,7 +52,7 @@ class XShooterFilter(DecentFilter):
         # CUT ON THE HISTORY OF THE ALERT
         #################################
 
-        now_jd = Time.now().jd
+        now_jd = latest["jd"]
         self.logger.debug(f"Setting 'now' to JD {now_jd:.4f} to cut on alert history")
 
         # check on history 1: detected in the last 6h
