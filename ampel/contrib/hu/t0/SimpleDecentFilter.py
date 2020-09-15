@@ -15,26 +15,25 @@ from ampel.alert.PhotoAlert import PhotoAlert
 
 class SimpleDecentFilter(AbsAlertFilter[PhotoAlert]):
 	"""
-	General-purpose filter with ~ 0.6% acceptance. It selects alerts based on:
+	General-purpose filter devloped alongside DecentFilter but without use of external 
+        catalogs. It selects alerts based on:
 	* numper of previous detections
 	* positive subtraction flag
 	* loose cuts on image quality (fwhm, elongation, number of bad pixels, and the
 	difference between PSF and aperture magnitude)
 	* distance to known SS objects
-	* real-bogus
-	* detection of proper-motion and paralax for coincidence sources in GAIA DR2
-
-	The filter has a very weak dependence on the real-bogus score and it is independent
-	on the provided PS1 star-galaxy classification.
+	* (d) real-bogus
+        * Whether it seems a PS source exists at the transient position (as per alert properties).
 	"""
 
 	# history
-	min_ndet: int = 3 # number of previous detections
-	min_tspan: float = 1. # minimum duration of alert detection history [days]
+	min_ndet: int = 2 # number of previous detections
+	min_tspan: float = 0.02 # minimum duration of alert detection history [days]
 	max_tspan: float = 25. # maximum duration of alert detection history [days]
 
 	# Image quality
-	min_rb: float = 0.6 # real bogus score
+	min_drb: float = 0. # deep learning real bogus score
+	min_rb: float = 0.3 # real bogus score
 	max_fwhm: float = 5. # sexctrator FWHM (assume Gaussian) [pix]
 	max_elong: float = 1.4 # Axis ratio of image: aimage / bimage
 	max_magdiff: float = 0.4 # Difference: magap - magpsf [mag]
@@ -149,6 +148,11 @@ class SimpleDecentFilter(AbsAlertFilter[PhotoAlert]):
 			#self.logger.debug("rejected: 'isdiffpos' is %s", latest['isdiffpos'])
 			self.logger.info(None, extra={'isdiffpos': latest['isdiffpos']})
 			return None
+
+		if self.min_drb > 0. and latest['drb'] < self.min_drb:
+			self.logger.info(None, extra={'drb': latest['drb']})
+			return None
+
 
 		if latest['rb'] < self.min_rb:
 			#self.logger.debug("rejected: RB score %.2f below threshod (%.2f)"% (latest['rb'], self.min_rb))
