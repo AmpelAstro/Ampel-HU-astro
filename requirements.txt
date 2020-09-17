@@ -6,5 +6,4 @@
 -e git+https://github.com/AmpelProject/Ampel-alerts.git#egg=ampel-alerts
 -e git+https://github.com/AmpelProject/Ampel-photometry.git#egg=ampel-photometry
 -e git+https://github.com/AmpelProject/Ampel-ZTF.git#egg=ampel-ztf
--e git+https://github.com/AmpelProject/Ampel-alerts.git#egg=ampel-alerts
 -e .
