@@ -19,6 +19,9 @@ pipeline {
           dir(path: '.jenkins/Ampel-ZTF') {
             git(url: 'https://github.com/AmpelProject/Ampel-ZTF', credentialsId: 'github')
           }
+          dir(path: '.jenkins/Ampel-contrib-ZTFbh') {
+            git(url: 'https://github.com/robertdstein/Ampel-contrib-ZTFbh.git', branch: 'v0.7', credentialsId: 'github')
+          }
       }
     }
     stage('build') {

@@ -21,5 +21,8 @@ RUN pip install /Ampel-photometry
 ADD .jenkins/Ampel-ZTF /Ampel-ZTF
 RUN pip install /Ampel-ZTF
 
+ADD .jenkins/Ampel-contrib-ZTFbh /Ampel-contrib-ZTFbh
+RUN pip install /Ampel-contrib-ZTFbh
+
 ADD . /Ampel-contrib-HU
 RUN cd /Ampel-contrib-HU && pip install .

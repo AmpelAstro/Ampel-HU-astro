@@ -33,6 +33,7 @@ setup(
         "ampel-photometry",
         "ampel-alerts",
         "ampel-ztf",
+        "ampel-contrib-ztfbh",
         "catsHTM",
         "zerorpc",
         "extcats",
