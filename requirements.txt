@@ -2,9 +2,9 @@
 
 # use development versions of Ampel packages
 -e git+https://github.com/AmpelProject/Ampel-interface.git#egg=ampel-interface
--e git+https://github.com/AmpelProject/Ampel-interface.git#egg=ampel-core
+-e git+https://github.com/AmpelProject/Ampel-core.git#egg=ampel-core
 -e git+https://github.com/AmpelProject/Ampel-alerts.git#egg=ampel-alerts
 -e git+https://github.com/AmpelProject/Ampel-photometry.git#egg=ampel-photometry
--e git+https://github.com/AmpelProject/Ampel-ZTF.git#egg=ampel-ztrf
+-e git+https://github.com/AmpelProject/Ampel-ZTF.git#egg=ampel-ztf
 -e git+https://github.com/AmpelProject/Ampel-alerts.git#egg=ampel-alerts
 -e .
