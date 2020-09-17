@@ -39,6 +39,8 @@ setup(
         "sncosmo",
         "iminuit",
         "sfdmap",
+	# this is dirty, but there's not really a better way to get marshaltools
+        "marshaltools @ https://github.com/AmpelProject/marshaltools/archive/v0.0.7.tar.gz",
         "astropy",
         "numpy",
         "scipy",
