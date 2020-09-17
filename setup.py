@@ -34,6 +34,7 @@ setup(
         "ampel-alerts",
         "ampel-ztf",
         "catsHTM",
+        "zerorpc",
         "extcats",
         "sncosmo",
         "iminuit",
