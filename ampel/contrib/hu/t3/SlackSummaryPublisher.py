@@ -50,9 +50,6 @@ class SlackSummaryPublisher(AbsT3Unit):
         "isdiffpos",
         "_id",
     ]
-    requireNoAGN: bool = False
-    requireNoSDSStar: bool = False
-    requireNEDz: bool = False
 
     def post_init(self) -> None:
         """ """
