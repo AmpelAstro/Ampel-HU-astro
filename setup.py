@@ -14,7 +14,7 @@ setup(
     version="0.7.0",
     packages=find_namespace_packages(),
     package_data={
-        "": ["*.json"],  # include any package containing *.json files
+        "": ["*.json", "py.typed"],  # include any package containing *.json files
         "conf": [
             "*.json",
             "**/*.json",
@@ -40,7 +40,7 @@ setup(
         "sncosmo",
         "iminuit",
         "sfdmap",
-	# this is dirty, but there's not really a better way to get marshaltools
+        # this is dirty, but there's not really a better way to get marshaltools
         "marshaltools @ https://github.com/AmpelProject/marshaltools/archive/v0.0.7.tar.gz",
         "astropy",
         "numpy",
