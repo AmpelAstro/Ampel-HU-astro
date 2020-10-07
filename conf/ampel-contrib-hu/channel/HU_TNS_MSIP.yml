@@ -35,11 +35,9 @@ t3_supervise:
   schedule: every(60).minutes
   load:
     - TRANSIENT
+    - COMPOUND
     - DATAPOINT
-    - col: t2
-      query_complement:
-        unit:
-          $in: [T2SNCosmo, T2CatalogMatch, T2QSOFit, T2BrightSNProb]
+    - T2RECORD
   filter:
     t2:
       unit: "T2BrightSNProb"

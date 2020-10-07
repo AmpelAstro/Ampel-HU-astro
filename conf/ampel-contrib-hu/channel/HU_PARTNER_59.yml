@@ -40,4 +40,3 @@ t2_compute:
       exclude_ulims_after: true
   - unit: T2CatalogMatch
     config: T2CatalogMatch_cosmo
-  - unit: T2QSOFit

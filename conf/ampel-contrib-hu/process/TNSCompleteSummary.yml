@@ -9,13 +9,7 @@ channel:
 load:
   - TRANSIENT
   - DATAPOINT
-  - col: t2
-    query_complement:
-      unit:
-        $in:
-          - T2SNCosmo
-          - T2CatalogMatch
-          - T2QSOFit
+  - T2RECORD
 complement: TNSNames
 run:
   unit: TNSTalker

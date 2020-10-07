@@ -32,7 +32,7 @@ load:
   - col: t2
     query_complement:
       unit:
-        $in: [T2SNCosmo, T2CatalogMatch, T2QSOFit]
+        $in: [T2SNCosmo, T2CatalogMatch]
 
 # Specifies which action should be performed on transients
 run:
