@@ -5,7 +5,6 @@ schedule:
 processor:
   unit: T3Processor
   config:
-    process_name: UpdateTNSMirror
     directives:
     - run:
         unit: T3UnitRunner

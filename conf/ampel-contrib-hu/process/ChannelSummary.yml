@@ -5,7 +5,6 @@ schedule:
 processor:
   unit: T3Processor
   config:
-    process_name: ChannelSummary
     directives:
       - select:
           unit: T3StockSelector
