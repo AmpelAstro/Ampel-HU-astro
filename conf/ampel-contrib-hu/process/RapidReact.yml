@@ -1,5 +1,6 @@
 name: RapidReact
 tier: 3
+active: false
 template: ztf_periodic_summary
 schedule: every(10).minutes
 channel:

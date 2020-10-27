@@ -1,6 +1,6 @@
 channel: DESY_TOO_TEST
 contact: ampel@desy.de
-active: true
+active: false
 auto_complete: live
 template: ztf_uw_private
 t0_filter:
@@ -50,7 +50,7 @@ t3_supervise:
             - T2CatalogMatch
   run:
     unit: SlackSummaryPublisher
-    config: 
+    config:
       quiet: true
       slack_token:
         key: slack/ztf_berlin/ToO

@@ -1,5 +1,6 @@
 name: RapidAllz
 tier: 3
+active: false
 template: ztf_periodic_summary
 schedule: every().day.at('13:00')
 channel:

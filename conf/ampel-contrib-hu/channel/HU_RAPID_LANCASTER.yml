@@ -1,6 +1,6 @@
 channel: HU_RAPID_LANCASTER
 contact: ampel@desy.de
-active: true
+active: false
 auto_complete: false
 template: ztf_uw_public
 t0_filter:
@@ -43,4 +43,3 @@ t3_supervise:
       config: slack-ztf_general
       override:
         slack_channel: '#ztf_public'
-

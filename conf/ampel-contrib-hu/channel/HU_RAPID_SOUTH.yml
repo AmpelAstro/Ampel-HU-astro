@@ -1,6 +1,6 @@
 channel: HU_RAPID_SOUTH
 contact: ampel@desy.de
-active: true
+active: false
 auto_complete: false
 template: ztf_uw_private
 t0_filter:
