@@ -1,7 +1,6 @@
-# Same as HU_TNS_MSIP, but including partnership data. Used for testing only.
 channel: HU_TNS_PARTNER
 contact: ampel@desy.de
-active: false
+active: true
 auto_complete: live
 template: ztf_uw_private
 t0_filter:
@@ -28,6 +27,10 @@ t0_filter:
     ps1_confusion_rad: 3
     ps1_confusion_sg_tol: 0.1
 t2_compute:
+  - unit: T2SNCosmo
+    config:
+      model: salt2
+      upper_limits: false
   - unit: T2CatalogMatch
-    config: '%T2CatalogMatch_general'
+    config: T2CatalogMatch_cosmo
   - unit: T2BrightSNProb

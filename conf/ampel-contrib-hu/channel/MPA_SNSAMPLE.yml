@@ -1,6 +1,6 @@
 channel: MPA_SNSAMPLE
 contact: ampel@desy.de
-active: true
+active: false
 auto_complete: live
 template: ztf_uw_public
 t0_filter:

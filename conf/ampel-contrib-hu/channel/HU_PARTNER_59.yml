@@ -31,12 +31,6 @@ t2_compute:
     config:
       model: salt2
       upper_limits: false
-  - unit: T2LCQuality
-    config:
-      filter_ids:
-        - 1
-        - 2
-        - 3
-      exclude_ulims_after: true
   - unit: T2CatalogMatch
     config: T2CatalogMatch_cosmo
+  - unit: T2BrightSNProb
