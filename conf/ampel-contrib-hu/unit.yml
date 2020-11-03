@@ -25,3 +25,5 @@
 - ampel.contrib.hu.t3.TNSTalker
 - ampel.contrib.hu.t3.TNSMirrorUpdater
 - ampel.contrib.hu.t3.complement.TNSNames
+- ampel.contrib.hu.t3.complement.TNSReports
+- ampel.contrib.hu.t3.complement.GROWTHMarshalReports
