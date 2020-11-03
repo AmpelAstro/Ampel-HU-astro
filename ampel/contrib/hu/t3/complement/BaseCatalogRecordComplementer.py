@@ -43,9 +43,9 @@ class BaseCatalogRecordComplementer(AbsT3DataAppender, abstract=True):
 
     def get_tag(self):
         """
-        Key to use for extra items. Default assumes that class name ends in s.
+        Key to use for extra items.
         """
-        return self.__class__.__name__[:-1]
+        return self.__class__.__name__
 
     def complement(self, records: Iterable[AmpelBuffer]) -> None:
         for record in records:
