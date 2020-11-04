@@ -18,7 +18,6 @@
 - ampel.contrib.hu.t3.ChannelSummaryPublisher
 - ampel.contrib.hu.t3.TransientWebPublisher
 - ampel.contrib.hu.t3.SlackSummaryPublisher
-- ampel.contrib.hu.t3.SkyPortalPublisher
 - ampel.contrib.hu.t3.RapidBase
 - ampel.contrib.hu.t3.RapidSedm
 - ampel.contrib.hu.t3.RapidLco
