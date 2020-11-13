@@ -7,7 +7,7 @@
 # Last Modified Date: 13.11.2020
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
-from typing import Any, Dict, Literal, Optional, Sequence, TYPE_CHECKING
+from typing import Any, Dict, Literal, Optional, Sequence, Set, TYPE_CHECKING
 
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
@@ -233,11 +233,13 @@ class T2CatalogMatch(ExtcatsUnit, CatsHTMUnit, AbsPointT2Unit):
                 # requested ones.
                 out_dict[catalog] = {"dist2transient": dist}
 
-                keys_to_append = (
+                keys_to_append = set(
                     cat_opts.keys_to_append if cat_opts.keys_to_append else src.colnames
                 )
+                if cat_opts.use == "extcats":
+                    keys_to_append.difference_update({"_id", "pos"})
 
-                if len(keys_to_append) > 0:
+                if keys_to_append:
                     to_add = {}
                     for field in keys_to_append:
                         try:
