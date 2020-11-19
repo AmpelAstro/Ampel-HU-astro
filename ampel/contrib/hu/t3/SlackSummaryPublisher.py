@@ -242,10 +242,6 @@ class SlackSummaryPublisher(AbsT3Unit):
                         except ValueError as ve:
                             self.logger.error(str(ve))
 
-            if self.requireNEDz:
-                if "T2-NEDz_z" not in mycols:
-                    continue
-
             assert transient.stock
             for channel in ampel_iter(transient.stock["channel"]):
                 tdf[channel] = True
