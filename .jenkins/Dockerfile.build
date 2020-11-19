@@ -6,23 +6,14 @@ RUN apt-get update && \
 
 ADD .jenkins/run_mypy.sh /bin
 
-ADD .jenkins/Ampel-interface /Ampel-interface
-RUN pip install /Ampel-interface
+ADD .jenkins /build/.jenkins
+RUN cd /build && pip install \
+    .jenkins/Ampel-interface \
+    .jenkins/Ampel-core \
+    .jenkins/Ampel-photometry \
+    .jenkins/Ampel-alerts \
+    .jenkins/Ampel-ZTF
 
-ADD .jenkins/Ampel-core /Ampel-core
-RUN pip install /Ampel-core
-
-ADD .jenkins/Ampel-alerts /Ampel-alerts
-RUN pip install /Ampel-alerts
-
-ADD .jenkins/Ampel-photometry /Ampel-photometry
-RUN pip install /Ampel-photometry
-
-ADD .jenkins/Ampel-ZTF /Ampel-ZTF
-RUN pip install /Ampel-ZTF
-
-ADD .jenkins/Ampel-contrib-ZTFbh /Ampel-contrib-ZTFbh
-RUN pip install /Ampel-contrib-ZTFbh
-
-ADD . /Ampel-contrib-HU
-RUN cd /Ampel-contrib-HU && pip install .
+ADD setup.py /build/setup.py
+ADD ampel /build/ampel
+RUN cd /build && pip install -e .[testing]
