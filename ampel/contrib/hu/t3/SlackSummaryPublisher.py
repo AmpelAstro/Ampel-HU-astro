@@ -81,10 +81,12 @@ class SlackSummaryPublisher(AbsT3Unit):
         else:
             api = sc.api_call(
                 "chat.postMessage",
-                channel=self.slack_channel,
-                text=m,
-                username="AMPEL-live",
-                as_user=False,
+                json={
+                    "channel": self.slack_channel,
+                    "text": m,
+                    "username": "AMPEL-live",
+                    "as_user": False,
+                },
             )
             if not api["ok"]:
                 raise SlackClientError(api["error"])
