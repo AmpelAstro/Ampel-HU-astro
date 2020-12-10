@@ -1,0 +1,18 @@
+name: DesiSkyPortal
+tier: 3
+template: ztf_periodic_summary
+schedule: every(60).minutes
+channel:
+  any_of: [HU_GP_10, HU_GP_59]
+load:
+  - TRANSIENT
+  - DATAPOINT
+  - T2RECORD
+  - ZTFCutoutImages
+run:
+  - unit: SkyPortalPublisher
+    config:
+      token:
+        key: 9cf2cf98-133a-43d9
+      base_url: http://desi2.lbl.gov:5000/
+

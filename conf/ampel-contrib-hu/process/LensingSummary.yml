@@ -15,3 +15,10 @@ run:
     config: slack-ztf_general
     override:
       slack_channel: '#ztf_lensing'
+  - unit: SkyPortalPublisher
+    config:
+      token:
+        key: fritz/jvs/ampelbot
+      base_url: https://fritz.science
+      groups: ['SNLensing']
+
