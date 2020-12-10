@@ -8,11 +8,11 @@ load:
   - TRANSIENT
   - DATAPOINT
   - T2RECORD
+complement:
   - ZTFCutoutImages
 run:
   - unit: SkyPortalPublisher
     config:
       token:
-        key: 9cf2cf98-133a-43d9
+        key: desi/skyportal/jno
       base_url: http://desi2.lbl.gov:5000/
-
