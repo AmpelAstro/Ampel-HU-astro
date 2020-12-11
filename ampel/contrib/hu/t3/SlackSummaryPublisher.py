@@ -227,7 +227,7 @@ class SlackSummaryPublisher(AbsT3Unit):
 
             if transient.t2:
                 for j, t2record in enumerate(transient.t2):
-                    if t2record["body"] is None or len(t2record["body"]) < 1:
+                    if not t2record.get("body"):
                         continue
                     if not (output := t2record["body"][-1].get("result")):
                         continue
