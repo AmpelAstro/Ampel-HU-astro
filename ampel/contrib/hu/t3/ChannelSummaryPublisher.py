@@ -9,19 +9,22 @@
 
 import datetime
 from io import BytesIO, StringIO
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple, TYPE_CHECKING
 
 import backoff
 import requests
 from astropy.time import Time
 from pytz import timezone
 
-from ampel.abstract.AbsT3Unit import AbsT3Unit
+from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
 from ampel.type import ChannelId
 from ampel.util.json import AmpelEncoder, load
 
+if TYPE_CHECKING:
+    from ampel.view.TransientView import TransientView
 
-class ChannelSummaryPublisher(AbsT3Unit):
+
+class ChannelSummaryPublisher(AbsPhotoT3Unit):
     """
     Create a json file with summary statistics for the channel. For the transients
     detected in the last N days, this json file contains, i.e. coords, RB score,
@@ -55,22 +58,35 @@ class ChannelSummaryPublisher(AbsT3Unit):
         self._channels: Set[ChannelId] = set()
         self.session = requests.Session()
 
-    def extract_from_transient_view(self, tran_view):
+    def extract_from_transient_view(
+        self, tran_view: TransientView
+    ) -> Optional[Dict[str, Any]]:
         """
         given transient view object return a dictionary
         with the desired metrics
         """
         metrics = set(self.alert_metrics)
-        out = {}
-        out["ztf_name"] = tran_view.tran_names[0]
-        out["tns_names"] = tran_view.tran_names[1:]
+        out: Dict[str, Any] = {}
+        assert tran_view.stock
+        if names := tran_view.stock.get("name"):
+            out["ztf_name"] = next(
+                name
+                for name in names
+                if isinstance(name, str) and name.startswith("ZTF")
+            )
+            out["tns_names"] = tuple(
+                name
+                for name in names
+                if isinstance(name, str) and name.startswith("TNS")
+            )
 
         # skip transient if it has no associated photopoints.
-        if tran_view.photopoints is None or len(tran_view.photopoints) == 0:
-            return
+        if not tran_view.t0:
+            return None
         # sort photopoints
         pps = sorted(
-            [pp.content for pp in tran_view.photopoints], key=lambda x: x["jd"]
+            [pp["body"] for pp in (tran_view.get_photopoints() or [])],
+            key=lambda x: x["jd"],
         )
 
         # some metric should only be computed for the latest pp
@@ -92,20 +108,21 @@ class ChannelSummaryPublisher(AbsT3Unit):
 
         return out
 
-    def add(self, transients):
+    def add(self, transients: Tuple[TransientView, ...]) -> None:
         """
         load the stats from the alerts
         """
         if transients is not None:
             for tran_view in transients:
-                if isinstance(tran_view.channel, list):
+                assert tran_view.stock
+                if len(channels := tran_view.stock.get("channel") or []) != 1:
                     raise ValueError("Only single-channel views are supported")
                 info_dict = self.extract_from_transient_view(tran_view)
                 if not info_dict:
                     continue
                 key = info_dict.pop("ztf_name")
                 self.summary[key] = info_dict
-                self._channels.add(tran_view.channel)
+                self._channels.add(channels[0])
 
     @backoff.on_exception(
         backoff.expo,
@@ -113,7 +130,7 @@ class ChannelSummaryPublisher(AbsT3Unit):
         giveup=lambda exc: isinstance(exc, requests.exceptions.HTTPError)
         and exc.response.status_code not in {400, 403, 405, 423, 500},
     )
-    def done(self):
+    def done(self) -> None:
         """"""
         if len(self._channels) == 0:
             return
@@ -132,12 +149,12 @@ class ChannelSummaryPublisher(AbsT3Unit):
         filename = timestamp.strftime("channel-summary-%Y%m%d.json")
 
         channel = list(self._channels)[0]
-        basedir = "{}/{}".format(self.dest, channel)
+        basedir = f"{self.base_url}/{channel}"
         rep = self.session.head(basedir)
         if not (rep.ok or self.dry_run):
             self.session.request("MKCOL", basedir).raise_for_status()
         try:
-            rep = self.session.get("{}/{}".format(basedir, filename))
+            rep = self.session.get(f"{basedir}/{filename}".format(basedir, filename))
             rep.raise_for_status()
             partial_summary = next(load(BytesIO(rep.content)))
             partial_summary.update(self.summary)
@@ -156,3 +173,5 @@ class ChannelSummaryPublisher(AbsT3Unit):
             self.session.put(
                 "{}/{}".format(basedir, filename), data=outfile.getvalue()
             ).raise_for_status()
+
+        return None
