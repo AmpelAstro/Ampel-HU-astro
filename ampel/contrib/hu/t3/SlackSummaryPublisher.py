@@ -10,7 +10,7 @@
 import collections
 import datetime
 import io
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Dict, List, Set, Tuple
 
 import numpy as np
 import pandas as pd
@@ -19,10 +19,11 @@ from slack import WebClient
 from slack.errors import SlackClientError
 
 from ampel.abstract.AbsT3Unit import AbsT3Unit
+from ampel.log.utils import log_exception
 from ampel.model.Secret import Secret
 from ampel.util.collections import ampel_iter
 from ampel.view.TransientView import TransientView
-from ampel.ztf.utils import to_ampel_id, to_ztf_id
+from ampel.ztf.utils import to_ztf_id
 
 
 class SlackSummaryPublisher(AbsT3Unit):
@@ -34,21 +35,16 @@ class SlackSummaryPublisher(AbsT3Unit):
     slack_token: Secret
     excitement: Dict[str, int] = {"Low": 50, "Mid": 200, "High": 400}
     full_photometry: bool = False
+    #: Fields to extract from each detection (if full_photometry enabled)
     cols: List[str] = [
-        "ztf_name",
         "ra",
         "dec",
         "magpsf",
         "sgscore1",
         "rb",
-        "last_significant_nondet",
-        "first_detection",
-        "most_recent_detection",
-        "n_detections",
         "distnr",
         "distpsnr1",
         "isdiffpos",
-        "_id",
     ]
 
     def post_init(self) -> None:
@@ -93,7 +89,7 @@ class SlackSummaryPublisher(AbsT3Unit):
 
         if len(self.frames) > 0:
 
-            df = pd.concat(self.frames, sort=False)
+            df = pd.DataFrame(self.frames, sort=False)
             # Set fill value for channel columns to False
             for channel in self.channels:
                 df[channel].fillna(False, inplace=True)
@@ -183,81 +179,65 @@ class SlackSummaryPublisher(AbsT3Unit):
 
         for transient in transients:
 
-            mycols = list(self.cols)
+            mycols = set(self.cols)
 
-            if not transient.t0:
-                continue
+            frame = {
+                "tranId": transient.id,
+                "ztf_name": to_ztf_id(transient.id),
+            }
 
-            tdf = pd.DataFrame([x["body"] for x in transient.t0])
+            if (summary := transient.get_t2_result(unit_id="T2LightCurveSummary")) :
+                frame.update(summary)
 
-            # NB: photopoint fields like jd, diffmaglim, fid are ZTF (IPAC) specific
-            # use tranId from parent view to compute ZTF name
-            tdf["tranId"] = transient.id
-            tdf["ztf_name"] = tdf["tranId"].apply(to_ztf_id)
-            tdf["most_recent_detection"] = max(tdf["jd"])
-            tdf["first_detection"] = min(tdf["jd"])
-            tdf["n_detections"] = len(tdf["jd"])
-            if "drb" in tdf.columns:
-                tdf["max_drb"] = max(tdf["drb"])
+            # include other T2 results, flattened
+            for t2record in ampel_iter(transient.t2):
+                if (
+                    t2record["unit"] == "T2LightCurveSummary"
+                    or not t2record.get("body")
+                    or not (output := t2record["body"][-1].get("result"))
+                ):
+                    continue
 
-            # Parse upper limits if present for the last upper limit prior to detection
-            # As is, an upper limit between two detections (so after the first) will not reset this clock
-            # It can be discussed whether this is the requested behaviour (see jd>min(tdf["first_detection"]) ) below
-            # For example case, look at ZTF19abejaiy
-            # Only include "significant" (limit deeper than 19.5)
-            upper_limits = [pp for pp in transient.t0 if pp["_id"] < 0]
-            if upper_limits is not None:
-                jd_last_nondet = 0
-                mag_last_nondet = 99
-                filter_last_nondet = 99
-                for ulim in upper_limits:
-                    jd = ulim["body"]["jd"]
-                    if jd < jd_last_nondet or jd > min(tdf["first_detection"]):
-                        continue
-                    ul = ulim["body"]["diffmaglim"]
-                    if ul < 19.5:
-                        continue
-                    jd_last_nondet = jd
-                    mag_last_nondet = ul
-                    filter_last_nondet = ulim["body"]["fid"]
-                if jd_last_nondet > 0:
-                    tdf["last_significant_nondet_jd"] = jd_last_nondet
-                    tdf["last_significant_nondet_mag"] = mag_last_nondet
-                    tdf["last_significant_nondet_fid"] = filter_last_nondet
+                # Flatten T2 output dictionary
+                # If this is not a dictionry it will be through
+                res_flat = flat_dict(output, prefix="T2-")
 
-            if transient.t2:
-                for j, t2record in enumerate(transient.t2):
-                    if not t2record.get("body"):
-                        continue
-                    if not (output := t2record["body"][-1].get("result")):
-                        continue
-
-                    # Flatten T2 output dictionary
-                    # If this is not a dictionry it will be through
-                    res_flat = flat_dict(output, prefix="T2-")
-
-                    # Add these to the dataframe (could we just join the dictionaries?)
-                    for key, value in res_flat.items():
-                        try:
-                            tdf[key] = str(value)
-                            mycols.append(key)
-                        except ValueError as ve:
-                            self.logger.error(str(ve))
+                # Add these to the dataframe (could we just join the dictionaries?)
+                for key, value in res_flat.items():
+                    try:
+                        frame[key] = str(value)
+                    except ValueError as ve:
+                        log_exception(self.logger, ve)
 
             assert transient.stock
-            for channel in ampel_iter(transient.stock["channel"]):
-                tdf[channel] = True
-                self.channels.add(channel)
+            frame.update(
+                {channel: True for channel in ampel_iter(transient.stock["channel"])}
+            )
+            self.channels.update((str(c) for c in transient.stock["channel"] or []))
 
-            mycols += list(self.channels)
-            missing = set(mycols).difference(tdf.columns.values)
+            frames.append(frame)
 
-            # deduplicate mycols, preserving order
-            mycols = list(dict.fromkeys([x for x in mycols if x not in missing]))
-            # remove stupid columns and save to table
-            frames.append(tdf[mycols][:1])
-            photometry.append(tdf)
-            # frames.append(tdf[:1])
+            if self.full_photometry:
+                if transient.t0 is None:
+                    raise ValueError(
+                        "Full photometry requested, but no T0 records loaded"
+                    )
+                photometry.append(
+                    pd.DataFrame(
+                        [
+                            {
+                                "ztf_name": frame["ztf_name"],
+                                **{
+                                    k: v
+                                    for pp in transient.t0
+                                    if not "SUPERSEDED" in pp["tag"]
+                                    for k, v in pp["body"].items()
+                                    if k in mycols
+                                },
+                            }
+                        ]
+                    )
+                )
 
         return frames, photometry
 
