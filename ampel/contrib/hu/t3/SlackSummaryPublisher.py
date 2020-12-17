@@ -230,7 +230,10 @@ class SlackSummaryPublisher(AbsT3Unit):
                                 **{
                                     k: v
                                     for pp in transient.t0
-                                    if not "SUPERSEDED" in pp["tag"]
+                                    if (
+                                        not pp.get("tag")
+                                        or not "SUPERSEDED" in pp["tag"]
+                                    )
                                     for k, v in pp["body"].items()
                                     if k in mycols
                                 },
