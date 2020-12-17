@@ -239,10 +239,9 @@ class TNSTalker(AbsT3Unit):
             )
 
         # Find the latest tns name (skipping previous)
-        if jentry := tran_view.get_journal_entries(
+        if tran_view.get_journal_entries(
             tier=3,
             filter_func=select,
-            latest=True,
         ):
             self.logger.info("TNS submitted", extra={"tnsSender": self.tns_api_key})
             return True
