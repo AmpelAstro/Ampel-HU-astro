@@ -9,19 +9,19 @@
 
 import datetime
 from io import BytesIO, StringIO
-from typing import Any, Dict, List, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Optional, Set, Tuple
 
 import backoff
 import requests
 from astropy.time import Time
 from pytz import timezone
+from requests.auth import HTTPBasicAuth
 
 from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
+from ampel.model.Secret import Secret
 from ampel.type import ChannelId
 from ampel.util.json import AmpelEncoder, load
-
-if TYPE_CHECKING:
-    from ampel.view.TransientView import TransientView
+from ampel.view.TransientView import TransientView
 
 
 class ChannelSummaryPublisher(AbsPhotoT3Unit):
@@ -29,34 +29,21 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
     Create a json file with summary statistics for the channel. For the transients
     detected in the last N days, this json file contains, i.e. coords, RB score,
     first detection, latest detection, and the total number of transients detected
-    by the channel.
+    by the channel. The summary info for each transient is taken from
+    T2LightCurveSummary.
     """
 
-    require = ("desycloud.default",)
-
     dry_run: bool = False
-    base_dir: str = "/AMPEL/ZTF"
-    alert_metrics: List[str] = [
-        "ztf_name",
-        "ra",
-        "dec",
-        "rb",
-        "detections",
-        "first_detection",
-        "last_detection",
-    ]
+    base_url: str = "https://desycloud.desy.de/remote.php/webdav/AMPEL/ZTF"
+    auth: Secret[list] = {"key": "desycloud/valery"}  # type: ignore[assignment]
 
-    def post_init(self, context: Optional[Dict[str, Any]]) -> None:
+    def post_init(self) -> None:
 
         self.summary: Dict[str, Any] = {}
         self._jd_range = [float("inf"), -float("inf")]
-        assert self.resource
-        self.dest = self.resource["desycloud.default"] + self.base_dir
-        self.logger.info(
-            f"Channel summary will include following metrics: {repr(self.alert_metrics)}"
-        )
         self._channels: Set[ChannelId] = set()
         self.session = requests.Session()
+        self.session.auth = HTTPBasicAuth(*self.auth.get())
 
     def extract_from_transient_view(
         self, tran_view: TransientView
@@ -65,7 +52,6 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
         given transient view object return a dictionary
         with the desired metrics
         """
-        metrics = set(self.alert_metrics)
         out: Dict[str, Any] = {}
         assert tran_view.stock
         if names := tran_view.stock.get("name"):
@@ -80,31 +66,14 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
                 if isinstance(name, str) and name.startswith("TNS")
             )
 
-        # skip transient if it has no associated photopoints.
-        if not tran_view.t0:
-            return None
-        # sort photopoints
-        pps = sorted(
-            [pp["body"] for pp in (tran_view.get_photopoints() or [])],
-            key=lambda x: x["jd"],
-        )
-
-        # some metric should only be computed for the latest pp
-        for key in metrics:
-            if key in ["ra", "dec", "rb"]:
-                out[key] = pps[-1].get(key)
-
-        # look at full det history for start and end of detection
-        if "first_detection" in metrics:
-            out["first_detection"] = pps[0]["jd"]
-        if "last_detection" in metrics:
-            out["last_detection"] = pps[-1]["jd"]
-        if "detections" in metrics:
-            out["detections"] = len(pps)
-        if pps[-1]["jd"] < self._jd_range[0]:
-            self._jd_range[0] = pps[-1]["jd"]
-        if pps[-1]["jd"] > self._jd_range[1]:
-            self._jd_range[1] = pps[-1]["jd"]
+        # incorporate T2LightCurveSummary
+        if summary := tran_view.get_t2_result(unit_id="T2LightCurveSummary"):
+            out.update(summary)
+            last_detection = summary["last_detection"]
+            if last_detection < self._jd_range[0]:
+                self._jd_range[0] = last_detection
+            if last_detection > self._jd_range[1]:
+                self._jd_range[1] = last_detection
 
         return out
 
@@ -154,7 +123,7 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
         if not (rep.ok or self.dry_run):
             self.session.request("MKCOL", basedir).raise_for_status()
         try:
-            rep = self.session.get(f"{basedir}/{filename}".format(basedir, filename))
+            rep = self.session.get(f"{basedir}/{filename}")
             rep.raise_for_status()
             partial_summary = next(load(BytesIO(rep.content)))
             partial_summary.update(self.summary)
