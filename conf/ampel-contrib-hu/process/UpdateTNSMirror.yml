@@ -1,17 +1,11 @@
 name: UpdateTNSMirror
-tier: 3
-schedule:
-- every().hour
+tier: null
+schedule: every(5).minutes
 processor:
-  unit: T3Processor
+  unit: OpsProcessor
   config:
-    directives:
-    - run:
-        unit: T3UnitRunner
-        config:
-          directives:
-          - execute:
-            - unit: TNSMirrorUpdater
-              config:
-                api_key:
-                  key: tns/jnordin
+    execute:
+      unit: TNSMirrorUpdater
+      config:
+        api_key:
+          key: tns/jnordin
