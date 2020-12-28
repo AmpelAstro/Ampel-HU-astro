@@ -89,13 +89,19 @@ class SlackSummaryPublisher(AbsT3Unit):
 
         if len(self.frames) > 0:
 
-            df = pd.DataFrame(self.frames, sort=False)
+            df = pd.DataFrame.from_records(self.frames)
             # Set fill value for channel columns to False
             for channel in self.channels:
                 df[channel].fillna(False, inplace=True)
             # Set fill value for all other columns to MISSING
             for field in set(df.columns.values).difference(self.channels):
                 df[field].fillna("MISSING", inplace=True)
+            # Move channel info at end
+            df = df.reindex(
+                copy=False,
+                columns=[c for c in df.columns if not c in self.channels]
+                + list(self.channels),
+            )
 
             filename = "Summary_%s.csv" % date
 
@@ -140,6 +146,12 @@ class SlackSummaryPublisher(AbsT3Unit):
                 # Set fill value for all other columns to MISSING
                 for field in set(photometry.columns.values).difference(self.channels):
                     photometry[field].fillna("MISSING", inplace=True)
+                # Move channel info at end
+                photometry = photometry.reindex(
+                    copy=False,
+                    columns=[c for c in df.columns if not c in self.channels]
+                    + list(self.channels),
+                )
 
                 filename = "Photometry_%s.csv" % date
 
