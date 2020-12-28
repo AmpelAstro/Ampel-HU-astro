@@ -14,7 +14,7 @@ from astropy.table import Table
 
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 from ampel.base.AmpelBaseModel import AmpelBaseModel
-from ampel.log.AmpelLogger import AmpelLogger
+from ampel.protocol.LoggerProtocol import LoggerProtocol
 from ampel.type import T2UnitResult
 from ampel.view.LightCurve import LightCurve
 
@@ -78,7 +78,7 @@ class T2RiseDeclineBase(AmpelBaseModel):
     ]
 
     if TYPE_CHECKING:
-        logger: AmpelLogger
+        logger: LoggerProtocol
 
     # For some reason we have duplicate photopoints. Why!!!
     # Through setting this we manually just keep the first of each occurance
