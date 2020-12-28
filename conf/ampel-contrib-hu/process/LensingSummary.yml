@@ -7,9 +7,7 @@ channel:
 load:
   - TRANSIENT
   - DATAPOINT
-  - col: t2
-    query_complement:
-      unit: T2SNCosmo
+  - T2RECORD
 run:
   - unit: SlackSummaryPublisher
     config: slack-ztf_general
@@ -21,4 +19,3 @@ run:
         key: fritz/jvs/ampelbot
       base_url: https://fritz.science
       groups: ['SNLensing']
-
