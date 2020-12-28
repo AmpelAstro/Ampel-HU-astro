@@ -38,7 +38,7 @@ class TNSMirrorUpdater(AbsT3Unit):
         if self.context and "last_run" in self.context:
             last_run = datetime.datetime.fromtimestamp(self.context["last_run"])
         else:
-            last_run = datetime.datetime(2020, 9, 6)
+            last_run = datetime.datetime(2020, 12, 25)
 
         async def fetch():
             tns = TNSClient(
