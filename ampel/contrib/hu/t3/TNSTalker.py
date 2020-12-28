@@ -38,7 +38,7 @@ from ampel.ztf.utils import to_ztf_id
 
 if TYPE_CHECKING:
     from ampel.content.JournalRecord import JournalRecord
-    from ampel.log.AmpelLogger import AmpelLogger
+    from ampel.protocol.LoggerProtocol import LoggerProtocol
 
 
 def chunks(l: Iterable, n: int) -> Generator[List, None, None]:
@@ -52,7 +52,7 @@ def chunks(l: Iterable, n: int) -> Generator[List, None, None]:
 
 # get the science records for the catalog match
 def get_catalogmatch_srecs(
-    tran_view: TransientView, logger: "AmpelLogger"
+    tran_view: TransientView, logger: "LoggerProtocol"
 ) -> Dict[str, Any]:
     if cat_res := [
         record
