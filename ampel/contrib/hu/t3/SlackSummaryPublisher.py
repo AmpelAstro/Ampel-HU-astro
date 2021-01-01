@@ -249,6 +249,10 @@ class SlackSummaryPublisher(AbsT3Unit):
                                     for k, v in pp["body"].items()
                                     if k in mycols
                                 },
+                                **{
+                                    channel: True
+                                    for channel in transient.stock["channel"]
+                                },
                             }
                         ]
                     )
