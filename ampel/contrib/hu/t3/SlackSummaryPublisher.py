@@ -21,7 +21,6 @@ from slack.errors import SlackClientError
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.log.utils import log_exception
 from ampel.model.Secret import Secret
-from ampel.util.collections import ampel_iter
 from ampel.view.TransientView import TransientView
 from ampel.ztf.utils import to_ztf_id
 
@@ -202,11 +201,11 @@ class SlackSummaryPublisher(AbsT3Unit):
                 frame.update(summary)
 
             # include other T2 results, flattened
-            for t2record in ampel_iter(transient.t2):
+            for t2record in transient.t2 or []:
                 if (
                     t2record["unit"] == "T2LightCurveSummary"
-                    or not t2record.get("body")
-                    or not (output := t2record["body"][-1].get("result"))
+                    or not (body := t2record.get("body"))
+                    or not (output := body[-1].get("result"))
                 ):
                     continue
 
@@ -223,7 +222,7 @@ class SlackSummaryPublisher(AbsT3Unit):
 
             assert transient.stock
             frame.update(
-                {channel: True for channel in ampel_iter(transient.stock["channel"])}
+                {str(channel): True for channel in (transient.stock["channel"] or [])}
             )
             self.channels.update((str(c) for c in transient.stock["channel"] or []))
 
@@ -250,8 +249,8 @@ class SlackSummaryPublisher(AbsT3Unit):
                                     if k in mycols
                                 },
                                 **{
-                                    channel: True
-                                    for channel in transient.stock["channel"]
+                                    str(channel): True
+                                    for channel in (transient.stock["channel"] or [])
                                 },
                             }
                         ]
