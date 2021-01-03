@@ -1,6 +1,6 @@
 channel: OKC_LENSED
 contact: ampel@desy.de
-active: false
+active: true
 auto_complete: live
 template: ztf_uw_private
 t0_filter:
