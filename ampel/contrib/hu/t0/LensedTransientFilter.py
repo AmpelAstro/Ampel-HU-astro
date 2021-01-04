@@ -16,59 +16,55 @@ from ampel.contrib.hu.base.ExtcatsUnit import ExtcatsUnit
 
 class LensedTransientFilter(ExtcatsUnit, AbsAlertFilter[PhotoAlert]):
 
-	min_ndet: int
-	ClusListSearchRadius: float
-	MasterlensSearchRadius: float
-	CaslteQSOSearchRadius: float
+    min_ndet: int
+    ClusListSearchRadius: float
+    MasterlensSearchRadius: float
+    CaslteQSOSearchRadius: float
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        searches = {
+            "cluslist": (self.ClusListSearchRadius, "ra_deg", "dec_deg"),
+            "masterlens": (self.MasterlensSearchRadius, "ra_coord", "dec_coord"),
+            "castleqso": (self.CaslteQSOSearchRadius, "ra", "dec"),
+        }
+        self.queries = {
+            k: partial(
+                self.get_extcats_query(
+                    k, ra_key=ra_key, dec_key=dec_key
+                ).binaryserach,  # sic
+                rs_arcsec=radius,
+            )
+            for k, (radius, ra_key, dec_key) in searches.items()
+        }
 
-	def __init__(self, *args, **kwargs):
-		super().__init__(*args, **kwargs)
-		searches = {
-			'cluslist': (self.ClusListSearchRadius, 'ra_deg', 'dec_deg'),
-			'masterlens': (self.MasterlensSearchRadius, 'ra_coord', 'dec_coord'),
-			'castleqso': (self.CaslteQSOSearchRadius, 'ra', 'dec'),
-		}
-		self.queries = {
-			k: partial(
-				self.get_extcats_query(
-					k,
-					ra_key=ra_key,
-					dec_key=dec_key
-				).binaryserach, # sic
-				rs_arcsec=radius
-			)
-			for k, (radius, ra_key, dec_key) in searches.items()
-		}
+    def apply(self, alert):
+        """
+        Mandatory implementation.
+        To exclude the alert, return *None*
+        To accept it, either
+                * return self.on_match_default_flags
+                * return a custom combination of T2 unit names
+        """
 
+        # cut on the number of previous detections
+        if len(alert.pps) < self.min_ndet:
+            return None
 
-	def apply(self, alert):
-		"""
-		Mandatory implementation.
-		To exclude the alert, return *None*
-		To accept it, either
-			* return self.on_match_default_flags
-			* return a custom combination of T2 unit names
-		"""
+        # now consider the last photopoint
+        latest = alert.pps[0]
 
-		# cut on the number of previous detections
-		if len(alert.pps) < self.min_ndet:
-			return None
+        # check if it a positive subtraction
+        if not (
+            latest["isdiffpos"]
+            and (latest["isdiffpos"] == "t" or latest["isdiffpos"] == "1")
+        ):
+            self.logger.debug("rejected: 'isdiffpos' is %s", latest["isdiffpos"])
+            return None
 
-		# now consider the last photopoint
-		latest = alert.pps[0]
+        # and match with the catalogs using position of latest photopoint
+        for cat, query in self.queries.items():
+            if query(latest["ra"], latest["dec"]):
+                return True
 
-		# check if it a positive subtraction
-		if not (
-			latest['isdiffpos'] and
-			(latest['isdiffpos'] == 't' or latest['isdiffpos'] == '1')
-		):
-			self.logger.debug("rejected: 'isdiffpos' is %s", latest['isdiffpos'])
-			return None
-
-		# and match with the catalogs using position of latest photopoint
-		for cat, query in self.queries.items():
-			if query(latest["ra"], latest["dec"]):
-				return True
-
-		return None
+        return None
