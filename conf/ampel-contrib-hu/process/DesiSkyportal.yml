@@ -15,4 +15,4 @@ run:
     config:
       token:
         key: desi/skyportal/jno
-      base_url: http://desi2.lbl.gov:5000/
+      base_url: http://desi2.lbl.gov:5000
