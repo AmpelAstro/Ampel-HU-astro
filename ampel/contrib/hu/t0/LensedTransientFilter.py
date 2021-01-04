@@ -25,7 +25,7 @@ class LensedTransientFilter(ExtcatsUnit, AbsAlertFilter[PhotoAlert]):
         super().__init__(*args, **kwargs)
         searches = {
             "cluslist": (self.ClusListSearchRadius, "ra_deg", "dec_deg"),
-            "masterlens": (self.MasterlensSearchRadius, "ra_coord", "dec_coord"),
+            "masterlens": (self.MasterlensSearchRadius, "ra_degrees", "dec_degrees"),
             "castleqso": (self.CaslteQSOSearchRadius, "ra", "dec"),
         }
         self.queries = {
