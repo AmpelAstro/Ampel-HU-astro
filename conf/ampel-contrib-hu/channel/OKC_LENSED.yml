@@ -16,4 +16,4 @@ t2_compute:
       model: salt2
       upper_limits: false
   - unit: T2CatalogMatch
-    config: '%T2CatalogMatch_general'
+    config: '%T2CatalogMatch_okclens'

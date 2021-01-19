@@ -6,6 +6,7 @@ channel:
   any_of: [OKC_LENSED, HU_NEARBY_CLUSTERS]
 load:
   - TRANSIENT
+  - COMPOUND
   - DATAPOINT
   - T2RECORD
 run:
@@ -18,4 +19,3 @@ run:
       token:
         key: fritz/jvs/ampelbot
       base_url: https://fritz.science
-      groups: ['SNLensing']
