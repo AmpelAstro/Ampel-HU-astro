@@ -323,6 +323,27 @@ t2:
           - ObjType
           - Velocity
           - z
+  '%T2CatalogMatch_okclens':
+    catalogs:
+      masterlens:
+        use: extcats
+        catq_kwargs:
+          ra_key: ra_degrees
+          dec_key: dec_degrees
+        rs_arcsec: 10
+        keys_to_append:
+          - z_lens
+          - z_source
+          - system_name
+          - comment
+      cluslist:
+        use: extcats
+        catq_kwargs:
+          ra_key: ra_deg
+          dec_key: dec_deg
+        rs_arcsec: 60
+        keys_to_append:
+          - target
 t3:
   slack-ampel_alerts:
     excitement:
