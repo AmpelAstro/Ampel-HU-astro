@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : matteo.giomi@desy.de
 # Date              : 24.08.2018
-# Last Modified Date: 13.11.2020
+# Last Modified Date: 26.01.2021
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
 from typing import Any, Dict, Literal, Optional, Sequence, Set, TYPE_CHECKING
@@ -27,6 +27,41 @@ if TYPE_CHECKING:
 
 
 class CatalogModel(StrictModel):
+    """
+    :param use: either extcats or catsHTM, depending on how the catalog is set up.
+    :param rs_arcsec: search radius for the cone search, in arcseconds
+    :param catq_kwargs: parameter passed to the catalog query routine.
+  
+    In case 'use' is set to 'extcats', 'catq_kwargs' can (or MUST?) contain the names of the ra and dec
+    keys in the catalog (see example below), all valid arguments to extcats.CatalogQuert.findclosest
+    can be given, such as pre- and post cone-search query filters can be passed.
+    
+    In case 'use' is set to 'catsHTM', 'catq_kwargs' SHOULD contain the the names of the ra and dec
+    keys in the catalog if those are different from 'ra' and 'dec' the 'keys_to_append' parameters
+    is OPTIONAL and specifies which fields from the catalog should be returned in case of positional match:
+
+    if not present: all the fields in the given catalog will be returned.
+    if `list`: just take this subset of fields.
+
+    Example (SDSS_spec):
+    {
+        'use': 'extcats',
+        'catq_kwargs': {
+            'ra_key': 'ra',
+            'dec_key': 'dec'
+        },
+        'rs_arcsec': 3,
+        'keys_to_append': ['z', 'bptclass', 'subclass']
+    }
+    
+    Example (NED):
+    {
+        'use': 'catsHTM',
+        'rs_arcsec': 20,
+        'keys_to_append': ['fuffa1', 'fuffa2', ..],
+        'catq_kwargs':
+    }
+    """
     use: Literal["extcats", "catsHTM"]
     rs_arcsec: float
     catq_kwargs: Dict[str, Any]
@@ -44,11 +79,12 @@ class T2CatalogMatch(ExtcatsUnit, CatsHTMUnit, AbsPointT2Unit):
     # NB: this assumes that docs are created by DualPointT2Ingester
     ingest: Dict = {"eligible": {"pps": "first"}}
 
+    # Each value specifies a catalog in extcats or catsHTM format and the query parameters
     catalogs: Dict[str, CatalogModel]
 
     def post_init(self):
 
-        # empty dict of suppoerted (AS WELL AS REQUESTED) extcats catalog query objects
+        # dict for catalog query objects
         self.catq_objects = {}
         self.debug = self.logger.verbose > 1
 
@@ -67,69 +103,7 @@ class T2CatalogMatch(ExtcatsUnit, CatsHTMUnit, AbsPointT2Unit):
 
     def run(self, datapoint: DataPoint) -> T2UnitResult:
         """
-        run_parameters: `dict`
-        configuration parameter for this job. There is provision to
-        pass arguments to the LightCurve.get_pos method used to derive
-        the position of the transient from the lightcure.
-
-        Most importantly, the catalogs key correspond to a nested dictionary
-        in which each entry specify a catalog in extcats or catsHTM format
-        and the parameters used for the queries.
-
-        for each entry in the 'catalogs' configuration dictionary, the
-        following keys are MANDATORY:
-
-        'use': `str`
-            either extcats or catsHTM, depending on how the catalog is set up.
-
-        'rs_arcsec': `float`
-            search radius for the cone search, in arcseconds
-
-        Optional keys includes:
-
-        'catq_kwargs': `dict`
-            parameters to pass to the catalog query routine. Two cases arise:
-
-        if 'use' == 'extcats':
-            the 'catq_kwargs' can (or MUST I don't ) contain the names of the ra and dec
-            keys in the catalog (se example below), all valid arguments to
-            extcats.CatalogQuert.findclosest can be given, such as pre- and post
-            cone-search query filters can be passed.
-        if 'use' == 'catsHTM':
-            the 'catq_kwargs' SHOULD contain the the names of the ra and dec
-            keys in the catalog if those are different from 'ra' and 'dec'
-
-        the 'keys_to_append' parameters is OPTIONAL and specifies wich fields from
-        the catalog should be returned in case of positional match:
-
-        if not present:
-            all the fields in the given catalog will be returned.
-        if `list`
-            just take this subset of fields.
-
-        Eg:
-        'catalogs': {
-            'SDSS_spec': {
-                'use': 'extcats',
-                'catq_kwargs': {
-                    'ra_key': 'ra',
-                    'dec_key': 'dec'
-                },
-                'rs_arcsec': 3,
-                'keys_to_append': ['z', 'bptclass', 'subclass']
-            },
-            'NED': {
-                'use': 'catsHTM',
-                'rs_arcsec': 20,
-                'keys_to_append': ['fuffa1', 'fuffa2', ..],
-                'catq_kwargs':
-            },
-            ...
-        }
-
-        :returns: dict with the keys to append to each transient. For example, with the
-        above run-config (and in case of a match in SDSS but not in NED), the
-        returned dict would be:
+        :returns: example of a match in SDSS but not in NED:
 
         {
             'SDSS_spec': {
