@@ -7,7 +7,7 @@
 # Last Modified Date: 26.01.2021
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
-from typing import Any, Dict, Literal, Optional, Sequence, Set, TYPE_CHECKING
+from typing import Any, Dict, Literal, Optional, Sequence, TYPE_CHECKING
 
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
@@ -31,11 +31,11 @@ class CatalogModel(StrictModel):
     :param use: either extcats or catsHTM, depending on how the catalog is set up.
     :param rs_arcsec: search radius for the cone search, in arcseconds
     :param catq_kwargs: parameter passed to the catalog query routine.
-  
+
     In case 'use' is set to 'extcats', 'catq_kwargs' can (or MUST?) contain the names of the ra and dec
     keys in the catalog (see example below), all valid arguments to extcats.CatalogQuert.findclosest
     can be given, such as pre- and post cone-search query filters can be passed.
-    
+
     In case 'use' is set to 'catsHTM', 'catq_kwargs' SHOULD contain the the names of the ra and dec
     keys in the catalog if those are different from 'ra' and 'dec' the 'keys_to_append' parameters
     is OPTIONAL and specifies which fields from the catalog should be returned in case of positional match:
@@ -53,7 +53,7 @@ class CatalogModel(StrictModel):
         'rs_arcsec': 3,
         'keys_to_append': ['z', 'bptclass', 'subclass']
     }
-    
+
     Example (NED):
     {
         'use': 'catsHTM',
