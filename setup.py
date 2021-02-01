@@ -34,11 +34,11 @@ setup(
         "ampel-alerts",
         "ampel-ztf",
         "catsHTM",
+        "extcats",
         "zerorpc",
         # see: https://github.com/sncosmo/sncosmo/issues/291
         "sncosmo==2.2.0",
-        "extcats==1.5.1",
-        "iminuit",
+        "iminuit==1.5.1",
         "sfdmap",
         "astropy",
         "numpy",
