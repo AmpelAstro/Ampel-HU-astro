@@ -94,7 +94,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
 
 
     # First dependency - lightcurve summary
-    lcdep = Dependency(unit = 'T2LightCurveSummary', config=None )
+    lcdep = Dependency(unit = 'T2CatalogMatch', config=None )
 
 
     dependency : Sequence[Dependency] = [lcdep]
@@ -110,7 +110,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
 
         # Verfiy we are dealing with the catalogmatch
         # could these be hashed?
-        assert t2catalogmatch["unit"]=='CATALOGMATCH', "Did not get expected unit chained."
+        assert t2catalogmatch["unit"]=='T2CatalogMatch', "Did not get expected unit chained."
 
         # Get catalog matching output dictionary
         if (body := t2catalogmatch["body"]) is not None:
