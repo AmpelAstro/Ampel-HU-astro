@@ -10,9 +10,11 @@
 # - ampel.contrib.hu.t0.NoFilter
 - ampel.contrib.hu.t0.TransientInEllipticalFilter
 - ampel.contrib.hu.t2.T2SNCosmo
+- ampel.contrib.hu.t2.T2SNCosmoEval
 - ampel.contrib.hu.t2.T2CatalogMatch
 - ampel.contrib.hu.t2.T2LCQuality
 - ampel.contrib.hu.t2.T2BrightSNProb
+- ampel.contrib.hu.t2.T2TNSEval
 # - ampel.contrib.hu.t3.TransientInfoPrinter
 - ampel.contrib.hu.t3.TransientViewDumper
 - ampel.contrib.hu.t3.ChannelSummaryPublisher
