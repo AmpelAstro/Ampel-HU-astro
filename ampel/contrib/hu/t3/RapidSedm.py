@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import requests
 
 from ampel.contrib.hu.t3.RapidBase import RapidBase, Secret
-from ampel.struct.JournalExtra import JournalExtra
+from ampel.struct.JournalTweak import JournalTweak
 from ampel.type import StockId
 from ampel.view.TransientView import TransientView
 from ampel.ztf.utils import to_ampel_id, to_ztf_id
@@ -83,7 +83,7 @@ class RapidSedm(RapidBase):
 
     def react(
         self, tran_view: TransientView, info: Dict[str, Any]
-    ) -> Tuple[bool, Optional[JournalExtra]]:
+    ) -> Tuple[bool, Optional[JournalTweak]]:
         """
         Send a trigger to the SEDM. Note that we have no good way of investigating the queue at this time
         """
@@ -120,16 +120,16 @@ class RapidSedm(RapidBase):
 
         # Document what we did
         jcontent = {"t3unit": self.name, "reactDict": react_dict, "success": success}
-        jup = JournalExtra(extra=jcontent)
+        jup = JournalTweak(extra=jcontent)
 
         return success, jup
 
-    def add(self, transients: Tuple[TransientView, ...]) -> Dict[StockId, JournalExtra]:
+    def add(self, transients: Tuple[TransientView, ...]) -> Dict[StockId, JournalTweak]:
         """
         Loop through transients and check for TNS names and/or candidates to submit
         """
 
-        journal_updates: Dict[StockId, JournalExtra] = {}
+        journal_updates: Dict[StockId, JournalTweak] = {}
         # We will here loop through transients and react individually
         for tv in transients:
             matchinfo = self.accept_tview(tv)

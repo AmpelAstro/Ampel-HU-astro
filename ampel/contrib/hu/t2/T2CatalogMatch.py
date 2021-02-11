@@ -19,7 +19,7 @@ from ampel.content.DataPoint import DataPoint
 from ampel.contrib.hu.base.CatsHTMUnit import CatsHTMUnit
 from ampel.contrib.hu.base.ExtcatsUnit import ExtcatsUnit
 from ampel.model.StrictModel import StrictModel
-from ampel.t2.T2RunState import T2RunState
+from ampel.enum.T2RunState import T2RunState
 from ampel.type import T2UnitResult
 
 if TYPE_CHECKING:

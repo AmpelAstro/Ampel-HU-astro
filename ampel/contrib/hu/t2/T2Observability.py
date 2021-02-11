@@ -14,7 +14,7 @@ from ampel.model.StrictModel import StrictModel
 from ampel.util.Observatory import Observatory
 from ampel.view.LightCurve import LightCurve
 from ampel.type import T2UnitResult
-from ampel.t2.T2RunState import T2RunState
+from ampel.enum.T2RunState import T2RunState
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 
 class VisibilityConstraintModel(StrictModel):

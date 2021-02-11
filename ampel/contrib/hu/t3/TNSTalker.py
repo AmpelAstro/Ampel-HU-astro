@@ -31,7 +31,7 @@ from ampel.contrib.hu.t3.ampel_tns import (
     tnsInternal,
 )
 from ampel.model.Secret import Secret
-from ampel.struct.JournalExtra import JournalExtra
+from ampel.struct.JournalTweak import JournalTweak
 from ampel.type import StockId
 from ampel.view.TransientView import TransientView
 from ampel.ztf.utils import to_ztf_id
@@ -343,7 +343,7 @@ class TNSTalker(AbsT3Unit):
 
     def find_tns_name(
         self, tran_view: TransientView
-    ) -> Tuple[Optional[str], List[str], Optional[JournalExtra]]:
+    ) -> Tuple[Optional[str], List[str], Optional[JournalTweak]]:
         """
         extensive search for TNS names in:
         - tran_view.tran_names (if added by TNSMatcher)
@@ -401,7 +401,7 @@ class TNSTalker(AbsT3Unit):
                         jcontent.update({"tnsInternal": tns_int})
 
                 # create a journalUpdate and update the tns_name as well. TODO: check with JNo
-                jup = JournalExtra(extra=jcontent)
+                jup = JournalTweak(extra=jcontent)
                 tns_name = tns_name_new
 
             elif tns_name is None:
@@ -419,7 +419,7 @@ class TNSTalker(AbsT3Unit):
                         jcontent.update({"tnsInternal": tns_int})
 
                 # create a journalUpdate and update the tns_name as well. TODO: check with JNo
-                jup = JournalExtra(extra=jcontent)
+                jup = JournalTweak(extra=jcontent)
                 tns_name = tns_name_new
                 # tns_internals = tns_internals_new
 
@@ -842,7 +842,7 @@ class TNSTalker(AbsT3Unit):
             atdict["remarks"] = self.baseremark
         return atdict
 
-    def add(self, transients: Tuple[TransientView, ...]) -> Dict[StockId, JournalExtra]:
+    def add(self, transients: Tuple[TransientView, ...]) -> Dict[StockId, JournalTweak]:
         """
         Loop through transients and check for TNS names and/or candidates to submit
         """
@@ -859,7 +859,7 @@ class TNSTalker(AbsT3Unit):
         )
 
         # Will be saved to future journals
-        journal_updates: Dict[StockId, JournalExtra] = {}
+        journal_updates: Dict[StockId, JournalTweak] = {}
         # Reports to be sent, indexed by the transient view IDs (so that we can check in the replies)
         atreports: Dict[StockId, Dict[str, Any]] = {}
         for tran_view in transients_to_submit:
@@ -971,7 +971,7 @@ class TNSTalker(AbsT3Unit):
 
             # Create new journal entry
             # TODO: do we want to add to the journal a failed TNS submit?
-            jup = JournalExtra(
+            jup = JournalTweak(
                 extra={
                     "tnsName": tnsreplies[ztf_name][1]["TNSName"],
                     "tnsInternal": ztf_name,
