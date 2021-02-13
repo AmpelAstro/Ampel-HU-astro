@@ -16,7 +16,7 @@ from ampel.contrib.hu.t3.RapidBase import RapidBase, Secret
 from ampel.struct.JournalTweak import JournalTweak
 from ampel.type import StockId
 from ampel.view.TransientView import TransientView
-from ampel.ztf.utils import to_ampel_id, to_ztf_id
+from ampel.ztf.util.ZTFIdMapper import to_ampel_id, to_ztf_id
 
 
 class RapidSedm(RapidBase):

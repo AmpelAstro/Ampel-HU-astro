@@ -18,7 +18,7 @@ from ampel.base import abstractmethod
 from ampel.model.Secret import Secret
 from ampel.struct.JournalTweak import JournalTweak
 from ampel.view.TransientView import TransientView
-from ampel.ztf.utils import to_ampel_id, to_ztf_id
+from ampel.ztf.util.ZTFIdMapper import to_ampel_id, to_ztf_id
 
 
 # get the science records for the catalog match

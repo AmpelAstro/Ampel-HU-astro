@@ -34,7 +34,7 @@ from ampel.model.Secret import Secret
 from ampel.struct.JournalTweak import JournalTweak
 from ampel.type import StockId
 from ampel.view.TransientView import TransientView
-from ampel.ztf.utils import to_ztf_id
+from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 
 if TYPE_CHECKING:
     from ampel.content.JournalRecord import JournalRecord
