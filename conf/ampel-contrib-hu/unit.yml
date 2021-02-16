@@ -15,6 +15,7 @@
 - ampel.contrib.hu.t2.T2LCQuality
 - ampel.contrib.hu.t2.T2BrightSNProb
 - ampel.contrib.hu.t2.T2TNSEval
+- ampel.contrib.hu.t2.T2InfantCatalogEval
 # - ampel.contrib.hu.t3.TransientInfoPrinter
 - ampel.contrib.hu.t3.TransientViewDumper
 - ampel.contrib.hu.t3.ChannelSummaryPublisher
