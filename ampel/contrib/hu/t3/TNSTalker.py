@@ -56,7 +56,7 @@ def get_catalogmatch_srecs(
 ) -> Dict[str, Any]:
     if cat_res := [
         record
-        for record in (tran_view.get_t2_records(unit_id="CATALOGMATCH") or [])
+        for record in (tran_view.get_t2_docs(unit_id="CATALOGMATCH") or [])
         if record["body"] is not None and record["body"][-1]["result"]
     ]:
         if (body := cat_res[-1]["body"]) is not None:
