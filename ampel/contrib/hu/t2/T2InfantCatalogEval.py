@@ -15,43 +15,11 @@ import numpy as np
 from ampel.base import abstractmethod
 from ampel.type import T2UnitResult
 from ampel.view.LightCurve import LightCurve
-from ampel.content.T2Record import T2Record
+from ampel.view.T2DocView import T2DocView
 from ampel.contrib.hu.t3.ampel_tns import TNSFILTERID   # T2 importing info from T3. Restructure?
-
-from ampel.abstract.AbsTiedStateT2Unit import Dependency
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
 
 
-# Should be directly given in configuration
-TEST_CAT_CONFIG = { 'catalogs' : {
-             'SDSS_spec' : {
-                 'use' : 'extcats',
-                 'catq_kwargs' : {
-                     'ra_key' : 'ra',
-                     'dec_key' : 'dec',
-                 },
-                 'rs_arcsec' : 10,
-                 'keys_to_append' : ['z','bptclass','subclass'],
-                 'pre_filter' : None,
-                 'post_filter' : None,
-             },
-             'milliquas' : {
-                 'use' : 'extcats',
-                 'catq_kwargs' : {
-                     'ra_key' : 'ra',
-                     'dec_key' : 'dec',
-                 },
-                 'rs_arcsec' : 3,
-                 'keys_to_append' : ['broad_type', 'name', 'redshift', 'qso_prob'],
-                 'pre_filter' : None,
-                 'post_filter' : None,
-             }
-        },
-        'extcats' : {
-            'auth' : {'key' : 'extcats/reader'},
-            'max_time' : 300.0            
-        }
-}
 
 
 class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
@@ -64,8 +32,6 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
 
     # Cuts based on T2 catalog redshifts
 
-    # Require a redshift max from a T2 output
-    require_catalogmatch: bool = True
     # List of catalog-like output to search for redshift. It is assumed that
     # redshifts are stored as 'z'
     redshift_catalogs: List[str] = ['SDSS_spec', 'NEDz', 'GLADEv23', 'NEDz_extcats']  # Otherwise more 
@@ -127,34 +93,19 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         {"attribute": "magfromlim", "operator": ">", "value": 0},
     ]
 
-    # First dependency - lightcurve summary
+    # Id of dependency
     dependency_unit: str = 'T2CatalogMatch'
-    dependency_config : Dict[str,Any] = {}
-    lcdep = Dependency(unit = dependency_unit, config=dependency_config )
-    dependency : Sequence[Dependency] = [lcdep]
 
 
-    def inspect_catalog(self, t2catalogmatch : T2Record) -> bool:
+    def get_tied_unit_names(self) -> List[str]:
+        return [self.dependency_unit]
+
+    def inspect_catalog(self, cat_res : Dict[str,Any]) -> bool:
         """
-        Verify whether a redshift match can be found in matched catalogs.
-
+        Check whether a redshift match can be found in matched catalogs.
         """
 
-	# Part 1. Verify that got the necessary info
-
-        # Verfiy we are dealing with the catalogmatch
-        # could these be hashed?
-        assert t2catalogmatch["unit"]=='T2CatalogMatch', "Did not get expected unit chained."
-
-        # Get catalog matching output dictionary
-        if (body := t2catalogmatch["body"]) is not None:
-            cat_res =  body[-1]["result"]
-        else:
-            self.logger.debug("T2result but no body")
-            return None
-
-
-        # P2. # Loop through listed catalogs for redshift matches
+        # P1. # Loop through listed catalogs for redshift matches
         zmatchs = []
         info = {}
         for catname in self.redshift_catalogs:
@@ -311,7 +262,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
                 raise ValueError("Have assumed a unique last photopoint")
             info["latest_mag"] = latest_pps[0]["body"]["magpsf"]
 
-        # we should here add a cut based on the mag rise per day (see submitRapid)
+        # TODO: cut based on the mag rise per day (see submitRapid)
 
         # cut on galactic coordinates
         if pos := lc.get_pos(ret="mean", filters=self.lc_filters):
@@ -395,7 +346,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
     # ==================== #
     # AMPEL T2 MANDATORY   #
     # ==================== #
-    def run(self, light_curve: LightCurve, t2_records: Sequence[T2Record]) -> T2UnitResult:
+    def run(self, light_curve: LightCurve, t2_views: Sequence[T2DocView]) -> T2UnitResult:
         """
 
         Evaluate whether a transient passes thresholds for being a nearby (young) transient.
@@ -405,7 +356,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         light_curve: "ampel.view.LightCurve" instance.
         See the LightCurve docstring for more info.
 
-        t2_records: List of T2Records (assumed to be the result of a CatalogMatch)
+        t2_views: List of T2Views (assumed to be the result of a CatalogMatch)
 
         Returns
         -------
@@ -420,10 +371,13 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         # i. Check the catalog matching criteria
         # There might be multiple CatalogMatch associated with the transient
         # we here only take the first without specific origin
-        t2_cat_match = t2_records[0]
-        assert t2_cat_match['unit']=='T2CatalogMatch'
+        t2_cat_match = t2_views[0]
+        assert t2_cat_match.unit==self.dependency_unit
 
-        transient_info = self.inspect_catalog(t2_cat_match)
+        catalog_result = t2_cat_match.get_payload()
+        if not catalog_result:
+            return { 'action' : False, 'eval' : 'No catlog match result' }
+        transient_info = self.inspect_catalog(catalog_result)
         if not transient_info:
             return { 'action' : False, 'eval' : 'No cat match in z-range' }
 
