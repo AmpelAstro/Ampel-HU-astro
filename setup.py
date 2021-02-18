@@ -45,6 +45,7 @@ setup(
         "beautifulsoup4",
         "backoff",
         "requests",
+        "pymage @ https://github.com/MickaelRigault/pymage/archive/v1.0.tar.gz",
     ],
     entry_points={
         "ampel_target_sources": [
