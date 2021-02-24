@@ -13,10 +13,10 @@ import numpy as np
 from ampel.base import abstractmethod
 from ampel.type import T2UnitResult
 from ampel.view.LightCurve import LightCurve
-from ampel.content.T2Record import T2Record
+from ampel.view.T2DocView import T2DocView
 from ampel.contrib.hu.t3.ampel_tns import TNSFILTERID   # T2 importing info from T3. Restructure?
 
-from ampel.abstract.AbsTiedStateT2Unit import Dependency
+from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
 
 
@@ -92,15 +92,9 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
     # (sigma!) if GAIA match is noisier than this, add a remark
     max_gaia_noise: float = 2.0
 
+    dependency = [StateT2Dependency(unit='T2CatalogMatch')]
 
-    # First dependency - lightcurve summary
-    lcdep = Dependency(unit = 'T2CatalogMatch', config=None )
-
-
-    dependency : Sequence[Dependency] = [lcdep]
-
-
-    def inspect_catalog(self, t2catalogmatch : T2Record) -> bool:
+    def inspect_catalog(self, t2catalogmatch : T2DocView) -> bool:
         """
         Verify whether any catalog matching criteria prevents submission.
 
@@ -110,12 +104,10 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
 
         # Verfiy we are dealing with the catalogmatch
         # could these be hashed?
-        assert t2catalogmatch["unit"]=='T2CatalogMatch', "Did not get expected unit chained."
+        assert t2catalogmatch.unit=='T2CatalogMatch', "Did not get expected unit chained."
 
         # Get catalog matching output dictionary
-        if (body := t2catalogmatch["body"]) is not None:
-            cat_res =  body[-1]["result"]
-        else:
+        if (cat_res := t2catalogmatch.get_payload()) is None:
             self.logger.debug("T2result but no body")
             return False
 
@@ -331,15 +323,14 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         # congratulation Lightcurve, you made it!
         return True
 
-    def get_catalog_remarks(self, lc : LightCurve, t2catalogmatch : T2Record) -> Optional[Dict[str, Any]]:
+    def get_catalog_remarks(self, lc : LightCurve, t2catalogmatch : T2DocView) -> Optional[Dict[str, Any]]:
         """
         Look through catalogs for remarks to be added to report.
         """
 
         # Get catalog matching output dictionary
-        if (body := t2catalogmatch["body"]) is not None:
-            cat_res =  body[-1]["result"]
-        else:
+        if (cat_res := t2catalogmatch.get_payload()) is None:
+            self.logger.debug("T2result but no body")
             return None
 
 
@@ -407,7 +398,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
             return None
 
         # Start defining AT dict: name and position
-        atdict = {}
+        atdict : Dict[str,Any] = {}
         #atdict.update(self.base_at_dict)
         #atdict["internal_name"] = ztf_name
         atdict["ra"] = {"value": ra, "error": 1.0, "units": "arcsec"}
@@ -466,7 +457,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
     # ==================== #
     # AMPEL T2 MANDATORY   #
     # ==================== #
-    def run(self, light_curve: LightCurve, t2_records: Sequence[T2Record]) -> T2UnitResult:
+    def run(self, light_curve: LightCurve, t2_records: Sequence[T2DocView]) -> T2UnitResult:
         """
 
         Evaluate whether a transient passes thresholds for submission to TNS.
@@ -515,8 +506,8 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
             return { 'tns_candidate' : False, 'tns_eval' : 'Passes criteria, fails in info collection.' }
 
         catremarks = self.get_catalog_remarks(light_curve, t2_records[0])
-        if not catremarks is None:
-            atdict.update(remarks)
+        if catremarks is not None:
+            atdict.update(catremarks)
 
         t2result = { 'tns_candidate' : True, 'tns_eval' : 'Good', 'atdict':atdict }
 
