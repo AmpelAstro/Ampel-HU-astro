@@ -96,11 +96,11 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
     # Id of dependency
     dependency_unit: str = 'T2CatalogMatch'
 
-
+    @classmethod
     def get_tied_unit_names(self) -> List[str]:
         return [self.dependency_unit]
 
-    def inspect_catalog(self, cat_res : Dict[str,Any]) -> bool:
+    def inspect_catalog(self, cat_res : Dict[str,Any]) -> Optional[Dict[str,Any]]:
         """
         Check whether a redshift match can be found in matched catalogs.
         """
@@ -157,7 +157,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
 
 
 
-    def inspect_lc(self, lc : LightCurve) -> bool:
+    def inspect_lc(self, lc : LightCurve) -> Optional[Dict[str,Any]]:
         """
         Verify whether the transient lightcurve fulfill criteria for submission.
 
@@ -166,7 +166,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         # apply cut on history: consider photophoints which are sharp enough
         pps = lc.get_photopoints(filters=self.lc_filters)
         assert pps is not None
-        info = {}
+        info : Dict[str,Any] = {}
 
         # cut on number of detection
         if len(pps) < self.min_ndet:
