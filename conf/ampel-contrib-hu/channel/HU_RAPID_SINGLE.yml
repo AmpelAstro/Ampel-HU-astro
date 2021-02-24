@@ -23,10 +23,8 @@ t2_compute:
         - 'GLADEv23' 
         - 'NEDz_extcats'
       max_kpc_dist: 40
-      dependency_config: '%T2CatalogMatch_general'
-      det_filterid: 
+      det_filterids: 
         - 1
         - 2
-  - t2_compute:
-    - unit: T2CatalogMatch
-      config: '%T2CatalogMatch_general'
+      t2_dependency:
+      - unit: T2CatalogMatch
