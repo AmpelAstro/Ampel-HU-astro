@@ -50,22 +50,6 @@ def chunks(l: Iterable, n: int) -> Generator[List, None, None]:
             break
 
 
-# get the science records for the catalog match
-def get_catalogmatch_srecs(
-    tran_view: TransientView, logger: "LoggerProtocol"
-) -> Dict[str, Any]:
-    if cat_res := [
-        record
-        for record in (tran_view.get_t2_docs(unit_id="CATALOGMATCH") or [])
-        if record["body"] is not None and record["body"][-1]["result"]
-    ]:
-        if (body := cat_res[-1]["body"]) is not None:
-            return body[-1]["result"]
-
-    logger.info("NO CATALOG MATCH FOR THIS TRANSIENT")
-    return {}
-
-
 class TNSTalker(AbsT3Unit):
     """
     Get TNS name if existing, and submit selected candidates.
@@ -609,7 +593,7 @@ class TNSTalker(AbsT3Unit):
         # -------------------------- #
         #    CUTS ON T2 RECORDS      #
         # -------------------------- #
-        cat_res = get_catalogmatch_srecs(tran_view, logger=self.logger)
+        cat_res = tran_view.get_t2_result(unit_id="T2CatalogMatch") or {}
 
         # check that we got any catalogmatching results (that it was run)
         if self.require_catalogmatch and len(cat_res) == 0:
@@ -686,7 +670,7 @@ class TNSTalker(AbsT3Unit):
         # TODO: can remarks be combined? e.g. nucler + noisy?
 
         # get the science records for the catalog match
-        cat_res = get_catalogmatch_srecs(tran_view, logger=self.logger)
+        cat_res = tran_view.get_t2_result(unit_id="T2CatalogMatch") or {}
 
         # tag AGNs
         milliquas = cat_res.get("milliquas", False)
