@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-contrib-HU/ampel/contrib/hu/t2/T2ThumbPrinter.py
+# File              : Ampel-contrib-HU/ampel/contrib/hu/t2/T2PanStarrThumbPrint.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 31.01.2021
-# Last Modified Date: 08.02.2021
+# Last Modified Date: 24.02.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Union, Sequence
@@ -13,7 +13,7 @@ from pymage.panstarrs import PS1Target # type: ignore[import]
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.util.collections import ampel_iter
 from ampel.content.DataPoint import DataPoint
-from ampel.plot.SVGUtils import SVGUtils
+from ampel.plot.utils import mplfig_to_svg_dict1
 from ampel.type import T2UnitResult
 from ampel.model.PlotProperties import PlotProperties
 
@@ -42,11 +42,6 @@ class T2PanStarrThumbPrint(AbsPointT2Unit):
 		id_mapper = "ZTFIdMapper"
 	)
 
-	# No need to download data for thumbs
-	# def post_init(self):
-	#	# Either this or an env var with the dangerous name DATAPATH need to be set
-	#	pymage.io.DATAPATH = self.pymage_data_path
-
 
 	def run(self, datapoint: DataPoint) -> T2UnitResult:
 		"""
@@ -57,7 +52,7 @@ class T2PanStarrThumbPrint(AbsPointT2Unit):
 
 		return {
 			'plots': [
-				SVGUtils.mplfig_to_svg_dict1(
+				mplfig_to_svg_dict1(
 					pt.show(ellipse=False, band=band, show_target=False, cmap=cmap, show=False),
 					self.plot_props,
 					extra = {"band": band, "stock": datapoint["stock"][0], "cmap": cmap}, # type: ignore

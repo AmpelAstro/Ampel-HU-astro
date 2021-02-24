@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 31.01.2021
-# Last Modified Date: 18.02.2021
+# Last Modified Date: 24.02.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import List, Sequence, Dict, Any
@@ -12,7 +12,7 @@ from ampel.contrib.hu.t2.T2PanStarrThumbPrint import T2PanStarrThumbPrint
 from ampel.abstract.AbsTiedPointT2Unit import AbsTiedPointT2Unit
 from ampel.util.collections import ampel_iter
 from ampel.content.DataPoint import DataPoint
-from ampel.plot.SVGUtils import SVGUtils
+from ampel.plot.utils import mplfig_to_svg_dict1
 from ampel.enum.T2RunState import T2RunState
 from ampel.type import T2UnitResult
 from ampel.model.PlotProperties import PlotProperties
@@ -64,7 +64,7 @@ class T2PanStarrCatThumbPrint(AbsTiedPointT2Unit, T2PanStarrThumbPrint): # type:
 
 		return {
 			'plots': [
-				SVGUtils.mplfig_to_svg_dict1(
+				mplfig_to_svg_dict1(
 					pt.show(
 						ellipse=False, band=band, cmap=cmap, show=False,
 						show_target = False, show_coord = (cat_res['ra'], cat_res['dec'])
