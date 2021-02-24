@@ -71,8 +71,7 @@ class XShooterFilter(DecentFilter):
             self.logger.debug("Rejected: this alert has no upper limits")
             return None
 
-        ulim_jds = array(ulim_jds)
-        if not any(ulim_jds > (now_jd - self.ul_within)):
+        if not any(array(ulim_jds) > (now_jd - self.ul_within)):
             self.logger.debug(
                 f"Rejected: no upper limit in the last {self.ul_within:.3f} days"
             )
