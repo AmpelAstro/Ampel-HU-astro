@@ -86,7 +86,7 @@ class T2MinorPlanetCenter(AbsPointT2Unit):
 		daydecimal = t.mjd - np.fix(t.mjd)
 		daydecimal = str(daydecimal).split(".")[1]
 		day = day + "." + daydecimal
-		day = np.around(np.float(day), decimals=2)
+		day = np.around(np.float64(day), decimals=2)
 
 		# Convert coordinates for HTTP request
 		radec_skycoord = SkyCoord(ra, dec, unit=(u.deg, u.deg))
