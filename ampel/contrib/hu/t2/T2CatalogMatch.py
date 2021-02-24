@@ -19,7 +19,7 @@ from ampel.content.DataPoint import DataPoint
 from ampel.contrib.hu.base.CatsHTMUnit import CatsHTMUnit
 from ampel.contrib.hu.base.ExtcatsUnit import ExtcatsUnit
 from ampel.model.StrictModel import StrictModel
-from ampel.t2.T2RunState import T2RunState
+from ampel.enum.T2RunState import T2RunState
 from ampel.type import T2UnitResult
 
 if TYPE_CHECKING:
@@ -31,6 +31,7 @@ class CatalogModel(StrictModel):
     :param use: either extcats or catsHTM, depending on how the catalog is set up.
     :param rs_arcsec: search radius for the cone search, in arcseconds
     :param catq_kwargs: parameter passed to the catalog query routine.
+    :param standardize: rename keys from 'keys_to_append' (keys as defined in catalog) according to the provided mapping
 
     In case 'use' is set to 'extcats', 'catq_kwargs' can (or MUST?) contain the names of the ra and dec
     keys in the catalog (see example below), all valid arguments to extcats.CatalogQuert.findclosest
@@ -68,11 +69,15 @@ class CatalogModel(StrictModel):
     keys_to_append: Optional[Sequence[str]]
     pre_filter: Optional[Dict[str, Any]]
     post_filter: Optional[Dict[str, Any]]
+    standardize: Optional[Dict[str, str]]
 
 
 class T2CatalogMatch(ExtcatsUnit, CatsHTMUnit, AbsPointT2Unit):
     """
     Cross matches the position of a transient to those of sources in a set of catalogs
+
+    :param catalogs: each value specifies a catalog in extcats or catsHTM format and the query parameters
+
     """
 
     # run only on first datapoint by default
@@ -81,6 +86,7 @@ class T2CatalogMatch(ExtcatsUnit, CatsHTMUnit, AbsPointT2Unit):
 
     # Each value specifies a catalog in extcats or catsHTM format and the query parameters
     catalogs: Dict[str, CatalogModel]
+
 
     def post_init(self):
 
@@ -214,6 +220,7 @@ class T2CatalogMatch(ExtcatsUnit, CatsHTMUnit, AbsPointT2Unit):
                     keys_to_append.difference_update({"_id", "pos"})
 
                 if keys_to_append:
+
                     to_add = {}
                     for field in keys_to_append:
                         try:
@@ -223,6 +230,12 @@ class T2CatalogMatch(ExtcatsUnit, CatsHTMUnit, AbsPointT2Unit):
                         except KeyError:
                             continue
                         to_add[field] = val
+
+                    if cat_opts.standardize:
+                        for k, v in cat_opts.standardize.items():
+                            if k in to_add:
+                                to_add[v] = to_add.pop(k)
+
                     out_dict[catalog].update(to_add)
             else:
                 if self.debug:

@@ -15,11 +15,11 @@ import requests
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.contrib.hu.t3.RapidBase import RapidBase
 from ampel.model.Secret import Secret
-from ampel.struct.JournalExtra import JournalExtra
+from ampel.struct.JournalTweak import JournalTweak
 from ampel.type import StockId
 from ampel.util.freeze import recursive_unfreeze
 from ampel.view.TransientView import TransientView
-from ampel.ztf.utils import to_ampel_id, to_ztf_id
+from ampel.ztf.util.ZTFIdMapper import to_ampel_id, to_ztf_id
 
 
 class RapidLco(RapidBase):
@@ -190,7 +190,7 @@ class RapidLco(RapidBase):
 
     def react(
         self, tran_view: TransientView, info: Dict[str, Any]
-    ) -> Tuple[bool, Optional[JournalExtra]]:
+    ) -> Tuple[bool, Optional[JournalTweak]]:
         """
         Send a trigger to the LCO
         """
@@ -293,11 +293,11 @@ class RapidLco(RapidBase):
             "success": success,
             "lcoResponses": responses,
         }
-        jup = JournalExtra(extra=jcontent)
+        jup = JournalTweak(extra=jcontent)
 
         return success, jup
 
-    def add(self, transients: Tuple[TransientView, ...]) -> Dict[StockId, JournalExtra]:
+    def add(self, transients: Tuple[TransientView, ...]) -> Dict[StockId, JournalTweak]:
         """
         Loop through transients and check for TNS names and/or candidates to submit
         """
@@ -306,7 +306,7 @@ class RapidLco(RapidBase):
             self.logger.info("no transients for this task execution")
             return []
 
-        journal_updates: Dict[StockId, JournalExtra] = {}
+        journal_updates: Dict[StockId, JournalTweak] = {}
         # We will here loop through transients and react individually
         for tv in transients:
             matchinfo = self.accept_tview(tv)

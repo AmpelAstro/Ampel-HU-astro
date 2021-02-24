@@ -25,7 +25,7 @@ class TransientInfoPrinter(AbsPhotoT3Unit):
 		if self.logfile:
 			fh = logging.FileHandler(self.logfile)
 			fh.setLevel(logging.INFO)
-			self.logger.add_handler(fh)
+			self.logger.addHandler(fh)
 			self.logger.info("Added logging handle to: {logfile}")
 
 		if self.context:

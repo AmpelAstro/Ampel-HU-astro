@@ -22,7 +22,7 @@ from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.log.utils import log_exception
 from ampel.model.Secret import Secret
 from ampel.view.TransientView import TransientView
-from ampel.ztf.utils import to_ztf_id
+from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 
 
 class SlackSummaryPublisher(AbsT3Unit):

@@ -16,9 +16,9 @@ from astropy.cosmology import Planck15
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.base import abstractmethod
 from ampel.model.Secret import Secret
-from ampel.struct.JournalExtra import JournalExtra
+from ampel.struct.JournalTweak import JournalTweak
 from ampel.view.TransientView import TransientView
-from ampel.ztf.utils import to_ampel_id, to_ztf_id
+from ampel.ztf.util.ZTFIdMapper import to_ampel_id, to_ztf_id
 
 
 # get the science records for the catalog match
@@ -122,7 +122,7 @@ class RapidBase(AbsT3Unit):
 
     def react(
         self, tran_view: TransientView, info: Dict[str, Any]
-    ) -> Tuple[bool, Optional[JournalExtra]]:
+    ) -> Tuple[bool, Optional[JournalTweak]]:
         """
         Replace with react method adopted to particular facility or output
         """
@@ -131,7 +131,7 @@ class RapidBase(AbsT3Unit):
 
     def test_react(
         self, tran_view: TransientView, info: Dict[str, Any]
-    ) -> Tuple[bool, Optional[JournalExtra]]:
+    ) -> Tuple[bool, Optional[JournalTweak]]:
         """ Trigger a test slack report """
 
         success = False
@@ -175,7 +175,7 @@ class RapidBase(AbsT3Unit):
 
         # Document what we did
         jcontent = {"t3unit": self.name, "reaction": description, "success": success}
-        jup = JournalExtra(extra=jcontent)
+        jup = JournalTweak(extra=jcontent)
 
         return success, jup
 

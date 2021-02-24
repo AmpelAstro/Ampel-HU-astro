@@ -35,7 +35,7 @@ from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.model.Secret import Secret
 from ampel.util.json import AmpelEncoder
 from ampel.view.SnapView import SnapView
-from ampel.ztf.utils import to_ztf_id
+from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 
 
 class DCachePublisher(AbsT3Unit):

@@ -30,4 +30,3 @@ t2_compute:
   - t2_compute:
     - unit: T2CatalogMatch
       config: '%T2CatalogMatch_general'
-

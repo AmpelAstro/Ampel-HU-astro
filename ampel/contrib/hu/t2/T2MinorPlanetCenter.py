@@ -20,7 +20,7 @@ from bs4 import BeautifulSoup # type: ignore[import]
 
 from ampel.view.LightCurve import LightCurve
 from ampel.type import T2UnitResult
-from ampel.t2.T2RunState import T2RunState
+from ampel.enum.T2RunState import T2RunState
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.content.DataPoint import DataPoint
 
