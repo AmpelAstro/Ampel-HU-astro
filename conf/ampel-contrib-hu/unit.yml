@@ -13,8 +13,8 @@
 - ampel.contrib.hu.t2.T2CatSNCosmo
 - ampel.contrib.hu.t2.T2SNCosmoEval
 - ampel.contrib.hu.t2.T2CatalogMatch
-- ampel.contrib.hu.t2.T2PanStarrThumbPrint.py
-- ampel.contrib.hu.t2.T2PanStarrCatThumbPrint.py
+- ampel.contrib.hu.t2.T2PanStarrThumbPrint
+- ampel.contrib.hu.t2.T2PanStarrCatThumbPrint
 - ampel.contrib.hu.t2.T2LCQuality
 - ampel.contrib.hu.t2.T2BrightSNProb
 - ampel.contrib.hu.t2.T2TNSEval
