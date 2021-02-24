@@ -11,7 +11,7 @@ from setuptools import find_namespace_packages, setup
 
 setup(
     name="ampel-contrib-hu",
-    version="0.7.0",
+    version="0.7.1-alpha.0",
     packages=find_namespace_packages(),
     package_data={
         "": ["*.json", "py.typed"],  # include any package containing *.json files
@@ -28,11 +28,11 @@ setup(
         ],
     },
     install_requires=[
-        "ampel-interface",
-        "ampel-core",
-        "ampel-photometry",
-        "ampel-alerts",
-        "ampel-ztf",
+        'ampel-interface>=0.7.1-alpha.7,<0.7.2',
+        'ampel-core>=0.7.1-alpha.1,<0.7.2',
+        'ampel-photometry>=0.7.1-alpha.0,<0.7.2',
+        'ampel-alerts>=0.7.1-alpha.0,<0.7.2',
+        'ampel-ztf>=0.7.1-alpha.4,<0.7.2',
         "catsHTM",
         "zerorpc",
         "extcats",
