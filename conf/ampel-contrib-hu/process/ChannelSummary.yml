@@ -5,7 +5,7 @@ schedule:
 processor:
   unit: T3Processor
   config:
-    directives:
+    directive:
       - select:
           unit: T3StockSelector
           config:
