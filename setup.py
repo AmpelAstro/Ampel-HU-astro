@@ -47,6 +47,8 @@ setup(
         "backoff",
         "requests",
         "pymage @ https://github.com/MickaelRigault/pymage/archive/v1.0.tar.gz",
+        # pymage secretly depends on pandas
+        "pandas",
     ],
     entry_points={
         "ampel_target_sources": [
