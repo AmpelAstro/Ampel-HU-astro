@@ -29,7 +29,7 @@ setup(
     },
     install_requires=[
         'ampel-interface>=0.7.1-alpha.7,<0.7.2',
-        'ampel-core>=0.7.1-alpha.1,<0.7.2',
+        'ampel-core>=0.7.1-alpha.2,<0.7.2',
         'ampel-photometry>=0.7.1-alpha.0,<0.7.2',
         'ampel-alerts>=0.7.1-alpha.0,<0.7.2',
         'ampel-ztf>=0.7.1-alpha.4,<0.7.2',
