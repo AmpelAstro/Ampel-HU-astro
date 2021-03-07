@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging
-from typing import Optional, Tuple, Any
+from typing import Optional, Tuple, Any, Dict, Union
 from ampel.type import T3AddResult
 from ampel.view.TransientView import TransientView
 from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
@@ -47,8 +47,9 @@ class TransientInfoPrinter(AbsPhotoT3Unit):
 		return None
 
 
-	def done(self):
+	def done(self) -> Optional[Union[bool, Dict[str, Any]]]:
 		self.logger.info(f"Total number of transient printed: {self.count}")
+		return None
 
 
 	@staticmethod
@@ -61,7 +62,6 @@ class TransientInfoPrinter(AbsPhotoT3Unit):
 		if tran.stock:
 			logger.info(f"Channel: {tran.stock['channel']}")
 
-		print(tran.stock)
 		created = tran.get_time_created()
 		modified = tran.get_time_modified()
 
