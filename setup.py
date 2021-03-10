@@ -32,7 +32,7 @@ setup(
         'ampel-core[plotting]>=0.7.1-alpha.3,<0.7.2',
         'ampel-photometry>=0.7.1-alpha.0,<0.7.2',
         'ampel-alerts>=0.7.1-alpha.0,<0.7.2',
-        'ampel-ztf>=0.7.1-alpha.7,<0.7.2',
+        'ampel-ztf>=0.7.1-alpha.8,<0.7.2',
         "catsHTM",
         "extcats",
         "zerorpc",
