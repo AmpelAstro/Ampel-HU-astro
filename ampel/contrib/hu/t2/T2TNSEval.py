@@ -36,7 +36,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
     # cuts on T2 catalogs
     # reject candidates if they don't have matching in this list of T2CATALOGMATCH catalogs
     needed_catalogs: List[str] = []
-    require_catalogmatch: bool = True
+    require_catalogmatch: bool = False
     # maximum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
     max_redshift: float = 1.15
     # minimum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
@@ -52,7 +52,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
     # and if it has this minimum nr of detection after the last significant (max_maglim) UL.
     min_ndet_postul: int = 2
     # days, If a detection has an age older than this, skip (stars,age).
-    max_age: float = 5
+    max_age: float = 50
     # Min age of detection history
     min_age: float = 0
     # range of peak magnitudes for submission
@@ -92,31 +92,36 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
     # (sigma!) if GAIA match is noisier than this, add a remark
     max_gaia_noise: float = 2.0
 
-    dependency = [StateT2Dependency(unit='T2CatalogMatch')]
+    # Implicitly we still assume we are submitting ZTF data
+    ztf_tns_at: Dict = {  # Default values to tag ZTF detections / ulims
+        "flux_units": "1",
+        "instrument_value": "196",
+        "exptime": "30",
+        "Observer": "Robot",
+    }
 
-    def inspect_catalog(self, t2catalogmatch : T2DocView) -> bool:
+
+
+    # Id of dependency
+    dependency_unit: str = 'T2CatalogMatch'
+
+    @classmethod
+    def get_tied_unit_names(self) -> List[str]:
+        return [self.dependency_unit]
+
+
+
+    def inspect_catalog(self, cat_res : Dict[str,Any]) -> bool:
         """
         Verify whether any catalog matching criteria prevents submission.
 
         """
-
-	# Part 1. Verify that got the necessary info
-
-        # Verfiy we are dealing with the catalogmatch
-        # could these be hashed?
-        assert t2catalogmatch.unit=='T2CatalogMatch', "Did not get expected unit chained."
-
-        # Get catalog matching output dictionary
-        if (cat_res := t2catalogmatch.get_payload()) is None:
-            self.logger.debug("T2result but no body")
-            return False
 
         # Check that we got any catalogmatching results (that it was run)
         if self.require_catalogmatch and len(cat_res) == 0:
             self.logger.debug("no T2CATALOGMATCH results")
             return False
 
-        # P2. 
 
         # check that you have positive match in all of the necessary cataslogs:
         for needed_cat in self.needed_catalogs:
@@ -165,6 +170,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
             return False
 
         # cut away bright stars. TODO: this considers just the closest matches...
+        # as well as fast moving stars
         gaia_dr2 = cat_res.get("GAIADR2", None)
         if (
             gaia_dr2
@@ -323,16 +329,21 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         # congratulation Lightcurve, you made it!
         return True
 
-    def get_catalog_remarks(self, lc : LightCurve, t2catalogmatch : T2DocView) -> Optional[Dict[str, Any]]:
+    def get_catalog_remarks(self, lc : LightCurve, cat_res : Dict[str,Any]) -> Optional[Dict[str, Any]]:
         """
         Look through catalogs for remarks to be added to report.
         """
 
-        # Get catalog matching output dictionary
-        if (cat_res := t2catalogmatch.get_payload()) is None:
-            self.logger.debug("T2result but no body")
-            return None
+        # Start building dict with remarks
+        remarks = {"remarks":""}
 
+        # Check redshift
+        nedz = cat_res.get("NEDz", False)
+        sdss_spec = cat_res.get("SDSS_spec", False)
+        if sdss_spec:
+            remarks["remarks"] = remarks["remarks"] + "SDSS spec-z %.3f. "%(sdss_spec["z"])
+        elif nedz:
+            remarks["remarks"] = remarks["remarks"] + "NED z %.3f. "%(nedz["z"])
 
         # tag AGNs
         milliquas = cat_res.get("milliquas", False)
@@ -340,7 +351,8 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         if (milliquas and milliquas["redshift"] > 0) or (
             sdss_spec and sdss_spec["bptclass"] in [4, 5]
         ): 
-            return {"remarks": "Known SDSS and/or MILLIQUAS QSO/AGN. ", "at_type": 3}
+            remarks["remarks"] = remarks["remarks"] + "Known SDSS and/or MILLIQUAS QSO/AGN. "
+            remarks["at_type"] = 3
 
         # tag nuclear
         sdss_dr10 = cat_res.get("SDSSDR10", False)
@@ -349,7 +361,8 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
             and sdss_dr10["type"] == 3
             and sdss_dr10["dist2transient"] < self.nuclear_dist
         ):
-            return {"remarks": "Close to core of SDSS DR10 galaxy", "at_type": 4}
+            remarks["remarks"] = remarks["remarks"] + "Close to core of SDSS DR10 galaxy. "
+            remarks["at_type"] = 4
 
         # tag noisy gaia
         if (
@@ -378,10 +391,12 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
                     not np.any(galaxylike_ps1)
                 )  # TODO: check the logic
             ):
-                return {
-                    "remarks": "Significant noise in Gaia DR2 - variable star cannot be excluded."
-                }
-        return None
+                remarks["remarks"] = remarks["remarks"] + "Significant noise in Gaia DR2 - variable star cannot be excluded. "
+
+        if len(remarks["remarks"])==0:
+            return None
+        else:
+            return remarks
 
 
 
@@ -400,7 +415,6 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         # Start defining AT dict: name and position
         atdict : Dict[str,Any] = {}
         #atdict.update(self.base_at_dict)
-        #atdict["internal_name"] = ztf_name
         atdict["ra"] = {"value": ra, "error": 1.0, "units": "arcsec"}
         atdict["dec"] = {"value": dec, "error": 1.0, "units": "arcsec"}
 
@@ -427,7 +441,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
                 "archival_remarks": "ZTF non-detection limits not available",
             }
 
- #       atdict["non_detection"].update(self.ztf_tns_at)  # Add the default ZTF values
+        atdict["non_detection"].update(self.ztf_tns_at)  # Add the default ZTF values
 
         # now add info on photometric detections: consider only candidates which
         # have some consecutive detection after the last ulim
@@ -448,7 +462,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
                 }
                 if pp["body"]["jd"] < atdict["discovery_datetime"]:
                     atdict["discovery_datetime"] = pp["body"]["jd"]
-#                photdict.update(self.ztf_tns_at)
+                photdict.update(self.ztf_tns_at)
                 atdict["photometry"]["photometry_group"][str(ipp)] = photdict
 
         return atdict
@@ -457,7 +471,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
     # ==================== #
     # AMPEL T2 MANDATORY   #
     # ==================== #
-    def run(self, light_curve: LightCurve, t2_records: Sequence[T2DocView]) -> T2UnitResult:
+    def run(self, light_curve: LightCurve, t2_views: Sequence[T2DocView]) -> T2UnitResult:
         """
 
         Evaluate whether a transient passes thresholds for submission to TNS.
@@ -477,14 +491,13 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
 
         Warning: this dict does *not* contain the internal name (atdict['internal_name']) required.
         This will have to be added by the T3. Similarly, the base atdict entries are not included.
-        The same goes for the standard ZTF photometry info contained in ztf_tns_at, which has to be
-        added at the appropriate places in the dict.
 
         In further changes, the photometry_group keys are now str instead of int (to be able to store)
         If needed by TNS, they need to be converted back at T3
         """
 
-        self.logger.debug('starting eval from %s'%(t2_records) )
+        self.logger.debug('starting eval from %s'%(t2_views) )
+
 
 
         # i. Check whether the lightcurve passes selection criteria
@@ -493,9 +506,13 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
 
 
         # ii. Check the catalog matching criteria
-        assert len(t2_records)==1
-        if not self.inspect_catalog(t2_records[0]):
+        t2_cat_match = t2_views[0]
+        assert t2_cat_match.unit==self.dependency_unit
+        catalog_result = t2_cat_match.get_payload()
+        if not self.inspect_catalog(catalog_result):
             return { 'tns_candidate' : False, 'tns_eval' : 'Catalog match rejection.' }
+
+
 
         # iii. Collect information for submission
 
@@ -505,7 +522,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         if atdict is None:
             return { 'tns_candidate' : False, 'tns_eval' : 'Passes criteria, fails in info collection.' }
 
-        catremarks = self.get_catalog_remarks(light_curve, t2_records[0])
+        catremarks = self.get_catalog_remarks(light_curve, catalog_result)
         if catremarks is not None:
             atdict.update(catremarks)
 
