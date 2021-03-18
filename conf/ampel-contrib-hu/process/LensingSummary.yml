@@ -3,7 +3,7 @@ tier: 3
 template: ztf_periodic_summary
 schedule: every().day.at('15:00')
 channel:
-  any_of: [OKC_LENSED, HU_NEARBY_CLUSTERS]
+  any_of: [OKC_LENSED]
 load:
   - TRANSIENT
   - COMPOUND
@@ -18,4 +18,4 @@ run:
     config:
       token:
         key: fritz/jvs/ampelbot
-      base_url: https://fritz.science
+      base_url: 'https://fritz.science'
