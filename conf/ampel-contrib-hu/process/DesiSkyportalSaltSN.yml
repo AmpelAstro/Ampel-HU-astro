@@ -1,0 +1,31 @@
+name: DesiSkyPortalSaltSN
+tier: 3
+template: ztf_periodic_summary
+schedule: every(60).minutes
+channel:
+  any_of: [HU_GP_10, HU_GP_59, HU_TNS_MSIP]
+load:
+  - TRANSIENT
+  - DATAPOINT
+  - T2RECORD
+complement:
+  - ZTFCutoutImages
+filter:
+  t2:
+    all_of:
+      - unit: T2TNSEval
+        match: 
+          tns_candidate: true
+      - unit: T2SNCosmo
+        match:
+          fit_acceptable: true
+run:
+  - unit: SkyPortalPublisher
+    config:
+      token:
+        key: desi/skyportal/jno
+      base_url: http://desi2.lbl.gov:5000
+      filters:
+        - "AMPEL SaltSN"
+
+
