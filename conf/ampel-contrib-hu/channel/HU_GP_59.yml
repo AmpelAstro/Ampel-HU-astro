@@ -10,6 +10,7 @@ t0_filter:
     gaia_rs: 10
     max_fwhm: 5.5
     min_rb: 0.3
+    min_drb: 0.95
     max_nbad: 2
     min_tspan: 8
     min_sso_dist: 20
@@ -33,4 +34,14 @@ t2_compute:
       upper_limits: false
   - unit: T2CatalogMatch
     config: '%T2CatalogMatch_general'
+    ingest: 
+      eligible: 
+        pps: first
   - unit: T2BrightSNProb
+  - unit: T2TNSEval
+    config:
+      t2_dependency:
+      - unit: T2CatalogMatch
+        config: '%T2CatalogMatch_general'
+        link_override: 
+          pps: first

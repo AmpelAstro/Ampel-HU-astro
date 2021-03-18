@@ -35,3 +35,8 @@ t2_compute:
       upper_limits: false
   - unit: T2CatalogMatch
     config: '%T2CatalogMatch_general'
+    ingest: 
+      eligible: 
+        pps: first
+  - unit: T2BrightSNProb
+
