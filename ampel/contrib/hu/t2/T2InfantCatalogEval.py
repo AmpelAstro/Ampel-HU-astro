@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : jnordin@physik.hu-berlin.de
 # Date              : 27.01.2021
-# Last Modified Date: 27.01.2021
+# Last Modified Date: 17.03.2021
 # Last Modified By  : jnordin@physik.hu-berlin.de
 
 from typing import Dict, List, Optional, Sequence, Any
@@ -36,7 +36,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
     # redshifts are stored as 'z'
     redshift_catalogs: List[str] = ['SDSS_spec', 'NEDz', 'GLADEv23', 'NEDz_extcats']  # Otherwise more 
     # maximum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
-    max_redshift: float = 0.1 # 0.1
+    max_redshift: float = 0.05 # 0.1
     # minimum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
     min_redshift: float = 0.001
     # max abs mag through peak mag and redshift from catalog mach (require both)
@@ -77,7 +77,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
     # Minimal median RB.
     rb_minmed: float = 0.3
     # Minimal median RB.
-    drb_minmed: float = 0.95
+    drb_minmed: float = 0.995
 
 
     # Limiting magnitude to consider upper limits as 'significant'
