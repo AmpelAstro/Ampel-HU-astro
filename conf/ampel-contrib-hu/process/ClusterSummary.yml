@@ -1,9 +1,9 @@
-name: LensingSummary
+name: ClusterSummary
 tier: 3
 template: ztf_periodic_summary
-schedule: every().day.at('15:00')
+schedule: every().day.at('16:00')
 channel:
-  any_of: [OKC_LENSED]
+  any_of: [HU_NEARBY_CLUSTERS]
 load:
   - TRANSIENT
   - COMPOUND
@@ -19,3 +19,5 @@ run:
       token:
         key: fritz/jvs/ampelbot
       base_url: 'https://fritz.science'
+      filters:
+        - AMPEL.OKC_LENSED

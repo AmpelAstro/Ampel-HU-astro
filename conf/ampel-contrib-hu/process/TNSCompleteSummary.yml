@@ -11,12 +11,15 @@ load:
   - DATAPOINT
   - T2RECORD
 complement: TNSNames
+filter:
+  t2:
+    unit: T2TNSEval
+    match: 
+      tns_candidate: true
 run:
   unit: TNSTalker
   config:
     tns_api_key:
-      key: tns/jnordin
+      key: tns/complete
     submit_tns: true
     sandbox: false
-    max_age: 30
-    needed_catalogs: []

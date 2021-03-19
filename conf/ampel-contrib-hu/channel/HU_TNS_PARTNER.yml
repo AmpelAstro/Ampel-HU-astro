@@ -11,6 +11,7 @@ t0_filter:
     max_tspan: 365
     min_rb: 0.3
     max_fwhm: 5.5
+    min_drb: 0.99
     max_elong: 1.4
     max_magdiff: 1
     max_nbad: 2
@@ -33,4 +34,14 @@ t2_compute:
       upper_limits: false
   - unit: T2CatalogMatch
     config: T2CatalogMatch_cosmo
+    ingest: 
+      eligible: 
+        pps: first
   - unit: T2BrightSNProb
+  - unit: T2TNSEval
+    config:
+      t2_dependency:
+      - unit: T2CatalogMatch
+        config: '%T2CatalogMatch_general'
+        link_override: 
+          pps: first

@@ -1,0 +1,32 @@
+name: TNSSubmitNew
+tier: 3
+template: ztf_periodic_summary
+schedule: every(60).minutes
+channel:
+  any_of:
+    - HU_TNS_MSIP
+load:
+  - TRANSIENT
+  - DATAPOINT
+  - T2RECORD
+complement: TNSNames
+filter:
+  t2:
+    all_of:
+      - unit: T2TNSEval
+        match: 
+          tns_candidate: true
+      - unit: T2BrightSNProb
+        match:
+          SNGuess:
+            $gt: 0.5
+          ndet:
+            $lt: 7
+run:
+  unit: TNSTalker
+  config:
+    tns_api_key:
+      key: tns/new
+    submit_tns: true
+    sandbox: true
+

@@ -10,6 +10,7 @@ t0_filter:
     min_tspan: 0
     max_tspan: 365
     min_rb: 0.3
+    min_drb: 0.99
     max_fwhm: 5.5
     max_elong: 1.4
     max_magdiff: 1
@@ -33,33 +34,14 @@ t2_compute:
       upper_limits: false
   - unit: T2CatalogMatch
     config: '%T2CatalogMatch_general'
+    ingest: 
+      eligible: 
+        pps: first
   - unit: T2BrightSNProb
-t3_supervise:
-  template: ztf_periodic_summary
-  schedule: every(60).minutes
-  load:
-    - TRANSIENT
-    - COMPOUND
-    - DATAPOINT
-    - T2RECORD
-  filter:
-    t2:
-      unit: "T2BrightSNProb"
-      match:
-        SNGuess:
-          $gt: 0.5
-        ndet:
-          $lt: 7
-  complement: TNSNames
-  run:
-    - unit: SlackSummaryPublisher
-      config: slack-ztf_general
-      override:
-        slack_channel: '#ztf_infantsn'
-    - unit: TNSTalker
-      config:
-        tns_api_key:
-          key: tns/jnordin
-        submit_tns: true
-        sandbox: false
-        needed_catalogs: []
+  - unit: T2TNSEval
+    config:
+      t2_dependency:
+      - unit: T2CatalogMatch
+        config: '%T2CatalogMatch_general'
+        link_override: 
+          pps: first

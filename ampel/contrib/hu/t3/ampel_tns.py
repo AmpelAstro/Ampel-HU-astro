@@ -23,8 +23,8 @@ TNSFILTERID = {1: "110", 2: "111", 3: "112"}
 AT_REPORT_FORM = "bulk-report"
 AT_REPORT_REPLY = "bulk-report-reply"
 TNS_ARCHIVE = {"OTHER": "0", "SDSS": "1", "DSS": "2"}
-TNS_BASE_URL_SANDBOX = "https://sandbox-tns.weizmann.ac.il/api/"
-TNS_BASE_URL_REAL = "https://wis-tns.weizmann.ac.il/api/"
+TNS_BASE_URL_SANDBOX = "https://sandbox.wis-tns.org/api/"
+TNS_BASE_URL_REAL = "https://sandbox.wis-tns.org/api/"
 
 httpErrors = {
     304: "Error 304: Not Modified: There was no new data to return.",
@@ -158,7 +158,7 @@ def addBulkReport(report, tnsApiKey, logger, sandbox=True):
 
     if sandbox:
         baseurl = TNS_BASE_URL_SANDBOX
-        logger.warning("TNS report submitted to sandbox")
+        logger.warn("TNS report submitted to sandbox")
     else:
         baseurl = TNS_BASE_URL_REAL
 
@@ -189,14 +189,13 @@ def getBulkReportReply(reportId, tnsApiKey, logger, sandbox=True):
 
     if sandbox:
         baseurl = TNS_BASE_URL_SANDBOX
-        logger.warning("TNS report submitted to sandbox")
+        logger.warn("TNS report submitted to sandbox")
     else:
         baseurl = TNS_BASE_URL_REAL
 
     feed_handler = TNSClient(baseurl, logger, {"api_key": (None, tnsApiKey)})
     reply = feed_handler.bulkReportReply({"report_id": (None, str(reportId))})
 
-    request = None
     response = None
     # reply should be a dict
     if reply and "id_code" in reply.keys() and reply["id_code"] == 404:
@@ -207,12 +206,19 @@ def getBulkReportReply(reportId, tnsApiKey, logger, sandbox=True):
 
     if reply and "id_code" in reply.keys() and reply["id_code"] == 200:
         try:
-            request = reply["data"]["received_data"]["at_report"]
             response = reply["data"]["feedback"]["at_report"]
         except ValueError:
             logger.error("TNS bulk submit: cannot find the response feedback payload.")
 
-    logger.info(f"TNS bulk submit: got response {response} for request {request}")
+    # This is a bad request. Still propagate the response for analysis.
+    if reply and "id_code" in reply.keys() and reply["id_code"] == 400:
+        try:
+            response = reply["data"]["feedback"]["at_report"]
+        except ValueError:
+            logger.error("TNS bulk submit: cannot find the response feedback payload.")
+
+
+    logger.info(f"TNS bulk submit: got response {response}")
 
     return response
 
@@ -229,6 +235,7 @@ def tnsName(ra, dec, api_key, sandbox=True, matchradius=5):
     else:
         baseurl = TNS_BASE_URL_REAL
     search_url = baseurl + "get/search"
+
 
     search_obj = {"ra": ra, "dec": dec, "radius": matchradius, "units": "arcsec"}
     search_data = [
@@ -287,17 +294,19 @@ def tnsInternal(tnsname, api_key, sandbox=True):
             message = httpErrors[status]
         except ValueError:
             message = f"Error {status}: Undocumented error"
-        return False, message
+        return [], message
 
     # Did we get a reply?
     if response is None:
-        return False, "Error: No TNS response"
+        return [], "Error: No TNS response"
 
     parsed = json.loads(response.text, object_pairs_hook=OrderedDict)
-    if parsed["data"]["reply"]["internal_name"] is None:
-        return None, "No internal TNS name"
 
-    return parsed["data"]["reply"]["internal_name"], "Got internal name response"
+
+    if parsed["data"]["reply"]["internal_names"] is None:
+        return [], "No internal TNS name"
+
+    return parsed["data"]["reply"]["internal_names"], "Got internal name response"
 
 
 # function for search obj
@@ -385,6 +394,25 @@ def sendTNSreports(atreportlists, api_key, logger, sandbox=True):
             logger.info("TNS Report reading failed")
             continue
 
+        # Check whether request was bad. In this case TNS looks to return a list with dicts
+        # of failed objects which does not correspond to the order of input atdicts.
+        # In any case, nothing in the submit is posted.
+        # Hence only checking first element
+        bad_request = None
+        for key_atprop in ['ra','decl','discovery_datetime']:
+            if key_atprop in response[0].keys():
+                try:
+                    bad_request = response[0][key_atprop]["value"]["5"]["message"]
+                    break
+                except KeyError:
+                    pass
+        if bad_request is not None:
+            logger.info( bad_request )
+            continue
+
+
+
+
         # Parse reply for evaluation
         for k, v in atreport["at_report"].items():
             if "100" in response[k].keys():
@@ -397,12 +425,13 @@ def sendTNSreports(atreportlists, api_key, logger, sandbox=True):
                 ]
             elif "101" in response[k].keys():
                 logger.info(
-                    "ALready existing with name %s" % (response[k]["101"]["objname"])
+                    "Already existing with name %s" % (response[k]["101"]["objname"])
                 )
                 reportresult[v["internal_name"]] = [
                     "TNS pre-existing",
                     {"TNSName": response[k]["101"]["objname"]},
                 ]
+                
 
     return reportresult
 
@@ -429,11 +458,11 @@ def get_tnsname(ra, dec, api_key, logger, sandbox=True):
     logger.info("TNS get cand id", extra={"tns_name": tns_name})
 
     # Look for internal name (note that we skip the prefix)
-    internal_name, runstatus = tnsInternal(tns_name[2:], api_key, sandbox=sandbox)
+    internal_names, runstatus = tnsInternal(tns_name[2:], api_key, sandbox=sandbox)
     # 		if internal_name is not None:
     # 			self.logger.info("TNS search", extra={"tns_internal_name": internal_name})
     # 			pass
     # 			if re.search('ZTF', internal_name):
     # 				if not internal_name == sne[1]["ztf_name"]:
     # 					#self.logger.info("TNS registered under other ZTF name %s", extra={"tns_other_internal": internal_name})
-    return tns_name, internal_name
+    return tns_name, internal_names

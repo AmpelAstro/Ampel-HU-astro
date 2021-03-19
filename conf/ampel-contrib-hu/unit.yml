@@ -1,4 +1,3 @@
-- ampel.contrib.hu.t0.DecentFilter
 - ampel.contrib.hu.t0.SimpleDecentFilter
 - ampel.contrib.hu.t0.XShooterFilter
 - ampel.contrib.hu.t0.TransientInClusterFilter
@@ -12,7 +11,7 @@
 - ampel.contrib.hu.t2.T2SNCosmo
 - ampel.contrib.hu.t2.T2CatSNCosmo
 - ampel.contrib.hu.t2.T2SNCosmoEval
-- ampel.contrib.hu.t2.T2CatalogMatch
+- ampel.contrib.hu.t2.T2CatalogMatchLocal
 - ampel.contrib.hu.t2.T2PanStarrThumbPrint
 - ampel.contrib.hu.t2.T2PanStarrCatThumbPrint
 - ampel.contrib.hu.t2.T2LCQuality
@@ -29,6 +28,4 @@
 - ampel.contrib.hu.t3.RapidLco
 - ampel.contrib.hu.t3.TNSTalker
 - ampel.contrib.hu.t3.TNSMirrorUpdater
-- ampel.contrib.hu.t3.complement.TNSNames
-- ampel.contrib.hu.t3.complement.TNSReport
 - ampel.contrib.hu.t3.complement.GROWTHMarshalReport

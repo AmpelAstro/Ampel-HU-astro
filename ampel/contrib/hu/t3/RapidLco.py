@@ -42,7 +42,7 @@ class RapidLco(RapidBase):
             "end_delay": 1,
             "api_form": {
                 "group_id": "ZTF_rapid_sample",
-                "proposal": "TOM2020A-009",
+                "proposal": "SUPA2021A-002",
                 "ipp_value": 1.05,
                 "operator": "SINGLE",
                 "observation_type": "RAPID_RESPONSE",
@@ -57,7 +57,7 @@ class RapidLco(RapidBase):
                                     {
                                         "bin_x": 1,
                                         "bin_y": 1,
-                                        "exposure_count": "2",
+                                        "exposure_count": "1",
                                         "exposure_time": "750",
                                         "mode": "full_frame",
                                         "rotator_mode": "",
@@ -111,7 +111,7 @@ class RapidLco(RapidBase):
             "end_delay": 3,
             "api_form": {
                 "group_id": "ZTF_rapid_follow",
-                "proposal": "TOM2020A-009",
+                "proposal": "SUPA2021A-002",
                 "ipp_value": 1.05,
                 "operator": "SINGLE",
                 "observation_type": "NORMAL",
@@ -177,16 +177,6 @@ class RapidLco(RapidBase):
         },
     }
 
-    # maximum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
-    max_redshift: float = 0.05
-    # arcsec, maximum distance
-    max_dist: float = 30.0
-    # range of peak magnitudes for submission
-    min_peak_mag: float = 19.25
-    # Minimal median RB.
-    drb_minmed: float = 0.995
-    # Limiting magnitude to consider upper limits as 'significant'
-    maglim_min: float = 19.25
 
     def react(
         self, tran_view: TransientView, info: Dict[str, Any]
@@ -197,6 +187,24 @@ class RapidLco(RapidBase):
 
         assert isinstance(tran_view.id, int)
         transient_name = to_ztf_id(tran_view.id)
+
+        # Look for coordinates in the T2 info dicts.
+        # Assuming ra and dec exists in there
+        ra, dec = None, None
+        for t2unit, t2info in info.items():
+            if 'ra' in t2info.keys():
+                ra = t2info['ra']
+            if 'dec' in t2info.keys():
+                dec = t2info['dec']
+        if ra is None or dec is None:
+            # Look at the response
+            self.logger.info(
+                "No LCO trigger: Could not find ra/dec",
+                extra={
+                    "target": transient_name,
+                },
+            )
+
 
         # Step through all LCO submit forms
         success = True  # Will be set to false if any submit fails
@@ -213,13 +221,8 @@ class RapidLco(RapidBase):
             react_dict["requests"][0]["configurations"][0]["target"][
                 "name"
             ] = transient_name
-            react_dict["requests"][0]["configurations"][0]["target"]["ra"] = str(
-                info["ra"]
-            )
-            react_dict["requests"][0]["configurations"][0]["target"]["dec"] = str(
-                info["dec"]
-            )
-
+            react_dict["requests"][0]["configurations"][0]["target"]["ra"] = str( ra )
+            react_dict["requests"][0]["configurations"][0]["target"]["dec"] = str( dec )
             # Some keys are not necessarily there
             timenow = datetime.datetime.utcnow()
             if "start" in react_dict["requests"][0]["windows"][0].keys():
@@ -240,7 +243,7 @@ class RapidLco(RapidBase):
             # Make a test to validate
             testreply = requests.post(
                 "https://observe.lco.global/api/requestgroups/validate/",
-                headers={"Authorization": "Token {}".format(self.lco_api)},
+                headers={"Authorization": "Token {}".format(self.lco_api.get())},
                 json=react_dict,
             )
 
@@ -256,7 +259,7 @@ class RapidLco(RapidBase):
             # Submit full trigger
             response = requests.post(
                 "https://observe.lco.global/api/requestgroups/",
-                headers={"Authorization": "Token {}".format(self.lco_api)},
+                headers={"Authorization": "Token {}".format(self.lco_api.get())},
                 json=react_dict,
             )
 
@@ -309,29 +312,24 @@ class RapidLco(RapidBase):
         journal_updates: Dict[StockId, JournalTweak] = {}
         # We will here loop through transients and react individually
         for tv in transients:
-            matchinfo = self.accept_tview(tv)
 
-            # Check sumission criteria
-            if not matchinfo:
-                continue
+            transientinfo = self.collect_info(tv)
+            self.logger.info("reacting", extra={"tranId": tv.id})
 
             # Add some more info for display
-            matchinfo["LCO paths"] = []
+            transientinfo["LCO paths"] = {}
 
-            self.logger.info("Passed reaction threshold", extra={"tranId": tv.id})
 
             # Ok, so we have a transient to react to
             if self.do_react:
-                success, jup = self.react(tv, matchinfo)
+                success, jup = self.react(tv, transientinfo)
                 if not jup is None:
                     assert jup.extra
                     journal_updates[tv.id] = jup
-                    for response in jup.extra["lcoResponses"]:
-                        matchinfo["LCO paths"].append(
-                            "https://observe.lco.global/userrequests/{}/".format(
-                                response["id"]
-                            )
-                        )
+                    
+                    for response, reactDict in zip(jup.extra["lcoResponses"],jup.extra["reactDicts"]):
+                        transientinfo["LCO paths"][reactDict["name"] ] =  "https://observe.lco.global/requests/{}/".format( response["requests"][0]['id'] )
+                        
                 if success:
                     self.logger.info(
                         "React success",
@@ -347,11 +345,9 @@ class RapidLco(RapidBase):
                 jup = None
 
             # Otherwise, test
-            matchinfo["LCO trigger success"] = success
+            transientinfo["LCO trigger success"] = success
             if self.do_testreact:
-                test_success, jup = self.test_react(tv, matchinfo)
-                if not jup is None:
-                    journal_updates[tv.id] = jup
+                test_success, jup = self.test_react(tv, transientinfo)
 
         return journal_updates
 
