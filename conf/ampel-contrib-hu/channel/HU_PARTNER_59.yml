@@ -42,6 +42,6 @@ t2_compute:
     config:
       t2_dependency:
       - unit: T2CatalogMatch
-        config: '%T2CatalogMatch_general'
+        config: T2CatalogMatch_cosmo
         link_override: 
           pps: first
