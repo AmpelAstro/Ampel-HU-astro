@@ -186,7 +186,7 @@ t2:
         post_filter:
           z:
             $lte: 0.03
-            $gte: 0.005
+            $gte: 0.002
         keys_to_append:
           - ObjType
           - Velocity
@@ -318,7 +318,7 @@ t2:
         post_filter:
           z:
             $lte: 0.03
-            $gte: 0.005
+            $gte: 0.002
         keys_to_append:
           - ObjType
           - Velocity
