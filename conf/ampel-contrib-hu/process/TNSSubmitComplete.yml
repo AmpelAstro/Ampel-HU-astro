@@ -1,4 +1,4 @@
-name: TNSCompleteSummary
+name: TNSSubmitComplete
 tier: 3
 template: ztf_periodic_summary
 schedule: every(60).minutes
