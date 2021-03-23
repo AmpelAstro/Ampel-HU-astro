@@ -11,7 +11,7 @@ from setuptools import find_namespace_packages, setup
 
 setup(
     name="ampel-contrib-hu",
-    version="0.7.1-alpha.0",
+    version="0.7.1-alpha.1",
     packages=find_namespace_packages(),
     package_data={
         "": ["*.json", "py.typed"],  # include any package containing *.json files
@@ -28,11 +28,11 @@ setup(
         ],
     },
     install_requires=[
-        'ampel-interface>=0.7.1-alpha.7,<0.7.2',
-        'ampel-core[plotting]>=0.7.1-alpha.3,<0.7.2',
-        'ampel-photometry>=0.7.1-alpha.0,<0.7.2',
-        'ampel-alerts>=0.7.1-alpha.0,<0.7.2',
-        'ampel-ztf>=0.7.1-alpha.8,<0.7.2',
+        'ampel-interface>=0.7.1-alpha.8,<0.7.2',
+        'ampel-core[plotting]>=0.7.1-alpha.7,<0.7.2',
+        'ampel-photometry>=0.7.1-alpha.1,<0.7.2',
+        'ampel-alerts>=0.7.1-alpha.2,<0.7.2',
+        'ampel-ztf>=0.7.1-alpha.10,<0.7.2',
         "catsHTM",
         "extcats",
         "zerorpc",
@@ -50,16 +50,4 @@ setup(
         # pymage secretly depends on pandas
         "pandas",
     ],
-    entry_points={
-        "ampel_target_sources": [
-            "TargetSourceListener = ampel.contrib.hu.TargetSourceListener:TargetSourceListener",
-            "TargetSourceListenerSlack = ampel.contrib.hu.TargetSourceListenerSlack:TargetSourceListenerSlack",
-        ],
-        "ampel_resources": [
-            "extcats = ampel.contrib.hu.resources:extcatsURI",
-            "catsHTM = ampel.contrib.hu.resources:catsHTMURI",
-            "desycloud = ampel.contrib.hu.resources:desyCloudURI",
-        ],
-        "console_scripts": ["catshtmd = ampel.contrib.hu.catshtm_server:run"],
-    },
 )
