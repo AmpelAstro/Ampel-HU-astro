@@ -35,9 +35,8 @@ setup(
         'ampel-ztf>=0.7.1-alpha.10,<0.7.2',
         "catsHTM",
         "extcats",
-        # see: https://github.com/sncosmo/sncosmo/issues/291
-        "sncosmo==2.2.0",
-        "iminuit==1.5.1",
+        "sncosmo",
+        "iminuit",
         "sfdmap",
         "astropy",
         "numpy",
