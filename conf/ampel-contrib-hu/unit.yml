@@ -21,7 +21,6 @@
 # - ampel.contrib.hu.t3.TransientInfoPrinter
 - ampel.contrib.hu.t3.TransientViewDumper
 - ampel.contrib.hu.t3.ChannelSummaryPublisher
-- ampel.contrib.hu.t3.TransientWebPublisher
 - ampel.contrib.hu.t3.SlackSummaryPublisher
 - ampel.contrib.hu.t3.RapidBase
 - ampel.contrib.hu.t3.RapidSedm
