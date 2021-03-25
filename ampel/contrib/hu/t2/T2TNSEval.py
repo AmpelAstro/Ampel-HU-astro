@@ -347,7 +347,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         # tag AGNs
         milliquas = cat_res.get("milliquas", False)
         sdss_spec = cat_res.get("SDSS_spec", False)
-        if (milliquas and milliquas.get("redshift", np.nan) > 0) or (
+        if (milliquas and milliquas["redshift"] is not None and milliquas["redshift"] > 0) or (
             sdss_spec and sdss_spec["bptclass"] in [4, 5]
         ): 
             remarks["remarks"] = remarks["remarks"] + "Known SDSS and/or MILLIQUAS QSO/AGN. "
