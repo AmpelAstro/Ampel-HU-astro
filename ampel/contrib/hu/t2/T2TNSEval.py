@@ -10,13 +10,12 @@
 from typing import Dict, List, Optional, Sequence, Any
 from astropy.coordinates import SkyCoord
 import numpy as np
-from ampel.base import abstractmethod
+from ampel.enum.T2RunState import T2RunState
 from ampel.type import T2UnitResult
 from ampel.view.LightCurve import LightCurve
 from ampel.view.T2DocView import T2DocView
 from ampel.contrib.hu.t3.ampel_tns import TNSFILTERID   # T2 importing info from T3. Restructure?
 
-from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
 
 
@@ -335,7 +334,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         """
 
         # Start building dict with remarks
-        remarks = {"remarks":""}
+        remarks : Dict[str, Any] = {"remarks":""}
 
         # Check redshift
         nedz = cat_res.get("NEDz", False)
@@ -508,7 +507,9 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         # ii. Check the catalog matching criteria
         t2_cat_match = t2_views[0]
         assert t2_cat_match.unit==self.dependency_unit
-        catalog_result = t2_cat_match.get_payload()
+        if (payload := t2_cat_match.get_payload()) is None:
+            return T2RunState.MISSING_INFO
+        catalog_result = payload[-1] if isinstance(payload, list) else payload
         if not self.inspect_catalog(catalog_result):
             return { 'tns_candidate' : False, 'tns_eval' : 'Catalog match rejection.' }
 
