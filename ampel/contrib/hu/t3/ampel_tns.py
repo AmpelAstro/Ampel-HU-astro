@@ -24,7 +24,7 @@ AT_REPORT_FORM = "bulk-report"
 AT_REPORT_REPLY = "bulk-report-reply"
 TNS_ARCHIVE = {"OTHER": "0", "SDSS": "1", "DSS": "2"}
 TNS_BASE_URL_SANDBOX = "https://sandbox.wis-tns.org/api/"
-TNS_BASE_URL_REAL = "https://sandbox.wis-tns.org/api/"
+TNS_BASE_URL_REAL = "https://www.wis-tns.org/api/"
 
 httpErrors = {
     304: "Error 304: Not Modified: There was no new data to return.",
