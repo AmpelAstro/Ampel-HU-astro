@@ -8,8 +8,8 @@ channel:
     - HU_GP_59
 load:
   - TRANSIENT
-  - DATAPOINT
-  - T2RECORD
+  - col: t2
+    query_complement: {unit: $in: [T2TNSEval, T2LightCurveSummary]}
 complement: TNSNames
 filter:
   t2:
