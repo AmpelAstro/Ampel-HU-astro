@@ -112,6 +112,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
             catinfo = cat_res.get(catname, False)
             if (
                 catinfo
+                and (catinfo["z"] is not None)
                 and (self.min_redshift < catinfo["z"] < self.max_redshift)
                 and (self.min_dist < catinfo["dist2transient"] < self.max_dist)
             ):
