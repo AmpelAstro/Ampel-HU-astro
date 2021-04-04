@@ -148,7 +148,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         # Special catalog searches - mark transients close to AGNs
         milliquas = cat_res.get("milliquas", False)
         sdss_spec = cat_res.get("SDSS_spec", False)
-        if milliquas and milliquas["redshift"] > 0:
+        if milliquas and milliquas["reshift"] is not None and milliquas["redshift"] > 0:
             info["milliAGN"] = True
         if sdss_spec and sdss_spec["bptclass"] in [4, 5]:
             info["sdssAGN"] = True
@@ -375,7 +375,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         t2_cat_match = t2_views[0]
         assert t2_cat_match.unit==self.dependency_unit
 
-        catalog_result = t2_cat_match.get_payload()
+        catalog_result = res[-1] if isinstance (res := t2_cat_match.get_payload(), list) else res
         if not catalog_result:
             return { 'action' : False, 'eval' : 'No catlog match result' }
         transient_info = self.inspect_catalog(catalog_result)
