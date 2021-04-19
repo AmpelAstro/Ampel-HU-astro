@@ -5,7 +5,7 @@ template: ztf_periodic_summary
 schedule: every(10).minutes
 channel:
   any_of:
-    - HU_Rapid_Infant
+    - HU_RAPID_INFANT
 load:
   - TRANSIENT
   - DATAPOINT
