@@ -28,5 +28,5 @@ run:
     tns_api_key:
       key: tns/new
     submit_tns: true
-    sandbox: true
+    sandbox: false
 
