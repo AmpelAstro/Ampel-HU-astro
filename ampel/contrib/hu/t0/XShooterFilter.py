@@ -4,8 +4,8 @@
 # License           : BSD-3-Clause
 # Author            : m. giomi <matteo.giomi@desy.de>
 # Date              : 28.08.2018
-# Last Modified Date: 24.08.2020
-# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
+# Last Modified Date: 19.04.2021
+# Last Modified By  : jnordin 
 
 
 from typing import Optional, Sequence, Union
@@ -28,6 +28,10 @@ class XShooterFilter(DecentFilter):
     max_dec: float  # maximum allowed value for the declination
     det_within: float  # the transient must have been detected within the last 'DET_WITHIN' days
     ul_within: float  # the transient must AT LEAST one ulim within the last 'UL_WITHIN' days
+    # Updated parameters based on infant detections spring 2021. Defaults conservative
+    max_chipsf: float = 4        # Best guess value 2
+    max_seeratio: float = 2      # Best guess value 1.3
+    min_sumrat: float = 0.6      # Best guess value 0.8
 
     def post_init(self):
 
@@ -48,6 +52,29 @@ class XShooterFilter(DecentFilter):
                 f"above maximum allowed of {self.max_dec:.2f} deg"
             )
             return None
+
+        # CUT ON LATEST SUBTRACTION QUALITY
+        #################################
+
+        if latest["chipsf"] > self.max_chipsf:
+            self.logger.debug(
+                f"Rejected: chipsf {latest['chipsf']:.2f}  "
+                f"above maximum allowed of {self.max_chipsf:.2f}"
+            )
+            return None
+        if latest["seeratio"] > self.max_seeratio:
+            self.logger.debug(
+                f"Rejected: seeratio {latest['seeratio']:.2f}  "
+                f"above maximum allowed of {self.max_seeratio:.2f}"
+            )
+            return None
+        if latest["sumrat"] < self.min_sumrat:
+            self.logger.debug(
+                f"Rejected: sumrat {latest['sumrat']:.2f}  "
+                f"below min allowed of {self.min_sumrat:.2f}"
+            )
+            return None
+
 
         # CUT ON THE HISTORY OF THE ALERT
         #################################
