@@ -134,7 +134,8 @@ class SlackSummaryPublisher(AbsT3Unit):
                     "https://slack.com/api/files.upload",
                     params=param,
                     files={"file": buffer.getvalue()},
-                )                
+                )
+                r.raise_for_status()
                 if not r.json()["ok"]:
                     raise SlackClientError(r.json()["error"])
                 self.logger.info(r.text)
@@ -180,6 +181,7 @@ class SlackSummaryPublisher(AbsT3Unit):
                         params=param,
                         files={"file": buffer.getvalue()},
                     )
+                    r.raise_for_status()
                     if not r.json()["ok"]:
                         raise SlackClientError(r.json()["error"])
                     self.logger.info(r.text)
