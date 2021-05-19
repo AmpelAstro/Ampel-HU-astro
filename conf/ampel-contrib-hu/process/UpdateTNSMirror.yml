@@ -8,4 +8,4 @@ processor:
       unit: TNSMirrorUpdater
       config:
         api_key:
-          key: tns/jnordin
+          key: tns/complete
