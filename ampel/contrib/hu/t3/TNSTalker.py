@@ -469,7 +469,7 @@ class TNSTalker(AbsT3Unit):
                 }
             }
         ]
-        tnsreplies = self.client.sendTNSreports(atreportlist)
+        tnsreplies = self.client.sendReports(atreportlist)
 
         # Now go and check and create journal updates for the cases where SN was added
         for tran_id in atreports.keys():
