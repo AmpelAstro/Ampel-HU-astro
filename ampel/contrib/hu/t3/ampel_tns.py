@@ -266,14 +266,14 @@ class TNSClient:
         if reply and "id_code" in reply.keys() and reply["id_code"] == 200:
             try:
                 response = reply["data"]["feedback"]["at_report"]
-            except ValueError:
+            except KeyError:
                 logger.error("TNS bulk submit: cannot find the response feedback payload.")
 
         # This is a bad request. Still propagate the response for analysis.
         if reply and "id_code" in reply.keys() and reply["id_code"] == 400:
             try:
                 response = reply["data"]["feedback"]["at_report"]
-            except ValueError:
+            except KeyError:
                 logger.error("TNS bulk submit: cannot find the response feedback payload.")
 
 
