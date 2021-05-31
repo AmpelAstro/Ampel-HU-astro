@@ -238,11 +238,8 @@ class TNSClient:
         :return: dict
 
         """
-        feed_url = self.buildUrl(AT_REPORT_REPLY)
-        feed_parameters = self.buildParameters(options)
-
         self.logger.info("TNS bulk submit: " + "looking for reply report")
-        r = self.session.post(AT_REPORT_REPLY, files=feed_parameters, timeout=300)
+        r = self.session.post(AT_REPORT_REPLY, options, timeout=300)
         self.logger.info("TNS bulk submit: " + "got report (or timed out)")
         return self.jsonResponse(r)
 
