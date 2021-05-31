@@ -54,12 +54,12 @@ class TNSSession(BaseUrlSession):
             )
         )
 
-    def post(self, method: str, data: Dict[str,Any], **kwargs) -> Response:
+    def post(self, method: str, payload: Dict[str,Any], payload_key="data", **kwargs) -> Response:
         return super().post(
             method,
             files=[
                 ("api_key", (None, self.token.api_key)),
-                ("data", (None, json.dumps(data)))
+                (payload_key, (None, json.dumps(payload)))
             ],
             **kwargs
         )
@@ -230,7 +230,7 @@ class TNSClient:
 
         return reportresult
 
-    def bulkReportReply(self, options):
+    def _bulkReportReply(self, report_id: str) -> Dict[str, Any]:
         """
         Get the report back from the TNS
 
@@ -239,7 +239,8 @@ class TNSClient:
 
         """
         self.logger.info("TNS bulk submit: " + "looking for reply report")
-        r = self.session.post(AT_REPORT_REPLY, options, timeout=300)
+        # every TNS endpoint wraps its arguments in `data`, except bulk-report-reply
+        r = self.session.post(AT_REPORT_REPLY, report_id, payload_key="report_id", timeout=300)
         self.logger.info("TNS bulk submit: " + "got report (or timed out)")
         return self.jsonResponse(r)
 
@@ -252,7 +253,7 @@ class TNSClient:
         """
 
         logger = self.logger
-        reply = self.bulkReportReply({"report_id": reportId})
+        reply = self._bulkReportReply(reportId)
 
         response = None
         # reply should be a dict
