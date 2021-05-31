@@ -15,11 +15,9 @@
 import json
 import re
 import time
-from collections import OrderedDict
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple, Union
 
 from requests.models import Response
-from requests.sessions import Session
 
 from ampel.contrib.hu.t3.tns.TNSToken import TNSToken
 from ampel.protocol.LoggerProtocol import LoggerProtocol
@@ -54,7 +52,7 @@ class TNSSession(BaseUrlSession):
             )
         )
 
-    def post(self, method: str, payload: Dict[str,Any], payload_key="data", **kwargs) -> Response:
+    def post(self, method: str, payload: Union[str, Dict[str,Any]], payload_key="data", **kwargs) -> Response:
         return super().post(
             method,
             files=[

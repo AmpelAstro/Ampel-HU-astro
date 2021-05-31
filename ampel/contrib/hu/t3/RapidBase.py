@@ -70,7 +70,7 @@ class RapidBase(AbsT3Unit):
 
     def react(
         self, tran_view: TransientView, info: Dict[str, Any]
-    ) -> Tuple[bool, Optional[Dict[str,Any]]]:
+    ) -> Tuple[bool, Optional[JournalTweak]]:
         """
         Replace with react method adopted to particular facility or output
         """
@@ -80,7 +80,7 @@ class RapidBase(AbsT3Unit):
 
     def test_react(
         self, tran_view: TransientView, info: Dict[str, Any]
-    ) -> Tuple[bool, Optional[Dict[str,Any]]]:
+    ) -> Tuple[bool, Optional[JournalTweak]]:
         """ Trigger a test slack report """
 
         success = False
@@ -118,9 +118,9 @@ class RapidBase(AbsT3Unit):
         # Document what we did
         jcontent = {"t3unit": self.name, "reaction": description, "success": success}
 
-        return success, jcontent
+        return success, JournalTweak(extra=jcontent)
 
-    def collect_info(self, tran_view: TransientView) -> Optional[Dict[str, Any]]:
+    def collect_info(self, tran_view: TransientView) -> Dict[str, Any]:
         """
         Create an information dict from T2 outputs, which can be used by reactors.
         """
@@ -153,13 +153,12 @@ class RapidBase(AbsT3Unit):
 
             # Ok, so we have a transient to react to
             if self.do_react:
-                success, jcontent = self.react(tv, transientinfo)
+                success, jup = self.react(tv, transientinfo)
             # Otherwise, test
             elif self.do_testreact:
-                test_success, jcontent = self.test_react(tv, transientinfo)
+                test_success, jup = self.test_react(tv, transientinfo)
             
-            if jcontent is not None:
-                jup = JournalTweak(extra=jcontent)
+            if jup is not None:
                 journal_updates[tv.id] = jup
 
 

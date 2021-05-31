@@ -39,7 +39,7 @@ async def tns_post(
     """
     async with semaphore:
         with aiohttp.MultipartWriter("form-data") as mpwriter:
-            p = aiohttp.StringPayload(token.api_key)
+            p: aiohttp.Payload = aiohttp.StringPayload(token.api_key)
             p.set_content_disposition("form-data", name="api_key")
             mpwriter.append(p)
             p = aiohttp.JsonPayload(data)
