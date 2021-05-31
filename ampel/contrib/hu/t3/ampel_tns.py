@@ -252,7 +252,7 @@ class TNSClient:
         """
 
         logger = self.logger
-        reply = self.bulkReportReply({"report_id": (None, str(reportId))})
+        reply = self.bulkReportReply({"report_id": reportId})
 
         response = None
         # reply should be a dict
