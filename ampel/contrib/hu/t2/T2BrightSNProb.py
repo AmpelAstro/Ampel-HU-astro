@@ -7,17 +7,14 @@
 # Last Modified Date: 03.08.2020
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
-import os
-import sys
-from typing import Any, Dict, List
-
 import numpy as np
-
-import ampel.contrib.hu.t2.xgb_trees as xgb_trees
+from typing import Union
+from ampel.types import UBson
+from ampel.struct.UnitResult import UnitResult
+from ampel.view.LightCurve import LightCurve
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 from ampel.contrib.hu.t2.T2RiseDeclineStat import T2RiseDeclineBase
-from ampel.type import T2UnitResult
-from ampel.view.LightCurve import LightCurve
+import ampel.contrib.hu.t2.xgb_trees as xgb_trees
 
 
 class T2BrightSNProb(AbsLightCurveT2Unit, T2RiseDeclineBase):
@@ -57,7 +54,8 @@ class T2BrightSNProb(AbsLightCurveT2Unit, T2RiseDeclineBase):
         # Load the (large) set of trees
         self.xgb_tree = xgb_trees.xgboost_tree()
 
-    def run(self, light_curve: LightCurve) -> T2UnitResult:
+
+    def process(self, light_curve: LightCurve) -> Union[UBson, UnitResult]:
 
         # Output dict that we will start to populate
         o = self.compute_stats(light_curve)
@@ -65,8 +63,8 @@ class T2BrightSNProb(AbsLightCurveT2Unit, T2RiseDeclineBase):
         if not o["success"]:
             return o
 
-        ## This is where the data collection stops and evaluation starts.
-        ## Even though not all of the properties above are used we keep them for future compatibility.
+        # This is where the data collection stops and evaluation starts.
+        # Even though not all of the properties above are used we keep them for future compatibility.
 
         # Did not train for gap objects or objects with intervening upper limits
         if o["bool_hasgaps"] or not o["bool_pure"]:

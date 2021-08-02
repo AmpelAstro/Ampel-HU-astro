@@ -6,7 +6,6 @@
 - ampel.contrib.hu.t0.ToOFilter
 - ampel.contrib.hu.t0.MPALensFilter
 # - ampel.contrib.hu.t0.SEDmTargetFilter
-# - ampel.contrib.hu.t0.NoFilter
 - ampel.contrib.hu.t0.TransientInEllipticalFilter
 - ampel.contrib.hu.t2.T2SNCosmo
 - ampel.contrib.hu.t2.T2CatSNCosmo

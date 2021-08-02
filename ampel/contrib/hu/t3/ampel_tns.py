@@ -16,7 +16,6 @@ import json
 import re
 import time
 from collections import OrderedDict
-
 import requests
 
 TNSFILTERID = {1: "110", 2: "111", 3: "112"}
@@ -399,7 +398,7 @@ def sendTNSreports(atreportlists, api_key, logger, sandbox=True):
         # In any case, nothing in the submit is posted.
         # Hence only checking first element
         bad_request = None
-        for key_atprop in ['ra','decl','discovery_datetime']:
+        for key_atprop in ['ra', 'decl', 'discovery_datetime']:
             if key_atprop in response[0].keys():
                 try:
                     bad_request = response[0][key_atprop]["value"]["5"]["message"]
@@ -407,7 +406,7 @@ def sendTNSreports(atreportlists, api_key, logger, sandbox=True):
                 except KeyError:
                     pass
         if bad_request is not None:
-            logger.info( bad_request )
+            logger.info(bad_request)
             continue
 
 

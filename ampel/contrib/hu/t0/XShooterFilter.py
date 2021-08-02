@@ -35,7 +35,7 @@ class XShooterFilter(DecentFilter):
         self.keys_to_check += ("jd",)
 
     # Override
-    def apply(self, alert: PhotoAlert) -> Optional[Union[bool, int]]:
+    def process(self, alert: PhotoAlert) -> Optional[Union[bool, int]]:
         """
         run the decent filter on the alert
         """

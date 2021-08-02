@@ -41,7 +41,7 @@ class TransientInClusterFilter(ExtcatsUnit, DecentFilter):
 		)
 
 
-	def apply(self, alert):
+	def process(self, alert):
 		"""
 		run the filter on the alert. First we run the decent filter, then we match
 		with the cluster catalog.

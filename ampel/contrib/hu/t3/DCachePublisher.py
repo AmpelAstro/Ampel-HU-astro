@@ -7,35 +7,25 @@
 # Last Modified Date: 27.02.2020
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
-import asyncio
-import datetime
-import gzip
-import io
-import os
-import ssl
-import sys
-import time
-import traceback
-from functools import partial
-from typing import Any, Dict, Iterable, List, Set, Tuple, Union
-from xml.etree import ElementTree
 
-import backoff
-import pytz
+import asyncio, datetime, gzip, io, os, ssl, sys, time, traceback, backoff, pytz
+from functools import partial
+from typing import Any, Dict, List, Set, Tuple, Union, Generator
+from xml.etree import ElementTree
 from aiohttp import ClientSession, helpers, TCPConnector
 from aiohttp.client_exceptions import (
-    ClientConnectionError,
-    ClientConnectorError,
-    ClientConnectorSSLError,
-    ClientResponseError,
-    ServerDisconnectedError,
+    ClientConnectionError, ClientConnectorError, ClientConnectorSSLError,
+    ClientResponseError, ServerDisconnectedError
 )
 
+from ampel.types import UBson
 from ampel.abstract.AbsT3Unit import AbsT3Unit
-from ampel.model.Secret import Secret
+from ampel.abstract.Secret import Secret
 from ampel.util.json import AmpelEncoder
 from ampel.view.SnapView import SnapView
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
+from ampel.struct.UnitResult import UnitResult
+from ampel.struct.JournalAttributes import JournalAttributes
 
 
 class DCachePublisher(AbsT3Unit):
@@ -68,6 +58,7 @@ class DCachePublisher(AbsT3Unit):
     max_parallel_requests: int = 8
     authz: Secret[str] = {"key": "dcache/macaroon"}  # type: ignore[assignment]
 
+
     def post_init(self) -> None:
         self.updated_urls: List[str] = []
         self.existing_paths: Set[Tuple[str, ...]] = set()
@@ -78,11 +69,13 @@ class DCachePublisher(AbsT3Unit):
         assert self.resource
         self.base_dest = self.resource["dcache"] + self.base_dir
 
-    def serialize(self, tran_view: Union[SnapView,Dict[str,Any]]) -> bytes:
+
+    def serialize(self, tran_view: Union[SnapView, Dict[str, Any]]) -> bytes:
         buf = io.BytesIO()
         with gzip.GzipFile(fileobj=buf, mode="w") as f:
             f.write(self.encoder.encode(tran_view).encode("utf-8"))
         return buf.getvalue()
+
 
     async def create_directory(self, request, path_parts) -> None:
         path = []
@@ -101,16 +94,19 @@ class DCachePublisher(AbsT3Unit):
                         resp.raise_for_status()
             self.existing_paths.add(tuple(path))
 
+
     async def put(self, request, url, data, timeout=1.0):
         if self.dry_run:
             return
         await request("PUT", url, data=data)
+
 
     async def exists(self, request, url):
         if self.dry_run:
             return
         resp = await request("HEAD", url, raise_for_status=False)
         return resp.status in {200, 201, 204}
+
 
     @staticmethod
     def is_permanent_error(exc):
@@ -120,6 +116,7 @@ class DCachePublisher(AbsT3Unit):
             return True
         else:
             return False
+
 
     def _on_backoff(self, details):
         exc_typ, exc, _ = sys.exc_info()
@@ -135,6 +132,7 @@ class DCachePublisher(AbsT3Unit):
             },
         )
 
+
     def _on_giveup(self, details):
         exc_typ, exc, _ = sys.exc_info()
         if exc is not None:
@@ -147,6 +145,7 @@ class DCachePublisher(AbsT3Unit):
                 "tries": details["tries"],
             },
         )
+
 
     async def publish_transient(self, request, tran_view: SnapView) -> str:
 
@@ -161,6 +160,7 @@ class DCachePublisher(AbsT3Unit):
         await self.put(request, fname, data=self.serialize(tran_view))
 
         return fname
+
 
     async def send_requests(self, unbound_tasks):
         """
@@ -212,23 +212,35 @@ class DCachePublisher(AbsT3Unit):
                 tasks = [task(request) for task in unbound_tasks]
                 return await asyncio.gather(*tasks)
 
-    def add(self, transients: Iterable[SnapView]) -> None:
+
+    def process(self, gen: Generator[SnapView, JournalAttributes, None]) -> Union[UBson, UnitResult]:
+
         """
         Publish a transient batch
         """
-        if transients is not None:
-
-            loop = asyncio.get_event_loop()
-            t0 = time.time()
-            self.updated_urls += loop.run_until_complete(
-                self.send_requests(
-                    [
-                        partial(self.publish_transient, tran_view=tran_view)
-                        for tran_view in transients
-                    ]
-                )
+        loop = asyncio.get_event_loop()
+        t0 = time.time()
+        self.updated_urls += loop.run_until_complete(
+            self.send_requests(
+                [
+                    partial(self.publish_transient, tran_view=tran_view)
+                    for tran_view in gen
+                ]
             )
-            self.dt += time.time() - t0
+        )
+        self.dt += time.time() - t0
+
+        self.logger.info(
+            f"Published {len(self.updated_urls)} transients in {self.dt:.1f} s"
+        )
+
+        if not self.dry_run:
+            asyncio.get_event_loop().run_until_complete(
+                self.send_requests([self.publish_manifest])
+            )
+
+        return None
+
 
     async def publish_manifest(self, request) -> None:
         prefix = os.path.join(self.base_dest, self.channel)
@@ -238,7 +250,7 @@ class DCachePublisher(AbsT3Unit):
             request,
             list(
                 os.path.split(
-                    prefix[len(os.path.commonprefix((self.base_dest, manifest_dir))) :]
+                    prefix[len(os.path.commonprefix((self.base_dest, manifest_dir))):]
                 )
             ),
         )
@@ -290,18 +302,6 @@ class DCachePublisher(AbsT3Unit):
             "PUT", os.path.join(prefix, "macaroon"), data=authz["macaroon"],
         )
         self.logger.info(f"Access token: {authz}")
-
-    def done(self) -> None:
-        """
-        Finish publishing
-        """
-        self.logger.info(
-            f"Published {len(self.updated_urls)} transients in {self.dt:.1f} s"
-        )
-        if not self.dry_run:
-            asyncio.get_event_loop().run_until_complete(
-                self.send_requests([self.publish_manifest])
-            )
 
 
 def get_macaroon(

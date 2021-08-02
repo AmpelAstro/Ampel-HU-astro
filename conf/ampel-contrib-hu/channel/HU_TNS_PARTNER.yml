@@ -31,12 +31,8 @@ t2_compute:
   - unit: T2SNCosmo
     config:
       model: salt2
-      upper_limits: false
   - unit: T2CatalogMatch
     config: T2CatalogMatch_cosmo
-    ingest: 
-      eligible: 
-        pps: first
   - unit: T2BrightSNProb
   - unit: T2TNSEval
     config:

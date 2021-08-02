@@ -7,16 +7,14 @@
 # Last Modified Date: 06.02.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import datetime
-from typing import Any, Dict, List, Optional, Tuple
-
-import requests
-
+import datetime, requests
+from typing import Any, Dict, Optional, Tuple, Generator, Union
+from ampel.types import StockId, UBson
 from ampel.contrib.hu.t3.RapidBase import RapidBase, Secret
-from ampel.struct.JournalTweak import JournalTweak
-from ampel.type import StockId
+from ampel.struct.JournalAttributes import JournalAttributes
+from ampel.struct.UnitResult import UnitResult
 from ampel.view.TransientView import TransientView
-from ampel.ztf.util.ZTFIdMapper import to_ampel_id, to_ztf_id
+from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 
 
 class RapidSedm(RapidBase):
@@ -83,7 +81,7 @@ class RapidSedm(RapidBase):
 
     def react(
         self, tran_view: TransientView, info: Dict[str, Any]
-    ) -> Tuple[bool, Optional[JournalTweak]]:
+    ) -> Tuple[bool, Optional[JournalAttributes]]:
         """
         Send a trigger to the SEDM. Note that we have no good way of investigating the queue at this time
         """
@@ -120,18 +118,18 @@ class RapidSedm(RapidBase):
 
         # Document what we did
         jcontent = {"t3unit": self.name, "reactDict": react_dict, "success": success}
-        jup = JournalTweak(extra=jcontent)
+        jup = JournalAttributes(extra=jcontent)
 
         return success, jup
 
-    def add(self, transients: Tuple[TransientView, ...]) -> Dict[StockId, JournalTweak]:
+    def process(self, gen: Generator[TransientView, JournalAttributes, None]) -> Union[UBson, UnitResult]:
         """
         Loop through transients and check for TNS names and/or candidates to submit
         """
 
-        journal_updates: Dict[StockId, JournalTweak] = {}
+        journal_updates: Dict[StockId, JournalAttributes] = {}
         # We will here loop through transients and react individually
-        for tv in transients:
+        for tv in gen:
             matchinfo = self.accept_tview(tv)
 
             # Check sumission criteria
@@ -142,9 +140,12 @@ class RapidSedm(RapidBase):
 
             # Ok, so we have a transient to react to
             if self.do_react:
+
                 success, jup = self.react(tv, matchinfo)
-                if jup is not None:
-                    journal_updates[tv.id] = jup
+
+                if jup:
+                    gen.send(jup)
+
                 if success:
                     self.logger.info(
                         "React success",
@@ -166,10 +167,6 @@ class RapidSedm(RapidBase):
                 if jup is not None:
                     journal_updates[tv.id] = jup
 
-        return journal_updates
-
-    def done(self):
-        """ """
-
         # Should possibly do some accounting or verification
         self.logger.info("done running T3")
+        return None

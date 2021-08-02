@@ -10,7 +10,7 @@
 import collections
 import datetime
 import io
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Set, Tuple, Generator
 
 import numpy as np
 import pandas as pd
@@ -20,7 +20,7 @@ from slack.errors import SlackClientError
 
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.log.utils import log_exception
-from ampel.model.Secret import Secret
+from ampel.abstract.Secret import Secret
 from ampel.view.TransientView import TransientView
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 
@@ -52,13 +52,13 @@ class SlackSummaryPublisher(AbsT3Unit):
         self.photometry: List[pd.DataFrame] = []
         self.channels: Set[str] = set()
 
-    def add(self, transients: Tuple[TransientView, ...]) -> None:
+    def process(self, gen: Generator[T, JournalAttributes, None]) -> Union[UBson, UnitResult]:
         """"""
         summary, full = self.combine_transients(transients)
         self.frames += summary
         self.photometry += full
 
-    def done(self):
+    def done(self) -> Optional[PagedT3Result]:
         """"""
         if len(self.frames) == 0 and self.quiet:
             return
@@ -205,7 +205,7 @@ class SlackSummaryPublisher(AbsT3Unit):
                 if (
                     t2record["unit"] == "T2LightCurveSummary"
                     or not (body := t2record.get("body"))
-                    or not (output := body[-1].get("result"))
+                    or not (output := body[-1].get('data'))
                 ):
                     continue
 

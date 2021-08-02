@@ -17,9 +17,6 @@ t0_filter:
 t2_compute:
   - unit: T2CatalogMatch
     config: '%T2CatalogMatch_general'
-    ingest: 
-      eligible: 
-        pps: first
   - unit: T2InfantCatalogEval
     config:
       max_age: 3

@@ -7,21 +7,20 @@
 # Last Modified Date: 16.12.2020
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
-import datetime
+import datetime, backoff, requests
 from io import BytesIO, StringIO
-from typing import Any, Dict, Optional, Set, Tuple
-
-import backoff
-import requests
 from astropy.time import Time
 from pytz import timezone
 from requests.auth import HTTPBasicAuth
+from typing import Any, Dict, Optional, Set, Generator, Union
 
-from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
-from ampel.model.Secret import Secret
-from ampel.type import ChannelId
+from ampel.types import ChannelId, UBson
+from ampel.abstract.Secret import Secret
 from ampel.util.json import AmpelEncoder, load
 from ampel.view.TransientView import TransientView
+from ampel.struct.UnitResult import UnitResult
+from ampel.struct.JournalAttributes import JournalAttributes
+from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
 
 
 class ChannelSummaryPublisher(AbsPhotoT3Unit):
@@ -37,6 +36,7 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
     base_url: str = "https://desycloud.desy.de/remote.php/webdav/AMPEL/ZTF"
     auth: Secret[list] = {"key": "desycloud/valery"}  # type: ignore[assignment]
 
+
     def post_init(self) -> None:
 
         self.summary: Dict[str, Any] = {}
@@ -44,6 +44,7 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
         self._channels: Set[ChannelId] = set()
         self.session = requests.Session()
         self.session.auth = HTTPBasicAuth(*self.auth.get())
+
 
     def extract_from_transient_view(
         self, tran_view: TransientView
@@ -77,21 +78,25 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
 
         return out
 
-    def add(self, transients: Tuple[TransientView, ...]) -> None:
+
+    def process(self, gen: Generator[TransientView, JournalAttributes, None]) -> Union[UBson, UnitResult]:
         """
         load the stats from the alerts
         """
-        if transients is not None:
-            for tran_view in transients:
-                assert tran_view.stock
-                if len(channels := tran_view.stock.get("channel") or []) != 1:
-                    raise ValueError("Only single-channel views are supported")
-                info_dict = self.extract_from_transient_view(tran_view)
-                if not info_dict:
-                    continue
-                key = info_dict.pop("ztf_name")
-                self.summary[key] = info_dict
-                self._channels.add(channels[0])
+        for tran_view in gen:
+            assert tran_view.stock
+            if len(channels := tran_view.stock.get("channel") or []) != 1:
+                raise ValueError("Only single-channel views are supported")
+            info_dict = self.extract_from_transient_view(tran_view)
+            if not info_dict:
+                continue
+            key = info_dict.pop("ztf_name")
+            self.summary[key] = info_dict
+            self._channels.add(channels[0])
+
+        self.done()
+        return None
+
 
     @backoff.on_exception(
         backoff.expo,
@@ -142,5 +147,3 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
             self.session.put(
                 "{}/{}".format(basedir, filename), data=outfile.getvalue()
             ).raise_for_status()
-
-        return None

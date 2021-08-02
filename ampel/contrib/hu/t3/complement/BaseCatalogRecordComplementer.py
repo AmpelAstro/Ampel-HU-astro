@@ -13,14 +13,14 @@ from typing import Any, Dict, Iterable, Optional, Tuple
 
 from pymongo import MongoClient
 
-from ampel.base import abstractmethod
+from ampel.base.decorator import abstractmethod
 from ampel.base.AmpelBaseModel import AmpelBaseModel
-from ampel.core.AmpelBuffer import AmpelBuffer
-from ampel.model.Secret import Secret
-from ampel.t3.complement.AbsT3DataAppender import AbsT3DataAppender
+from ampel.struct.AmpelBuffer import AmpelBuffer
+from ampel.abstract.Secret import Secret
+from ampel.abstract.AbsBufferComplement import AbsBufferComplement
 
 
-class BaseCatalogRecordComplementer(AbsT3DataAppender, abstract=True):
+class BaseCatalogRecordComplementer(AbsBufferComplement, abstract=True):
     """
     Add entries from an extcats catalog to transients, matched by canonical
     name. This is distinct from, and much cheaper than, general catalog

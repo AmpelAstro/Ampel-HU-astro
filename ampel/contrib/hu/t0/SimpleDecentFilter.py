@@ -109,7 +109,7 @@ class SimpleDecentFilter(AbsAlertFilter[PhotoAlert]):
 		return False
 
 
-	def apply(self, alert: PhotoAlert):
+	def process(self, alert: PhotoAlert):
 		"""
 		Mandatory implementation.
 		To exclude the alert, return *None*

@@ -13,5 +13,5 @@ from ampel.alert.PhotoAlert import PhotoAlert
 
 class NoFilter(AbsAlertFilter[PhotoAlert]):
 
-	def apply(self, alert):
+	def process(self, alert):
 		return self.on_match_default_t2_units

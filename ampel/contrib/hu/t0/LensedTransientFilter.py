@@ -38,7 +38,7 @@ class LensedTransientFilter(ExtcatsUnit, AbsAlertFilter[PhotoAlert]):
             for k, (radius, ra_key, dec_key) in searches.items()
         }
 
-    def apply(self, alert):
+    def process(self, alert):
         """
         Mandatory implementation.
         To exclude the alert, return *None*

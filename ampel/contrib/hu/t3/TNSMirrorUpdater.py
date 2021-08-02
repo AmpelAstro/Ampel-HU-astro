@@ -16,7 +16,7 @@ from pymongo import MongoClient
 from ampel.abstract.AbsOpsUnit import AbsOpsUnit
 from ampel.contrib.hu.t3.tns.TNSClient import TNSClient
 from ampel.contrib.hu.t3.tns.TNSMirrorDB import TNSMirrorDB
-from ampel.model.Secret import Secret
+from ampel.abstract.Secret import Secret
 
 
 class TNSMirrorUpdater(AbsOpsUnit):

@@ -7,15 +7,14 @@
 # Last Modified Date: 03.08.2020
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
-from typing import Any, Dict, List, TYPE_CHECKING
-
 import numpy as np
 from astropy.table import Table
-
+from typing import Any, Dict, List, Union, TYPE_CHECKING
+from ampel.types import UBson
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.protocol.LoggerProtocol import LoggerProtocol
-from ampel.type import T2UnitResult
+from ampel.struct.UnitResult import UnitResult
 from ampel.view.LightCurve import LightCurve
 
 
@@ -405,6 +404,6 @@ class T2RiseDeclineStat(AbsLightCurveT2Unit, T2RiseDeclineBase):
         plt.savefig(path)
         plt.clf()
 
-    def run(self, light_curve: LightCurve) -> T2UnitResult:
+    def process(self, light_curve: LightCurve) -> Union[UBson, UnitResult]:
 
         return self.compute_stats(light_curve)

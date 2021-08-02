@@ -7,23 +7,21 @@
 # Last Modified Date: 27.01.2021
 # Last Modified By  : jnordin@physik.hu-berlin.de
 
-from typing import Dict, List, Optional, Sequence, Any
-from astropy.coordinates import SkyCoord
 import numpy as np
-from ampel.base import abstractmethod
-from ampel.type import T2UnitResult
+from astropy.coordinates import SkyCoord
+from typing import Dict, List, Optional, Sequence, Any, Union
+from ampel.types import UBson
+from ampel.struct.UnitResult import UnitResult
 from ampel.view.LightCurve import LightCurve
 from ampel.view.T2DocView import T2DocView
 from ampel.contrib.hu.t3.ampel_tns import TNSFILTERID   # T2 importing info from T3. Restructure?
-
-from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
 
 
 class T2TNSEval(AbsTiedLightCurveT2Unit):
     """
     Evalute whether a transient fulfills criteria for submission to TNS.
-    This is done partially based on the lightcurve content and partially on the results of catalog maches. 
+    This is done partially based on the lightcurve content and partially on the results of catalog maches.
     The T2 result will be a dictionary with the information used for TNS submission (e.g. recent upper limit).
     """
 
@@ -101,17 +99,16 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
     }
 
 
-
     # Id of dependency
     dependency_unit: str = 'T2CatalogMatch'
+
 
     @classmethod
     def get_tied_unit_names(self) -> List[str]:
         return [self.dependency_unit]
 
 
-
-    def inspect_catalog(self, cat_res : Dict[str,Any]) -> bool:
+    def inspect_catalog(self, cat_res: Dict[str, Any]) -> bool:
         """
         Verify whether any catalog matching criteria prevents submission.
 
@@ -186,7 +183,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         return True
 
 
-    def inspect_lc(self, lc : LightCurve) -> bool:
+    def inspect_lc(self, lc: LightCurve) -> bool:
         """
         Verify whether the transient lightcurve fulfill criteria for submission.
 
@@ -323,19 +320,19 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
 
         # cut on median dRB score
         drbs = [pp["body"]["drb"] for pp in pps if "drb" in pp["body"].keys()]
-        if len(drbs)>0 and np.median(drbs) < self.drb_minmed:
+        if len(drbs) > 0 and np.median(drbs) < self.drb_minmed:
             return False
 
         # congratulation Lightcurve, you made it!
         return True
 
-    def get_catalog_remarks(self, lc : LightCurve, cat_res : Dict[str,Any]) -> Optional[Dict[str, Any]]:
+    def get_catalog_remarks(self, lc: LightCurve, cat_res: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
         Look through catalogs for remarks to be added to report.
         """
 
         # Start building dict with remarks
-        remarks = {"remarks":""}
+        remarks = {"remarks": ""}
 
         # Check redshift
         nedz = cat_res.get("NEDz", False)
@@ -350,7 +347,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         sdss_spec = cat_res.get("SDSS_spec", False)
         if (milliquas and milliquas["redshift"] > 0) or (
             sdss_spec and sdss_spec["bptclass"] in [4, 5]
-        ): 
+        ):
             remarks["remarks"] = remarks["remarks"] + "Known SDSS and/or MILLIQUAS QSO/AGN. "
             remarks["at_type"] = 3
 
@@ -399,26 +396,24 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
             return remarks
 
 
-
-
-    def get_lightcurve_info(self,  lc : LightCurve) -> Optional[Dict[str, Any]]:
+    def get_lightcurve_info(self,  lc: LightCurve) -> Optional[Dict[str, Any]]:
         """
         Collect the data needed for the atreport. Return None in case
         you have to skip this transient for some reason.
         """
 
-        if ( pos := lc.get_pos(ret="mean", filters=self.lc_filters) ):
+        if (pos := lc.get_pos(ret="mean", filters=self.lc_filters)):
             ra, dec = pos
         else:
             return None
 
         # Start defining AT dict: name and position
-        atdict : Dict[str,Any] = {}
-        #atdict.update(self.base_at_dict)
+        atdict: Dict[str, Any] = {}
+        # atdict.update(self.base_at_dict)
         atdict["ra"] = {"value": ra, "error": 1.0, "units": "arcsec"}
         atdict["dec"] = {"value": dec, "error": 1.0, "units": "arcsec"}
 
-        # Add information on the latest SIGNIFICANT non detection. 
+        # Add information on the latest SIGNIFICANT non detection.
         last_non_obs = 0
         if ulims := lc.get_upperlimits(
             filters={
@@ -471,7 +466,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
     # ==================== #
     # AMPEL T2 MANDATORY   #
     # ==================== #
-    def run(self, light_curve: LightCurve, t2_views: Sequence[T2DocView]) -> T2UnitResult:
+    def process(self, light_curve: LightCurve, t2_views: Sequence[T2DocView]) -> Union[UBson, UnitResult]:
         """
 
         Evaluate whether a transient passes thresholds for submission to TNS.
@@ -508,7 +503,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         # ii. Check the catalog matching criteria
         t2_cat_match = t2_views[0]
         assert t2_cat_match.unit==self.dependency_unit
-        catalog_result = t2_cat_match.get_payload()
+        catalog_result = t2_cat_match.get_data()
         if not self.inspect_catalog(catalog_result):
             return { 'tns_candidate' : False, 'tns_eval' : 'Catalog match rejection.' }
 

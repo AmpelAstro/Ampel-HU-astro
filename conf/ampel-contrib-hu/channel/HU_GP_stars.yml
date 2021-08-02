@@ -30,7 +30,6 @@ t2_compute:
   - unit: T2SNCosmo
     config:
       model: salt2
-      upper_limits: false
   - unit: T2LCQuality
     config:
       filter_ids:

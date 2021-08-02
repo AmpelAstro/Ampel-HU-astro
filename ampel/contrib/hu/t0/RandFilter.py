@@ -14,7 +14,6 @@ from ampel.abstract.AbsAlertFilter import AbsAlertFilter
 
 class RandFilter(AbsAlertFilter[Any]):
 
-	version: float = 1.0
 	passing_rate: float
 
 
@@ -22,7 +21,7 @@ class RandFilter(AbsAlertFilter[Any]):
 		self.logger.info(f"RandFilter initialized with passing rate {self.passing_rate}")
 
 
-	def apply(self, alert: Any) -> bool:
+	def process(self, alert: Any) -> bool:
 
 		if uniform(0, 1) < self.passing_rate:
 			return True

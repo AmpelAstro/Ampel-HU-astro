@@ -7,20 +7,15 @@
 # Last Modified Date: 15.08.2018
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
-import json
-import uuid
+import json, uuid, requests
 from gzip import GzipFile
-from io import BytesIO, StringIO
+from io import BytesIO
 from typing import Optional, Tuple
 from urllib.parse import ParseResult, urlencode, urlparse, urlunparse
 from xml.etree import ElementTree
-
-import requests
-from pydantic import BaseModel
-
 from ampel.abstract.AbsT3Unit import AbsT3Unit
-from ampel.model.Secret import Secret
-from ampel.util.json import AmpelEncoder, object_hook
+from ampel.abstract.Secret import Secret
+from ampel.util.json import AmpelEncoder
 from ampel.view.SnapView import SnapView
 from ampel.view.TransientView import TransientView
 
@@ -67,8 +62,9 @@ class TransientViewDumper(AbsT3Unit):
         # don't bother preserving immutable types
         self.encoder = AmpelEncoder(lossy=True)
 
-    def add(self, transients: Tuple[SnapView, ...]) -> None:
-        """"""
+
+    def process(self, transients: Tuple[SnapView, ...]) -> None:
+
         if transients is not None:
 
             batch_count = len(transients)
@@ -78,8 +74,6 @@ class TransientViewDumper(AbsT3Unit):
                 self.outfile.write(self.encoder.encode(tran_view).encode("utf-8"))
                 self.outfile.write(b"\n")
 
-    def done(self) -> None:
-        """"""
         self.outfile.flush()
         self.logger.info("Total number of transient printed: %i" % self.count)
         if self.outputfile:

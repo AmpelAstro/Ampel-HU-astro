@@ -4,14 +4,18 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 11.06.2018
-# Last Modified Date: 10.06.2020
+# Last Modified Date: 30.07.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging
-from typing import Optional, Tuple, Any, Dict, Union
-from ampel.type import T3AddResult
+from typing import Optional, Any, Union, Generator
+from ampel.types import UBson
+from ampel.struct.UnitResult import UnitResult
 from ampel.view.TransientView import TransientView
+from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
+from ampel.util.pretty import prettyjson
+
 
 class TransientInfoPrinter(AbsPhotoT3Unit):
 
@@ -25,35 +29,31 @@ class TransientInfoPrinter(AbsPhotoT3Unit):
 		if self.logfile:
 			fh = logging.FileHandler(self.logfile)
 			fh.setLevel(logging.INFO)
-			self.logger.addHandler(fh)
+			self.logger.addHandler(fh) # type: ignore
 			self.logger.info("Added logging handle to: {logfile}")
 
-		if self.context:
-			self.logger.info(f"Context: {self.context}")
+		if self.session_info:
+			self.logger.info(f"Session info: {self.session_info}")
 
 
-	def add(self, transients: Tuple[TransientView, ...]) -> T3AddResult:
+	def process(self, gen: Generator[TransientView, JournalAttributes, None]) -> Union[UBson, UnitResult]:
 
-		if not transients:
-			self.logger.info("No transient provided")
-			return None
+		self.logger.info("Printing transients info")
+		self.logger.info("=" * 80)
+		count = 0
 
-		self.logger.info(f"Printing info of {len(transients)} transient(s)")
-		self.count += len(transients)
-
-		for tran_view in transients:
+		for tran_view in gen:
+			count += 1
 			TransientInfoPrinter._print_info(tran_view, self.logger)
+			self.logger.info("=" * 80)
 
-		return None
+		self.logger.info(f"Printed info for {count} transients")
 
-
-	def done(self) -> Optional[Union[bool, Dict[str, Any]]]:
-		self.logger.info(f"Total number of transient printed: {self.count}")
 		return None
 
 
 	@staticmethod
-	def _print_info(tran: TransientView, logger: Any):
+	def _print_info(tran: TransientView, logger: Any) -> None:
 
 		logger.info(f"Ampel ID: {tran.id}") # type: ignore
 		if tran.extra and 'name' in tran.extra:
@@ -63,10 +63,10 @@ class TransientInfoPrinter(AbsPhotoT3Unit):
 			logger.info(f"Channel: {tran.stock['channel']}")
 
 		created = tran.get_time_created()
-		modified = tran.get_time_modified()
+		updated = tran.get_time_updated()
 
 		logger.info("Created: %s" % (created if created is not None else 'Not available'))
-		logger.info("Modified: %s" % (modified if modified is not None else 'Not available'))
+		logger.info("Modified: %s" % (updated if updated is not None else 'Not available'))
 
 		if tran.stock:
 			logger.info(f"Tags: {tran.stock['tag']}")
@@ -80,4 +80,9 @@ class TransientInfoPrinter(AbsPhotoT3Unit):
 			# should be timely sorted
 			logger.info("Journal:")
 			for el in tran.stock['journal']:
-				logger.info(str(el))
+				logger.info(prettyjson(el))
+
+		if tran.logs:
+			logger.info("Logs:")
+			for le in tran.logs:
+				logger.info(" " + str(le))

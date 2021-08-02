@@ -4,41 +4,23 @@
 # License           : BSD-3-Clause
 # Author            : jnordin@physik.hu-berlin.de
 # Date              : 17.11.2018
-# Last Modified Date: 04.09.2029
+# Last Modified Date: 04.09.2019
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
 import re
 from itertools import islice
-from typing import (
-    Any,
-    Dict,
-    Generator,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    TYPE_CHECKING,
-)
-
-import numpy as np
-from astropy.coordinates import SkyCoord
-
+from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, TYPE_CHECKING, Union
+from ampel.types import StockId, UBson
 from ampel.abstract.AbsT3Unit import AbsT3Unit
-from ampel.contrib.hu.t3.ampel_tns import (
-    get_tnsname,
-    sendTNSreports,
-    TNSFILTERID,
-    tnsInternal,
-)
-from ampel.model.Secret import Secret
-from ampel.struct.JournalTweak import JournalTweak
-from ampel.type import StockId
+from ampel.contrib.hu.t3.ampel_tns import get_tnsname, sendTNSreports, tnsInternal
+from ampel.abstract.Secret import Secret
+from ampel.struct.UnitResult import UnitResult
+from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.view.TransientView import TransientView
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 
 if TYPE_CHECKING:
     from ampel.content.JournalRecord import JournalRecord
-    from ampel.protocol.LoggerProtocol import LoggerProtocol
 
 
 def chunks(l: Iterable, n: int) -> Generator[List, None, None]:
@@ -55,8 +37,8 @@ class TNSTalker(AbsT3Unit):
     Get TNS name if existing, and submit selected candidates.
     
     All candidates loaded by T3 will be submitted - it is assumed that *selection* is done
-    by an appropriate T2, which also prepares the submit information. 
-    T2TNSEval is one such example.    
+    by an appropriate T2, which also prepares the submit information.
+    T2TNSEval is one such example.
 
     If submit_tns is true, candidates fulfilling the criteria will be sent to the TNS if:
     - They are not known to the TNS OR
@@ -66,8 +48,6 @@ class TNSTalker(AbsT3Unit):
     if sandbox is set to True it will try to submit candidates to the TNS sandbox, but this API has been unstable
     and might not work properly.
     """
-
-    version = 0.5
 
     # TNS config
 
@@ -180,7 +160,7 @@ class TNSTalker(AbsT3Unit):
         tns_name, tns_internal = get_tnsname(
             ra=ra,
             dec=dec,
-            # For JvS: Is this how Secrets are used consistently? 
+            # For JvS: Is this how Secrets are used consistently?
             api_key=self.tns_api_key.get(),
             logger=self.logger,
             sandbox=False,
@@ -232,7 +212,7 @@ class TNSTalker(AbsT3Unit):
                 # added by the TNSMatcher T3, plus we skip the prefix
                 # We here assume that the AT/SN suffix is cut
                 tns_name = tname.replace("TNS", "")
-                # Not using sandbox (only checking wrt to full system). 
+                # Not using sandbox (only checking wrt to full system).
                 tns_internals, runstatus = tnsInternal(
                     tns_name, api_key=self.tns_api_key.get(), sandbox=False
                 )
@@ -254,7 +234,7 @@ class TNSTalker(AbsT3Unit):
 
     def find_tns_name(
         self, tran_view: TransientView, ra: float, dec: float
-    ) -> Tuple[Optional[str], List[str], Optional[JournalTweak]]:
+    ) -> Tuple[Optional[str], List[str], Optional[JournalAttributes]]:
         """
         extensive search for TNS names in:
         - tran_view.tran_names (if added by TNSMatcher)
@@ -313,7 +293,7 @@ class TNSTalker(AbsT3Unit):
                         jcontent.update({"tnsInternal": tns_int})
 
                 # create a journalUpdate and update the tns_name as well. TODO: check with JNo
-                jup = JournalTweak(extra=jcontent)
+                jup = JournalAttributes(extra=jcontent)
                 tns_name = tns_name_new
 
             elif tns_name is None:
@@ -331,7 +311,7 @@ class TNSTalker(AbsT3Unit):
                         jcontent.update({"tnsInternal": tns_int})
 
                 # create a journalUpdate and update the tns_name as well. TODO: check with JNo
-                jup = JournalTweak(extra=jcontent)
+                jup = JournalAttributes(extra=jcontent)
                 tns_name = tns_name_new
                 # tns_internals = tns_internals_new
 
@@ -340,21 +320,17 @@ class TNSTalker(AbsT3Unit):
 
 
 
-
-    def add(self, transients: Tuple[TransientView, ...]) -> Dict[StockId, JournalTweak]:
+    def process(self, gen: Generator[TransientView, JournalAttributes, None]) -> Union[UBson, UnitResult]:
         """
         Loop through transients and check for TNS names and/or candidates to submit
         """
 
-        if transients is None:
-            self.logger.info("no transients for this task execution")
-            return {}
-
         # Will be saved to future journals
-        journal_updates: Dict[StockId, JournalTweak] = {}
+        journal_updates: Dict[StockId, JournalAttributes] = {}
         # Reports to be sent, indexed by the transient view IDs (so that we can check in the replies)
         atreports: Dict[StockId, Dict[str, Any]] = {}
-        for tran_view in transients:
+
+        for tran_view in gen:
 
             ztf_name = to_ztf_id(tran_view.id)
 
@@ -363,11 +339,11 @@ class TNSTalker(AbsT3Unit):
             if not t2result:
                 raise ValueError("Need to have a TNS atdict started from a suitable T2.")
             # Create the submission dictionary - in case the transient is to be submitted
-            atdict = dict( t2result['atdict'] )
+            atdict = dict(t2result['atdict'])
             atdict.update(self.base_at_dict)
             atdict["internal_name"] = ztf_name
 
-            ra, dec = atdict['ra']['value'],atdict['dec']['value']
+            ra, dec = atdict['ra']['value'], atdict['dec']['value']
 
             self.logger.info(
                 "TNS init dict found", extra={"tranId": tran_view.id, "ztfName": ztf_name}
@@ -385,7 +361,7 @@ class TNSTalker(AbsT3Unit):
                     self.logger.info("ztf submitted", extra={"ztfSubmitted": True})
                 else:
                     # add AT report
-                    self.logger.info("Add TNS report list",extra={"id":tran_view.id})
+                    self.logger.info("Add TNS report list", extra={"id": tran_view.id})
                     atreports[tran_view.id] = atdict
                 continue
 
@@ -393,11 +369,11 @@ class TNSTalker(AbsT3Unit):
             # find the TNS name, either from the journal, from tran_names, or
             # from TNS itself. If new names are found, create a new JournalUpdate
             tns_name, tns_internals, jup = self.find_tns_name(tran_view, ra, dec)
-            if not jup is None:
+            if jup is not None:
                 journal_updates[tran_view.id] = jup
             self.logger.debug("TNS got %s internals %s" % (tns_name, tns_internals))
 
-            if not tns_name is None:
+            if tns_name is not None:
 
                 # Chech whether this ID has been submitted (note that we do not check
                 # whether the same candidate was submitted as different ZTF name) and
@@ -477,7 +453,7 @@ class TNSTalker(AbsT3Unit):
 
             # Create new journal entry assuming we submitted or found a name
             if "TNSName" in tnsreplies[ztf_name][1].keys():
-                jup = JournalTweak(
+                jup = JournalAttributes(
                     extra={
                         "tnsName": tnsreplies[ztf_name][1]["TNSName"],
                         "tnsInternal": ztf_name,
@@ -488,7 +464,8 @@ class TNSTalker(AbsT3Unit):
                 journal_updates[tran_view.id] = jup
         return journal_updates
 
-    def done(self) -> None:
+
+    def done(self) -> Optional[PagedT3Result]:
         self.logger.info("done running T3")
 
         if not hasattr(self, "atreports"):

@@ -7,25 +7,22 @@
 # Last Modified Date: 17.03.2021
 # Last Modified By  : jnordin@physik.hu-berlin.de
 
-from typing import Dict, List, Optional, Sequence, Any
+import numpy as np
+from typing import Dict, List, Optional, Sequence, Any, Union
 from astropy.coordinates import Distance, SkyCoord
 from astropy.cosmology import Planck15
 
-import numpy as np
-from ampel.base import abstractmethod
-from ampel.type import T2UnitResult
+from ampel.types import UBson
+from ampel.struct.UnitResult import UnitResult
 from ampel.view.LightCurve import LightCurve
 from ampel.view.T2DocView import T2DocView
-from ampel.contrib.hu.t3.ampel_tns import TNSFILTERID   # T2 importing info from T3. Restructure?
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
-
-
 
 
 class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
     """
     Evaluate whether a transient fulfills criteria for being a potentially
-    infant (extragalactic) transient. 
+    infant (extragalactic) transient.
 
     This implementation requires a catalog match with redshift.
     """
@@ -34,7 +31,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
 
     # List of catalog-like output to search for redshift. It is assumed that
     # redshifts are stored as 'z'
-    redshift_catalogs: List[str] = ['SDSS_spec', 'NEDz', 'GLADEv23', 'NEDz_extcats']  # Otherwise more 
+    redshift_catalogs: List[str] = ['SDSS_spec', 'NEDz', 'GLADEv23', 'NEDz_extcats']  # Otherwise more
     # maximum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
     max_redshift: float = 0.05 # 0.1
     # minimum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
@@ -346,7 +343,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
     # ==================== #
     # AMPEL T2 MANDATORY   #
     # ==================== #
-    def run(self, light_curve: LightCurve, t2_views: Sequence[T2DocView]) -> T2UnitResult:
+    def process(self, light_curve: LightCurve, t2_views: Sequence[T2DocView]) -> Union[UBson, UnitResult]:
         """
 
         Evaluate whether a transient passes thresholds for being a nearby (young) transient.
@@ -374,7 +371,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         t2_cat_match = t2_views[0]
         assert t2_cat_match.unit==self.dependency_unit
 
-        catalog_result = t2_cat_match.get_payload()
+        catalog_result = t2_cat_match.get_data()
         if not catalog_result:
             return { 'action' : False, 'eval' : 'No catlog match result' }
         transient_info = self.inspect_catalog(catalog_result)

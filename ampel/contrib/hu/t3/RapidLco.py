@@ -7,27 +7,23 @@
 # Last Modified Date: 20.08.2020
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
-import datetime
-from typing import Any, Dict, List, Optional, Tuple
+import datetime, requests
+from typing import Any, Dict, Optional, Tuple, Union, Generator
 
-import requests
-
-from ampel.config.AmpelConfig import AmpelConfig
+from ampel.types import StockId, UBson
 from ampel.contrib.hu.t3.RapidBase import RapidBase
-from ampel.model.Secret import Secret
-from ampel.struct.JournalTweak import JournalTweak
-from ampel.type import StockId
+from ampel.abstract.Secret import Secret
+from ampel.struct.JournalAttributes import JournalAttributes
+from ampel.struct.UnitResult import UnitResult
 from ampel.util.freeze import recursive_unfreeze
 from ampel.view.TransientView import TransientView
-from ampel.ztf.util.ZTFIdMapper import to_ampel_id, to_ztf_id
+from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 
 
 class RapidLco(RapidBase):
     """
     Submit LCO triggers for candidates passing criteria.
     """
-
-    version = 0.1
 
     # LCO trigger info
     lco_api: Secret[str] = {"key": "lco/jnordin"}  # type: ignore[assignment]
@@ -180,7 +176,7 @@ class RapidLco(RapidBase):
 
     def react(
         self, tran_view: TransientView, info: Dict[str, Any]
-    ) -> Tuple[bool, Optional[JournalTweak]]:
+    ) -> Tuple[bool, Optional[JournalAttributes]]:
         """
         Send a trigger to the LCO
         """
@@ -221,8 +217,8 @@ class RapidLco(RapidBase):
             react_dict["requests"][0]["configurations"][0]["target"][
                 "name"
             ] = transient_name
-            react_dict["requests"][0]["configurations"][0]["target"]["ra"] = str( ra )
-            react_dict["requests"][0]["configurations"][0]["target"]["dec"] = str( dec )
+            react_dict["requests"][0]["configurations"][0]["target"]["ra"] = str(ra)
+            react_dict["requests"][0]["configurations"][0]["target"]["dec"] = str(dec)
             # Some keys are not necessarily there
             timenow = datetime.datetime.utcnow()
             if "start" in react_dict["requests"][0]["windows"][0].keys():
@@ -266,7 +262,7 @@ class RapidLco(RapidBase):
             # Check whether this was successful
             try:
                 response.raise_for_status()
-            except requests.exceptions.HTTPError as exc:
+            except requests.exceptions.HTTPError:
                 self.logger.info(
                     "Submit LCO fails for %s" % (transient_name),
                     extra={
@@ -296,22 +292,18 @@ class RapidLco(RapidBase):
             "success": success,
             "lcoResponses": responses,
         }
-        jup = JournalTweak(extra=jcontent)
+        jup = JournalAttributes(extra=jcontent)
 
         return success, jup
 
-    def add(self, transients: Tuple[TransientView, ...]) -> Dict[StockId, JournalTweak]:
+
+    def process(self, gen: Generator[TransientView, JournalAttributes, None]) -> Union[UBson, UnitResult]:
         """
         Loop through transients and check for TNS names and/or candidates to submit
         """
 
-        if transients is None:
-            self.logger.info("no transients for this task execution")
-            return []
-
-        journal_updates: Dict[StockId, JournalTweak] = {}
         # We will here loop through transients and react individually
-        for tv in transients:
+        for tv in gen:
 
             transientinfo = self.collect_info(tv)
             self.logger.info("reacting", extra={"tranId": tv.id})
@@ -322,14 +314,16 @@ class RapidLco(RapidBase):
 
             # Ok, so we have a transient to react to
             if self.do_react:
+
                 success, jup = self.react(tv, transientinfo)
-                if not jup is None:
+
+                if jup:
+
                     assert jup.extra
-                    journal_updates[tv.id] = jup
-                    
-                    for response, reactDict in zip(jup.extra["lcoResponses"],jup.extra["reactDicts"]):
-                        transientinfo["LCO paths"][reactDict["name"] ] =  "https://observe.lco.global/requests/{}/".format( response["requests"][0]['id'] )
-                        
+                    gen.send(jup)
+                    for response, reactDict in zip(jup.extra["lcoResponses"], jup.extra["reactDicts"]):
+                        transientinfo["LCO paths"][reactDict["name"]] = "https://observe.lco.global/requests/{}/".format(response["requests"][0]['id'])
+ 
                 if success:
                     self.logger.info(
                         "React success",
@@ -349,10 +343,5 @@ class RapidLco(RapidBase):
             if self.do_testreact:
                 test_success, jup = self.test_react(tv, transientinfo)
 
-        return journal_updates
-
-    def done(self):
-        """"""
-
-        # Should possibly do some accounting or verification
         self.logger.info("done running T3")
+        return None

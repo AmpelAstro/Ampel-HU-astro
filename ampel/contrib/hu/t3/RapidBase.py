@@ -7,19 +7,16 @@
 # Last Modified Date: 06.02.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Generator, Union
 
-import numpy as np
-from astropy.coordinates import Distance, SkyCoord
-from astropy.cosmology import Planck15
-
-from ampel.abstract.AbsT3Unit import AbsT3Unit
-from ampel.base import abstractmethod
-from ampel.model.Secret import Secret
-from ampel.struct.JournalTweak import JournalTweak
+from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
+from ampel.abstract.Secret import Secret
+from ampel.struct.JournalAttributes import JournalAttributes
+from ampel.struct.UnitResult import UnitResult
 from ampel.view.TransientView import TransientView
-from ampel.ztf.util.ZTFIdMapper import to_ampel_id, to_ztf_id
-from ampel.type import StockId
+from ampel.ztf.util.ZTFIdMapper import to_ztf_id
+from ampel.types import UBson
+
 
 # get the science records for the catalog match
 def get_catalogmatch_srecs(tran_view, logger):
@@ -30,12 +27,12 @@ def get_catalogmatch_srecs(tran_view, logger):
     return cat_res[-1].get_results()[-1]["output"]
 
 
-class RapidBase(AbsT3Unit):
+class RapidBase(AbsPhotoT3Unit):
     """
     Trigger rapid reactions. Intended as base class where the react method can be
     implemented as wished and a testreact method posts test reactions to Slack.
 
-    All transients provided to this unit will trigger reactions. It is assumed that 
+    All transients provided to this unit will trigger reactions. It is assumed that
     selection and filtering has taken place in the T2 and through a
     T3FilteringStockSelector-like selection
     """
@@ -48,15 +45,15 @@ class RapidBase(AbsT3Unit):
     # Original
     slack_token: Optional[Secret]
     # Hack
-    #slack_token_dict: Optional[ Dict[str,any] ] = {'key':'k','value':'v'}
-    #from ampel.dev.DictSecretProvider import SecretWrapper
-    #slack_token: Secret = SecretWrapper(**slack_token_dict)
+    # slack_token_dict: Optional[ Dict[str,any] ] = {'key':'k','value':'v'}
+    # from ampel.secret.DictSecretProvider import NamedSecret
+    # slack_token: Secret = NamedSecret(**slack_token_dict)
 
     slack_channel: str = "#ztf_auto"
     slack_username: str = "AMPEL"
 
     # List of T2 unit names which should be collected for reaction
-    t2info_from : List[str] = []
+    t2info_from: List[str] = []
 
 
     def post_init(self) -> None:
@@ -68,9 +65,34 @@ class RapidBase(AbsT3Unit):
         for k in self.__annotations__:
             self.logger.info(f"Using {k}={getattr(self, k)}")
 
+
+    def process(self, gen: Generator[TransientView, JournalAttributes, None]) -> Union[UBson, UnitResult]:
+        """
+        Loop through transients and check for TNS names and/or candidates to submit
+        """
+
+        # We will here loop through transients and react individually
+        for tv in gen:
+
+            transientinfo = self.collect_info(tv)
+            self.logger.info("reacting", extra={"tranId": tv.id})
+
+            # Ok, so we have a transient to react to
+            if self.do_react:
+                success, jcontent = self.react(tv, transientinfo)
+            # Otherwise, test
+            elif self.do_testreact:
+                test_success, jcontent = self.test_react(tv, transientinfo)
+            
+            if jcontent:
+                gen.send(JournalAttributes(extra=jcontent))
+
+        return None
+
+
     def react(
         self, tran_view: TransientView, info: Dict[str, Any]
-    ) -> Tuple[bool, Optional[Dict[str,Any]]]:
+    ) -> Tuple[bool, Optional[Dict[str, Any]]]:
         """
         Replace with react method adopted to particular facility or output
         """
@@ -78,9 +100,10 @@ class RapidBase(AbsT3Unit):
         raise NotImplementedError("No real reaction implemented in RapidBase")
         return self.test_react(tran_view)
 
+
     def test_react(
         self, tran_view: TransientView, info: Dict[str, Any]
-    ) -> Tuple[bool, Optional[Dict[str,Any]]]:
+    ) -> Tuple[bool, Optional[Dict[str, Any]]]:
         """ Trigger a test slack report """
 
         success = False
@@ -120,6 +143,7 @@ class RapidBase(AbsT3Unit):
 
         return success, jcontent
 
+
     def collect_info(self, tran_view: TransientView) -> Optional[Dict[str, Any]]:
         """
         Create an information dict from T2 outputs, which can be used by reactors.
@@ -132,40 +156,3 @@ class RapidBase(AbsT3Unit):
             if t2_result is not None:
                info[t2unit] = t2_result
         return info
-
-
-
-
-    def add(self, transients) -> Dict[StockId, JournalTweak]:
-        """
-        Loop through transients and check for TNS names and/or candidates to submit
-        """
-
-        if transients is None:
-            return {}
-
-        journal_updates = {}
-        # We will here loop through transients and react individually
-        for tv in transients:
-
-            transientinfo = self.collect_info(tv)
-            self.logger.info("reacting", extra={"tranId": tv.id})
-
-            # Ok, so we have a transient to react to
-            if self.do_react:
-                success, jcontent = self.react(tv, transientinfo)
-            # Otherwise, test
-            elif self.do_testreact:
-                test_success, jcontent = self.test_react(tv, transientinfo)
-            
-            if jcontent is not None:
-                jup = JournalTweak(extra=jcontent)
-                journal_updates[tv.id] = jup
-
-
-        return journal_updates
-
-    def done(self):
-        """ """
-        # Should possibly do some accounting or verification
-        self.logger.info("RapidBase out")

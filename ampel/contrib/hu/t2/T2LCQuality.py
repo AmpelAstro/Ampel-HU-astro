@@ -7,13 +7,13 @@
 # Last Modified Date: 06.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Any, Dict, List
-
+from typing import Any, Dict, List, Union
 from astropy.table import Table
 from scipy.interpolate import interp1d
 
+from ampel.types import UBson
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
-from ampel.type import T2UnitResult
+from ampel.struct.UnitResult import UnitResult
 from ampel.view.LightCurve import LightCurve
 
 
@@ -144,7 +144,7 @@ class T2LCQuality(AbsLightCurveT2Unit):
         plt.title("filter: %d " % fid + textstr)
         plt.show()
 
-    def run(self, light_curve: LightCurve) -> T2UnitResult:
+    def process(self, light_curve: LightCurve) -> Union[UBson, UnitResult]:
         """
         :param run_config: `dict` or None
         configuration parameter for this job. If none is given, the

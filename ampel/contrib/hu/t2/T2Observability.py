@@ -9,13 +9,15 @@
 
 import astropy.units as u
 from astropy.time import Time
-from typing import Dict, Any
+from typing import Dict, Any, Union
+from ampel.types import UBson
 from ampel.model.StrictModel import StrictModel
 from ampel.util.Observatory import Observatory
 from ampel.view.LightCurve import LightCurve
-from ampel.type import T2UnitResult
-from ampel.enum.T2RunState import T2RunState
+from ampel.struct.UnitResult import UnitResult
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
+from ampel.enum.DocumentCode import DocumentCode
+
 
 class VisibilityConstraintModel(StrictModel):
 	airmass_th: float = 2
@@ -38,7 +40,7 @@ class T2Observability(AbsLightCurveT2Unit):
 	"""
 
 	# empty dict of named EarthLocation objetcs.
-	observatories: Dict[str,ObservatoryModel]
+	observatories: Dict[str, ObservatoryModel]
 
 	# default parameters for LightCurve.get_pos method
 	lc_get_pos_kwargs: Dict[str, Any] = {'ret': "brightest", 'filters': None}
@@ -66,7 +68,7 @@ class T2Observability(AbsLightCurveT2Unit):
 			return obs
 
 
-	def run(self, light_curve: LightCurve) -> T2UnitResult:
+	def process(self, light_curve: LightCurve) -> Union[UBson, UnitResult]:
 		"""
 		:param run_config: configuration parameter for this job.
 		Eg:
@@ -119,7 +121,7 @@ class T2Observability(AbsLightCurveT2Unit):
 		if pos := light_curve.get_pos(**self.lc_get_pos_kwargs):
 			transient_ra, transient_dec = pos
 		else:
-			return T2RunState.MISSING_INFO
+			return UnitResult(code=DocumentCode.T2_MISSING_INFO)
 
 		self.logger.debug(
 			f"Transient position (ra, dec): {transient_ra:.4f}, {transient_dec:.4f} deg"
