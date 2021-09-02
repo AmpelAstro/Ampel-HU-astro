@@ -10,7 +10,7 @@
 import collections
 import datetime
 import io
-from typing import Dict, List, Set, Tuple, Generator
+from typing import Dict, Iterable, List, Set, Tuple, Generator
 
 import numpy as np
 import pandas as pd
@@ -22,7 +22,9 @@ from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.log.utils import log_exception
 from ampel.abstract.Secret import Secret
 from ampel.view.TransientView import TransientView
+from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
+from slack.web.slack_response import SlackResponse
 
 
 class SlackSummaryPublisher(AbsT3Unit):
@@ -52,15 +54,11 @@ class SlackSummaryPublisher(AbsT3Unit):
         self.photometry: List[pd.DataFrame] = []
         self.channels: Set[str] = set()
 
-    def process(self, gen: Generator[T, JournalAttributes, None]) -> Union[UBson, UnitResult]:
+    def process(self, gen: Generator[TransientView, JournalAttributes, None]) -> None:
         """"""
-        summary, full = self.combine_transients(transients)
-        self.frames += summary
-        self.photometry += full
+        frames, photometry = self.combine_transients(gen)
 
-    def done(self) -> Optional[PagedT3Result]:
-        """"""
-        if len(self.frames) == 0 and self.quiet:
+        if len(frames) == 0 and self.quiet:
             return
 
         date = str(datetime.date.today())
@@ -68,7 +66,7 @@ class SlackSummaryPublisher(AbsT3Unit):
         sc = WebClient(self.slack_token.get())
 
         m = calculate_excitement(
-            len(self.frames), date=date, thresholds=self.excitement
+            len(frames), date=date, thresholds=self.excitement
         )
 
         if self.dry_run:
@@ -83,12 +81,14 @@ class SlackSummaryPublisher(AbsT3Unit):
                     "as_user": False,
                 },
             )
+            # we know this is a sync client; work around lazy type annotations
+            assert isinstance(api, SlackResponse)
             if not api["ok"]:
                 raise SlackClientError(api["error"])
 
-        if len(self.frames) > 0:
+        if len(frames) > 0:
 
-            df = pd.DataFrame.from_records(self.frames)
+            df = pd.DataFrame.from_records(frames)
             # Set fill value for channel columns to False
             for channel in self.channels:
                 df[channel].fillna(False, inplace=True)
@@ -141,15 +141,15 @@ class SlackSummaryPublisher(AbsT3Unit):
                 self.logger.info(r.text)
 
             if self.full_photometry:
-                photometry = pd.concat(self.photometry, sort=False)
+                photometry_df = pd.concat(photometry, sort=False)
                 # Set fill value for channel columns to False
                 for channel in self.channels:
-                    photometry[channel].fillna(False, inplace=True)
+                    photometry_df[channel].fillna(False, inplace=True)
                 # Set fill value for all other columns to MISSING
-                for field in set(photometry.columns.values).difference(self.channels):
-                    photometry[field].fillna("MISSING", inplace=True)
+                for field in set(photometry_df.columns.values).difference(self.channels):
+                    photometry_df[field].fillna("MISSING", inplace=True)
                 # Move channel info at end
-                photometry = photometry.reindex(
+                photometry_df = photometry_df.reindex(
                     copy=False,
                     columns=[c for c in df.columns if not c in self.channels]
                     + list(self.channels),
@@ -158,7 +158,7 @@ class SlackSummaryPublisher(AbsT3Unit):
                 filename = "Photometry_%s.csv" % date
 
                 buffer = io.StringIO(filename)
-                photometry.to_csv(buffer)
+                photometry_df.to_csv(buffer)
 
                 param = {
                     "token": self.slack_token.get(),
@@ -187,7 +187,7 @@ class SlackSummaryPublisher(AbsT3Unit):
                     self.logger.info(r.text)
 
     def combine_transients(
-        self, transients: Tuple[TransientView, ...]
+        self, transients: Iterable[TransientView]
     ) -> Tuple[List[pd.DataFrame], List[pd.DataFrame]]:
         """"""
 
@@ -204,14 +204,15 @@ class SlackSummaryPublisher(AbsT3Unit):
             }
 
             if (summary := transient.get_t2_result(unit_id="T2LightCurveSummary")) :
-                frame.update(summary)
+                frame.update(summary) # type: ignore[arg-type]
 
             # include other T2 results, flattened
             for t2record in transient.t2 or []:
                 if (
                     t2record["unit"] == "T2LightCurveSummary"
                     or not (body := t2record.get("body"))
-                    or not (output := body[-1].get('data'))
+                    or not (output := body[-1])
+                    or not isinstance(output, dict)
                 ):
                     continue
 
