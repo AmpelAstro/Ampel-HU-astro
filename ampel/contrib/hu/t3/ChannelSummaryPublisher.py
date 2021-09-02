@@ -16,6 +16,7 @@ from typing import Any, Dict, Optional, Set, Generator, Union
 
 from ampel.types import ChannelId, UBson
 from ampel.abstract.Secret import Secret
+from ampel.secret.NamedSecret import NamedSecret
 from ampel.util.json import AmpelEncoder, load
 from ampel.view.TransientView import TransientView
 from ampel.struct.UnitResult import UnitResult
@@ -34,7 +35,7 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
 
     dry_run: bool = False
     base_url: str = "https://desycloud.desy.de/remote.php/webdav/AMPEL/ZTF"
-    auth: Secret[list] = {"key": "desycloud/valery"}  # type: ignore[assignment]
+    auth: Secret[list] = NamedSecret(label="desycloud/valery")
 
 
     def post_init(self) -> None:
@@ -69,6 +70,7 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
 
         # incorporate T2LightCurveSummary
         if summary := tran_view.get_t2_result(unit_id="T2LightCurveSummary"):
+            assert isinstance(summary, dict)
             out.update(summary)
             last_detection = summary["last_detection"]
             if last_detection < self._jd_range[0]:
