@@ -33,8 +33,6 @@ setup(
         'ampel-photometry>=0.8.0a0,<0.9',
         'ampel-alerts>=0.8.0a0,<0.9',
         'ampel-ztf>=0.8.0a0,<0.9',
-        "catsHTM",
-        "extcats",
         "sncosmo",
         "iminuit",
         "sfdmap",
