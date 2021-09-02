@@ -10,6 +10,8 @@
 import re
 from itertools import islice
 from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, TYPE_CHECKING, Union
+from ampel.abstract.T3Send import T3Send
+from ampel.struct.StockAttributes import StockAttributes
 from ampel.types import StockId, UBson
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.abstract.Secret import Secret
@@ -334,13 +336,11 @@ class TNSTalker(AbsT3Unit):
 
 
 
-    def process(self, gen: Generator[TransientView, JournalAttributes, None]) -> Union[UBson, UnitResult]:
+    def process(self, gen: Generator[TransientView, T3Send, None]) -> None:
         """
         Loop through transients and check for TNS names and/or candidates to submit
         """
 
-        # Will be saved to future journals
-        journal_updates: Dict[StockId, JournalAttributes] = {}
         # Reports to be sent, indexed by the transient view IDs (so that we can check in the replies)
         atreports: Dict[StockId, Dict[str, Any]] = {}
 
@@ -350,7 +350,7 @@ class TNSTalker(AbsT3Unit):
 
             # Obtain atdict start from T2 result
             t2result = tran_view.get_t2_result(unit_id="T2TNSEval")
-            if not t2result:
+            if not isinstance(t2result, dict):
                 raise ValueError("Need to have a TNS atdict started from a suitable T2.")
             # Create the submission dictionary - in case the transient is to be submitted
             atdict = dict(t2result['atdict'])
@@ -383,8 +383,6 @@ class TNSTalker(AbsT3Unit):
             # find the TNS name, either from the journal, from tran_names, or
             # from TNS itself. If new names are found, create a new JournalUpdate
             tns_name, tns_internals, jup = self.find_tns_name(tran_view, ra, dec)
-            if jup is not None:
-                journal_updates[tran_view.id] = jup
             self.logger.debug("TNS got %s internals %s" % (tns_name, tns_internals))
 
             if tns_name is not None:
@@ -420,11 +418,6 @@ class TNSTalker(AbsT3Unit):
             self.logger.info("Added to report list")
             atreports[tran_view.id] = atdict
 
-
-        # TODO: we save the atreports to send them to the TNS.
-        # This is just part of the tesing and will have to go away
-        # 		atreports = {k: atreports[k] for k in list(atreports.keys())[:2]}
-        self.atreports = atreports
         self.logger.info("collected %d AT reports to post" % len(atreports))
 
         # If we do not want to submit anything, or if there's nothing to submit
@@ -436,7 +429,7 @@ class TNSTalker(AbsT3Unit):
                     "submit_tns": self.submit_tns,
                 },
             )
-            return journal_updates
+            return
 
         # atreports is now a dict with tran_id as keys and atreport as keys
         # what we need is a list of dicts with form {'at_report':atreport }
@@ -462,22 +455,27 @@ class TNSTalker(AbsT3Unit):
 
             # Create new journal entry assuming we submitted or found a name
             if "TNSName" in tnsreplies[ztf_name][1].keys():
-                jup = JournalAttributes(
-                    extra={
-                        "tnsName": tnsreplies[ztf_name][1]["TNSName"],
-                        "tnsInternal": ztf_name,
-                        "tnsSubmitresult": tnsreplies[ztf_name][0],
-                        "tnsSender": self.tns_api_key.get()["api_key"],
-                    },
-                )
-                journal_updates[tran_view.id] = jup
-        return journal_updates
+                gen.send((
+                    tran_id,
+                    StockAttributes(
+                        journal=JournalAttributes(
+                            extra={
+                                "tnsName": tnsreplies[ztf_name][1]["TNSName"],
+                                "tnsInternal": ztf_name,
+                                "tnsSubmitresult": tnsreplies[ztf_name][0],
+                                "tnsSender": self.tns_api_key.get()["api_key"],
+                            },
+                        ),
+                        tag="TNS_SUBMITTED",
+                        name=tnsreplies[ztf_name][1]["TNSName"],
+                    )
+                ))
 
 
-    def done(self) -> Optional[PagedT3Result]:
+    def report_to_slack(self, atreports: dict[StockId, dict[str, Any]]) -> None:
         self.logger.info("done running T3")
 
-        if not hasattr(self, "atreports"):
+        if not atreports:
             self.logger.info("No atreports collected.")
             return
         elif self.slack_token is None:
@@ -501,7 +499,7 @@ class TNSTalker(AbsT3Unit):
         sc = WebClient(token=self.slack_token.get())
 
         tstamp = datetime.datetime.today().strftime("%Y-%m-%d-%X")
-        atlist = list(self.atreports.values())
+        atlist = list(atreports.values())
         last = 0
         for ic, atrep in enumerate(chunks(atlist, self.max_slackmsg_size)):
 
@@ -516,7 +514,7 @@ class TNSTalker(AbsT3Unit):
             last += len(atrep)
             msg = (
                 "A total of %d atreports found by TNSTalker T3. Here's chunk #%d (reports from %d to %d)"
-                % (len(self.atreports), ic, first, last)
+                % (len(atreports), ic, first, last)
             )
             api = sc.files_upload(
                 channels=[self.slack_channel],
