@@ -504,6 +504,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         t2_cat_match = t2_views[0]
         assert t2_cat_match.unit==self.dependency_unit
         catalog_result = t2_cat_match.get_data()
+        assert isinstance(catalog_result, dict)
         if not self.inspect_catalog(catalog_result):
             return { 'tns_candidate' : False, 'tns_eval' : 'Catalog match rejection.' }
 
