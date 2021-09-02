@@ -114,4 +114,4 @@ class XShooterFilter(DecentFilter):
             return None
 
         # now apply the DecentFilter
-        return super().apply(alert)
+        return super().process(alert)
