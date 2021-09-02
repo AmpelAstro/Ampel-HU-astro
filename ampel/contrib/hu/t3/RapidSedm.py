@@ -80,11 +80,13 @@ class RapidSedm(RapidBase):
         super().post_init()
 
     def react(
-        self, tran_view: TransientView, info: Dict[str, Any]
-    ) -> Tuple[bool, Optional[JournalAttributes]]:
+        self, tran_view: TransientView, info: Optional[Dict[str, Any]]
+    ) -> Tuple[bool, Optional[dict[str,Any]]]:
         """
         Send a trigger to the SEDM. Note that we have no good way of investigating the queue at this time
         """
+        if not info:
+            return False, {"success": False}
         assert isinstance(tran_view.id, int)
         # Assemble required information. These *should* already be present in the default info
         # provided by the info dict returned for a sucessfull accept_tview
@@ -117,47 +119,6 @@ class RapidSedm(RapidBase):
         success = response.status_code == 200
 
         # Document what we did
-        jcontent = {"t3unit": self.name, "reactDict": react_dict, "success": success}
-        jup = JournalAttributes(extra=jcontent)
+        jcontent = {"reactDict": react_dict, "success": success}
 
-        return success, jup
-
-    def process(self, gen: Generator[TransientView, JournalAttributes, None]) -> Union[UBson, UnitResult]:
-        """
-        Loop through transients and check for TNS names and/or candidates to submit
-        """
-
-        journal_updates: Dict[StockId, JournalAttributes] = {}
-        # We will here loop through transients and react individually
-        for tv in transients:
-            transientinfo = self.collect_info(tv)
-
-            # Ok, so we have a transient to react to
-            if self.do_react:
-                success, jup = self.react(tv, transientinfo)
-                if jup is not None:
-                    journal_updates[tv.id] = jup
-                if success:
-                    self.logger.info(
-                        "React success",
-                        extra={"tranId": tv.id, "success": success},
-                    )
-                else:
-                    self.logger.info(
-                        "React failure",
-                        extra={"tranId": tv.id, "success": success},
-                    )
-            else:
-                success = False
-                jup = None
-
-            # Otherwise, test
-            transientinfo["SEDM trigger success"] = success
-            if self.do_testreact:
-                test_success, jup = self.test_react(tv, transientinfo)
-                if jup is not None:
-                    journal_updates[tv.id] = jup
-
-        # Should possibly do some accounting or verification
-        self.logger.info("done running T3")
-        return None
+        return success, jcontent

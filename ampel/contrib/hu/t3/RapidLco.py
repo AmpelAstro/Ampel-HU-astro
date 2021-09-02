@@ -13,6 +13,7 @@ from typing import Any, Dict, Optional, Tuple, Union, Generator
 from ampel.types import StockId, UBson
 from ampel.contrib.hu.t3.RapidBase import RapidBase
 from ampel.abstract.Secret import Secret
+from ampel.secret.NamedSecret import NamedSecret
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.struct.UnitResult import UnitResult
 from ampel.util.freeze import recursive_unfreeze
@@ -26,7 +27,7 @@ class RapidLco(RapidBase):
     """
 
     # LCO trigger info
-    lco_api: Secret[str] = {"key": "lco/jnordin"}  # type: ignore[assignment]
+    lco_api: Secret[str] = NamedSecret(label="lco/jnordin")
     # A dict of LCO API triggers to be sent for each SN that fulfills all
     # criteria. Assumed to have the following key content:
     # 'trigger_name': {'start_delay':X (days), 'end_delay':Y (days), 'api_form':Z}
@@ -175,12 +176,14 @@ class RapidLco(RapidBase):
 
 
     def react(
-        self, tran_view: TransientView, info: Dict[str, Any]
-    ) -> Tuple[bool, Optional[JournalAttributes]]:
+        self, tran_view: TransientView, info: Optional[Dict[str, Any]]
+    ) -> Tuple[bool, dict[str,Any]]:
         """
         Send a trigger to the LCO
         """
 
+        if not isinstance(info, dict):
+            return False, {"success": False}
         assert isinstance(tran_view.id, int)
         transient_name = to_ztf_id(tran_view.id)
 
@@ -294,54 +297,4 @@ class RapidLco(RapidBase):
         }
         jup = JournalAttributes(extra=jcontent)
 
-        return success, jup
-
-
-    def process(self, gen: Generator[TransientView, JournalAttributes, None]) -> Union[UBson, UnitResult]:
-        """
-        Loop through transients and check for TNS names and/or candidates to submit
-        """
-
-        # We will here loop through transients and react individually
-        for tv in gen:
-
-            transientinfo = self.collect_info(tv)
-            self.logger.info("reacting", extra={"tranId": tv.id})
-
-            # Add some more info for display
-            transientinfo["LCO paths"] = {}
-
-
-            # Ok, so we have a transient to react to
-            if self.do_react:
-
-                success, jup = self.react(tv, transientinfo)
-
-                if jup:
-
-                    assert jup.extra
-                    gen.send(jup)
-                    for response, reactDict in zip(jup.extra["lcoResponses"], jup.extra["reactDicts"]):
-                        transientinfo["LCO paths"][reactDict["name"]] = "https://observe.lco.global/requests/{}/".format(response["requests"][0]['id'])
- 
-                if success:
-                    self.logger.info(
-                        "React success",
-                        extra={"tranId": tv.id, "success": success},
-                    )
-                else:
-                    self.logger.info(
-                        "React failure",
-                        extra={"tranId": tv.id, "success": success},
-                    )
-            else:
-                success = False
-                jup = None
-
-            # Otherwise, test
-            transientinfo["LCO trigger success"] = success
-            if self.do_testreact:
-                test_success, jup = self.test_react(tv, transientinfo)
-
-        self.logger.info("done running T3")
-        return None
+        return success, jcontent

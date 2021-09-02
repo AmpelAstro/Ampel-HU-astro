@@ -91,18 +91,18 @@ class RapidBase(AbsPhotoT3Unit):
 
 
     def react(
-        self, tran_view: TransientView, info: Dict[str, Any]
+        self, tran_view: TransientView, info: Optional[Dict[str, Any]]
     ) -> Tuple[bool, Optional[Dict[str, Any]]]:
         """
         Replace with react method adopted to particular facility or output
         """
 
         raise NotImplementedError("No real reaction implemented in RapidBase")
-        return self.test_react(tran_view)
+        return self.test_react(tran_view, info)
 
 
     def test_react(
-        self, tran_view: TransientView, info: Dict[str, Any]
+        self, tran_view: TransientView, info: Optional[Dict[str, Any]]
     ) -> Tuple[bool, Optional[Dict[str, Any]]]:
         """ Trigger a test slack report """
 
@@ -139,9 +139,9 @@ class RapidBase(AbsPhotoT3Unit):
         self.logger.info(description, extra={"channel": self.slack_channel})
 
         # Document what we did
-        jcontent = {"t3unit": self.name, "reaction": description, "success": success}
+        jcontent = {"reaction": description, "success": success}
 
-        return success, JournalTweak(extra=jcontent)
+        return success, jcontent
 
 
     def collect_info(self, tran_view: TransientView) -> Optional[Dict[str, Any]]:
@@ -153,6 +153,6 @@ class RapidBase(AbsPhotoT3Unit):
 
         for t2unit in self.t2info_from:
             t2_result = tran_view.get_t2_result(unit_id=t2unit)
-            if t2_result is not None:
+            if isinstance(t2_result, dict):
                info[t2unit] = t2_result
         return info
