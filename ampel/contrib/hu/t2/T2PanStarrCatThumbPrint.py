@@ -56,9 +56,10 @@ class T2PanStarrCatThumbPrint(AbsTiedPointT2Unit, T2PanStarrThumbPrint): # type:
 		if not t2_views[0].is_point_type():
 			return T2RunState.UNEXPECTED_DEPENDENCY
 
-		cat_results = t2_views[0].get_payload()
-		if cat_results is None:
+		payload = t2_views[0].get_payload()
+		if payload is None:
 			return T2RunState.UNEXPECTED_DEPENDENCY
+		cat_results = payload[-1] if isinstance(payload, list) else payload
 
 		pt = self.get_ps1_target(datapoint)
 

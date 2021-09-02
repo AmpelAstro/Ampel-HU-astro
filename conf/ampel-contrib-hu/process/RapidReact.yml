@@ -18,7 +18,7 @@ filter:
 run:
   - unit: RapidBase
     config:
-      do_react: true
+      do_react: false
       do_testreact: true
       slack_token:
         key: slack/ztf_general/jno

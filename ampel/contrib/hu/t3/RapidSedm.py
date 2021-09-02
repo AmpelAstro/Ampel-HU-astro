@@ -129,23 +129,14 @@ class RapidSedm(RapidBase):
 
         journal_updates: Dict[StockId, JournalAttributes] = {}
         # We will here loop through transients and react individually
-        for tv in gen:
-            matchinfo = self.accept_tview(tv)
-
-            # Check sumission criteria
-            if not matchinfo:
-                continue
-
-            self.logger.info("Passed reaction threshold", extra={"tranId": tv.id})
+        for tv in transients:
+            transientinfo = self.collect_info(tv)
 
             # Ok, so we have a transient to react to
             if self.do_react:
-
-                success, jup = self.react(tv, matchinfo)
-
-                if jup:
-                    gen.send(jup)
-
+                success, jup = self.react(tv, transientinfo)
+                if jup is not None:
+                    journal_updates[tv.id] = jup
                 if success:
                     self.logger.info(
                         "React success",
@@ -161,9 +152,9 @@ class RapidSedm(RapidBase):
                 jup = None
 
             # Otherwise, test
-            matchinfo["SEDM trigger success"] = success
+            transientinfo["SEDM trigger success"] = success
             if self.do_testreact:
-                test_success, jup = self.test_react(tv, matchinfo)
+                test_success, jup = self.test_react(tv, transientinfo)
                 if jup is not None:
                     journal_updates[tv.id] = jup
 

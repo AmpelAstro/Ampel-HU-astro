@@ -8,9 +8,11 @@
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
 import asyncio
+import json
 import sys
 import traceback
 from functools import partial
+from typing import Dict
 
 import aiohttp
 import backoff
@@ -22,14 +24,22 @@ from aiohttp.client_exceptions import (
     ServerDisconnectedError,
 )
 
+from .TNSToken import TNSToken
 
-async def tns_post(session, semaphore, method, api_key, data):
+
+async def tns_post(
+    session: ClientSession,
+    semaphore: asyncio.Semaphore,
+    method: str,
+    token: TNSToken,
+    data: Dict,
+) -> Dict:
     """
     post to TNS, asynchronously
     """
     async with semaphore:
         with aiohttp.MultipartWriter("form-data") as mpwriter:
-            p = aiohttp.StringPayload(api_key)
+            p: aiohttp.Payload = aiohttp.StringPayload(token.api_key)
             p.set_content_disposition("form-data", name="api_key")
             mpwriter.append(p)
             p = aiohttp.JsonPayload(data)
@@ -42,8 +52,8 @@ async def tns_post(session, semaphore, method, api_key, data):
 
 
 class TNSClient:
-    def __init__(self, apiKey, timeout, maxParallelRequests, logger):
-        self.apiKey = apiKey
+    def __init__(self, token: TNSToken, timeout, maxParallelRequests, logger):
+        self.token = token
         self.maxParallelRequests = maxParallelRequests
         self.logger = logger
         # robustify tns_post
@@ -87,11 +97,19 @@ class TNSClient:
 
     async def search(self, exclude=set(), **params):
         semaphore = asyncio.Semaphore(self.maxParallelRequests)
-        async with ClientSession(raise_for_status=True) as session:
+        async with ClientSession(
+            raise_for_status=True,
+            headers={
+                "User-Agent": "tns_marker"
+                + json.dumps(
+                    {"tns_id": self.token.id, "name": self.token.name, "type": "bot"}
+                )
+            },
+        ) as session:
             search = partial(
-                self.tns_post, session, semaphore, "get/search", self.apiKey
+                self.tns_post, session, semaphore, "get/search", self.token
             )
-            get = partial(self.tns_post, session, semaphore, "get/object", self.apiKey)
+            get = partial(self.tns_post, session, semaphore, "get/object", self.token)
             response = await search(params)
             names = [item["objname"] for item in response["data"]["reply"]]
             tasks = [

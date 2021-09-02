@@ -141,7 +141,7 @@ class RapidBase(AbsPhotoT3Unit):
         # Document what we did
         jcontent = {"t3unit": self.name, "reaction": description, "success": success}
 
-        return success, jcontent
+        return success, JournalTweak(extra=jcontent)
 
 
     def collect_info(self, tran_view: TransientView) -> Optional[Dict[str, Any]]:

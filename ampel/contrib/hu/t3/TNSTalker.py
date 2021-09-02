@@ -12,12 +12,18 @@ from itertools import islice
 from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, TYPE_CHECKING, Union
 from ampel.types import StockId, UBson
 from ampel.abstract.AbsT3Unit import AbsT3Unit
-from ampel.contrib.hu.t3.ampel_tns import get_tnsname, sendTNSreports, tnsInternal
 from ampel.abstract.Secret import Secret
 from ampel.struct.UnitResult import UnitResult
 from ampel.struct.JournalAttributes import JournalAttributes
+from ampel.contrib.hu.t3.ampel_tns import (
+    TNSClient,
+    TNSFILTERID,
+    TNS_BASE_URL_REAL,
+    TNS_BASE_URL_SANDBOX
+)
 from ampel.view.TransientView import TransientView
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
+from ampel.contrib.hu.t3.tns.TNSToken import TNSToken
 
 if TYPE_CHECKING:
     from ampel.content.JournalRecord import JournalRecord
@@ -52,7 +58,7 @@ class TNSTalker(AbsT3Unit):
     # TNS config
 
     # Bot api key frm TNS
-    tns_api_key: Optional[Secret] = None
+    tns_api_key: Secret[dict]
     # Check for TNS for names even if internal name is known
     get_tns_force: bool = False
     # Submit candidates passing criteria (False gives you a 'dry run')
@@ -83,6 +89,20 @@ class TNSTalker(AbsT3Unit):
     slack_username = "AMPEL"
     # if you have more than this # of reports, send different files
     max_slackmsg_size = 200
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.client = TNSClient(
+            TNS_BASE_URL_SANDBOX if self.sandbox else TNS_BASE_URL_REAL,
+            self.logger,
+            TNSToken(**self.tns_api_key.get()),
+        )
+        # maintain a second client to check the real TNS if in sandbox mode
+        self.reference_client = TNSClient(
+            TNS_BASE_URL_REAL,
+            self.logger,
+            TNSToken(**self.tns_api_key.get()),
+        ) if self.sandbox else self.client
 
     def search_journal_tns(
         self, tran_view: TransientView
@@ -132,7 +152,7 @@ class TNSTalker(AbsT3Unit):
             return bool(
                 (
                     entry["extra"] is not None
-                    and (entry["extra"].get("tnsSender") == self.tns_api_key.get())
+                    and (entry["extra"].get("tnsSender") == self.tns_api_key.get()["api_key"])
                     and "tnsSubmitResult" in entry["extra"]
                 )
                 and entry["unit"]
@@ -144,10 +164,10 @@ class TNSTalker(AbsT3Unit):
             tier=3,
             filter_func=select,
         ):
-            self.logger.info("TNS submitted", extra={"tnsSender": self.tns_api_key.get()})
+            self.logger.info("TNS submitted", extra={"tnsSender": self.tns_api_key.get()["name"]})
             return True
         else:
-            self.logger.info("Not TNS submitted", extra={"tnsSender": self.tns_api_key.get()})
+            self.logger.info("Not TNS submitted", extra={"tnsSender": self.tns_api_key.get()["name"]})
             return False
 
     def _query_tns_names(self, tran_view: TransientView, ra: float, dec: float) -> Tuple[Optional[str], List]:
@@ -157,13 +177,9 @@ class TNSTalker(AbsT3Unit):
         """
         # query the TNS for transient at this position. Note that we check the real TNS for names for compatibility...
 
-        tns_name, tns_internal = get_tnsname(
+        tns_name, tns_internal = self.client.getNames(
             ra=ra,
-            dec=dec,
-            # For JvS: Is this how Secrets are used consistently?
-            api_key=self.tns_api_key.get(),
-            logger=self.logger,
-            sandbox=False,
+            dec=dec
         )
 
         # Skip the AT SN prefix if present
@@ -212,10 +228,8 @@ class TNSTalker(AbsT3Unit):
                 # added by the TNSMatcher T3, plus we skip the prefix
                 # We here assume that the AT/SN suffix is cut
                 tns_name = tname.replace("TNS", "")
-                # Not using sandbox (only checking wrt to full system).
-                tns_internals, runstatus = tnsInternal(
-                    tns_name, api_key=self.tns_api_key.get(), sandbox=False
-                )
+                # Not using sandbox (only checking wrt to full system). 
+                tns_internals, runstatus = self.reference_client.getInternalName(tns_name)
 
         # be nice with the logging
         ztf_name = to_ztf_id(tran_view.id)
@@ -436,12 +450,7 @@ class TNSTalker(AbsT3Unit):
                 }
             }
         ]
-        tnsreplies = sendTNSreports(
-            atreportlist,
-            self.tns_api_key.get(),
-            self.logger,
-            sandbox=self.sandbox,
-        )
+        tnsreplies = self.client.sendReports(atreportlist)
 
         # Now go and check and create journal updates for the cases where SN was added
         for tran_id in atreports.keys():
@@ -458,7 +467,7 @@ class TNSTalker(AbsT3Unit):
                         "tnsName": tnsreplies[ztf_name][1]["TNSName"],
                         "tnsInternal": ztf_name,
                         "tnsSubmitresult": tnsreplies[ztf_name][0],
-                        "tnsSender": self.tns_api_key.get(),
+                        "tnsSender": self.tns_api_key.get()["api_key"],
                     },
                 )
                 journal_updates[tran_view.id] = jup

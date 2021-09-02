@@ -9,7 +9,7 @@ t0_filter:
     min_ndet: 2
     ClusListSearchRadius: 60
     MasterlensSearchRadius: 10
-    CaslteQSOSearchRadius: 10
+    CastleQSOSearchRadius: 10
 t2_compute:
   - unit: T2SNCosmo
     config:

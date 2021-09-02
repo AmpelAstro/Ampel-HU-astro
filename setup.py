@@ -11,7 +11,7 @@ from setuptools import find_namespace_packages, setup
 
 setup(
     name="ampel-contrib-hu",
-    version="0.8",
+    version="0.8.0-alpha.0",
     packages=find_namespace_packages(),
     package_data={
         "": ["*.json", "py.typed"],  # include any package containing *.json files
@@ -28,17 +28,15 @@ setup(
         ],
     },
     install_requires=[
-        'ampel-interface>=0.8,<0.9',
-        'ampel-core>=0.8,<0.9',
-        'ampel-photometry>=0.8,<0.9',
-        'ampel-alerts>=0.8,<0.9',
-        'ampel-ztf>=0.8,<0.9',
+        'ampel-interface>=0.8.0a0,<0.9',
+        'ampel-core>=0.8.0a4,<0.9',
+        'ampel-photometry>=0.8.0a0,<0.9',
+        'ampel-alerts>=0.8.0a0,<0.9',
+        'ampel-ztf>=0.8.0a0,<0.9',
         "catsHTM",
         "extcats",
-        "zerorpc",
-        # see: https://github.com/sncosmo/sncosmo/issues/291
-        "sncosmo==2.2.0",
-        "iminuit==1.5.1",
+        "sncosmo",
+        "iminuit",
         "sfdmap",
         "astropy",
         "numpy",
@@ -50,16 +48,4 @@ setup(
         # pymage secretly depends on pandas
         "pandas",
     ],
-    entry_points={
-        "ampel_target_sources": [
-            "TargetSourceListener = ampel.contrib.hu.TargetSourceListener:TargetSourceListener",
-            "TargetSourceListenerSlack = ampel.contrib.hu.TargetSourceListenerSlack:TargetSourceListenerSlack",
-        ],
-        "ampel_resources": [
-            "extcats = ampel.contrib.hu.resources:extcatsURI",
-            "catsHTM = ampel.contrib.hu.resources:catsHTMURI",
-            "desycloud = ampel.contrib.hu.resources:desyCloudURI",
-        ],
-        "console_scripts": ["catshtmd = ampel.contrib.hu.catshtm_server:run"],
-    },
 )

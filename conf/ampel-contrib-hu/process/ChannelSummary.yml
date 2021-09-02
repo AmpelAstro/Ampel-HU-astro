@@ -1,5 +1,6 @@
 name: ChannelSummary
 tier: 3
+active: false
 schedule:
   - every().day.at('15:00')
 processor:

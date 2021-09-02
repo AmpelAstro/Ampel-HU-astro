@@ -7,8 +7,8 @@ channel:
     - HU_TNS_MSIP
 load:
   - TRANSIENT
-  - DATAPOINT
-  - T2RECORD
+  - col: t2
+    query_complement: {unit: {$in: [T2TNSEval, T2LightCurveSummary]}}
 complement: TNSNames
 filter:
   t2:
@@ -28,5 +28,5 @@ run:
     tns_api_key:
       key: tns/new
     submit_tns: true
-    sandbox: true
+    sandbox: false
 

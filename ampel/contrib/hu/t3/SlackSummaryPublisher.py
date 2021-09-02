@@ -135,6 +135,9 @@ class SlackSummaryPublisher(AbsT3Unit):
                     params=param,
                     files={"file": buffer.getvalue()},
                 )
+                r.raise_for_status()
+                if not r.json()["ok"]:
+                    raise SlackClientError(r.json()["error"])
                 self.logger.info(r.text)
 
             if self.full_photometry:
@@ -178,6 +181,9 @@ class SlackSummaryPublisher(AbsT3Unit):
                         params=param,
                         files={"file": buffer.getvalue()},
                     )
+                    r.raise_for_status()
+                    if not r.json()["ok"]:
+                        raise SlackClientError(r.json()["error"])
                     self.logger.info(r.text)
 
     def combine_transients(

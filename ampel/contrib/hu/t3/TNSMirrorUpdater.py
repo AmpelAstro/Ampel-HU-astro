@@ -14,6 +14,7 @@ from typing import Any, Dict, Optional
 from pymongo import MongoClient
 
 from ampel.abstract.AbsOpsUnit import AbsOpsUnit
+from ampel.contrib.hu.t3.tns.TNSToken import TNSToken
 from ampel.contrib.hu.t3.tns.TNSClient import TNSClient
 from ampel.contrib.hu.t3.tns.TNSMirrorDB import TNSMirrorDB
 from ampel.abstract.Secret import Secret
@@ -25,7 +26,7 @@ class TNSMirrorUpdater(AbsOpsUnit):
     """
 
     extcats_auth: Secret[dict] = {"key": "extcats/writer"}  # type: ignore[assignment]
-    api_key: Secret[str]
+    api_key: Secret[dict]
     timeout: float = 60.0
     max_parallel_requests: int = 8
     dry_run: bool = False
@@ -37,7 +38,7 @@ class TNSMirrorUpdater(AbsOpsUnit):
 
         async def fetch():
             tns = TNSClient(
-                self.api_key.get(),
+                TNSToken(**self.api_key.get()),
                 self.timeout,
                 self.max_parallel_requests,
                 self.logger,
