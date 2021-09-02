@@ -7,17 +7,17 @@
 # Last Modified Date: 15.08.2018
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
-import json, uuid, requests
+import uuid, requests
 from gzip import GzipFile
 from io import BytesIO
-from typing import Optional, Tuple
-from urllib.parse import ParseResult, urlencode, urlparse, urlunparse
+from typing import Optional, Generator
+from urllib.parse import ParseResult, urlparse, urlunparse
 from xml.etree import ElementTree
 from ampel.abstract.AbsT3Unit import AbsT3Unit
-from ampel.abstract.Secret import Secret
+from ampel.secret.NamedSecret import Secret, NamedSecret
 from ampel.util.json import AmpelEncoder
+from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.view.SnapView import SnapView
-from ampel.view.TransientView import TransientView
 
 
 def strip_auth_from_url(url):
@@ -43,10 +43,9 @@ class TransientViewDumper(AbsT3Unit):
     resources = ("desycloud",)
 
     outputfile: Optional[str] = None
-    desycloud_auth: Secret[dict] = {"key": "desycloud"}  # type: ignore[assignment]
+    desycloud_auth: Secret[dict] = NamedSecret(label="desycloud")
 
     def post_init(self) -> None:
-        self.count = 0
         if not self.outputfile:
             self.outfile = GzipFile(fileobj=BytesIO(), mode="w")
             self.path = "/AMPEL/dumps/" + str(uuid.uuid1()) + ".json.gz"
@@ -63,19 +62,15 @@ class TransientViewDumper(AbsT3Unit):
         self.encoder = AmpelEncoder(lossy=True)
 
 
-    def process(self, transients: Tuple[SnapView, ...]) -> None:
+    def process(self, transients: Generator[SnapView, JournalAttributes, None]) -> None:
 
-        if transients is not None:
-
-            batch_count = len(transients)
-            self.count += batch_count
-
-            for tran_view in transients:
-                self.outfile.write(self.encoder.encode(tran_view).encode("utf-8"))
-                self.outfile.write(b"\n")
+        count = 0
+        for count, tran_view in enumerate(transients, 1):
+            self.outfile.write(self.encoder.encode(tran_view).encode("utf-8"))
+            self.outfile.write(b"\n")
 
         self.outfile.flush()
-        self.logger.info("Total number of transient printed: %i" % self.count)
+        self.logger.info("Total number of transient printed: %i" % count)
         if self.outputfile:
             self.outfile.close()
             self.logger.info(self.outputfile + ".json.gz")
