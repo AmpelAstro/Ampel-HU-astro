@@ -10,7 +10,7 @@
 from setuptools import find_namespace_packages, setup
 
 setup(
-    name="ampel-contrib-hu",
+    name="ampel-hu-astro",
     version="0.8.0-alpha.0",
     packages=find_namespace_packages(),
     package_data={
@@ -30,6 +30,7 @@ setup(
     install_requires=[
         'ampel-interface>=0.8.0a0,<0.9',
         'ampel-core>=0.8.0a4,<0.9',
+        'ampel-plots>=0.8.0a0,<0.9',
         'ampel-photometry>=0.8.0a0,<0.9',
         'ampel-alerts>=0.8.0a0,<0.9',
         'ampel-ztf>=0.8.0a0,<0.9',
