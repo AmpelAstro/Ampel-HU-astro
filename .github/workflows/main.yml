@@ -34,6 +34,6 @@ jobs:
         python-version: 3.9
     - name: Install dependencies
       run: |
-        python -m pip install wheel pytest pytest-cov -e .
+        python -m pip install wheel pytest pytest-mock pytest-cov -e .
     - run: pytest --cov=ampel
 
