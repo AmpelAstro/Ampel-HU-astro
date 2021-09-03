@@ -35,7 +35,7 @@ def testrunconfig():
 
 
 def test_run_t3_RapidBase_selected(t3_rapid_tvs, testrunconfig):
-    '''
+    '''ls
     Check rapid selection info output
     '''
     unit_test = RapidBase.RapidBase(logger=logging.getLogger(),run_config=testrunconfig)

@@ -10,7 +10,7 @@
 import collections
 import datetime
 import io
-from typing import Dict, Iterable, List, Set, Tuple, Generator
+from typing import Dict, Iterable, List, Set, Tuple, Generator, cast
 
 import numpy as np
 import pandas as pd
@@ -48,15 +48,10 @@ class SlackSummaryPublisher(AbsT3Unit):
         "isdiffpos",
     ]
 
-    def post_init(self) -> None:
-        """ """
-        self.frames: List[pd.DataFrame] = []
-        self.photometry: List[pd.DataFrame] = []
-        self.channels: Set[str] = set()
-
     def process(self, gen: Generator[TransientView, JournalAttributes, None]) -> None:
         """"""
-        frames, photometry = self.combine_transients(gen)
+        channels: Set[str] = set()
+        frames, photometry = self.combine_transients(gen, channels)
 
         if len(frames) == 0 and self.quiet:
             return
@@ -65,24 +60,24 @@ class SlackSummaryPublisher(AbsT3Unit):
 
         sc = WebClient(self.slack_token.get())
 
-        m = calculate_excitement(
-            len(frames), date=date, thresholds=self.excitement
-        )
+        m = calculate_excitement(len(frames), date=date, thresholds=self.excitement)
 
         if self.dry_run:
             self.logger.info(m)
         else:
-            api = sc.api_call(
-                "chat.postMessage",
-                json={
-                    "channel": self.slack_channel,
-                    "text": m,
-                    "username": "AMPEL-live",
-                    "as_user": False,
-                },
-            )
             # we know this is a sync client; work around lazy type annotations
-            assert isinstance(api, SlackResponse)
+            api = cast(
+                SlackResponse,
+                sc.api_call(
+                    "chat.postMessage",
+                    json={
+                        "channel": self.slack_channel,
+                        "text": m,
+                        "username": "AMPEL-live",
+                        "as_user": False,
+                    },
+                ),
+            )
             if not api["ok"]:
                 raise SlackClientError(api["error"])
 
@@ -90,16 +85,15 @@ class SlackSummaryPublisher(AbsT3Unit):
 
             df = pd.DataFrame.from_records(frames)
             # Set fill value for channel columns to False
-            for channel in self.channels:
+            for channel in channels:
                 df[channel].fillna(False, inplace=True)
             # Set fill value for all other columns to MISSING
-            for field in set(df.columns.values).difference(self.channels):
+            for field in set(df.columns.values).difference(channels):
                 df[field].fillna("MISSING", inplace=True)
             # Move channel info at end
             df = df.reindex(
                 copy=False,
-                columns=[c for c in df.columns if not c in self.channels]
-                + list(self.channels),
+                columns=[c for c in df.columns if not c in channels] + list(channels),
             )
 
             filename = "Summary_%s.csv" % date
@@ -143,16 +137,16 @@ class SlackSummaryPublisher(AbsT3Unit):
             if self.full_photometry:
                 photometry_df = pd.concat(photometry, sort=False)
                 # Set fill value for channel columns to False
-                for channel in self.channels:
+                for channel in channels:
                     photometry_df[channel].fillna(False, inplace=True)
                 # Set fill value for all other columns to MISSING
-                for field in set(photometry_df.columns.values).difference(self.channels):
+                for field in set(photometry_df.columns.values).difference(channels):
                     photometry_df[field].fillna("MISSING", inplace=True)
                 # Move channel info at end
                 photometry_df = photometry_df.reindex(
                     copy=False,
-                    columns=[c for c in df.columns if not c in self.channels]
-                    + list(self.channels),
+                    columns=[c for c in df.columns if not c in channels]
+                    + list(channels),
                 )
 
                 filename = "Photometry_%s.csv" % date
@@ -187,7 +181,9 @@ class SlackSummaryPublisher(AbsT3Unit):
                     self.logger.info(r.text)
 
     def combine_transients(
-        self, transients: Iterable[TransientView]
+        self,
+        transients: Iterable[TransientView],
+        channels: Set[str],
     ) -> Tuple[List[pd.DataFrame], List[pd.DataFrame]]:
         """"""
 
@@ -203,8 +199,8 @@ class SlackSummaryPublisher(AbsT3Unit):
                 "ztf_name": to_ztf_id(transient.id),
             }
 
-            if (summary := transient.get_t2_result(unit_id="T2LightCurveSummary")) :
-                frame.update(summary) # type: ignore[arg-type]
+            if summary := transient.get_t2_result(unit_id="T2LightCurveSummary"):
+                frame.update(summary)  # type: ignore[arg-type]
 
             # include other T2 results, flattened
             for t2record in transient.t2 or []:
@@ -231,7 +227,7 @@ class SlackSummaryPublisher(AbsT3Unit):
             frame.update(
                 {str(channel): True for channel in (transient.stock["channel"] or [])}
             )
-            self.channels.update((str(c) for c in transient.stock["channel"] or []))
+            channels.update((str(c) for c in transient.stock["channel"] or []))
 
             frames.append(frame)
 
@@ -245,21 +241,14 @@ class SlackSummaryPublisher(AbsT3Unit):
                         [
                             {
                                 "ztf_name": frame["ztf_name"],
-                                **{
-                                    k: v
-                                    for pp in transient.t0
-                                    if (
-                                        not pp.get("tag")
-                                        or not "SUPERSEDED" in pp["tag"]
-                                    )
-                                    for k, v in pp["body"].items()
-                                    if k in mycols
-                                },
+                                **{k: v for k, v in pp["body"].items() if k in mycols},
                                 **{
                                     str(channel): True
                                     for channel in (transient.stock["channel"] or [])
                                 },
                             }
+                            for pp in transient.t0
+                            if (not pp.get("tag") or not "SUPERSEDED" in pp["tag"])
                         ]
                     )
                 )
