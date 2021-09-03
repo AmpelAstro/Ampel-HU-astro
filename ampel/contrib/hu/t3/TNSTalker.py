@@ -154,7 +154,7 @@ class TNSTalker(AbsT3Unit):
             return bool(
                 (
                     entry["extra"] is not None
-                    and (entry["extra"].get("tnsSender") == self.tns_api_key.get()["api_key"])
+                    and (entry["extra"].get("tnsSender") == self.tns_api_key.get()["name"])
                     and "tnsSubmitResult" in entry["extra"]
                 )
                 and entry["unit"]
@@ -463,7 +463,7 @@ class TNSTalker(AbsT3Unit):
                                 "tnsName": tnsreplies[ztf_name][1]["TNSName"],
                                 "tnsInternal": ztf_name,
                                 "tnsSubmitresult": tnsreplies[ztf_name][0],
-                                "tnsSender": self.tns_api_key.get()["api_key"],
+                                "tnsSender": self.tns_api_key.get()["name"],
                             },
                         ),
                         tag="TNS_SUBMITTED",
