@@ -5,13 +5,49 @@ import pytest
 
 from ampel.contrib.hu.t2.T2BrightSNProb import T2BrightSNProb
 from ampel.log.AmpelLogger import AmpelLogger
-from ampel.util.legacy.json_v06 import object_hook
+from ampel.view.LightCurve import LightCurve
+from ampel.content.DataPoint import DataPoint
+from ampel.ztf.util.ZTFIdMapper import to_ampel_id
+
+_ampel_flags = {
+    0: "ZTF",
+}
+
+_ampel_photo_flags = _ampel_flags | {
+    20: "PHOTOPOINT",
+    21: "UPPERLIMIT",
+    22: "ZTF_G",
+    23: "ZTF_R",
+    24: "ZTF_I",
+    25: "ZTF_PRIV",
+    26: "ZTF_PUB",
+}
+
+
+def _to_datapoint(d):
+    return DataPoint(
+        id=d.pop("_id"),
+        body=d,
+        tag=[_ampel_photo_flags[f] for f in d.pop("alTags") if f in _ampel_photo_flags],
+    )
 
 
 @pytest.fixture
-def lightcurve():
+def lightcurve() -> LightCurve:
     with open(join(dirname(__file__), "lightcurve.ZTF18abmjvpb.json")) as f:
-        return json.load(f, object_hook=object_hook)
+        blob = json.load(f)
+        return LightCurve(
+            compound_id=0,
+            stock_id=to_ampel_id("ZTF18abmjvpb"),
+            photopoints=[
+                _to_datapoint(item["content"]["__jsonclass__"][1])
+                for item in blob["ppo_list"]["__jsonclass__"][1]
+            ],
+            upperlimits=[
+                _to_datapoint(item["content"]["__jsonclass__"][1])
+                for item in blob["ulo_list"]["__jsonclass__"][1]
+            ],
+        )
 
 
 def assert_equivalent(left, right):
@@ -26,8 +62,9 @@ def assert_equivalent(left, right):
 
 def test_t2brightsnprob(lightcurve):
     monitor = T2BrightSNProb(logger=AmpelLogger.get_logger())
+    monitor.post_init()
     assert_equivalent(
-        monitor.run(lightcurve),
+        monitor.process(lightcurve),
         {
             "cut_pp": 0,
             "jd_det": 2458343.6521875,
