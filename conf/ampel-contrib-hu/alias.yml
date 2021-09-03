@@ -24,30 +24,6 @@ t0:
     ps1_confusion_rad: 3
     ps1_confusion_sg_tol: 0.1
 t2:
-  T2MarshalMonitor_simple:
-    simple_out: true
-    program(s):
-      AMPEL Test:
-        auth:
-          - AMPELBOT
-          - ***REMOVED***
-        update_every_h: 2
-        include_candidates: false
-        tag: AMPEL
-      Cosmology:
-        auth:
-          - AMPELBOT
-          - ***REMOVED***
-        update_every_h: 2
-        include_candidates: false
-        tag: COSM
-      Redshift Completeness Factor:
-        auth:
-          - MatteoGiomi
-          - Popoloma10!
-        update_every_h: 2
-        include_candidates: false
-        tag: RCF
   T2CatalogMatch_cosmo:
     catalogs:
       SDSS_spec:
