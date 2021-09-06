@@ -1,6 +1,6 @@
 channel: HU_NEARBY_CLUSTERS
 contact: ampel@desy.de
-active: true
+active: false
 auto_complete: live
 template: ztf_uw_private
 t0_filter:
