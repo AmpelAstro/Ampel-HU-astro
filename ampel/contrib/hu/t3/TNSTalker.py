@@ -10,10 +10,9 @@
 import re
 from itertools import islice
 from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, TYPE_CHECKING, Union
-from ampel.abstract.T3Send import T3Send
 from ampel.struct.StockAttributes import StockAttributes
 from ampel.types import StockId, UBson
-from ampel.abstract.AbsT3Unit import AbsT3Unit
+from ampel.abstract.AbsT3Unit import AbsT3Unit, T3Send
 from ampel.abstract.Secret import Secret
 from ampel.struct.UnitResult import UnitResult
 from ampel.struct.JournalAttributes import JournalAttributes
