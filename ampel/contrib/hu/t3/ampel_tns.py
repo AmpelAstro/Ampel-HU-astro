@@ -65,6 +65,10 @@ class TNSSession(BaseUrlSession):
             # back off according to rate-limit headers (see https://www.wis-tns.org/content/tns-newsfeed#comment-wrapper-26286)
             delay = response.headers["x-cone-rate-limit-reset" if response.url.endswith('search') else "x-rate-limit-reset"]
             time.sleep(int(delay))
+        else:
+            response.raise_for_status()
+            # unreachable
+            return None # type: ignore[return-value]
 
 
 class TNSClient:
