@@ -23,8 +23,6 @@ from ampel.contrib.hu.t3.tns.TNSToken import TNSToken
 from ampel.protocol.LoggerProtocol import LoggerProtocol
 from requests_toolbelt.sessions import BaseUrlSession
 
-import requests
-
 TNSFILTERID = {1: "110", 2: "111", 3: "112"}
 AT_REPORT_FORM = "bulk-report"
 AT_REPORT_REPLY = "bulk-report-reply"
@@ -39,6 +37,7 @@ httpErrors = {
     404: "Error 404: Not Found: The URI requested is invalid or the resource requested, such as a category, does not exists.",
     500: "Error 500: Internal Server Error: Something is broken.",
     503: "Error 503: Service Unavailable.",
+    429: "Error 429: Rate Limit Exceeded.",
 }
 
 class TNSSession(BaseUrlSession):
@@ -53,14 +52,19 @@ class TNSSession(BaseUrlSession):
         )
 
     def post(self, method: str, payload: Union[str, Dict[str,Any]], payload_key="data", **kwargs) -> Response:
-        return super().post(
-            method,
-            files=[
-                ("api_key", (None, self.token.api_key)),
-                (payload_key, (None, json.dumps(payload)))
-            ],
-            **kwargs
-        )
+        for _ in range(10):
+            if (response := super().post(
+                method,
+                files=[
+                    ("api_key", (None, self.token.api_key)),
+                    (payload_key, (None, json.dumps(payload)))
+                ],
+                **kwargs
+            )).status_code != 429:
+                return response
+            # back off according to rate-limit headers (see https://www.wis-tns.org/content/tns-newsfeed#comment-wrapper-26286)
+            delay = response.headers["x-cone-rate-limit-reset" if response.url.endswith('search') else "x-rate-limit-reset"]
+            time.sleep(int(delay))
 
 
 class TNSClient:
