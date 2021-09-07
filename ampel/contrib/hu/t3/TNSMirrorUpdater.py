@@ -17,7 +17,7 @@ from ampel.abstract.AbsOpsUnit import AbsOpsUnit
 from ampel.contrib.hu.t3.tns.TNSToken import TNSToken
 from ampel.contrib.hu.t3.tns.TNSClient import TNSClient
 from ampel.contrib.hu.t3.tns.TNSMirrorDB import TNSMirrorDB
-from ampel.abstract.Secret import Secret
+from ampel.secret.NamedSecret import NamedSecret
 
 
 class TNSMirrorUpdater(AbsOpsUnit):
@@ -25,8 +25,8 @@ class TNSMirrorUpdater(AbsOpsUnit):
     Sync a local mirror of the TNS database
     """
 
-    extcats_auth: Secret[dict] = {"key": "extcats/writer"}  # type: ignore[assignment]
-    api_key: Secret[dict]
+    extcats_auth: NamedSecret[dict] = NamedSecret(label="extcats/writer")
+    api_key: NamedSecret[dict]
     timeout: float = 60.0
     max_parallel_requests: int = 8
     dry_run: bool = False

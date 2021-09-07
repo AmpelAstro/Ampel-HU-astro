@@ -14,7 +14,7 @@ from typing import Optional, Generator
 from urllib.parse import ParseResult, urlparse, urlunparse
 from xml.etree import ElementTree
 from ampel.abstract.AbsT3Unit import AbsT3Unit
-from ampel.secret.NamedSecret import Secret, NamedSecret
+from ampel.secret.NamedSecret import NamedSecret
 from ampel.util.json import AmpelEncoder
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.view.SnapView import SnapView
@@ -43,7 +43,7 @@ class TransientViewDumper(AbsT3Unit):
     resources = ("desycloud",)
 
     outputfile: Optional[str] = None
-    desycloud_auth: Secret[dict] = NamedSecret(label="desycloud")
+    desycloud_auth: NamedSecret[dict] = NamedSecret(label="desycloud")
 
     def post_init(self) -> None:
         if not self.outputfile:

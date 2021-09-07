@@ -20,6 +20,6 @@ run:
   unit: TNSTalker
   config:
     tns_api_key:
-      key: tns/complete
+      label: tns/complete
     submit_tns: true
     sandbox: false

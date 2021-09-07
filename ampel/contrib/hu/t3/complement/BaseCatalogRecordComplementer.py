@@ -16,7 +16,7 @@ from pymongo import MongoClient
 from ampel.base.decorator import abstractmethod
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.struct.AmpelBuffer import AmpelBuffer
-from ampel.abstract.Secret import Secret
+from ampel.secret.NamedSecret import NamedSecret
 from ampel.abstract.AbsBufferComplement import AbsBufferComplement
 
 
@@ -28,7 +28,7 @@ class BaseCatalogRecordComplementer(AbsBufferComplement, abstract=True):
     dynamic "catalogs" like the TNS or instrument-specific marshals.
     """
 
-    auth: Secret[dict] = {"key": "extcats/reader"}  # type: ignore[assignment]
+    auth: NamedSecret[dict] = NamedSecret(label="extcats/reader")
 
     @cached_property
     def mongo_client(self):

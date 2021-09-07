@@ -12,7 +12,6 @@ from typing import Any, Dict, Optional, Tuple, Union, Generator
 
 from ampel.types import StockId, UBson
 from ampel.contrib.hu.t3.RapidBase import RapidBase
-from ampel.abstract.Secret import Secret
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.struct.UnitResult import UnitResult
@@ -27,7 +26,7 @@ class RapidLco(RapidBase):
     """
 
     # LCO trigger info
-    lco_api: Secret[str] = NamedSecret(label="lco/jnordin")
+    lco_api: NamedSecret[str] = NamedSecret(label="lco/jnordin")
     # A dict of LCO API triggers to be sent for each SN that fulfills all
     # criteria. Assumed to have the following key content:
     # 'trigger_name': {'start_delay':X (days), 'end_delay':Y (days), 'api_form':Z}

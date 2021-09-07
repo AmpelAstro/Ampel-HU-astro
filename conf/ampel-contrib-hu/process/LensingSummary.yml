@@ -17,5 +17,5 @@ run:
   - unit: SkyPortalPublisher
     config:
       token:
-        key: fritz/jvs/ampelbot
+        label: fritz/jvs/ampelbot
       base_url: 'https://fritz.science'

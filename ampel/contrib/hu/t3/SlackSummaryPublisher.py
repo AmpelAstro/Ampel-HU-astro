@@ -20,7 +20,7 @@ from slack.errors import SlackClientError
 
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.log.utils import log_exception
-from ampel.abstract.Secret import Secret
+from ampel.secret.NamedSecret import NamedSecret
 from ampel.view.TransientView import TransientView
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
@@ -33,7 +33,7 @@ class SlackSummaryPublisher(AbsT3Unit):
     dry_run: bool = False
     quiet: bool = False
     slack_channel: str
-    slack_token: Secret
+    slack_token: NamedSecret[str]
     excitement: Dict[str, int] = {"Low": 50, "Mid": 200, "High": 400}
     full_photometry: bool = False
     #: Fields to extract from each detection (if full_photometry enabled)

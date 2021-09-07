@@ -57,6 +57,6 @@ run:
   - unit: SkyPortalPublisher
     config:
       token:
-        key: desi/skyportal/jno
+        label: desi/skyportal/jno
       base_url: http://desi2.lbl.gov:5000
 

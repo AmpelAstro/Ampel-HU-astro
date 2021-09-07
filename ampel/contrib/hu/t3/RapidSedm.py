@@ -10,7 +10,8 @@
 import datetime, requests
 from typing import Any, Dict, Optional, Tuple, Generator, Union
 from ampel.types import StockId, UBson
-from ampel.contrib.hu.t3.RapidBase import RapidBase, Secret
+from ampel.secret.NamedSecret import NamedSecret
+from ampel.contrib.hu.t3.RapidBase import RapidBase
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.struct.UnitResult import UnitResult
 from ampel.view.TransientView import TransientView
@@ -61,7 +62,7 @@ class RapidSedm(RapidBase):
     }
 
     sedm_username: str
-    sedm_password: Secret[str]
+    sedm_password: NamedSecret[str]
 
     # maximum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
     max_redshift: float = 0.05

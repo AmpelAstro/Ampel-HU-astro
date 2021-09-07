@@ -10,7 +10,7 @@
 from typing import Any, Dict, List, Optional, Tuple, Generator, Union
 
 from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
-from ampel.abstract.Secret import Secret
+from ampel.secret.NamedSecret import NamedSecret
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.struct.UnitResult import UnitResult
 from ampel.view.TransientView import TransientView
@@ -43,7 +43,7 @@ class RapidBase(AbsPhotoT3Unit):
     # If set, will post trigger to slack
     do_testreact: bool
     # Original
-    slack_token: Optional[Secret]
+    slack_token: Optional[NamedSecret[str]]
     # Hack
     # slack_token_dict: Optional[ Dict[str,any] ] = {'key':'k','value':'v'}
     # from ampel.secret.DictSecretProvider import NamedSecret

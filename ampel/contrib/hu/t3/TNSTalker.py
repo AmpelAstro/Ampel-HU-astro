@@ -13,8 +13,7 @@ from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, TYPE_C
 from ampel.struct.StockAttributes import StockAttributes
 from ampel.types import StockId, UBson
 from ampel.abstract.AbsT3Unit import AbsT3Unit, T3Send
-from ampel.abstract.Secret import Secret
-from ampel.struct.UnitResult import UnitResult
+from ampel.secret.NamedSecret import NamedSecret
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.contrib.hu.t3.ampel_tns import (
     TNSClient,
@@ -59,7 +58,7 @@ class TNSTalker(AbsT3Unit):
     # TNS config
 
     # Bot api key frm TNS
-    tns_api_key: Secret[dict]
+    tns_api_key: NamedSecret[dict]
     # Check for TNS for names even if internal name is known
     get_tns_force: bool = False
     # Submit candidates passing criteria (False gives you a 'dry run')
@@ -85,7 +84,7 @@ class TNSTalker(AbsT3Unit):
     }
     baseremark: str = "See arXiv:1904.05922 for selection criteria."
 
-    slack_token: Optional[Secret] = None
+    slack_token: Optional[NamedSecret] = None
     slack_channel = "#ztf_tns"
     slack_username = "AMPEL"
     # if you have more than this # of reports, send different files

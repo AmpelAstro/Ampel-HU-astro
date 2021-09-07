@@ -21,7 +21,7 @@ run:
       do_react: false
       do_testreact: true
       slack_token:
-        key: slack/ztf_general/jno
+        label: slack/ztf_general/jno
       slack_channel: '#ztf_rapid'
       slack_username: 'AMPEL'
       t2info_from: 
@@ -29,5 +29,5 @@ run:
   - unit: SkyPortalPublisher
     config:
       token:
-        key: fritz/jvs/ampelbot
+        label: fritz/jvs/ampelbot
       base_url: 'https://fritz.science'

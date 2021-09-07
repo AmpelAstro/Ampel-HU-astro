@@ -20,7 +20,7 @@ from aiohttp.client_exceptions import (
 
 from ampel.types import UBson
 from ampel.abstract.AbsT3Unit import AbsT3Unit
-from ampel.abstract.Secret import Secret
+from ampel.secret.NamedSecret import NamedSecret
 from ampel.util.json import AmpelEncoder
 from ampel.view.SnapView import SnapView
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
@@ -56,8 +56,7 @@ class DCachePublisher(AbsT3Unit):
     dry_run: bool = False
     base_dir: str = "/ampel/ztf/transient-views"
     max_parallel_requests: int = 8
-    authz: Secret[str] = {"key": "dcache/macaroon"}  # type: ignore[assignment]
-
+    authz: NamedSecret[str] = NamedSecret(label="dcache/macaroon")
 
     def post_init(self) -> None:
         self.updated_urls: List[str] = []
