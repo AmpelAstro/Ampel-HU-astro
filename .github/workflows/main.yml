@@ -19,20 +19,19 @@ jobs:
     - uses: s-weigand/setup-conda@v1
       with:
         conda-channels: conda-forge
+        python-version: 3.9
     - uses: actions/cache@v2
       id: cache
       with:
-        path: /opt/envs/ampel
+        path: ${{ env.CONDA }}
         key: ${{ hashFiles('setup.py') }}-${{ hashFiles('dev-requirements.txt') }}-py39
     - name: Set up conda env
       if: steps.cache.outputs.cache-hit != true
-      run: conda create -p /opt/envs/ampel python=3.9 sncosmo iminuit scipy numpy pandas
+      run: conda install -y sncosmo iminuit scipy numpy pandas
     - name: Install dependencies
       run: |
-        conda activate /opt/envs/ampel
         python -m pip install --upgrade --upgrade-strategy eager -r dev-requirements.txt -e .
     - run: |
-        conda activate /opt/envs/ampel
         mypy --namespace-packages -p ampel
   
   test:
@@ -43,19 +42,18 @@ jobs:
     - uses: s-weigand/setup-conda@v1
       with:
         conda-channels: conda-forge
+        python-version: 3.9
     - uses: actions/cache@v2
       id: cache
       with:
-        path: /opt/envs/ampel
+        path: ${{ env.CONDA }}
         key: ${{ hashFiles('setup.py') }}-${{ hashFiles('dev-requirements.txt') }}-py39
     - name: Set up conda env
       if: steps.cache.outputs.cache-hit != true
-      run: conda create -p /opt/envs/ampel python=3.9 sncosmo iminuit scipy numpy pandas
+      run: conda install -y sncosmo iminuit scipy numpy pandas
     - name: Install dependencies
       run: |
-        conda activate /opt/envs/ampel
         python -m pip install --upgrade --upgrade-strategy eager -r dev-requirements.txt -e .
     - run: |
-        conda activate /opt/envs/ampel
         pytest --cov=ampel
 
