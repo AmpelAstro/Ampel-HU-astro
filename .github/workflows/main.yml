@@ -20,13 +20,13 @@ jobs:
       with:
         conda-channels: conda-forge
         python-version: 3.9
-    - uses: actions/cache@v2
-      id: cache
-      with:
-        path: ${{ env.CONDA }}
-        key: ${{ hashFiles('setup.py') }}-${{ hashFiles('dev-requirements.txt') }}-py39
+    # - uses: actions/cache@v2
+    #   id: cache
+    #   with:
+    #     path: ${{ env.CONDA }}
+    #     key: ${{ hashFiles('setup.py') }}-${{ hashFiles('dev-requirements.txt') }}-py39
     - name: Set up conda env
-      if: steps.cache.outputs.cache-hit != true
+      # if: steps.cache.outputs.cache-hit != true
       run: conda install -y sncosmo iminuit scipy numpy pandas
     - name: Install dependencies
       run: |
@@ -43,13 +43,13 @@ jobs:
       with:
         conda-channels: conda-forge
         python-version: 3.9
-    - uses: actions/cache@v2
-      id: cache
-      with:
-        path: ${{ env.CONDA }}
-        key: ${{ hashFiles('setup.py') }}-${{ hashFiles('dev-requirements.txt') }}-py39
+    # - uses: actions/cache@v2
+    #   id: cache
+    #   with:
+    #     path: ${{ env.CONDA }}
+    #     key: ${{ hashFiles('setup.py') }}-${{ hashFiles('dev-requirements.txt') }}-py39
     - name: Set up conda env
-      if: steps.cache.outputs.cache-hit != true
+      # if: steps.cache.outputs.cache-hit != true
       run: conda install -y sncosmo iminuit scipy numpy pandas
     - name: Install dependencies
       run: |
