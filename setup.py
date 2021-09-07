@@ -29,11 +29,11 @@ setup(
     },
     install_requires=[
         'ampel-interface>=0.8.0a0,<0.9',
-        'ampel-core>=0.8.0a6,<0.9',
+        'ampel-core>=0.8.0a8,<0.9',
         'ampel-plots>=0.8.0a0,<0.9',
         'ampel-photometry>=0.8.0a0,<0.9',
         'ampel-alerts>=0.8.0a0,<0.9',
-        'ampel-ztf>=0.8.0a0,<0.9',
+        'ampel-ztf>=0.8.0a4,<0.9',
         "sncosmo",
         "iminuit",
         "sfdmap",
