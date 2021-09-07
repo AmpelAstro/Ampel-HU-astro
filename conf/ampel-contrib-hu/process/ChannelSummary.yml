@@ -6,11 +6,14 @@ schedule:
 processor:
   unit: T3Processor
   config:
-    directive:
-      - select:
+    supply:
+      unit: T3DefaultSupplier
+      config:
+        process_name: ChannelSummary
+        select:
           unit: T3StockSelector
           config:
-            modified:
+            updated:
               after:
                 match_type: time_last_run
                 process_name: ChannelSummary
@@ -23,10 +26,10 @@ processor:
           unit: T3LatestStateDataLoader
           config:
             directives:
-              - TRANSIENT
+              - STOCK
               - COMPOUND
-        run:
-          unit: T3DynamicUnitRunner
-          config:
-            execute:
-              - unit: ChannelSummaryPublisher
+    stage:
+      unit: T3AdaptativeStager
+      config:
+        execute:
+          - unit: ChannelSummaryPublisher
