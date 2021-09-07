@@ -97,10 +97,7 @@ class TNSClient:
         status = r.status_code
 
         if status != 200:
-            try:
-                message = httpErrors[status]
-            except ValueError:
-                message = f"Error {status}: Undocumented error"
+            message = httpErrors.get(status, f"Error {status}: Undocumented error")
 
         if message is not None:
             self.logger.warn("TNS bulk submit: " + message)

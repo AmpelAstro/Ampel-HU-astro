@@ -33,21 +33,34 @@ async def tns_post(
     method: str,
     token: TNSToken,
     data: Dict,
+    max_retries: int = 10,
 ) -> Dict:
     """
     post to TNS, asynchronously
     """
-    async with semaphore:
-        with aiohttp.MultipartWriter("form-data") as mpwriter:
-            p: aiohttp.Payload = aiohttp.StringPayload(token.api_key)
-            p.set_content_disposition("form-data", name="api_key")
-            mpwriter.append(p)
-            p = aiohttp.JsonPayload(data)
-            p.set_content_disposition("form-data", name="data")
-            mpwriter.append(p)
-            resp = await session.post(
-                "https://www.wis-tns.org/api/" + method, data=mpwriter
+    for _ in range(max_retries):
+        async with semaphore:
+            with aiohttp.MultipartWriter("form-data") as mpwriter:
+                p: aiohttp.Payload = aiohttp.StringPayload(token.api_key)
+                p.set_content_disposition("form-data", name="api_key")
+                mpwriter.append(p)
+                p = aiohttp.JsonPayload(data)
+                p.set_content_disposition("form-data", name="data")
+                mpwriter.append(p)
+                resp = await session.post(
+                    "https://www.wis-tns.org/api/" + method, data=mpwriter
+                )
+        if resp.status == 429:
+            wait = int(
+                resp.headers[
+                    "x-cone-rate-limit-reset"
+                    if method.endswith("search")
+                    else "x-rate-limit-reset"
+                ]
             )
+            await asyncio.sleep(max(wait, 1))
+            continue
+        resp.raise_for_status()
         return await resp.json()
 
 
@@ -91,14 +104,13 @@ class TNSClient:
     @staticmethod
     def is_permanent_error(exc):
         if isinstance(exc, ClientResponseError):
-            return exc.code not in {500}
+            return exc.code not in {500, 429}
         else:
             return False
 
     async def search(self, exclude=set(), **params):
         semaphore = asyncio.Semaphore(self.maxParallelRequests)
         async with ClientSession(
-            raise_for_status=True,
             headers={
                 "User-Agent": "tns_marker"
                 + json.dumps(
