@@ -15,7 +15,7 @@ from requests.auth import HTTPBasicAuth
 from typing import Any, Dict, Optional, Set, Generator, Union
 
 from ampel.types import ChannelId, UBson
-from ampel.abstract.Secret import Secret
+from ampel.secret.Secret import Secret
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.util.json import AmpelEncoder, load
 from ampel.view.TransientView import TransientView
