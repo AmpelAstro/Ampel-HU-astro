@@ -1,20 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-contrib-HU/ampel/contrib/hu/t2/T2PanStarrThumbPrint.py
+# File              : Ampel-HU-astro/ampel/contrib/hu/t2/T2PanStarrThumbPrint.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 31.01.2021
-# Last Modified Date: 24.02.2021
+# Last Modified Date: 08.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Union, Sequence
+from typing import Union, Sequence
 from pymage.panstarrs import PS1Target # type: ignore[import]
-
+from ampel.types import UBson
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.util.collections import ampel_iter
 from ampel.content.DataPoint import DataPoint
 from ampel.plot.utils import mplfig_to_svg_dict1
-from ampel.type import T2UnitResult
+from ampel.struct.UnitResult import UnitResult
 from ampel.model.PlotProperties import PlotProperties
 
 
@@ -26,8 +26,8 @@ class T2PanStarrThumbPrint(AbsPointT2Unit):
 	:param band: example: ["g", "r", "i", "z", "y"]
 	"""
 
-	ingest: Dict = {"eligible": {"pps": "first"}}
-	cmaps: Sequence[str] = ["gray", "viridis"]
+	ingest = {"filter": "PPSFilter", "select": "first"}
+	cmaps: Sequence[str] = ["cividis"]
 	band: Union[str, Sequence[str]] = "g"
 	plot_props: PlotProperties = PlotProperties(
 		tags = ["THUMBPRINT", "PANSTARRS"],
@@ -43,10 +43,8 @@ class T2PanStarrThumbPrint(AbsPointT2Unit):
 	)
 
 
-	def run(self, datapoint: DataPoint) -> T2UnitResult:
-		"""
-		:param light_curve: see "ampel.view.LightCurve" docstring for more info.
-		"""
+	def process(self, datapoint: DataPoint) -> Union[UBson, UnitResult]:
+		""" """
 
 		pt = self.get_ps1_target(datapoint)
 
