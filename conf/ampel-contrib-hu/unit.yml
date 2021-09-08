@@ -4,7 +4,7 @@
 - ampel.contrib.hu.t0.LensedTransientFilter
 - ampel.contrib.hu.t0.RandFilter
 # - ampel.contrib.hu.t2.T2PanStarrThumbPrint
-# - ampel.contrib.hu.t2.T2PanStarrCatThumbPrint
+- ampel.contrib.hu.t2.T2CatPanStarrThumbPrint
 - ampel.contrib.hu.t2.T2LCQuality
 - ampel.contrib.hu.t2.T2BrightSNProb
 - ampel.contrib.hu.t2.T2TNSEval
