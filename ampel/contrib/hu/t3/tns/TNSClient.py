@@ -38,8 +38,8 @@ async def tns_post(
     """
     post to TNS, asynchronously
     """
-    for _ in range(max_retries):
-        async with semaphore:
+    async with semaphore:
+        for _ in range(max_retries):
             with aiohttp.MultipartWriter("form-data") as mpwriter:
                 p: aiohttp.Payload = aiohttp.StringPayload(token.api_key)
                 p.set_content_disposition("form-data", name="api_key")
@@ -50,16 +50,20 @@ async def tns_post(
                 resp = await session.post(
                     "https://www.wis-tns.org/api/" + method, data=mpwriter
                 )
-        if resp.status == 429:
-            wait = int(
-                resp.headers[
-                    "x-cone-rate-limit-reset"
-                    if method.endswith("search")
-                    else "x-rate-limit-reset"
-                ]
-            )
-            await asyncio.sleep(max(wait, 1))
-            continue
+            if resp.status == 429:
+                wait = max(
+                    (
+                        int(resp.headers.get("x-cone-rate-limit-reset", 0))
+                        if method.endswith("search")
+                        else 0,
+                        int(resp.headers.get("x-rate-limit-reset", 0)),
+                        1,
+                    )
+                )
+                await asyncio.sleep(wait)
+                continue
+            else:
+                break
         resp.raise_for_status()
         return await resp.json()
 
