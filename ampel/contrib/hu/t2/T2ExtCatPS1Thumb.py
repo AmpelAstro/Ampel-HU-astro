@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-HU-astro/ampel/contrib/hu/t2/T2PanStarrCatThumbPrint.py
+# File              : Ampel-HU-astro/ampel/contrib/hu/t2/T2ExtCatPS1Thumb.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 31.01.2021
-# Last Modified Date: 08.09.2021
+# Last Modified Date: 12.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Sequence, Union
@@ -20,7 +20,7 @@ from ampel.view.T2DocView import T2DocView
 from ampel.enum.DocumentCode import DocumentCode
 
 
-class T2CatPanStarrThumbPrint(AbsTiedPointT2Unit, T2PanStarrThumbPrint): # type: ignore[misc]
+class T2ExtCatPS1Thumb(AbsTiedPointT2Unit, T2PanStarrThumbPrint): # type: ignore[misc]
 	"""
 	Retrieve panstarrs images at datapoint location and for each tied extcat catalog matching result:
 	- create a new image
