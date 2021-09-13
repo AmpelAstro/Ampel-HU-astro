@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 31.01.2021
-# Last Modified Date: 12.09.2021
+# Last Modified Date: 13.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Sequence, Union
@@ -20,7 +20,7 @@ from ampel.view.T2DocView import T2DocView
 from ampel.enum.DocumentCode import DocumentCode
 
 
-class T2ExtCatPS1Thumb(AbsTiedPointT2Unit, T2PanStarrThumbPrint): # type: ignore[misc]
+class T2ExtCatPS1Thumb(AbsTiedPointT2Unit):
 	"""
 	Retrieve panstarrs images at datapoint location and for each tied extcat catalog matching result:
 	- create a new image
@@ -31,6 +31,9 @@ class T2ExtCatPS1Thumb(AbsTiedPointT2Unit, T2PanStarrThumbPrint): # type: ignore
 	Note that super class T2PanStarrThumbPrint also accepts the parameters 'cmap', 'band' and 'ingest'
 	"""
 
+	ingest = {"filter": "PPSFilter", "select": "first"}
+	cmaps: Sequence[str] = ["cividis"]
+	band: Union[str, Sequence[str]] = "g"
 	plot_props: PlotProperties = PlotProperties(
 		tags = ["THUMBPRINT", "PANSTARRS"],
 		file_name = {
@@ -45,7 +48,7 @@ class T2ExtCatPS1Thumb(AbsTiedPointT2Unit, T2PanStarrThumbPrint): # type: ignore
 	)
 
 
-	def process(self, datapoint: DataPoint, t2_views: Sequence[T2DocView]) -> Union[UBson, UnitResult]: # type: ignore[override]
+	def process(self, datapoint: DataPoint, t2_views: Sequence[T2DocView]) -> Union[UBson, UnitResult]:
 		""" """
 
 		# That would be a config error
@@ -62,7 +65,7 @@ class T2ExtCatPS1Thumb(AbsTiedPointT2Unit, T2PanStarrThumbPrint): # type: ignore
 		if 'data' not in cat_results:
 			return 4
 
-		pt = self.get_ps1_target(datapoint)
+		pt = T2PanStarrThumbPrint.get_ps1_target(datapoint, self.band)
 		plots = []
 
 		for cat_name, cat_res in cat_results['data'].items():
