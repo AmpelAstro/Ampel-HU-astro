@@ -46,28 +46,30 @@ class T2PanStarrThumbPrint(AbsPointT2Unit):
 	def process(self, datapoint: DataPoint) -> Union[UBson, UnitResult]:
 		""" """
 
-		pt = self.get_ps1_target(datapoint)
-
+		pt = self.get_ps1_target(datapoint, self.band)
 		return {
-			'plots': [
-				mplfig_to_svg_dict1(
-					pt.show(ellipse=False, band=band, show_target=False, cmap=cmap, show=False),
-					self.plot_props,
-					extra = {"band": band, "stock": datapoint["stock"][0], "cmap": cmap}, # type: ignore
-					logger = self.logger
-				)
-				for band in ampel_iter(self.band)
-				for cmap in ampel_iter(self.cmaps)
-			]
+			'data': {
+				'plots': [
+					mplfig_to_svg_dict1(
+						pt.show(ellipse=False, band=band, show_target=False, cmap=cmap, show=False),
+						self.plot_props,
+						extra = {"band": band, "stock": datapoint["stock"][0], "cmap": cmap}, # type: ignore
+						logger = self.logger
+					)
+					for cmap in ampel_iter(self.cmaps)
+					for band in ampel_iter(self.band)
+				]
+			}
 		}
 
 
-	def get_ps1_target(self, datapoint: DataPoint) -> PS1Target:
+	@staticmethod
+	def get_ps1_target(datapoint: DataPoint, band: Union[str, Sequence[str]]) -> PS1Target:
 
 		pt = PS1Target(None)
 		pt.set_coordinate(
 			datapoint["body"]["ra"],
 			datapoint["body"]["dec"]
 		)
-		pt.download_cutout(filters=self.band)
+		pt.download_cutout(filters=band)
 		return pt
