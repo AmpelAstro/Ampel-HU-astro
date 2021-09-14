@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-HU-astro/ampel/contrib/hu/t2/T2ExtCatPS1Thumb.py
+# File              : Ampel-HU-astro/ampel/contrib/hu/t2/T2PS1ThumbExtCat.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 31.01.2021
-# Last Modified Date: 13.09.2021
+# Last Modified Date: 14.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Sequence, Union
+from typing import Sequence, Union, Literal
 from ampel.types import UBson
 from ampel.contrib.hu.t2.T2PanStarrThumbPrint import T2PanStarrThumbPrint
 from ampel.abstract.AbsTiedPointT2Unit import AbsTiedPointT2Unit
@@ -16,11 +16,12 @@ from ampel.content.DataPoint import DataPoint
 from ampel.plot.utils import mplfig_to_svg_dict1
 from ampel.struct.UnitResult import UnitResult
 from ampel.model.PlotProperties import PlotProperties
+from ampel.model.UnitModel import UnitModel
 from ampel.view.T2DocView import T2DocView
 from ampel.enum.DocumentCode import DocumentCode
 
 
-class T2ExtCatPS1Thumb(AbsTiedPointT2Unit):
+class T2PS1ThumbExtCat(AbsTiedPointT2Unit):
 	"""
 	Retrieve panstarrs images at datapoint location and for each tied extcat catalog matching result:
 	- create a new image
@@ -31,7 +32,8 @@ class T2ExtCatPS1Thumb(AbsTiedPointT2Unit):
 	Note that super class T2PanStarrThumbPrint also accepts the parameters 'cmap', 'band' and 'ingest'
 	"""
 
-	ingest = {"filter": "PPSFilter", "select": "first"}
+	t2_dependency: Sequence[UnitModel[Literal['T2CatalogMatch']]]
+
 	cmaps: Sequence[str] = ["cividis"]
 	band: Union[str, Sequence[str]] = "g"
 	plot_props: PlotProperties = PlotProperties(
