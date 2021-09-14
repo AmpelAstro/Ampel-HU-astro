@@ -57,14 +57,11 @@ class T2PS1ThumbExtCat(AbsTiedPointT2Unit):
 			return UnitResult(code=DocumentCode.T2_UNEXPECTED_DEPENDENCY)
 
 		cat_results = t2_views[0].get_payload()
-		if cat_results is None:
+		if not isinstance(cat_results, dict):
 			return UnitResult(code=DocumentCode.T2_UNEXPECTED_DEPENDENCY)
 
-		if not isinstance(cat_results, dict):
-			return 3
-
 		if 'data' not in cat_results:
-			return 4
+			return UnitResult(code=DocumentCode.T2_MISSING_INFO)
 
 		pt = T2PanStarrThumbPrint.get_ps1_target(datapoint, self.band)
 		plots = []
