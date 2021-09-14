@@ -26,7 +26,6 @@ class T2PanStarrThumbPrint(AbsPointT2Unit):
 	:param band: example: ["g", "r", "i", "z", "y"]
 	"""
 
-	ingest = {"filter": "PPSFilter", "select": "first"}
 	cmaps: Sequence[str] = ["cividis"]
 	band: Union[str, Sequence[str]] = "g"
 	plot_props: PlotProperties = PlotProperties(
