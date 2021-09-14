@@ -29,7 +29,6 @@ class T2PS1ThumbExtCat(AbsTiedPointT2Unit):
 	- mark the matched location from the catalog
 
 	A dict structure containing each image as a compressed svg is returned.
-	Note that super class T2PanStarrThumbPrint also accepts the parameters 'cmap', 'band' and 'ingest'
 	"""
 
 	t2_dependency: Sequence[UnitModel[Literal['T2CatalogMatch']]]
