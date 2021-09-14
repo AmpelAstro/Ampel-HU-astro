@@ -56,7 +56,7 @@ class T2PS1ThumbExtCat(AbsTiedPointT2Unit):
 		if not t2_views[0].is_point_type():
 			return UnitResult(code=DocumentCode.T2_UNEXPECTED_DEPENDENCY)
 
-		cat_results = t2_views[0].get_data()
+		cat_results = t2_views[0].get_payload()
 		if cat_results is None:
 			return UnitResult(code=DocumentCode.T2_UNEXPECTED_DEPENDENCY)
 

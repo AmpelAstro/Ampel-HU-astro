@@ -371,7 +371,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         t2_cat_match = t2_views[0]
         assert t2_cat_match.unit==self.dependency_unit
 
-        catalog_result = t2_cat_match.get_data()
+        catalog_result = t2_cat_match.get_payload()
         if not isinstance(catalog_result, dict):
             return { 'action' : False, 'eval' : 'No catlog match result' }
         transient_info = self.inspect_catalog(catalog_result)
