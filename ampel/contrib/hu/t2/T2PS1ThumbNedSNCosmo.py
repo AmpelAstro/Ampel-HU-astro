@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 12.09.2021
-# Last Modified Date: 14.09.2021
+# Last Modified Date: 16.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Sequence, Union, Optional, Tuple, Literal, List
@@ -23,15 +23,14 @@ from ampel.view.LightCurve import LightCurve
 
 class T2PS1ThumbNedSNCosmo(AbsTiedLightCurveT2Unit):
 	"""
-	This point t2 unit is tied with the point T2 unit T2NedTap.
-	It retrieves panstarrs images at a datapoint location and for each NED catalog matching result:
+	This state t2 unit is tied with the state T2 unit T2NedSNCosmo.
+	It retrieves panstarrs images at a location encoded in the first datapoint and for each SNCosmo result:
 	- creates a new image
-	- marks the datapoint location
-	- marks the matched location from the catalog
-
-	:param band: example: ["g", "r", "i", "z", "y"]
+	- marks the (first) datapoint location
+	- marks the matched location from the NED (encoded in the NedSNComso result under key 'ned')
 	"""
 
+	#: band: example: ["g", "r", "i", "z", "y"]
 	band: Union[str, Sequence[str]] = "g"
 	cmaps: Sequence[str] = ["cividis"]
 	plot_all: bool = False
