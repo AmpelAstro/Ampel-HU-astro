@@ -31,7 +31,7 @@ class T2PS1ThumbNedTap(AbsTiedPointT2Unit):
 	- marks the matched location from the catalog
 
 	If you use custom 'ingest options', please make sure that these are the same between T2NedTap and T2NedTapPS1ThumbPrint.
-	Please note that the variant t2 class T2NedSNCosmoPS1ThumbPrint exists and allows to restrict image retrieval
+	Please note that the variant t2 class T2PS1ThumbNedSNCosmo exists and allows to restrict image retrieval
 	based on SNCosmo convergence criteria.
 
 	:param band: example: ["g", "r", "i", "z", "y"]
