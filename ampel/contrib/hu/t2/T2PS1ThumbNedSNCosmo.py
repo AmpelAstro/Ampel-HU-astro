@@ -101,15 +101,15 @@ class T2PS1ThumbNedSNCosmo(AbsTiedLightCurveT2Unit):
 							mplfig_to_svg_dict1(
 								pt.show(
 									ellipse=False, band=band, cmap=cmap, show=False,
-									show_target = False, show_coord = (d['ned']['ra'], d['ned']['dec'])
+									show_target = False, show_coord = (d['catalog']['ra'], d['catalog']['dec'])
 								),
 								self.plot_props,
 								extra = {
 									"band": band,
 									"stock": datapoint["stock"][0], # type: ignore[index]
 									"cmap": cmap,
-									"obj_name": d['ned']['prefname'].replace(" ", "_"),
-									"z": d['ned']['z'],
+									"obj_name": d['catalog']['prefname'].replace(" ", "_"),
+									"z": d['catalog']['z'],
 									"index_pos": i
 								},
 								logger = self.logger
