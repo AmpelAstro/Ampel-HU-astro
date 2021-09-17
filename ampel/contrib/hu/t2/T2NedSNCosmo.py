@@ -153,7 +153,7 @@ class T2NedSNCosmo(AbsTiedLightCurveT2Unit, T2SNCosmo):
 					del d["flux_dict"] # remove superfluous info
 
 				# Append ned cat result to the sncosmo result for convenience
-				d['ned'] = cat_res
+				d['catalog'] = cat_res
 				ret.append(d)
 
 			else:
