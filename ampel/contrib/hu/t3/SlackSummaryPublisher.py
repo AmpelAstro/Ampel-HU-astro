@@ -7,9 +7,9 @@
 # Last Modified Date: 14.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import collections
 import datetime
 import io
+from collections.abc import Mapping
 from typing import Dict, Iterable, List, Set, Tuple, Generator, cast
 
 import numpy as np
@@ -336,13 +336,13 @@ def flat_dict(d, prefix=""):
     Recurse if encountered value is a nested dictionary.
     """
 
-    if not isinstance(d, collections.Mapping):
+    if not isinstance(d, Mapping):
         return d
 
     ret = {}
 
     for key, val in d.items():
-        if isinstance(val, collections.Mapping):
+        if isinstance(val, Mapping):
             ret = {**ret, **flat_dict(val, prefix=prefix + str(key) + "_")}
         else:
             ret[prefix + str(key)] = val
