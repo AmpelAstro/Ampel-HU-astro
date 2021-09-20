@@ -14,7 +14,7 @@ from astropy.time import Time
 from numpy import array
 
 from ampel.alert.PhotoAlert import PhotoAlert
-from ampel.contrib.hu.t0.DecentFilter import DecentFilter
+from ampel.ztf.t0.DecentFilter import DecentFilter
 
 
 class XShooterFilter(DecentFilter):
