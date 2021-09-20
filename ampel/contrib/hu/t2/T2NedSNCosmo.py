@@ -119,7 +119,7 @@ class T2NedSNCosmo(AbsTiedLightCurveT2Unit, T2SNCosmo):
 			self.z_discrete = [cat_res['z']]
 
 			try:
-				r = T2SNCosmo.process(self, light_curve)
+				r = T2SNCosmo.process(self, light_curve) # type: ignore[func-returns-value]
 			except Exception as e:
 				from traceback import format_exc
 				if "No bands in data overlap the model" in format_exc():
