@@ -1,0 +1,11 @@
+name: ampel-hu-astro
+channels:
+  - conda-forge
+dependencies:
+  - sncosmo
+  - iminuit
+  - astroquery
+  - pandas
+  - pip:
+    - pymage @ https://github.com/MickaelRigault/pymage/archive/v1.0.tar.gz
+    - sfdmap
