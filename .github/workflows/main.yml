@@ -18,6 +18,7 @@ jobs:
     - uses: conda-incubator/setup-miniconda@v2
       with:
         miniforge-version: latest
+        activate-environment: test
         environment-file: conda-linux-64.lock
     # - uses: actions/cache@v2
     #   id: cache
