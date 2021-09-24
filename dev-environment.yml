@@ -20,6 +20,7 @@ dependencies:
   
   # ampel-plotting
   - matplotlib-base
+  - lxml
   
   # ampel-ztf
   - python-confluent-kafka
@@ -42,5 +43,6 @@ dependencies:
   # things missing or stale on conda-forge
   - pip:
     - ampel-ztf = 0.8.0a4
+    - ampel-plots = 0.8.0a0
     - pymage @ https://github.com/MickaelRigault/pymage/archive/v1.0.tar.gz#sha256=11e99c4ea06b76ca7fb5b42d1d35d64139a4fa6f7f163a2f0f9cc3ea0b3c55eb
     - sfdmap
