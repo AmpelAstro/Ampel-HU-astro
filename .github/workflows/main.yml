@@ -9,6 +9,10 @@ on:
     branches:
       - main
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   mypy:
     runs-on: ubuntu-latest
@@ -28,7 +32,8 @@ jobs:
     - name: Install pip dependencies
       # if: steps.cache.outputs.cache-hit != true
       run: |
-        conda run -n test python -m pip install --no-deps -r <(cat conda-linux-64.lock | awk '/^# pip/ {print substr($0,7)}') 
+        cat conda-linux-64.lock | awk '/^# pip/ {print substr($0,7)}' > requirements.txt
+        conda run -n test python -m pip install --no-deps -r requirements.txt
     - name: Install project
       run: |
         conda run -n test python -m pip install --no-deps -e .
