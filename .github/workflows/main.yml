@@ -15,19 +15,18 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - uses: s-weigand/setup-conda@v1
+    - uses: conda-incubator/setup-miniconda@v2
       with:
-        conda-channels: conda-forge
-        python-version: 3.9
-    - uses: actions/cache@v2
-      id: cache
-      with:
-        path: ${{ env.CONDA }}
-        key: ${{ hashFiles('conda-linux-64.lock') }}
-    - name: Install dependencies
-      if: steps.cache.outputs.cache-hit != true
+        miniforge-version: latest
+        environment-file: conda-linux-64.lock
+    # - uses: actions/cache@v2
+    #   id: cache
+    #   with:
+    #     path: ${{ env.CONDA }}
+    #     key: ${{ hashFiles('conda-linux-64.lock') }}
+    - name: Install pip dependencies
+      # if: steps.cache.outputs.cache-hit != true
       run: |
-        conda install --file conda-linux-64.lock
         python -m pip install --no-deps -r <(cat conda-linux-64.lock | awk '/^# pip/ {print substr($0,7)}') 
     - name: Install project
       run: |
