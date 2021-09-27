@@ -55,6 +55,9 @@ pytest-mock = "^3.6.1"
 types-requests = "^2.25.9"
 types-pytz = "^2021.1.2"
 
+[tool.conda-lock]
+channels = ["conda-forge"]
+
 [build-system]
 requires = ["poetry-core>=1.0.0", "setuptools>=40.8.0"]
 build-backend = "poetry.core.masonry.api"
