@@ -2,7 +2,7 @@
 name = "ampel-hu-astro"
 version = "0.8.0-alpha.0"
 license = "BSD-3-Clause"
-readme = "README.md"
+readme = "README.rst"
 description = "Astronomy units for the Ampel system from HU-Berlin"
 homepage = "https://ampelproject.github.io"
 repository = "https://github.com/AmpelProject/Ampel-HU-astro"
@@ -60,6 +60,7 @@ channels = ["conda-forge"]
 
 [tool.conda-lock.dependencies]
 python-confluent-kafka = "1.5"
+matplotlib-base = "3.*"
 
 [build-system]
 requires = ["poetry-core>=1.0.0", "setuptools>=40.8.0"]
