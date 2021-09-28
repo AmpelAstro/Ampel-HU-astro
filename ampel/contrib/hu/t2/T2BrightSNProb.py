@@ -23,8 +23,6 @@ class T2BrightSNProb(AbsLightCurveT2Unit, T2RiseDeclineBase):
     Run a XGB tree trained to check whether this transient are likely to be an RCF SN.
     """
 
-    version = 0.1
-
     def post_init(self):
         # Files and selection parameters for tree. Dict keys correspond to nbr of detections.
         # The other parameters were requirements for inclusion in training (and thus usage)
