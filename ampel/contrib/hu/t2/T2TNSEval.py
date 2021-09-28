@@ -99,15 +99,6 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
     }
 
 
-    # Id of dependency
-    dependency_unit: str = 'T2CatalogMatch'
-
-
-    @classmethod
-    def get_tied_unit_names(self) -> List[str]:
-        return [self.dependency_unit]
-
-
     def inspect_catalog(self, cat_res: Dict[str, Any]) -> bool:
         """
         Verify whether any catalog matching criteria prevents submission.
