@@ -59,8 +59,8 @@ class T2NedTap(AbsPointT2Unit):
 
 			r: Dict[str, Any] = resp.json()
 
-		except ConnectionError:
-			self.logger.error("Connection error while sending request to NED")
+		except Exception as e:
+			self.logger.error("Connection error while sending request to NED", exc_info=e)
 			# Service temporarily? unavail
 			return UnitResult(code=DocumentCode.RERUN_REQUESTED)
 
