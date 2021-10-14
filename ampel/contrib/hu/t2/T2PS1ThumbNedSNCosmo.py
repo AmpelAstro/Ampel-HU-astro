@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 12.09.2021
-# Last Modified Date: 12.10.2021
+# Last Modified Date: 14.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Sequence, Union, Optional, Tuple, Literal, List
@@ -118,7 +118,8 @@ class T2PS1ThumbNedSNCosmo(AbsTiedLightCurveT2Unit):
 					}
 
 					for k in self.copy_keys:
-						d2[k] = d[k]
+						if k in d:
+							d2[k] = d[k]
 
 					ret['data'].append(d2)
 
