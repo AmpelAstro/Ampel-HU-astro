@@ -43,6 +43,7 @@ setup(
         "beautifulsoup4",
         "backoff",
         "requests",
+        "sep",
         "pymage @ https://github.com/MickaelRigault/pymage/archive/v1.0.tar.gz",
         # pymage secretly depends on pandas
         "pandas",
