@@ -1,29 +1,29 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-contrib-HU/ampel/contrib/hu/t0/SimpleDecentFilter.py
+# File              : Ampel-HU-astro/ampel/contrib/hu/t0/SimpleDecentFilter.py
 # License           : BSD-3-Clause
 # Author            : m. giomi <matteo.giomi@desy.de>
 # Date              : 12.02.2019
-# Last Modified Date: 05.02.2020
+# Last Modified Date: 24.11.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from numpy import array
 from astropy.coordinates import SkyCoord
 from ampel.abstract.AbsAlertFilter import AbsAlertFilter
-from ampel.alert.PhotoAlert import PhotoAlert
+from ampel.protocol.AmpelAlertProtocol import AmpelAlertProtocol
 
 
-class SimpleDecentFilter(AbsAlertFilter[PhotoAlert]):
+class SimpleDecentFilter(AbsAlertFilter):
 	"""
-	General-purpose filter devloped alongside DecentFilter but without use of external 
-        catalogs. It selects alerts based on:
+	General-purpose filter devloped alongside DecentFilter but without use of external catalogs.
+	It selects alerts based on:
 	* numper of previous detections
 	* positive subtraction flag
 	* loose cuts on image quality (fwhm, elongation, number of bad pixels, and the
 	difference between PSF and aperture magnitude)
 	* distance to known SS objects
 	* (d) real-bogus
-        * Whether it seems a PS source exists at the transient position (as per alert properties).
+	* Whether it seems a PS source exists at the transient position (as per alert properties).
 	"""
 
 	# history
@@ -54,6 +54,7 @@ class SimpleDecentFilter(AbsAlertFilter[PhotoAlert]):
 		for k in self.__annotations__:
 			self.logger.info(f"Using {k}={getattr(self, k)}")
 
+		self.f_photopoints = [{'attribute': 'id', 'operator': '>', 'value': 0}]
 		self.keys_to_check = (
 			'fwhm', 'elong', 'magdiff', 'nbad', 'distpsnr1', 'sgscore1', 'distpsnr2',
 			'sgscore2', 'distpsnr3', 'sgscore3', 'isdiffpos', 'ra', 'dec', 'rb', 'ssdistnr'
@@ -109,7 +110,7 @@ class SimpleDecentFilter(AbsAlertFilter[PhotoAlert]):
 		return False
 
 
-	def process(self, alert: PhotoAlert):
+	def process(self, alert: AmpelAlertProtocol):
 		"""
 		Mandatory implementation.
 		To exclude the alert, return *None*
@@ -121,14 +122,14 @@ class SimpleDecentFilter(AbsAlertFilter[PhotoAlert]):
 		# CUT ON THE HISTORY OF THE ALERT
 		#################################
 
-		npp = len(alert.pps)
-		if npp < self.min_ndet:
+		pps = [el for el in alert.datapoints if el['id'] > 0]
+		if len(pps) < self.min_ndet:
 			#self.logger.debug("rejected: %d photopoints in alert (minimum required %d)"% (npp, self.min_ndet))
-			self.logger.info(None, extra={'nDet': npp})
+			self.logger.info(None, extra={'nDet': len(pps)})
 			return None
 
 		# cut on length of detection history
-		detections_jds = alert.get_values('jd', data='pps')
+		detections_jds = (el['jd'] for el in pps)
 		det_tspan = max(detections_jds) - min(detections_jds)
 		if not (self.min_tspan < det_tspan < self.max_tspan):
 			#self.logger.debug("rejected: detection history is %.3f d long, \
@@ -140,7 +141,7 @@ class SimpleDecentFilter(AbsAlertFilter[PhotoAlert]):
 		# IMAGE QUALITY CUTS
 		####################
 
-		latest = alert.pps[0]
+		latest = alert.datapoints[0]
 		if not self._alert_has_keys(latest):
 			return None
 
