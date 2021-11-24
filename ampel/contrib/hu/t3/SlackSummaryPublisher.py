@@ -199,7 +199,7 @@ class SlackSummaryPublisher(AbsT3Unit):
                 "ztf_name": to_ztf_id(transient.id),
             }
 
-            if summary := transient.get_t2_result(unit_id="T2LightCurveSummary"):
+            if summary := transient.get_latest_t2_body(unit_id="T2LightCurveSummary"):
                 frame.update(summary)  # type: ignore[arg-type]
 
             # include other T2 results, flattened

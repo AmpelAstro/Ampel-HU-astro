@@ -152,7 +152,7 @@ class RapidBase(AbsPhotoT3Unit):
         info: Dict[str, Any] = {}
 
         for t2unit in self.t2info_from:
-            t2_result = tran_view.get_t2_result(unit_id=t2unit)
+            t2_result = tran_view.get_latest_t2_body(unit_id=t2unit)
             if isinstance(t2_result, dict):
                info[t2unit] = t2_result
         return info
