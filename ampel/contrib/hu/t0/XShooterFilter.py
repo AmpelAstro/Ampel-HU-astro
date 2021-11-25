@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : m. giomi <matteo.giomi@desy.de>
 # Date              : 28.08.2018
-# Last Modified Date: 19.04.2021
+# Last Modified Date: 24.11.2021
 # Last Modified By  : jnordin
 
 from typing import Optional, Union
@@ -32,7 +32,8 @@ class XShooterFilter(DecentFilter):
     def post_init(self):
         super().post_init()
         self.keys_to_check += ("jd",)
-        self.f_upper_limits = [{'attribute': 'id', 'operator': '<', 'value': 0}]
+        self.select_upper_limits = [{'attribute': 'magpsf', 'operator': 'is', 'value': None}]
+        self.select_photopoints = [{'attribute': 'magpsf', 'operator': 'is not', 'value': None}]
 
     # Override
     def process(self, alert: AmpelAlertProtocol) -> Optional[Union[bool, int]]:
@@ -79,7 +80,7 @@ class XShooterFilter(DecentFilter):
         self.logger.debug(f"Setting 'now' to JD {now_jd:.4f} to cut on alert history")
 
         # check on history 1: detected in the last 6h
-        detection_jds = array(alert.get_values("jd"))
+        detection_jds = array(alert.get_values("jd", filters=self.select_photopoints))
         recent_detections = detection_jds > (now_jd - self.det_within)
         if not any(recent_detections):
             self.logger.debug(
@@ -89,7 +90,7 @@ class XShooterFilter(DecentFilter):
             return None
 
         # check on the history 2: at least one upper limit in the last 5 days
-        ulim_jds = alert.get_values("jd", filters=self.f_upper_limits)
+        ulim_jds = alert.get_values("jd", filters=self.select_upper_limits)
         if ulim_jds is None:
             self.logger.debug("Rejected: this alert has no upper limits")
             return None

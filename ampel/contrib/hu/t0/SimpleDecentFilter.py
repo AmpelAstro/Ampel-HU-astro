@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : m. giomi <matteo.giomi@desy.de>
 # Date              : 12.02.2019
-# Last Modified Date: 24.11.2021
+# Last Modified Date: 25.11.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from numpy import array
@@ -122,7 +122,7 @@ class SimpleDecentFilter(AbsAlertFilter):
 		# CUT ON THE HISTORY OF THE ALERT
 		#################################
 
-		pps = [el for el in alert.datapoints if el['id'] > 0]
+		pps = [el for el in alert.datapoints if el.get('magpsf')]
 		if len(pps) < self.min_ndet:
 			#self.logger.debug("rejected: %d photopoints in alert (minimum required %d)"% (npp, self.min_ndet))
 			self.logger.info(None, extra={'nDet': len(pps)})
@@ -203,7 +203,6 @@ class SimpleDecentFilter(AbsAlertFilter):
 			self.logger.info(None, extra={'ps1Confusion': True})
 			return None
 
-		# congratulation alert! you made it!
 		#self.logger.debug("Alert %s accepted. Latest pp ID: %d"%(alert.tran_id, latest['candid']))
 		self.logger.debug("Alert accepted", extra={'latestPpId': latest['candid']})
 
