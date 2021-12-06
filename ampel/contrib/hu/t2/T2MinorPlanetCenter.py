@@ -21,7 +21,7 @@ from ampel.struct.UnitResult import UnitResult
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.content.DataPoint import DataPoint
 from ampel.enum.DocumentCode import DocumentCode
-from ampel.model.T2IngestOptions import T2IngestOptions
+from ampel.model.DPSelection import DPSelection
 
 
 class T2MinorPlanetCenter(AbsPointT2Unit):
@@ -30,9 +30,7 @@ class T2MinorPlanetCenter(AbsPointT2Unit):
 	matches something known by the MinorPlanetCenter.
 	"""
 
-	# run only on last datapoint by default
-	# NB: this assumes that docs are created by DualPointT2Ingester
-	eligible: ClassVar[Optional[T2IngestOptions]] = {"filter": "PPSFilter", "sort": "jd", "select": "first"}
+	eligible: ClassVar[DPSelection] = DPSelection(filter='PPSFilter', sort='jd', select='last')
 
 	# Search radius passed to MPC (arcminutes!!!)
 	searchradius : float = 1

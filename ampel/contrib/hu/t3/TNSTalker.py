@@ -347,7 +347,7 @@ class TNSTalker(AbsT3Unit):
             ztf_name = to_ztf_id(tran_view.id)
 
             # Obtain atdict start from T2 result
-            t2result = tran_view.get_t2_result(unit_id="T2TNSEval")
+            t2result = tran_view.get_latest_t2_body(unit_id="T2TNSEval")
             if not isinstance(t2result, dict):
                 raise ValueError("Need to have a TNS atdict started from a suitable T2.")
             # Create the submission dictionary - in case the transient is to be submitted

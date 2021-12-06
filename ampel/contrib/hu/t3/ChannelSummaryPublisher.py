@@ -69,7 +69,7 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
             )
 
         # incorporate T2LightCurveSummary
-        if summary := tran_view.get_t2_result(unit_id="T2LightCurveSummary"):
+        if summary := tran_view.get_latest_t2_body(unit_id="T2LightCurveSummary"):
             assert isinstance(summary, dict)
             out.update(summary)
             last_detection = summary["last_detection"]

@@ -4,16 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : m. giomi <matteo.giomi@desy.de>
 # Date              : 28.08.2018
-# Last Modified Date: 19.04.2021
-# Last Modified By  : jnordin 
+# Last Modified Date: 24.11.2021
+# Last Modified By  : jnordin
 
-
-from typing import Optional, Sequence, Union
-
-from astropy.time import Time
+from typing import Optional, Union
 from numpy import array
-
-from ampel.alert.PhotoAlert import PhotoAlert
+from ampel.protocol.AmpelAlertProtocol import AmpelAlertProtocol
 from ampel.ztf.t0.DecentFilter import DecentFilter
 
 
@@ -34,18 +30,19 @@ class XShooterFilter(DecentFilter):
     min_sumrat: float = 0.6      # Best guess value 0.8
 
     def post_init(self):
-
         super().post_init()
         self.keys_to_check += ("jd",)
+        self.select_upper_limits = [{'attribute': 'magpsf', 'operator': 'is', 'value': None}]
+        self.select_photopoints = [{'attribute': 'magpsf', 'operator': 'is not', 'value': None}]
 
     # Override
-    def process(self, alert: PhotoAlert) -> Optional[Union[bool, int]]:
+    def process(self, alert: AmpelAlertProtocol) -> Optional[Union[bool, int]]:
         """
         run the decent filter on the alert
         """
 
         # cut on declination
-        latest = alert.pps[0]
+        latest = alert.datapoints[0]
         if latest["dec"] > self.max_dec:
             self.logger.debug(
                 f"Rejected: declination {latest['dec']:.2f} deg is "
@@ -83,7 +80,7 @@ class XShooterFilter(DecentFilter):
         self.logger.debug(f"Setting 'now' to JD {now_jd:.4f} to cut on alert history")
 
         # check on history 1: detected in the last 6h
-        detection_jds = array(alert.get_values("jd"))
+        detection_jds = array(alert.get_values("jd", filters=self.select_photopoints))
         recent_detections = detection_jds > (now_jd - self.det_within)
         if not any(recent_detections):
             self.logger.debug(
@@ -93,7 +90,7 @@ class XShooterFilter(DecentFilter):
             return None
 
         # check on the history 2: at least one upper limit in the last 5 days
-        ulim_jds = alert.get_values("jd", data="uls")
+        ulim_jds = alert.get_values("jd", filters=self.select_upper_limits)
         if ulim_jds is None:
             self.logger.debug("Rejected: this alert has no upper limits")
             return None

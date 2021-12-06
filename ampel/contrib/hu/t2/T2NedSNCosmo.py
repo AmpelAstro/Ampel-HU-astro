@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.03.2021
-# Last Modified Date: 14.09.2021
+# Last Modified Date: 10.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import List, Any, Optional, Tuple, Union, Sequence, Literal
@@ -52,7 +52,7 @@ class T2NedSNCosmo(AbsTiedLightCurveT2Unit, T2SNCosmo):
 		"t2_dependency": [
 			{
 				"unit": "T2NEDTap",
-				"link_override": {"pps": "first"}
+				"link_override": {'filter': 'PPSFilter', 'sort': 'jd', 'select': 'first'}
 			}
 		]
 	}

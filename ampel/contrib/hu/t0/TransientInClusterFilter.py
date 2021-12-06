@@ -4,13 +4,14 @@
 # License           : BSD-3-Clause
 # Author            : m. giomi <matteo.giomi@desy.de>
 # Date              : 28.08.2018
-# Last Modified Date: 19.03.2021
+# Last Modified Date: 24.11.2021
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
 import numpy as np
 from functools import partial
-
 from ampel.ztf.t0.DecentFilter import DecentFilter
+from ampel.protocol.AmpelAlertProtocol import AmpelAlertProtocol
+
 
 class TransientInClusterFilter(DecentFilter):
 	"""
@@ -41,7 +42,7 @@ class TransientInClusterFilter(DecentFilter):
 		)
 
 
-	def process(self, alert):
+	def process(self, alert: AmpelAlertProtocol):
 		"""
 		run the filter on the alert. First we run the decent filter, then we match
 		with the cluster catalog.
@@ -49,8 +50,9 @@ class TransientInClusterFilter(DecentFilter):
 
 		# if the candidate has passed the decent filter, check if it is compatible
 		# with the position of some nearby galaxy cluster
-		latest = alert.pps[0]
-		alert_ra, alert_dec = latest['ra'], latest['dec']
+		latest = alert.datapoints[0]
+		alert_ra = latest['ra']
+		alert_dec = latest['dec']
 
 		# A) find position of all the nearby clusters. If none is found, reject alert.
 		nearby_clusters = self.rassebcs_query(alert_ra, alert_dec)[0]
@@ -89,4 +91,4 @@ class TransientInClusterFilter(DecentFilter):
 			)
 
 		# now run the decent filter (faster to do it afterwards ;-)
-		return super().apply(alert)
+		return super().process(alert)

@@ -51,10 +51,11 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
 
     # A candidate need to have at least this many detections
     min_ndet: int = 1
-    min_ndet_postul: int =  0  # and if it has this minimum nr of detection after the last significant (max_maglim) UL.
-    max_age: float = (
-         3  # days, If a detection has an age older than this, skip (stars,age).
-    )
+    min_ndet_postul: int = 0  # and if it has this minimum nr of detection after the last significant (max_maglim) UL.
+
+    # days, If a detection has an age older than this, skip (stars,age).
+    max_age: float = 3.
+
     # Min age of detection history
     min_age: float = 0
     # range of peak magnitudes for submission
@@ -63,7 +64,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
     # Reported detections in at least this many filters
     min_n_filters: int = 1
     # Require a detection in one of these filters (e.g. ZTF I-band more often spurious)
-    det_filterids: List[int] = [1,2,3]   # default to any of them
+    det_filterids: List[int] = [1, 2, 3]   # default to any of them
     # Minimal galactic latitide
     min_gal_lat: float = 14
     # reject alert if ssdistnr smaller than this value for any pp
@@ -80,7 +81,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
     # Limiting magnitude to consider upper limits as 'significant'
     maglim_min: float = 19.5
     # A limiting magnitude max this time ago
-    maglim_maxago: float =  2.5
+    maglim_maxago: float = 2.5
 
     # Cut to apply to all the photopoints in the light curve.
     # This will affect most operations, i.e. evaluating the position,
@@ -90,14 +91,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         {"attribute": "magfromlim", "operator": ">", "value": 0},
     ]
 
-    # Id of dependency
-    dependency_unit: str = 'T2CatalogMatch'
-
-    @classmethod
-    def get_tied_unit_names(self) -> List[str]:
-        return [self.dependency_unit]
-
-    def inspect_catalog(self, cat_res : Dict[str,Any]) -> Optional[Dict[str,Any]]:
+    def inspect_catalog(self, cat_res: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
         Check whether a redshift match can be found in matched catalogs.
         """
@@ -108,9 +102,9 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         for catname in self.redshift_catalogs:
             catinfo = cat_res.get(catname, False)
             if (
-                catinfo
-                and (self.min_redshift < catinfo["z"] < self.max_redshift)
-                and (self.min_dist < catinfo["dist2transient"] < self.max_dist)
+                catinfo and
+                (self.min_redshift < catinfo["z"] < self.max_redshift) and
+                (self.min_dist < catinfo["dist2transient"] < self.max_dist)
             ):
                 self.logger.info(
                     "z matched.",
@@ -122,9 +116,8 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
                 )
                 # Calculate physical distance
                 dst_kpc = (
-                    catinfo["dist2transient"]
-                    * Planck15.kpc_proper_per_arcmin(catinfo["z"]).value
-                    / 60.0
+                    catinfo["dist2transient"] *
+                    Planck15.kpc_proper_per_arcmin(catinfo["z"]).value / 60.0
                 )
                 if self.max_kpc_dist > 0 and dst_kpc > self.max_kpc_dist:
                     self.logger.info(
@@ -154,7 +147,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
 
 
 
-    def inspect_lc(self, lc : LightCurve) -> Optional[Dict[str,Any]]:
+    def inspect_lc(self, lc: LightCurve) -> Optional[Dict[str, Any]]:
         """
         Verify whether the transient lightcurve fulfill criteria for submission.
 
@@ -163,7 +156,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         # apply cut on history: consider photophoints which are sharp enough
         pps = lc.get_photopoints(filters=self.lc_filters)
         assert pps is not None
-        info : Dict[str,Any] = {}
+        info: Dict[str, Any] = {}
 
         # cut on number of detection
         if len(pps) < self.min_ndet:
@@ -178,7 +171,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         most_recent_detection, first_detection = max(jds), min(jds)
         age = most_recent_detection - first_detection
         if age > self.max_age or age < self.min_age:
-            self.logger.info( 'Rejected', extra={'age' : age} )
+            self.logger.info('Rejected', extra={'age': age})
             return None
         info["age"] = age
 
@@ -194,13 +187,12 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         if ulims and len(ulims) > 0:
             last_ulim_jd = sorted([x["body"]["jd"] for x in ulims])[-1]
             pps_after_ndet = lc.get_photopoints(
-                filters=self.lc_filters
-                + [{"attribute": "jd", "operator": ">=", "value": last_ulim_jd}]
+                filters=self.lc_filters + [{"attribute": "jd", "operator": ">=", "value": last_ulim_jd}]
             )
             # Check if there are enough positive detection after the last significant UL
             if (
-                pps_after_ndet is not None
-                and len(pps_after_ndet) < self.min_ndet_postul
+                pps_after_ndet is not None and
+                len(pps_after_ndet) < self.min_ndet_postul
             ):
                 self.logger.info(
                     "not enough consecutive detections after last significant UL.",
@@ -226,13 +218,13 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         used_filters = set([pp["body"]["fid"] for pp in pps])
         if len(used_filters) < self.min_n_filters:
             self.logger.info(
-                "Rejected", extra={'nbr_filt':len(used_filters)} 
+                "Rejected", extra={'nbr_filt': len(used_filters)}
             )
             return None
         # cut on which filters used
-        if used_filters.isdisjoint( self.det_filterids ):
+        if used_filters.isdisjoint(self.det_filterids):
             self.logger.info(
-                "Rejected (wrong filter det)", extra={ 'det_filters' : used_filters } 
+                "Rejected (wrong filter det)", extra={'det_filters': used_filters}
             )
             return None
 
@@ -241,7 +233,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         peak_mag = min(mags)
         if peak_mag > self.min_peak_mag or peak_mag < self.max_peak_mag:
             self.logger.info(
-                "Rejected", extra={ 'peak_mag' : peak_mag }
+                "Rejected", extra={'peak_mag': peak_mag}
             )
             return None
         info["peak_mag"] = peak_mag
@@ -270,7 +262,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         b = coordinates.galactic.b.deg
         if abs(b) < self.min_gal_lat:
             self.logger.info(
-                "Rejected (galactic plane)", extra={'gal_lat_b' : b}
+                "Rejected (galactic plane)", extra={'gal_lat_b': b}
             )
             return None
         info["ra"] = ra
@@ -338,11 +330,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         return info
 
 
-
-
-    # ==================== #
-    # AMPEL T2 MANDATORY   #
-    # ==================== #
+    # MANDATORY
     def process(self, light_curve: LightCurve, t2_views: Sequence[T2DocView]) -> Union[UBson, UnitResult]:
         """
 
@@ -369,14 +357,13 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         # There might be multiple CatalogMatch associated with the transient
         # we here only take the first without specific origin
         t2_cat_match = t2_views[0]
-        assert t2_cat_match.unit==self.dependency_unit
 
         catalog_result = t2_cat_match.get_payload()
         if not isinstance(catalog_result, dict):
-            return { 'action' : False, 'eval' : 'No catlog match result' }
+            return {'action': False, 'eval': 'No catlog match result'}
         transient_info = self.inspect_catalog(catalog_result)
         if not transient_info:
-            return { 'action' : False, 'eval' : 'No cat match in z-range' }
+            return {'action': False, 'eval': 'No cat match in z-range'}
 
 
         # ii. Check whether the lightcurve passes selection criteria
