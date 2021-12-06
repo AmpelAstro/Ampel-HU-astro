@@ -22,6 +22,7 @@ from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.content.DataPoint import DataPoint
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.model.DPSelection import DPSelection
+from ampel.model.UnitModel import UnitModel
 
 
 class T2MinorPlanetCenter(AbsPointT2Unit):
@@ -30,7 +31,11 @@ class T2MinorPlanetCenter(AbsPointT2Unit):
 	matches something known by the MinorPlanetCenter.
 	"""
 
-	eligible: ClassVar[DPSelection] = DPSelection(filter='PPSFilter', sort='jd', select='last')
+	eligible: ClassVar[DPSelection] = DPSelection(
+		filter=UnitModel(unit="SimpleTagFilter", config={"require": ["ZTF_DP"]}),
+		sort='jd',
+		select='last'
+	)
 
 	# Search radius passed to MPC (arcminutes!!!)
 	searchradius : float = 1
