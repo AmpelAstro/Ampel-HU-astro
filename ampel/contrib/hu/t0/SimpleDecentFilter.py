@@ -12,7 +12,7 @@ from typing import Optional, Union, Dict, Any
 from astropy.table import Table
 from astropy.coordinates import SkyCoord
 
-from ampel.alert.PhotoAlert import PhotoAlert
+from ampel.protocol.AmpelAlertProtocol import AmpelAlertProtocol
 from ampel.abstract.AbsAlertFilter import AbsAlertFilter
 
 
@@ -78,6 +78,8 @@ class SimpleDecentFilter(AbsAlertFilter):
             "ssdistnr",
         )
 
+        # How to filter for detections in alert
+        self.filter_pps = [{'attribute': 'id', 'operator': '>', 'value': 0}]
 
 
     def _alert_has_keys(self, photop) -> bool:
@@ -148,7 +150,7 @@ class SimpleDecentFilter(AbsAlertFilter):
 
 
     # Override
-    def process(self, alert: PhotoAlert) -> Optional[Union[bool, int]]:
+    def process(self, alert: AmpelAlertProtocol) -> Optional[Union[bool, int]]:
         """
         Mandatory implementation.
         To exclude the alert, return *None*
@@ -161,14 +163,14 @@ class SimpleDecentFilter(AbsAlertFilter):
         # CUT ON THE HISTORY OF THE ALERT
         #################################
 
-        npp = len(alert.pps)
+        detection_jds = alert.get_values('jd',filters=self.filter_pps)
+        npp = len(detection_jds)
         if npp < self.min_ndet:
             # self.logger.debug("rejected: %d photopoints in alert (minimum required %d)"% (npp, self.min_ndet))
             self.logger.info(None, extra={"nDet": npp})
             return None
 
         # cut on length of detection history
-        detections_jds = alert.get_values("jd")
         det_tspan = max(detections_jds) - min(detections_jds)
         if not (self.min_tspan <= det_tspan <= self.max_tspan):
             # self.logger.debug("rejected: detection history is %.3f d long, \
@@ -180,7 +182,7 @@ class SimpleDecentFilter(AbsAlertFilter):
         # IMAGE QUALITY CUTS
         ####################
 
-        latest = alert.pps[0]
+        latest = alert.dps[0]   # Assuming alert structure where det comes first
         if not self._alert_has_keys(latest):
             return None
 
