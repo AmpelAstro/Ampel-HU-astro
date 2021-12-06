@@ -79,7 +79,7 @@ class SimpleDecentFilter(AbsAlertFilter):
         )
 
         # How to filter for detections in alert
-        self.filter_pps = [{'attribute': 'id', 'operator': '>', 'value': 0}]
+        self.filter_pps = [{'attribute': 'magpsf', 'operator': 'is not', 'value': None}]
 
 
     def _alert_has_keys(self, photop) -> bool:
@@ -171,7 +171,7 @@ class SimpleDecentFilter(AbsAlertFilter):
             return None
 
         # cut on length of detection history
-        det_tspan = max(detections_jds) - min(detections_jds)
+        det_tspan = max(detection_jds) - min(detection_jds)
         if not (self.min_tspan <= det_tspan <= self.max_tspan):
             # self.logger.debug("rejected: detection history is %.3f d long, \
             # requested between %.3f and %.3f d"% (det_tspan, self.min_tspan, self.max_tspan))
@@ -182,7 +182,7 @@ class SimpleDecentFilter(AbsAlertFilter):
         # IMAGE QUALITY CUTS
         ####################
 
-        latest = alert.dps[0]   # Assuming alert structure where det comes first
+        latest = alert.datapoints[0]   # Assuming alert structure where det comes first
         if not self._alert_has_keys(latest):
             return None
 
