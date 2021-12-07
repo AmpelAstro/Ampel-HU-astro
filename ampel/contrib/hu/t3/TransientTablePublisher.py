@@ -94,7 +94,9 @@ class TransientTablePublisher(AbsT3Unit):
             basetdict = {}
             # Assemble t2 information bound to the transient (e.g. Point T2s)
             for t2unit, table_entries in self.transient_table_schema.items():
-                if t2res := tran_view.get_t2_result(unit_id=t2unit):
+                # New SnapView has method for directly retrieve result.
+                # Possibly use this.
+                if t2res := tran_view.get_latest_t2_body(unit_id=t2unit):
                     for label, path in table_entries.items():
                         try:
                             basetdict[label] = reduce(dict.get, path, t2res)
@@ -102,12 +104,14 @@ class TransientTablePublisher(AbsT3Unit):
                             pass # We leave missing entries empty
 
             # Assemble info which could vary from state to state
+            # Should add config to labels if multiple exports
+            # from same unit is requested.
             stateinfo = []
             for t1_document in tran_view.t1:
                 t1_link = t1_document['link']
                 tdict = {}
                 for t2unit, table_entries in self.table_schema.items():
-                    if t2res := tran_view.get_t2_result(unit_id=t2unit, link_id=t1_link):
+                    if t2res := tran_view.get_latest_t2_body(unit_id=t2unit, link_id=t1_link):
                         for label, path in table_entries.items():
                             try:
                                 tdict[label] = reduce(dict.get, path, t2res)
