@@ -12,7 +12,7 @@ from itertools import islice
 from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, TYPE_CHECKING, Union
 from ampel.struct.StockAttributes import StockAttributes
 from ampel.types import StockId, UBson
-from ampel.abstract.AbsT3Unit import AbsT3Unit, T3Send
+from ampel.abstract.AbsT3StageUnit import AbsT3StageUnit, T3Send
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.contrib.hu.t3.ampel_tns import (
@@ -38,7 +38,7 @@ def chunks(l: Iterable, n: int) -> Generator[List, None, None]:
             break
 
 
-class TNSTalker(AbsT3Unit):
+class TNSTalker(AbsT3StageUnit):
     """
     Get TNS name if existing, and submit selected candidates.
     
@@ -121,7 +121,7 @@ class TNSTalker(AbsT3Unit):
                 and entry["unit"] == self.__class__.__name__
             )
 
-        if jentries := tran_view.get_journal_entries(tier=3, filter_func=select):
+        if jentries := list(tran_view.get_journal_entries(tier=3, filter_func=select)):
             if jentries[-1]["extra"] is not None:
                 tns_name = jentries[-1]["extra"].get("tnsName", None)
             tns_internals = [
@@ -347,7 +347,7 @@ class TNSTalker(AbsT3Unit):
             ztf_name = to_ztf_id(tran_view.id)
 
             # Obtain atdict start from T2 result
-            t2result = tran_view.get_latest_t2_body(unit_id="T2TNSEval")
+            t2result = tran_view.get_t2_body(unit="T2TNSEval")
             if not isinstance(t2result, dict):
                 raise ValueError("Need to have a TNS atdict started from a suitable T2.")
             # Create the submission dictionary - in case the transient is to be submitted

@@ -13,7 +13,7 @@ from io import BytesIO
 from typing import Optional, Generator
 from urllib.parse import ParseResult, urlparse, urlunparse
 from xml.etree import ElementTree
-from ampel.abstract.AbsT3Unit import AbsT3Unit
+from ampel.abstract.AbsT3StageUnit import AbsT3StageUnit
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.util.json import AmpelEncoder
 from ampel.struct.JournalAttributes import JournalAttributes
@@ -36,7 +36,7 @@ def strip_path_from_url(url):
     return urlunparse(ParseResult(scheme, netloc, "/", None, None, None))
 
 
-class TransientViewDumper(AbsT3Unit):
+class TransientViewDumper(AbsT3StageUnit):
     """"""
 
     version = 0.1

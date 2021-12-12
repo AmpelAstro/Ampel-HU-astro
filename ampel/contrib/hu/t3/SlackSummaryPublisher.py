@@ -18,7 +18,7 @@ import requests
 from slack import WebClient
 from slack.errors import SlackClientError
 
-from ampel.abstract.AbsT3Unit import AbsT3Unit
+from ampel.abstract.AbsT3StageUnit import AbsT3StageUnit
 from ampel.log.utils import log_exception
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.view.TransientView import TransientView
@@ -27,7 +27,7 @@ from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 from slack.web.slack_response import SlackResponse
 
 
-class SlackSummaryPublisher(AbsT3Unit):
+class SlackSummaryPublisher(AbsT3StageUnit):
     """"""
 
     dry_run: bool = False
@@ -48,7 +48,7 @@ class SlackSummaryPublisher(AbsT3Unit):
         "isdiffpos",
     ]
 
-    def process(self, gen: Generator[TransientView, JournalAttributes, None]) -> None:
+    def process(self, gen: Generator[TransientView, T3Send, None], t3s: Optional[T3Store] = None) -> None:
         """"""
         channels: Set[str] = set()
         frames, photometry = self.combine_transients(gen, channels)
@@ -199,7 +199,7 @@ class SlackSummaryPublisher(AbsT3Unit):
                 "ztf_name": to_ztf_id(transient.id),
             }
 
-            if summary := transient.get_latest_t2_body(unit_id="T2LightCurveSummary"):
+            if summary := transient.get_t2_body(unit="T2LightCurveSummary"):
                 frame.update(summary)  # type: ignore[arg-type]
 
             # include other T2 results, flattened
