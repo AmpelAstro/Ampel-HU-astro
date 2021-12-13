@@ -69,7 +69,7 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
             )
 
         # incorporate T2LightCurveSummary
-        if summary := tran_view.get_latest_t2_body(unit_id="T2LightCurveSummary"):
+        if summary := tran_view.get_t2_body(unit="T2LightCurveSummary"):
             assert isinstance(summary, dict)
             out.update(summary)
             last_detection = summary["last_detection"]
@@ -81,7 +81,7 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
         return out
 
 
-    def process(self, gen: Generator[TransientView, JournalAttributes, None]) -> Union[UBson, UnitResult]:
+    def process(self, gen: Generator[TransientView, T3Send, None], t3s: Optional[T3Store] = None) -> Union[UBson, UnitResult]:
         """
         load the stats from the alerts
         """

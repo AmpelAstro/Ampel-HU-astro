@@ -9,10 +9,10 @@
 
 import logging
 from typing import Optional, Any, Union, Generator
-from ampel.types import UBson
+from ampel.types import UBson, T3Send
 from ampel.struct.UnitResult import UnitResult
+from ampel.view.T3Store import T3Store
 from ampel.view.TransientView import TransientView
-from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
 from ampel.util.pretty import prettyjson
 
@@ -32,11 +32,8 @@ class TransientInfoPrinter(AbsPhotoT3Unit):
 			self.logger.addHandler(fh) # type: ignore
 			self.logger.info("Added logging handle to: {logfile}")
 
-		if self.session_info:
-			self.logger.info(f"Session info: {self.session_info}")
 
-
-	def process(self, gen: Generator[TransientView, JournalAttributes, None]) -> Union[UBson, UnitResult]:
+	def process(self, gen: Generator[TransientView, T3Send, None], t3s: Optional[T3Store] = None) -> Union[UBson, UnitResult]:
 
 		self.logger.info("Printing transients info")
 		self.logger.info("=" * 80)
@@ -71,7 +68,7 @@ class TransientInfoPrinter(AbsPhotoT3Unit):
 		if tran.stock:
 			logger.info(f"Tags: {tran.stock['tag']}")
 
-		logger.info("Content: %s" % TransientView.content_summary(tran))
+		logger.info("Content: %s" % tran.content_summary())
 
 		if tran.extra:
 			logger.info(f"Extra: {tran.extra}")
