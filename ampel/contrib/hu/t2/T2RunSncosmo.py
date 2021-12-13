@@ -17,6 +17,7 @@ from typing import List, Dict, Any, Optional, Tuple, Union, Sequence, Literal
 
 from ampel.types import UBson
 from ampel.struct.UnitResult import UnitResult
+
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
 from ampel.view.T2DocView import T2DocView
 from ampel.view.LightCurve import LightCurve
@@ -214,6 +215,7 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
         phot_tab['fluxerr'] = np.abs(phot_tab['flux'] * (-phot_tab['sigmapsf'] / 2.5 * np.log(10)))
         phot_tab['zp'] = 25
         phot_tab['zpsys'] = 'ab'
+        phot_tab.sort('jd')
 
         return phot_tab
 
@@ -246,6 +248,9 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
         iFirst = np.where((sncosmo_table["flux"] / sncosmo_table["fluxerr"]) > detection_sigma)[0]
         # table might not be ordered
         lc_metrics['phase_{}sigma'.format(detection_sigma)] = np.min(sncosmo_table['phase'][iFirst])
+
+        # Determine the explosion time (JD) according to the model (i.e. first time when model was defined)
+        lc_metrics['jd_model_start'] = sncosmo_model.source.minphase() + sncosmo_model.get('t0')
 
 
         # Determine the chi/dof and dof for observations around peak light

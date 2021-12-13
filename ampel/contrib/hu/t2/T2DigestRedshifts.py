@@ -280,6 +280,9 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
 
         """
 
+        print(light_curve)
+        print(t2_views)
+
         if not t2_views: # Should not happen actually, T2Processor catches that case
             self.logger.error("Missing tied t2 views")
             return UnitResult(doc_code=DocumentCode.MISSING_INFO)

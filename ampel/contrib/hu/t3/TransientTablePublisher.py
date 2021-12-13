@@ -10,6 +10,7 @@
 from typing import Any, Dict, List, Optional, Tuple, Union, Generator
 from functools import reduce
 import re, os, requests
+import io
 import pandas as pd
 import backoff
 
