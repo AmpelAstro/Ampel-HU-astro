@@ -95,8 +95,7 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
         },
         "width": 10,
         "height": 6,
-        "id_mapper": "ZTFIdMapper",
-        "disk_save": "/home/jnordin/tmp/"
+        "id_mapper": "ZTFIdMapper"
     }
 
 
