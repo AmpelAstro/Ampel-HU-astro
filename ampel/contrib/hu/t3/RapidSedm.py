@@ -8,12 +8,9 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import datetime, requests
-from typing import Any, Dict, Optional, Tuple, Generator, Union
-from ampel.types import StockId, UBson
+from typing import Any, Dict, Optional, Tuple
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.contrib.hu.t3.RapidBase import RapidBase
-from ampel.struct.JournalAttributes import JournalAttributes
-from ampel.struct.UnitResult import UnitResult
 from ampel.view.TransientView import TransientView
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 
@@ -82,7 +79,7 @@ class RapidSedm(RapidBase):
 
     def react(
         self, tran_view: TransientView, info: Optional[Dict[str, Any]]
-    ) -> Tuple[bool, Optional[dict[str,Any]]]:
+    ) -> Tuple[bool, Optional[dict[str, Any]]]:
         """
         Send a trigger to the SEDM. Note that we have no good way of investigating the queue at this time
         """

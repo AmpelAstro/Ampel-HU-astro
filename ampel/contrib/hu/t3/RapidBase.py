@@ -15,7 +15,8 @@ from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.struct.UnitResult import UnitResult
 from ampel.view.TransientView import TransientView
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
-from ampel.types import UBson
+from ampel.types import UBson, T3Send
+from ampel.view.T3Store import T3Store
 
 
 # get the science records for the catalog match
@@ -83,7 +84,7 @@ class RapidBase(AbsPhotoT3Unit):
             # Otherwise, test
             elif self.do_testreact:
                 test_success, jcontent = self.test_react(tv, transientinfo)
-            
+
             if jcontent:
                 gen.send(JournalAttributes(extra=jcontent))
 
@@ -154,5 +155,5 @@ class RapidBase(AbsPhotoT3Unit):
         for t2unit in self.t2info_from:
             t2_result = tran_view.get_t2_body(unit=t2unit)
             if isinstance(t2_result, dict):
-               info[t2unit] = t2_result
+                info[t2unit] = t2_result
         return info

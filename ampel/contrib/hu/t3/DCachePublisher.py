@@ -19,6 +19,7 @@ from aiohttp.client_exceptions import (
 )
 
 from ampel.types import UBson
+from ampel.view.T3Store import T3Store
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.util.json import AmpelEncoder
@@ -31,7 +32,7 @@ from ampel.struct.JournalAttributes import JournalAttributes
 class DCachePublisher(AbsT3ReviewUnit):
     """
     Publish TransientViews to DCache in gzipped JSON format
-    
+
     Each run writes a manifest file to {baseDir}/{channel}/manifest/latest.json.gz
     The manifest has the form:
     {
@@ -39,14 +40,14 @@ class DCachePublisher(AbsT3ReviewUnit):
         "previous": url of previous manifest (or null),
         "updated": list of TransientView URLs
     }
-    
+
     To build a list of TransientViews updated since some date, read latest.json.gz,
     consume all URLs in "updated", and then repeat with the manifest pointed to
     by "previous," repeating until the "time" of the current manifest is larger
     than the target date.
-    
+
     Obtain an authorization macaroon with e.g.::
-        
+
         python -m ampel.contrib.hu.t3.DCachePublisher macaroon -u 'USER:PASS' --validity PT1h
     """
 
@@ -164,7 +165,7 @@ class DCachePublisher(AbsT3ReviewUnit):
     async def send_requests(self, unbound_tasks):
         """
         Send a batch of requests
-        
+
         :param unbound_tasks: sequence of callables that take a single argument
             that is an aiohttp request object
         """
@@ -212,7 +213,7 @@ class DCachePublisher(AbsT3ReviewUnit):
                 return await asyncio.gather(*tasks)
 
 
-    def process(self, gen: Generator[SnapView, JournalAttributes, None]) -> Union[UBson, UnitResult]:
+    def process(self, gen: Generator[SnapView, JournalAttributes, None], t3s: T3Store) -> Union[UBson, UnitResult]:
 
         """
         Publish a transient batch

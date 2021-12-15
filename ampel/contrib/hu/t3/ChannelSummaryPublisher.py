@@ -14,13 +14,12 @@ from pytz import timezone
 from requests.auth import HTTPBasicAuth
 from typing import Any, Dict, Optional, Set, Generator, Union
 
-from ampel.types import ChannelId, UBson
-from ampel.secret.Secret import Secret
+from ampel.types import ChannelId, UBson, T3Send
+from ampel.view.T3Store import T3Store
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.util.json import AmpelEncoder, load
 from ampel.view.TransientView import TransientView
 from ampel.struct.UnitResult import UnitResult
-from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
 
 
@@ -103,8 +102,8 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
     @backoff.on_exception(
         backoff.expo,
         (TimeoutError, requests.exceptions.HTTPError),
-        giveup=lambda exc: isinstance(exc, requests.exceptions.HTTPError)
-        and exc.response.status_code not in {400, 403, 405, 423, 500},
+        giveup=lambda exc: isinstance(exc, requests.exceptions.HTTPError) and
+        exc.response.status_code not in {400, 403, 405, 423, 500}
     )
     def done(self) -> None:
         """"""

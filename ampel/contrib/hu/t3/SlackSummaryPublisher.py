@@ -18,11 +18,12 @@ import requests
 from slack import WebClient
 from slack.errors import SlackClientError
 
+from ampel.types import T3Send
+from ampel.view.T3Store import T3Store
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 from ampel.log.utils import log_exception
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.view.TransientView import TransientView
-from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 from slack.web.slack_response import SlackResponse
 
@@ -48,7 +49,7 @@ class SlackSummaryPublisher(AbsT3ReviewUnit):
         "isdiffpos",
     ]
 
-    def process(self, gen: Generator[TransientView, T3Send, None], t3s: Optional[T3Store] = None) -> None:
+    def process(self, gen: Generator[TransientView, T3Send, None], t3s: T3Store) -> None:
         """"""
         channels: Set[str] = set()
         frames, photometry = self.combine_transients(gen, channels)
@@ -93,7 +94,7 @@ class SlackSummaryPublisher(AbsT3ReviewUnit):
             # Move channel info at end
             df = df.reindex(
                 copy=False,
-                columns=[c for c in df.columns if not c in channels] + list(channels),
+                columns=[c for c in df.columns if c not in channels] + list(channels),
             )
 
             filename = "Summary_%s.csv" % date
@@ -145,8 +146,7 @@ class SlackSummaryPublisher(AbsT3ReviewUnit):
                 # Move channel info at end
                 photometry_df = photometry_df.reindex(
                     copy=False,
-                    columns=[c for c in df.columns if not c in channels]
-                    + list(channels),
+                    columns=[c for c in df.columns if c not in channels] + list(channels)
                 )
 
                 filename = "Photometry_%s.csv" % date
@@ -205,10 +205,10 @@ class SlackSummaryPublisher(AbsT3ReviewUnit):
             # include other T2 results, flattened
             for t2record in transient.t2 or []:
                 if (
-                    t2record["unit"] == "T2LightCurveSummary"
-                    or not (body := t2record.get("body"))
-                    or not (output := body[-1])
-                    or not isinstance(output, dict)
+                    t2record["unit"] == "T2LightCurveSummary" or
+                    not (body := t2record.get("body")) or
+                    not (output := body[-1]) or
+                    not isinstance(output, dict)
                 ):
                     continue
 
@@ -248,7 +248,7 @@ class SlackSummaryPublisher(AbsT3ReviewUnit):
                                 },
                             }
                             for pp in transient.t0
-                            if (not pp.get("tag") or not "SUPERSEDED" in pp["tag"])
+                            if (not pp.get("tag") or "SUPERSEDED" not in pp["tag"])
                         ]
                     )
                 )
@@ -309,17 +309,17 @@ def calculate_excitement(n_transients, date, thresholds, n_alerts=np.nan):
 
         elif n_transients < thresholds["High"]:
             message += (
-                "IMPRESSIVE! We found "
-                + str(n_transients)
-                + " transients last night. :grin: That's exciting! Good "
+                "IMPRESSIVE! We found " +
+                str(n_transients) +
+                " transients last night. :grin: That's exciting! Good "
                 "luck to anyone trying to check all of those by hand..."
             )
 
         else:
             message += (
-                "WOW!!! We found "
-                + str(n_transients)
-                + " transients last night. :tada: That's loads! Now we "
+                "WOW!!! We found " +
+                str(n_transients) +
+                " transients last night. :tada: That's loads! Now we "
                 "just need to figure out what to do with all of them..."
             )
 

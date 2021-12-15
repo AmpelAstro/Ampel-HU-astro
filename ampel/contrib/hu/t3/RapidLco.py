@@ -8,13 +8,10 @@
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
 import datetime, requests
-from typing import Any, Dict, Optional, Tuple, Union, Generator
+from typing import Any, Dict, Optional, Tuple
 
-from ampel.types import StockId, UBson
 from ampel.contrib.hu.t3.RapidBase import RapidBase
 from ampel.secret.NamedSecret import NamedSecret
-from ampel.struct.JournalAttributes import JournalAttributes
-from ampel.struct.UnitResult import UnitResult
 from ampel.util.freeze import recursive_unfreeze
 from ampel.view.TransientView import TransientView
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
@@ -176,7 +173,7 @@ class RapidLco(RapidBase):
 
     def react(
         self, tran_view: TransientView, info: Optional[Dict[str, Any]]
-    ) -> Tuple[bool, dict[str,Any]]:
+    ) -> Tuple[bool, dict[str, Any]]:
         """
         Send a trigger to the LCO
         """
@@ -294,6 +291,8 @@ class RapidLco(RapidBase):
             "success": success,
             "lcoResponses": responses,
         }
-        jup = JournalAttributes(extra=jcontent)
+
+        # Note: out-commented because unused
+        # jup = JournalAttributes(extra=jcontent)
 
         return success, jcontent

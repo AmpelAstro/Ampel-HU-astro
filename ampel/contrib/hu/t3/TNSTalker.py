@@ -9,18 +9,14 @@
 
 import re
 from itertools import islice
-from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, TYPE_CHECKING
 from ampel.struct.StockAttributes import StockAttributes
-from ampel.types import StockId, UBson
+from ampel.types import StockId
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit, T3Send
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.struct.JournalAttributes import JournalAttributes
-from ampel.contrib.hu.t3.ampel_tns import (
-    TNSClient,
-    TNSFILTERID,
-    TNS_BASE_URL_REAL,
-    TNS_BASE_URL_SANDBOX
-)
+from ampel.contrib.hu.t3.ampel_tns import TNSClient, TNS_BASE_URL_REAL, TNS_BASE_URL_SANDBOX
+from ampel.view.T3Store import T3Store
 from ampel.view.TransientView import TransientView
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 from ampel.contrib.hu.t3.tns.TNSToken import TNSToken
@@ -41,7 +37,7 @@ def chunks(l: Iterable, n: int) -> Generator[List, None, None]:
 class TNSTalker(AbsT3ReviewUnit):
     """
     Get TNS name if existing, and submit selected candidates.
-    
+
     All candidates loaded by T3 will be submitted - it is assumed that *selection* is done
     by an appropriate T2, which also prepares the submit information.
     T2TNSEval is one such example.
@@ -116,9 +112,8 @@ class TNSTalker(AbsT3ReviewUnit):
 
         def select(entry: "JournalRecord") -> bool:
             return bool(
-                (entry["extra"] is not None and ("tnsInternal" in entry["extra"]))
-                and entry["unit"]
-                and entry["unit"] == self.__class__.__name__
+                (entry["extra"] is not None and ("tnsInternal" in entry["extra"])) and
+                entry["unit"] and entry["unit"] == self.__class__.__name__
             )
 
         if jentries := list(tran_view.get_journal_entries(tier=3, filter_func=select)):
@@ -151,12 +146,11 @@ class TNSTalker(AbsT3ReviewUnit):
         def select(entry: "JournalRecord") -> bool:
             return bool(
                 (
-                    entry["extra"] is not None
-                    and (entry["extra"].get("tnsSender") == self.tns_api_key.get()["name"])
-                    and "tnsSubmitResult" in entry["extra"]
-                )
-                and entry["unit"]
-                and entry["unit"] == self.__class__.__name__
+                    entry["extra"] is not None and
+                    (entry["extra"].get("tnsSender") == self.tns_api_key.get()["name"]) and
+                    "tnsSubmitResult" in entry["extra"]
+                ) and
+                entry["unit"] and entry["unit"] == self.__class__.__name__
             )
 
         # Find the latest tns name (skipping previous)
@@ -228,7 +222,7 @@ class TNSTalker(AbsT3ReviewUnit):
                 # added by the TNSMatcher T3, plus we skip the prefix
                 # We here assume that the AT/SN suffix is cut
                 tns_name = tname.replace("TNS", "")
-                # Not using sandbox (only checking wrt to full system). 
+                # Not using sandbox (only checking wrt to full system).
                 tns_internals, runstatus = self.reference_client.getInternalName(tns_name)
 
         # be nice with the logging
@@ -268,7 +262,7 @@ class TNSTalker(AbsT3ReviewUnit):
         # the TNS, we are fine. NOTE: in this case you don't return a journal update.
         tns_name, tns_internals = self.search_journal_tns(tran_view)
         self.logger.debug("Found tns name in journal: %s" % (tns_name))
-        if (not tns_name is None) and (not self.get_tns_force):
+        if (tns_name is not None) and (not self.get_tns_force):
             return tns_name, tns_internals, None
 
         # second option in case there is no TNS name in the journal: go and look in tran_names
@@ -283,13 +277,13 @@ class TNSTalker(AbsT3ReviewUnit):
             self.logger.debug(
                 "Proper check of tns done, found name %s" % (tns_name_new)
             )
-        
+
 
         # now, it is possible (if you set self.get_tns_force) that the
         # new TNS name is different from the one we had in the journal. We always
         # use the most recent one. In this case we also create a JournalUpdate
         jup = None
-        if not tns_name_new is None:
+        if tns_name_new is not None:
 
             # what happen if you have a new name that is different from the old one?
             if tns_name is not None and not tns_name == tns_name_new:
@@ -334,7 +328,7 @@ class TNSTalker(AbsT3ReviewUnit):
 
 
 
-    def process(self, gen: Generator[TransientView, T3Send, None]) -> None:
+    def process(self, gen: Generator[TransientView, T3Send, None], t3s: T3Store) -> None:
         """
         Loop through transients and check for TNS names and/or candidates to submit
         """
@@ -446,7 +440,7 @@ class TNSTalker(AbsT3ReviewUnit):
         # Now go and check and create journal updates for the cases where SN was added
         for tran_id in atreports.keys():
             ztf_name = to_ztf_id(tran_id)
-            if not ztf_name in tnsreplies.keys():
+            if ztf_name not in tnsreplies.keys():
                 self.logger.info("No TNS add reply", extra={"tranId": tran_id})
                 continue
 
