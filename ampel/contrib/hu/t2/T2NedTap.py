@@ -22,6 +22,10 @@ RAD = pi / 180
 
 class T2NedTap(AbsPointT2Unit):
 	"""
+	See also:
+	https://ned.ipac.caltech.edu/tap/sync?QUERY=SELECT+*+FROM+TAP_SCHEMA.tables&REQUEST=doQuery&LANG=ADQL&FORMAT=text
+	Export all NED:
+	https://ned.ipac.caltech.edu/tap/sync?QUERY=SELECT+*+FROM+NEDTAP.objdir&REQUEST=doQuery&LANG=ADQL&FORMAT=text
 	"""
 
 	max_res: int = 5

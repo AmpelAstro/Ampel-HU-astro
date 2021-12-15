@@ -19,7 +19,7 @@ from aiohttp.client_exceptions import (
 )
 
 from ampel.types import UBson
-from ampel.abstract.AbsT3StageUnit import AbsT3StageUnit
+from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.util.json import AmpelEncoder
 from ampel.view.SnapView import SnapView
@@ -28,7 +28,7 @@ from ampel.struct.UnitResult import UnitResult
 from ampel.struct.JournalAttributes import JournalAttributes
 
 
-class DCachePublisher(AbsT3StageUnit):
+class DCachePublisher(AbsT3ReviewUnit):
     """
     Publish TransientViews to DCache in gzipped JSON format
     
