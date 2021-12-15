@@ -12,7 +12,7 @@ from itertools import islice
 from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, TYPE_CHECKING, Union
 from ampel.struct.StockAttributes import StockAttributes
 from ampel.types import StockId, UBson
-from ampel.abstract.AbsT3StageUnit import AbsT3StageUnit, T3Send
+from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit, T3Send
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.contrib.hu.t3.ampel_tns import (
@@ -38,7 +38,7 @@ def chunks(l: Iterable, n: int) -> Generator[List, None, None]:
             break
 
 
-class TNSTalker(AbsT3StageUnit):
+class TNSTalker(AbsT3ReviewUnit):
     """
     Get TNS name if existing, and submit selected candidates.
     

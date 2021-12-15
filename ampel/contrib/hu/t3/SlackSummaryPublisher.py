@@ -18,7 +18,7 @@ import requests
 from slack import WebClient
 from slack.errors import SlackClientError
 
-from ampel.abstract.AbsT3StageUnit import AbsT3StageUnit
+from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 from ampel.log.utils import log_exception
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.view.TransientView import TransientView
@@ -27,7 +27,7 @@ from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 from slack.web.slack_response import SlackResponse
 
 
-class SlackSummaryPublisher(AbsT3StageUnit):
+class SlackSummaryPublisher(AbsT3ReviewUnit):
     """"""
 
     dry_run: bool = False
