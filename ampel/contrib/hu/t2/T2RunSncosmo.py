@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : jnordin@physik.hu-berlin.de
 # Date              : 11.05.2021
-# Last Modified Date: 17.11.2021
+# Last Modified Date: 15.12.2021
 # Last Modified By  : jnordin@physik.hu-berlin.de
 
 
@@ -23,6 +23,8 @@ from ampel.view.T2DocView import T2DocView
 from ampel.view.LightCurve import LightCurve
 from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper
 from ampel.model.StateT2Dependency import StateT2Dependency
+from ampel.plot.create import mplfig_to_svg_dict1
+from ampel.model.PlotProperties import PlotProperties
 
 
 class T2RunSncosmo(AbsTiedLightCurveT2Unit):
@@ -75,9 +77,29 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
     # (T2BayesianBlocks should be added)
     phaseselect_kind: Optional[str]
 
-    # Save / plot parameters
-    plot_dir: Optional[str]
-    plot_ext: str = "png"
+    # Plot parameters
+    plot_db: bool = False
+    plot_props: Optional[PlotProperties] = {
+        "tags": ["SALT", "SNCOSMO"],
+        "file_name": {
+            "format_str": "%s_%s_%s.svg",
+            "arg_keys": ["stock", "model", "redshift_kind"]
+        },
+        "title": {
+            "format_str": "%s %s %s",
+            "arg_keys": ["stock", "model", "redshift_kind"]
+        },
+        "fig_text": {
+            "format_str": "%s %s \nz-source %s \nchisq %.2f ndof %s",
+            "arg_keys": ["stock", "model", "redshift_kind", "chisq", "ndof"]
+        },
+        "width": 10,
+        "height": 6,
+        "id_mapper": "ZTFIdMapper",
+        "disk_save": "/home/jnordin/tmp/"
+    }
+
+
 
     # Which units should this be changed to
     t2_dependency: Sequence[StateT2Dependency[Literal["T2DigestRedshifts", "T2MatchBTS", "T2PhaseLimit"]]]
@@ -360,20 +382,23 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
         t2_output["sncosmo_result"] = sncosmo_result
 
         # Save plot
-        if self.plot_dir:
+        if self.plot_props:
 
             # Construct name
             tname = ZTFIdMapper.to_ext_id(light_curve.stock_id)
-            if self.redshift_kind:
-                file_path = os.path.join(self.plot_dir, '{}.{}'.format('_'.join([tname, self.sncosmo_model_name, self.redshift_kind]), self.plot_ext))
-            else:
-                file_path = os.path.join(self.plot_dir, '{}.{}'.format('_'.join([tname, self.sncosmo_model_name]), self.plot_ext))
 
-            # Add some text
+            # Add some info
             plot_fig_text = "{} {} {} \nchisq {:.2f}\nndof {}".format(
                 tname, self.sncosmo_model_name, self.redshift_kind,
                 sncosmo_result["chisq"], sncosmo_result["ndof"]
                 )
+            plot_extra = {
+                'model': self.sncosmo_model_name,
+                'redshift_kind': self.redshift_kind,
+                'chisq': sncosmo_result["chisq"],
+                'ndof': sncosmo_result["ndof"],
+                'stock': light_curve.stock_id
+            }
 
             fig = sncosmo.plot_lc(
                 sncosmo_table,
@@ -382,9 +407,16 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
                 figtext=plot_fig_text,
                 ncol=3,
                 # fill_data_marker = self.fit_mask,     # Activate if we in corporate some data mask for fit
-                fname=file_path,
             )
-            # # TODO: Add option to save to DB through SVGUtils.mplfig_to_svg_dict1 (see T2SNcosmo)
 
+            # Also store to DB if requested
+            if self.plot_db:
+                t2_output['plots'] = [
+                    mplfig_to_svg_dict1(fig,
+                    self.plot_props, plot_extra, logger = self.logger)
+                ]
+            else:
+                mplfig_to_svg_dict1(fig,
+                self.plot_props, plot_extra, logger = self.logger)
 
         return t2_output
