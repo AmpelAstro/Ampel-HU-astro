@@ -11,7 +11,7 @@
 import numpy as np
 import sncosmo # type: ignore[import]
 from sfdmap import SFDMap  # type: ignore[import]
-from typing import List, Dict, Any, Optional, Tuple, Union, Sequence, Literal
+from typing import Optional
 import errno, os, backoff, copy
 
 #from ampel.types import UBson

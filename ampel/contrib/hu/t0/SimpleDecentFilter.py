@@ -8,7 +8,7 @@
 # Last Modified By:    jn <jnordin@physik.hu-berlin.de>
 
 import numpy as np
-from typing import Optional, Union, Dict, Any
+from typing import Optional, Union, Any
 from astropy.table import Table
 from astropy.coordinates import SkyCoord
 

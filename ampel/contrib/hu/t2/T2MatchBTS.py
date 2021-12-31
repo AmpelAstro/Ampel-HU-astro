@@ -7,7 +7,7 @@
 # Last Modified Date:  13.12.2021
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
-from typing import List, Optional, Sequence, Any, Union
+from typing import Union
 import requests
 import backoff
 import pandas as pd

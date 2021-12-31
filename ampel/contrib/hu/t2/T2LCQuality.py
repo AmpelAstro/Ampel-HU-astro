@@ -7,7 +7,7 @@
 # Last Modified Date:  06.06.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any, Dict, List, Union
+from typing import Any, Union
 from astropy.table import Table
 from scipy.interpolate import interp1d
 
@@ -49,10 +49,10 @@ class T2LCQuality(AbsLightCurveT2Unit):
     behaviour can be changed via the 'exclude_ulims' parameter of the run_config dictionary.
     """
 
-    filter_names: Dict = {1: "g", 2: "r", 3: "i"}
-    filter_ids: List[int] = [1, 2, 3]
+    filter_names: dict = {1: "g", 2: "r", 3: "i"}
+    filter_ids: list[int] = [1, 2, 3]
     exclude_ulims_after: bool = True
-    lc_filter: List[Dict[str, Any]] = [
+    lc_filter: list[dict[str, Any]] = [
         {"attribute": "isdiffpos", "operator": "!=", "value": "f"},
         {"attribute": "isdiffpos", "operator": "!=", "value": "0"},
     ]
@@ -202,7 +202,7 @@ class T2LCQuality(AbsLightCurveT2Unit):
             )
 
             # concatenate the filters
-            filters: List[Dict[str, Any]] = [
+            filters: list[dict[str, Any]] = [
                 {"attribute": "fid", "operator": "==", "value": fid}
             ]
             if isinstance(self.lc_filter, (list, tuple)):

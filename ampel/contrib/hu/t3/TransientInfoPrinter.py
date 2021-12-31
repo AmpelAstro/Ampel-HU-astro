@@ -8,7 +8,8 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import logging
-from typing import Optional, Any, Union, Generator
+from typing import Optional, Any, Union
+from collections.abc import Generator
 from ampel.types import UBson, T3Send
 from ampel.struct.UnitResult import UnitResult
 from ampel.view.T3Store import T3Store

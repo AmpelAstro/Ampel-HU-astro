@@ -10,7 +10,8 @@
 import uuid, requests
 from gzip import GzipFile
 from io import BytesIO
-from typing import Optional, Generator, Union
+from typing import Optional, Union
+from collections.abc import Generator
 from urllib.parse import ParseResult, urlparse, urlunparse
 from xml.etree import ElementTree
 from ampel.types import UBson, T3Send

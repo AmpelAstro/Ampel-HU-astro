@@ -9,7 +9,7 @@
 
 import asyncio
 import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from pymongo import MongoClient
 
@@ -31,7 +31,7 @@ class TNSMirrorUpdater(AbsOpsUnit):
     max_parallel_requests: int = 8
     dry_run: bool = False
 
-    def run(self, beacon: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+    def run(self, beacon: Optional[dict[str, Any]] = None) -> Optional[dict[str, Any]]:
 
         now = datetime.datetime.utcnow()
         last_run = beacon["updated"] if beacon else now - datetime.timedelta(days=7)

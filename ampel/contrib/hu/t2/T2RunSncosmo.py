@@ -10,10 +10,11 @@
 
 import numpy as np
 import sncosmo # type: ignore[import]
-import errno, os, backoff, copy
+import errno, backoff, copy
 from astropy.table import Table
 from sfdmap import SFDMap  # type: ignore[import]
-from typing import List, Dict, Any, Optional, Tuple, Union, Sequence, Literal
+from typing import Any, Optional, Union, Literal
+from collections.abc import Sequence
 
 from ampel.types import UBson
 from ampel.struct.UnitResult import UnitResult
@@ -66,7 +67,7 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
     # Sncosmo parameters
     # Bounds - This is propagated directly into sncosmo. Beware e.g. clashed with catalog redshifts
     # When fitting redshift this needs to be included here, e.g.     "sncosmo_bounds": {"z":(0.001,0.3)}
-    sncosmo_bounds: Dict[str, List[float]] = {}
+    sncosmo_bounds: dict[str, list[float]] = {}
     # Remove MW dust absorption using SFD maps. This assumes that the position can be retrieved from the light_curve and
     # and that the SFD_DIR env var is set to allow them to be found. The default value of Rv will be used.
     apply_mwcorrection: bool = False
@@ -104,7 +105,7 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
     t2_dependency: Sequence[StateT2Dependency[Literal["T2DigestRedshifts", "T2MatchBTS", "T2PhaseLimit"]]]
 
 
-    def post_init(self)-> None:
+    def post_init(self) -> None:
         """
         Retrieve models.
         """
@@ -149,7 +150,7 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
         )(self.process)
 
 
-    def _get_redshift(self, t2_views) -> Tuple[Any]:
+    def _get_redshift(self, t2_views) -> tuple[Any]:
         """
         Can potentially also be replaced with some sort of T2DigestRershift tabulator?
 
@@ -188,7 +189,7 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
         return z, z_source
 
 
-    def _get_phaselimit(self, t2_views) -> Tuple[Any]:
+    def _get_phaselimit(self, t2_views) -> tuple[Any]:
         """
         Can potentially also be replaced with some sort of tabulator?
 

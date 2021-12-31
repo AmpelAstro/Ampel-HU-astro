@@ -10,7 +10,8 @@
 import datetime
 import io
 from collections.abc import Mapping
-from typing import Dict, Iterable, List, Set, Tuple, Generator, cast
+from typing import cast
+from collections.abc import Iterable, Generator
 
 import numpy as np
 import pandas as pd
@@ -35,10 +36,10 @@ class SlackSummaryPublisher(AbsT3ReviewUnit):
     quiet: bool = False
     slack_channel: str
     slack_token: NamedSecret[str]
-    excitement: Dict[str, int] = {"Low": 50, "Mid": 200, "High": 400}
+    excitement: dict[str, int] = {"Low": 50, "Mid": 200, "High": 400}
     full_photometry: bool = False
     #: Fields to extract from each detection (if full_photometry enabled)
-    cols: List[str] = [
+    cols: list[str] = [
         "ra",
         "dec",
         "magpsf",
@@ -51,7 +52,7 @@ class SlackSummaryPublisher(AbsT3ReviewUnit):
 
     def process(self, gen: Generator[TransientView, T3Send, None], t3s: T3Store) -> None:
         """"""
-        channels: Set[str] = set()
+        channels: set[str] = set()
         frames, photometry = self.combine_transients(gen, channels)
 
         if len(frames) == 0 and self.quiet:
@@ -183,8 +184,8 @@ class SlackSummaryPublisher(AbsT3ReviewUnit):
     def combine_transients(
         self,
         transients: Iterable[TransientView],
-        channels: Set[str],
-    ) -> Tuple[List[pd.DataFrame], List[pd.DataFrame]]:
+        channels: set[str],
+    ) -> tuple[list[pd.DataFrame], list[pd.DataFrame]]:
         """"""
 
         frames = []

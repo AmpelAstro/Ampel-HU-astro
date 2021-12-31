@@ -8,7 +8,7 @@
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 import datetime, requests
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional, Tuple
 
 from ampel.contrib.hu.t3.RapidBase import RapidBase
 from ampel.secret.NamedSecret import NamedSecret
@@ -29,7 +29,7 @@ class RapidLco(RapidBase):
     # 'trigger_name': {'start_delay':X (days), 'end_delay':Y (days), 'api_form':Z}
     # Where the start and end delays define the allowed LCO time range and the api_form provides the request to be submitted.
     # The following keys of the api_form will be changed: name, target:name, target:ra, target:dec, windows:end, windows:start
-    lco_payload: Dict[str, Any] = {
+    lco_payload: dict[str, Any] = {
         "lco_u_rapid": {
             "start_delay": 0,
             "end_delay": 1,
@@ -172,8 +172,8 @@ class RapidLco(RapidBase):
 
 
     def react(
-        self, tran_view: TransientView, info: Optional[Dict[str, Any]]
-    ) -> Tuple[bool, dict[str, Any]]:
+        self, tran_view: TransientView, info: Optional[dict[str, Any]]
+    ) -> tuple[bool, dict[str, Any]]:
         """
         Send a trigger to the LCO
         """

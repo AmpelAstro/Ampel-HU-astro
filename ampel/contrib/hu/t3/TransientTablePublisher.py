@@ -11,7 +11,8 @@ import re, os, requests, io, backoff
 import pandas as pd
 
 from functools import reduce
-from typing import Any, Optional, Generator
+from typing import Any, Optional
+from collections.abc import Generator
 
 from ampel.types import T3Send
 from ampel.secret.NamedSecret import NamedSecret

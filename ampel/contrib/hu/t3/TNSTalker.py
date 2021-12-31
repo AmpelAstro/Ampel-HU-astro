@@ -9,7 +9,8 @@
 
 import re
 from itertools import islice
-from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, TYPE_CHECKING
+from typing import Any, Optional, TYPE_CHECKING
+from collections.abc import Generator, Iterable
 from ampel.struct.StockAttributes import StockAttributes
 from ampel.types import StockId
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit, T3Send
@@ -25,7 +26,7 @@ if TYPE_CHECKING:
     from ampel.content.JournalRecord import JournalRecord
 
 
-def chunks(l: Iterable, n: int) -> Generator[List, None, None]:
+def chunks(l: Iterable, n: int) -> Generator[list, None, None]:
     source = iter(l)
     while True:
         chunk = list(islice(source, n))
@@ -72,7 +73,7 @@ class TNSTalker(AbsT3ReviewUnit):
     ext_journal: bool = True
 
     # AT report config
-    base_at_dict: Dict = {
+    base_at_dict: dict = {
         "reporting_group_id": "82",    # Should be ampel
         "discovery_data_source_id": "48",
         "reporter": "J. Nordin, V. Brinnel, J. van Santen (HU Berlin), A. Gal-Yam, O. Yaron, S. Schulze (Weizmann) on behalf of ZTF",
@@ -102,7 +103,7 @@ class TNSTalker(AbsT3ReviewUnit):
 
     def search_journal_tns(
         self, tran_view: TransientView
-    ) -> Tuple[Optional[str], List[str]]:
+    ) -> tuple[Optional[str], list[str]]:
         """
         Look through the journal for a TNS name.
         Assumes journal entries came from this unit, that the TNS name is saved as "tnsName"
@@ -164,7 +165,7 @@ class TNSTalker(AbsT3ReviewUnit):
             self.logger.info("Not TNS submitted", extra={"tnsSender": self.tns_api_key.get()["name"]})
             return False
 
-    def _query_tns_names(self, tran_view: TransientView, ra: float, dec: float) -> Tuple[Optional[str], List]:
+    def _query_tns_names(self, tran_view: TransientView, ra: float, dec: float) -> tuple[Optional[str], list]:
         """
         query the TNS for names and internals at the position
         of the transient.
@@ -197,7 +198,7 @@ class TNSTalker(AbsT3ReviewUnit):
 
     def _find_tns_tran_names(
         self, tran_view: TransientView
-    ) -> Tuple[Optional[str], List[str]]:
+    ) -> tuple[Optional[str], list[str]]:
         """
         search for TNS name in tran_view.tran_names. If found,
         look in the TNS for internal names and return them
@@ -205,7 +206,7 @@ class TNSTalker(AbsT3ReviewUnit):
 
         # First, look if we already registered a name
         tns_name, tns_internals = None, []
-        names: List[str] = (
+        names: list[str] = (
             [str(name) for name in (tran_view.stock["name"] or [])]
             if tran_view.stock
             else []
@@ -242,7 +243,7 @@ class TNSTalker(AbsT3ReviewUnit):
 
     def find_tns_name(
         self, tran_view: TransientView, ra: float, dec: float
-    ) -> Tuple[Optional[str], List[str], Optional[JournalAttributes]]:
+    ) -> tuple[Optional[str], list[str], Optional[JournalAttributes]]:
         """
         extensive search for TNS names in:
         - tran_view.tran_names (if added by TNSMatcher)
@@ -334,7 +335,7 @@ class TNSTalker(AbsT3ReviewUnit):
         """
 
         # Reports to be sent, indexed by the transient view IDs (so that we can check in the replies)
-        atreports: Dict[StockId, Dict[str, Any]] = {}
+        atreports: dict[StockId, dict[str, Any]] = {}
 
         for tran_view in gen:
 

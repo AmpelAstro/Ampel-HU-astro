@@ -32,9 +32,9 @@ async def tns_post(
     semaphore: asyncio.Semaphore,
     method: str,
     token: TNSToken,
-    data: Dict,
+    data: dict,
     max_retries: int = 10,
-) -> Dict:
+) -> dict:
     """
     post to TNS, asynchronously
     """

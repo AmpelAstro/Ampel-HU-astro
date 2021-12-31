@@ -12,7 +12,8 @@ from io import BytesIO, StringIO
 from astropy.time import Time
 from pytz import timezone
 from requests.auth import HTTPBasicAuth
-from typing import Any, Dict, Optional, Set, Generator, Union
+from typing import Any, Optional, Union
+from collections.abc import Generator
 
 from ampel.types import ChannelId, UBson, T3Send
 from ampel.view.T3Store import T3Store
@@ -39,21 +40,21 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
 
     def post_init(self) -> None:
 
-        self.summary: Dict[str, Any] = {}
+        self.summary: dict[str, Any] = {}
         self._jd_range = [float("inf"), -float("inf")]
-        self._channels: Set[ChannelId] = set()
+        self._channels: set[ChannelId] = set()
         self.session = requests.Session()
         self.session.auth = HTTPBasicAuth(*self.auth.get())
 
 
     def extract_from_transient_view(
         self, tran_view: TransientView
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[dict[str, Any]]:
         """
         given transient view object return a dictionary
         with the desired metrics
         """
-        out: Dict[str, Any] = {}
+        out: dict[str, Any] = {}
         assert tran_view.stock
         if names := tran_view.stock.get("name"):
             out["ztf_name"] = next(

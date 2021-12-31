@@ -9,7 +9,8 @@
 
 import numpy as np
 from astropy.coordinates import SkyCoord
-from typing import Dict, List, Optional, Sequence, Any, Union
+from typing import Optional, Any, Union
+from collections.abc import Sequence
 from ampel.types import UBson
 from ampel.struct.UnitResult import UnitResult
 from ampel.view.LightCurve import LightCurve
@@ -33,7 +34,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
 
     # cuts on T2 catalogs
     # reject candidates if they don't have matching in this list of T2CATALOGMATCH catalogs
-    needed_catalogs: List[str] = []
+    needed_catalogs: list[str] = []
     require_catalogmatch: bool = False
     # maximum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
     max_redshift: float = 1.15
@@ -76,7 +77,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
     # Cut to apply to all the photopoints in the light curve.
     # This will affect most operations, i.e. evaluating the position,
     # computing number of detections ecc.
-    lc_filters: List[Dict] = [
+    lc_filters: list[dict] = [
         {"attribute": "sharpnr", "operator": ">=", "value": -10.15},
         {"attribute": "programid", "operator": "==", "value": 1},
         {"attribute": "magfromlim", "operator": ">", "value": 0},
@@ -91,7 +92,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
     max_gaia_noise: float = 2.0
 
     # Implicitly we still assume we are submitting ZTF data
-    ztf_tns_at: Dict = {  # Default values to tag ZTF detections / ulims
+    ztf_tns_at: dict = {  # Default values to tag ZTF detections / ulims
         "flux_units": "1",
         "instrument_value": "196",
         "exptime": "30",
@@ -99,7 +100,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
     }
 
 
-    def inspect_catalog(self, cat_res: Dict[str, Any]) -> bool:
+    def inspect_catalog(self, cat_res: dict[str, Any]) -> bool:
         """
         Verify whether any catalog matching criteria prevents submission.
 
@@ -137,7 +138,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
 
         # another battle in the endless war against stars.
         # here we define a dict to treat each catalog in the same way
-        star_filters: Dict[str, Dict[str, Any]] = {
+        star_filters: dict[str, dict[str, Any]] = {
             "SDSSDR10": {"class_col": "type", "star_val": 6},
             "LAMOSTDr4": {"class_col": "class", "star_val": "STAR"},
         }
@@ -317,13 +318,13 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         # congratulation Lightcurve, you made it!
         return True
 
-    def get_catalog_remarks(self, lc: LightCurve, cat_res: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def get_catalog_remarks(self, lc: LightCurve, cat_res: dict[str, Any]) -> Optional[dict[str, Any]]:
         """
         Look through catalogs for remarks to be added to report.
         """
 
         # Start building dict with remarks
-        remarks : Dict[str, Any] = {"remarks":""}
+        remarks : dict[str, Any] = {"remarks":""}
 
         # Check redshift
         nedz = cat_res.get("NEDz", False)
@@ -387,7 +388,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
             return remarks
 
 
-    def get_lightcurve_info(self,  lc: LightCurve) -> Optional[Dict[str, Any]]:
+    def get_lightcurve_info(self,  lc: LightCurve) -> Optional[dict[str, Any]]:
         """
         Collect the data needed for the atreport. Return None in case
         you have to skip this transient for some reason.
@@ -399,7 +400,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
             return None
 
         # Start defining AT dict: name and position
-        atdict: Dict[str, Any] = {}
+        atdict: dict[str, Any] = {}
         # atdict.update(self.base_at_dict)
         atdict["ra"] = {"value": ra, "error": 1.0, "units": "arcsec"}
         atdict["dec"] = {"value": dec, "error": 1.0, "units": "arcsec"}

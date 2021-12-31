@@ -7,7 +7,7 @@
 # Last Modified Date:  2.12.2021
 # Last Modified By:    jn <jnordin@physik.hu-berlin.de>
 
-from typing import Any, Dict, Literal, Optional, Sequence, TYPE_CHECKING, ClassVar, Union
+from typing import Any, ClassVar, Union
 from functools import cached_property
 from ampel.types import UBson
 
@@ -24,10 +24,8 @@ from numpy import asarray, degrees
 
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.content.DataPoint import DataPoint
-from ampel.model.StrictModel import StrictModel
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.struct.UnitResult import UnitResult
-from ampel.base.LogicalUnit import LogicalUnit
 
 from ampel.model.DPSelection import DPSelection
 
@@ -35,7 +33,7 @@ from ampel.ztf.t2.T2CatalogMatch import CatalogModel
 
 
 
-class ExtcatsUnit():
+class ExtcatsUnit:
     """
     Interface to standard extcats
     """
@@ -92,7 +90,7 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
     eligible: ClassVar[DPSelection] = DPSelection(filter='PPSFilter', sort='jd', select='first')
 
     # Each value specifies a catalog in extcats or catsHTM format and the query parameters
-    catalogs: Dict[str, CatalogModel]
+    catalogs: dict[str, CatalogModel]
 
     # Default behavior is to return the closest match, but can be switched to returning all
     closest_match: bool = True
@@ -154,7 +152,7 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
             )
 
         # initialize the catalog quer(ies). Use instance variable to aviod duplicates
-        out_dict: Dict[str, Any] = {}
+        out_dict: dict[str, Any] = {}
         for catalog, cat_opts in self.catalogs.items():
 
             src = None

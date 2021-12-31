@@ -7,7 +7,8 @@
 # Last Modified Date:  14.09.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Sequence, Union, Literal
+from typing import Union, Literal
+from collections.abc import Sequence
 from ampel.types import UBson
 from ampel.contrib.hu.t2.T2PanStarrThumbPrint import T2PanStarrThumbPrint
 from ampel.abstract.AbsTiedPointT2Unit import AbsTiedPointT2Unit
