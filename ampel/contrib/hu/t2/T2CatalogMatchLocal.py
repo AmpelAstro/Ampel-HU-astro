@@ -7,7 +7,7 @@
 # Last Modified Date:  2.12.2021
 # Last Modified By:    jn <jnordin@physik.hu-berlin.de>
 
-from typing import Any, ClassVar, Union
+from typing import Any, ClassVar
 from functools import cached_property
 from ampel.types import UBson
 
@@ -122,7 +122,7 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
             self.catq_objects[catalog] = catq
         return catq
 
-    def process(self, datapoint: DataPoint) -> Union[UBson, UnitResult]:
+    def process(self, datapoint: DataPoint) -> UBson | UnitResult:
         """
         :returns: example of a match in SDSS but not in NED:
 

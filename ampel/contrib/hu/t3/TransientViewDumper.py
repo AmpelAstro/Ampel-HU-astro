@@ -10,7 +10,6 @@
 import uuid, requests
 from gzip import GzipFile
 from io import BytesIO
-from typing import Optional, Union
 from collections.abc import Generator
 from urllib.parse import ParseResult, urlparse, urlunparse
 from xml.etree import ElementTree
@@ -45,7 +44,7 @@ class TransientViewDumper(AbsT3ReviewUnit):
     version = 0.1
     resources = ("desycloud",)
 
-    outputfile: Optional[str] = None
+    outputfile: None | str = None
     desycloud_auth: NamedSecret[dict] = NamedSecret(label="desycloud")
 
     def post_init(self) -> None:
@@ -65,7 +64,7 @@ class TransientViewDumper(AbsT3ReviewUnit):
         self.encoder = AmpelEncoder(lossy=True)
 
 
-    def process(self, transients: Generator[SnapView, T3Send, None], t3s: T3Store) -> Union[UBson, UnitResult]:
+    def process(self, transients: Generator[SnapView, T3Send, None], t3s: T3Store) -> UBson | UnitResult:
 
         count = 0
         for count, tran_view in enumerate(transients, 1):

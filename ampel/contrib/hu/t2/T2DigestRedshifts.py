@@ -7,7 +7,7 @@
 # Last Modified Date:  06.06.2021
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
-from typing import Any, Optional, Literal, Union
+from typing import Any, Literal
 from collections.abc import Sequence
 from ampel.struct.UnitResult import UnitResult
 
@@ -52,7 +52,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
     #                    "max_distance": "max arcsec in which to allow match,
     #                    "max_redshift": "max redshift to use",
     #                    "z_group": "which redshift group to assign to" }
-    catalogmatch_override: Optional[dict[str, Any]]
+    catalogmatch_override: None | dict[str, Any]
 
 
 
@@ -269,7 +269,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
     # ==================== #
     def process(self,
         light_curve: LightCurve, t2_views: Sequence[T2DocView]
-    ) -> Union[UBson, UnitResult]:
+    ) -> UBson | UnitResult:
         """
 
             Parse t2_views from catalogs that were part of the redshift studies.

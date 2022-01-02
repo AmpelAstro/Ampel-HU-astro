@@ -9,7 +9,7 @@
 
 import numpy as np
 from astropy.coordinates import SkyCoord
-from typing import Optional, Any, Union
+from typing import Any
 from collections.abc import Sequence
 from ampel.types import UBson
 from ampel.struct.UnitResult import UnitResult
@@ -318,7 +318,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         # congratulation Lightcurve, you made it!
         return True
 
-    def get_catalog_remarks(self, lc: LightCurve, cat_res: dict[str, Any]) -> Optional[dict[str, Any]]:
+    def get_catalog_remarks(self, lc: LightCurve, cat_res: dict[str, Any]) -> None | dict[str, Any]:
         """
         Look through catalogs for remarks to be added to report.
         """
@@ -388,7 +388,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
             return remarks
 
 
-    def get_lightcurve_info(self,  lc: LightCurve) -> Optional[dict[str, Any]]:
+    def get_lightcurve_info(self,  lc: LightCurve) -> None | dict[str, Any]:
         """
         Collect the data needed for the atreport. Return None in case
         you have to skip this transient for some reason.
@@ -458,7 +458,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
     # ==================== #
     # AMPEL T2 MANDATORY   #
     # ==================== #
-    def process(self, light_curve: LightCurve, t2_views: Sequence[T2DocView]) -> Union[UBson, UnitResult]:
+    def process(self, light_curve: LightCurve, t2_views: Sequence[T2DocView]) -> UBson | UnitResult:
         """
 
         Evaluate whether a transient passes thresholds for submission to TNS.

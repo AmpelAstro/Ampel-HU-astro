@@ -13,7 +13,7 @@ import sncosmo # type: ignore[import]
 import errno, backoff, copy
 from astropy.table import Table
 from sfdmap import SFDMap  # type: ignore[import]
-from typing import Any, Optional, Union, Literal
+from typing import Any, Literal
 from collections.abc import Sequence
 
 from ampel.types import UBson
@@ -57,12 +57,12 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
     # T2MatchBTS : use the redshift published by BTS and  synced by that T2. Skip if not existing.
     # T2DigestRedshifts : Use the best redshift as parsed by DigestRedshift. Skip fit it this is not found.
     # None : run sncosmo template fit with redshift as free parameter OR use backup_z if set
-    redshift_kind: Optional[str]
+    redshift_kind: None | str
     # If loading redshifts from DigestRedshifts, provide the max ampel z group to make use of.
     # (note that filtering based on this can also be done for a potential t3)
     max_ampelz_group: int = 3
     # It is also possible to use fixed redshift whenever a dynamic redshift kind is not possible
-    backup_z: Optional[float]
+    backup_z: None | float
 
     # Sncosmo parameters
     # Bounds - This is propagated directly into sncosmo. Beware e.g. clashed with catalog redshifts
@@ -76,11 +76,11 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
     # T2PhaseLimit : use the jdmin jdmax provided in this unit output
     # None : use full datapoint range
     # (T2BayesianBlocks should be added)
-    phaseselect_kind: Optional[str]
+    phaseselect_kind: None | str
 
     # Plot parameters
     plot_db: bool = False
-    plot_props: Optional[PlotProperties] = {
+    plot_props: None | PlotProperties = {
         "tags": ["SALT", "SNCOSMO"],
         "file_name": {
             "format_str": "%s_%s_%s.svg",
@@ -298,7 +298,7 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
     # ==================== #
     def process(self,
         light_curve: LightCurve, t2_views: Sequence[T2DocView]
-    ) -> Union[UBson, UnitResult]:
+    ) -> UBson | UnitResult:
         """
 
         Fit the parameters of the initiated snocmo_model to the light_curve

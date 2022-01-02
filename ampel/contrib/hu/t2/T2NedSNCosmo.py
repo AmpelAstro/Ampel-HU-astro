@@ -7,7 +7,7 @@
 # Last Modified Date:  10.10.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any, Optional, Union, Literal
+from typing import Any, Literal
 from collections.abc import Sequence
 from ampel.types import UBson, Tag
 from ampel.contrib.hu.t2.T2SNCosmo import T2SNCosmo
@@ -60,15 +60,15 @@ class T2NedSNCosmo(AbsTiedLightCurveT2Unit, T2SNCosmo):
 	"""
 
 	t2_dependency: Sequence[StateT2Dependency[Literal["T2NedTap"]]]
-	z_range: Optional[tuple[float, float]]
+	z_range: None | tuple[float | float]
 	fit_all: bool = False # otherwise, fit only the first matching catalog result
 	spectroscopic: bool = True
 	merge_tags: bool = True
-	require_tags: Union[None, AnyOf[Tag], AllOf[Tag]] = None
+	require_tags: None | AnyOf[Tag] | AllOf[Tag] = None
 
 
 	# mandatory
-	def process(self, light_curve: LightCurve, t2_views: list[T2DocView]) -> Union[UBson, UnitResult]: # type: ignore[override]
+	def process(self, light_curve: LightCurve, t2_views: list[T2DocView]) -> UBson | UnitResult: # type: ignore[override]
 		"""
 		:param light_curve: see "ampel.view.LightCurve" docstring for more info.
 		"""

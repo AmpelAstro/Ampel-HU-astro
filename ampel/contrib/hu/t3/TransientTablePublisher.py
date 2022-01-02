@@ -11,7 +11,7 @@ import re, os, requests, io, backoff
 import pandas as pd
 
 from functools import reduce
-from typing import Any, Optional
+from typing import Any
 from collections.abc import Generator
 
 from ampel.types import T3Send
@@ -80,9 +80,9 @@ class TransientTablePublisher(AbsT3ReviewUnit):
     fmt: str = 'csv'
 
     file_name: str = 'TransientTable.csv'
-    slack_channel: Optional[str] = None
-    slack_token: Optional[NamedSecret[str]]
-    local_path: Optional[str] = None
+    slack_channel: None | str = None
+    slack_token: None | NamedSecret[str]
+    local_path: None | str = None
 
 
     def process(self, gen: Generator[SnapView, T3Send, None], t3s: T3Store) -> None:

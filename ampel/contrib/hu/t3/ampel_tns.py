@@ -15,7 +15,7 @@
 import json
 import re
 import time
-from typing import Any, Union
+from typing import Any
 
 from requests.models import Response
 
@@ -51,7 +51,7 @@ class TNSSession(BaseUrlSession):
             )
         )
 
-    def post(self, method: str, payload: Union[str, dict[str,Any]], payload_key="data", **kwargs) -> Response:
+    def post(self, method: str, payload: str | dict[str,Any], payload_key="data", **kwargs) -> Response:
         for _ in range(10):
             if (response := super().post(
                 method,

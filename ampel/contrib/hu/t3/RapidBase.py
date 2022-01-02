@@ -7,7 +7,7 @@
 # Last Modified Date:  06.02.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any, Optional, Union
+from typing import Any
 from collections.abc import Generator
 
 from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
@@ -45,9 +45,9 @@ class RapidBase(AbsPhotoT3Unit):
     # If set, will post trigger to slack
     do_testreact: bool
     # Original
-    slack_token: Optional[NamedSecret[str]]
+    slack_token: None | NamedSecret[str]
     # Hack
-    # slack_token_dict: Optional[ dict[str,any] ] = {'key':'k','value':'v'}
+    # slack_token_dict: None | dict[str, Any] = {'key':'k','value':'v'}
     # from ampel.secret.DictSecretProvider import NamedSecret
     # slack_token: Secret = NamedSecret(**slack_token_dict)
 
@@ -68,7 +68,7 @@ class RapidBase(AbsPhotoT3Unit):
             self.logger.info(f"Using {k}={getattr(self, k)}")
 
 
-    def process(self, gen: Generator[TransientView, T3Send, None], t3s: Optional[T3Store] = None) -> Union[UBson, UnitResult]:
+    def process(self, gen: Generator[TransientView, T3Send, None], t3s: None | T3Store = None) -> UBson | UnitResult:
         """
         Loop through transients and check for TNS names and/or candidates to submit
         """
@@ -93,8 +93,8 @@ class RapidBase(AbsPhotoT3Unit):
 
 
     def react(
-        self, tran_view: TransientView, info: Optional[dict[str, Any]]
-    ) -> tuple[bool, Optional[dict[str, Any]]]:
+        self, tran_view: TransientView, info: None | dict[str, Any]
+    ) -> tuple[bool, None | dict[str, Any]]:
         """
         Replace with react method adopted to particular facility or output
         """
@@ -104,8 +104,8 @@ class RapidBase(AbsPhotoT3Unit):
 
 
     def test_react(
-        self, tran_view: TransientView, info: Optional[dict[str, Any]]
-    ) -> tuple[bool, Optional[dict[str, Any]]]:
+        self, tran_view: TransientView, info: None | dict[str, Any]
+    ) -> tuple[bool, None | dict[str, Any]]:
         """ Trigger a test slack report """
 
         success = False
@@ -146,7 +146,7 @@ class RapidBase(AbsPhotoT3Unit):
         return success, jcontent
 
 
-    def collect_info(self, tran_view: TransientView) -> Optional[dict[str, Any]]:
+    def collect_info(self, tran_view: TransientView) -> None | dict[str, Any]:
         """
         Create an information dict from T2 outputs, which can be used by reactors.
         """

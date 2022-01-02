@@ -11,7 +11,6 @@
 import numpy as np
 import sncosmo # type: ignore[import]
 from sfdmap import SFDMap  # type: ignore[import]
-from typing import Optional
 import errno, os, backoff, copy
 
 #from ampel.types import UBson
@@ -41,7 +40,7 @@ class T2RunPossis(T2RunSncosmo):
         mej_wind, phi, cos_theta]) )
 
     # Fix time to specific explosion timestamp
-    explosion_time_jd: Optional[float]
+    explosion_time_jd: None | float
 
 
     def post_init(self)-> None:

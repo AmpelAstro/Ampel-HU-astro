@@ -10,7 +10,7 @@
 
 import asyncio, datetime, gzip, io, os, ssl, sys, time, traceback, backoff, pytz
 from functools import partial
-from typing import Any, Union
+from typing import Any
 from collections.abc import Generator
 from xml.etree import ElementTree
 from aiohttp import ClientSession, helpers, TCPConnector
@@ -71,7 +71,7 @@ class DCachePublisher(AbsT3ReviewUnit):
         self.base_dest = self.resource["dcache"] + self.base_dir
 
 
-    def serialize(self, tran_view: Union[SnapView, dict[str, Any]]) -> bytes:
+    def serialize(self, tran_view: SnapView | dict[str, Any]) -> bytes:
         buf = io.BytesIO()
         with gzip.GzipFile(fileobj=buf, mode="w") as f:
             f.write(self.encoder.encode(tran_view).encode("utf-8"))
@@ -214,7 +214,7 @@ class DCachePublisher(AbsT3ReviewUnit):
                 return await asyncio.gather(*tasks)
 
 
-    def process(self, gen: Generator[SnapView, JournalAttributes, None], t3s: T3Store) -> Union[UBson, UnitResult]:
+    def process(self, gen: Generator[SnapView, JournalAttributes, None], t3s: T3Store) -> UBson | UnitResult:
 
         """
         Publish a transient batch

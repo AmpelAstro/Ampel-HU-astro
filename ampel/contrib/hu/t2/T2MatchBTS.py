@@ -70,7 +70,7 @@ class T2MatchBTS(AbsLightCurveT2Unit):
 
 
 
-    def process(self, light_curve: LightCurve) -> Union[UBson, UnitResult]:
+    def process(self, light_curve: LightCurve) -> UBson | UnitResult:
         """
         Check whether transient exists in the bts df.
         If so, return content

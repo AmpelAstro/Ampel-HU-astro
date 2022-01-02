@@ -9,7 +9,7 @@
 
 
 from functools import cached_property
-from typing import Any, Optional, Tuple
+from typing import Any, Tuple
 from collections.abc import Iterable
 
 from pymongo import MongoClient
@@ -38,7 +38,7 @@ class BaseCatalogRecordComplementer(AbsBufferComplement, abstract=True):
         )
 
     @abstractmethod
-    def get_catalog_item(self, names: tuple[str, ...]) -> Optional[dict[str, Any]]:
+    def get_catalog_item(self, names: tuple[str, ...]) -> None | dict[str, Any]:
         """Get catalog entry associated with the stock name"""
         ...
 

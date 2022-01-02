@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import logging
-from typing import Optional, Any, Union
+from typing import Any
 from collections.abc import Generator
 from ampel.types import UBson, T3Send
 from ampel.struct.UnitResult import UnitResult
@@ -20,7 +20,7 @@ from ampel.util.pretty import prettyjson
 
 class TransientInfoPrinter(AbsPhotoT3Unit):
 
-	logfile: Optional[str]	# logging (INFO and onwards) goes to this file.
+	logfile: None | str	# logging (INFO and onwards) goes to this file.
 
 	def post_init(self) -> None:
 
@@ -34,7 +34,7 @@ class TransientInfoPrinter(AbsPhotoT3Unit):
 			self.logger.info("Added logging handle to: {logfile}")
 
 
-	def process(self, gen: Generator[TransientView, T3Send, None], t3s: Optional[T3Store] = None) -> Union[UBson, UnitResult]:
+	def process(self, gen: Generator[TransientView, T3Send, None], t3s: None | T3Store = None) -> UBson | UnitResult:
 
 		self.logger.info("Printing transients info")
 		self.logger.info("=" * 80)

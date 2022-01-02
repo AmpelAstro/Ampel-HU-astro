@@ -53,7 +53,7 @@ class T2BrightSNProb(AbsLightCurveT2Unit, T2RiseDeclineBase):
         self.xgb_tree = xgb_trees.xgboost_tree()
 
 
-    def process(self, light_curve: LightCurve) -> Union[UBson, UnitResult]:
+    def process(self, light_curve: LightCurve) -> UBson | UnitResult:
 
         # Output dict that we will start to populate
         o = self.compute_stats(light_curve)
