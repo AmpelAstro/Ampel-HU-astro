@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t3/DCachePublisher.py
-# License           : BSD-3-Clause
-# Author            : Jakob van Santen <jakob.van.santen@desy.de>
-# Date              : 27.02.2020
-# Last Modified Date: 27.02.2020
-# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
+# File:                ampel/contrib/hu/t3/DCachePublisher.py
+# License:             BSD-3-Clause
+# Author:              Jakob van Santen <jakob.van.santen@desy.de>
+# Date:                27.02.2020
+# Last Modified Date:  27.02.2020
+# Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 
 import asyncio, datetime, gzip, io, os, ssl, sys, time, traceback, backoff, pytz

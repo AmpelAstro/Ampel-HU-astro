@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-HU-astro/ampel/contrib/hu/t2/T2PS1ThumbNedTap.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 10.03.2021
-# Last Modified Date: 14.09.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-HU-astro/ampel/contrib/hu/t2/T2PS1ThumbNedTap.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                10.03.2021
+# Last Modified Date:  14.09.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Sequence, Union, Optional, Tuple, Literal
 from ampel.types import UBson

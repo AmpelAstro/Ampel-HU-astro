@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-contrib-HU/ampel/contrib/hu/t2/T2Observability.py
-# License           : BSD-3-Clause
-# Author            : matteo.giomi@desy.de
-# Date              : 19.09.2018
-# Last Modified Date: 05.02.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-contrib-HU/ampel/contrib/hu/t2/T2Observability.py
+# License:             BSD-3-Clause
+# Author:              matteo.giomi@desy.de
+# Date:                19.09.2018
+# Last Modified Date:  05.02.2020
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import astropy.units as u
 from astropy.time import Time

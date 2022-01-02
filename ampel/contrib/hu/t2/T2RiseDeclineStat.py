@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t2/T2LCQuality.py
-# License           : BSD-3-Clause
-# Author            : jnordin@physik.hu-berlin.de
-# Date              : 28.12.2018
-# Last Modified Date: 03.08.2020
-# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
+# File:                ampel/contrib/hu/t2/T2LCQuality.py
+# License:             BSD-3-Clause
+# Author:              jnordin@physik.hu-berlin.de
+# Date:                28.12.2018
+# Last Modified Date:  03.08.2020
+# Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 import numpy as np
 from astropy.table import Table

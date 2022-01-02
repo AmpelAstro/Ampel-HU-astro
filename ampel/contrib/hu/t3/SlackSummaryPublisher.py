@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t3/SlackSummaryPublisher.py
-# License           : BSD-3-Clause
-# Author            : robert stein
-# Date              : 11.03.2018
-# Last Modified Date: 14.11.2018
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                ampel/contrib/hu/t3/SlackSummaryPublisher.py
+# License:             BSD-3-Clause
+# Author:              robert stein
+# Date:                11.03.2018
+# Last Modified Date:  14.11.2018
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import datetime
 import io

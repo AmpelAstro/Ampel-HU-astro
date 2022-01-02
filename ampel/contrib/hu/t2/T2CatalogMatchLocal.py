@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel-hu-astro/ampel/contrib/hu/t2/T2CatalogMatchLocal.py
-# License           : BSD-3-Clause
-# Author            : matteo.giomi@desy.de
-# Date              : 24.08.2018
-# Last Modified Date: 2.12.2021
-# Last Modified By  : jn <jnordin@physik.hu-berlin.de>
+# File:                ampel-hu-astro/ampel/contrib/hu/t2/T2CatalogMatchLocal.py
+# License:             BSD-3-Clause
+# Author:              matteo.giomi@desy.de
+# Date:                24.08.2018
+# Last Modified Date:  2.12.2021
+# Last Modified By:    jn <jnordin@physik.hu-berlin.de>
 
 from typing import Any, Dict, Literal, Optional, Sequence, TYPE_CHECKING, ClassVar, Union
 from functools import cached_property

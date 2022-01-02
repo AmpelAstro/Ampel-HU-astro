@@ -4,8 +4,8 @@
 # License		   	: BSD-3-Clause
 # Author			: jnordin@physik.hu-berlin.de, simeon.reusch@desy.de
 # Date			  	: 10.01.2019
-# Last Modified Date: 13.02.2019
-# Last Modified By  : simeon.reusch@desy.de
+# Last Modified Date:  13.02.2019
+# Last Modified By:    simeon.reusch@desy.de
 
 
 from typing import Optional, Dict, List, Union, ClassVar

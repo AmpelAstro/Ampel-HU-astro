@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t3/TNSTalker.py
-# License           : BSD-3-Clause
-# Author            : jnordin@physik.hu-berlin.de
-# Date              : 17.11.2018
-# Last Modified Date: 04.09.2019
-# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
+# File:                ampel/contrib/hu/t3/TNSTalker.py
+# License:             BSD-3-Clause
+# Author:              jnordin@physik.hu-berlin.de
+# Date:                17.11.2018
+# Last Modified Date:  04.09.2019
+# Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 import re
 from itertools import islice

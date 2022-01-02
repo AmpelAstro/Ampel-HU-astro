@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t2/T2RunSncosmo.py
-# License           : BSD-3-Clause
-# Author            : jnordin@physik.hu-berlin.de
-# Date              : 11.05.2021
-# Last Modified Date: 15.12.2021
-# Last Modified By  : jnordin@physik.hu-berlin.de
+# File:                ampel/contrib/hu/t2/T2RunSncosmo.py
+# License:             BSD-3-Clause
+# Author:              jnordin@physik.hu-berlin.de
+# Date:                11.05.2021
+# Last Modified Date:  15.12.2021
+# Last Modified By:    jnordin@physik.hu-berlin.de
 
 
 import numpy as np

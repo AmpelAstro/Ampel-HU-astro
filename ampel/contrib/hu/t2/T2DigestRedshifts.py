@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t2/T2DigestRedshifts.py
-# License           : BSD-3-Clause
-# Author            : jnordin@physik.hu-berlin.de
-# Date              : 06.06.2021
-# Last Modified Date: 06.06.2021
-# Last Modified By  : jnordin@physik.hu-berlin.de
+# File:                ampel/contrib/hu/t2/T2DigestRedshifts.py
+# License:             BSD-3-Clause
+# Author:              jnordin@physik.hu-berlin.de
+# Date:                06.06.2021
+# Last Modified Date:  06.06.2021
+# Last Modified By:    jnordin@physik.hu-berlin.de
 
 from typing import List, Dict, Any, Optional, Sequence, Literal, Union
 from ampel.struct.UnitResult import UnitResult

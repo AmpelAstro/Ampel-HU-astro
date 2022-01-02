@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t3/rapidBase
-# License           : BSD-3-Clause
-# Author            : jnordin@physik.hu-berlin.de
-# Date              : 05.08.2019
-# Last Modified Date: 20.08.2020
-# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
+# File:                ampel/contrib/hu/t3/rapidBase
+# License:             BSD-3-Clause
+# Author:              jnordin@physik.hu-berlin.de
+# Date:                05.08.2019
+# Last Modified Date:  20.08.2020
+# Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 import datetime, requests
 from typing import Any, Dict, Optional, Tuple

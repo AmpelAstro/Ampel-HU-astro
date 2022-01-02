@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-contrib-HU/ampel/contrib/hu/t3/ampel_tns.py
-# License           : BSD-3-Clause
-# Author            : Ken Smith
-# Date              : May 2016
-# Last Modified Date: Feb 2018
-# Last Modified By  : Jakob Nordin
+# File:                Ampel-contrib-HU/ampel/contrib/hu/t3/ampel_tns.py
+# License:             BSD-3-Clause
+# Author:              Ken Smith
+# Date:                May 2016
+# Last Modified Date:  Feb 2018
+# Last Modified By:    Jakob Nordin
 
 # -----------------------------------------------------------------------------
 # A python sample code for sending a bulk report to the TNS.

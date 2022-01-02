@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-contrib-HU/ampel/contrib/hu/t3/RapidSedm.py
-# License           : BSD-3-Clause
-# Author            : jnordin@physik.hu-berlin.de
-# Date              : 05.08.2019
-# Last Modified Date: 06.02.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-contrib-HU/ampel/contrib/hu/t3/RapidSedm.py
+# License:             BSD-3-Clause
+# Author:              jnordin@physik.hu-berlin.de
+# Date:                05.08.2019
+# Last Modified Date:  06.02.2020
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import datetime, requests
 from typing import Any, Dict, Optional, Tuple

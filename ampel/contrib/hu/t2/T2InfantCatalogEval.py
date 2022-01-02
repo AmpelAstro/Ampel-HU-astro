@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t2/T2TNSEval.py
-# License           : BSD-3-Clause
-# Author            : jnordin@physik.hu-berlin.de
-# Date              : 27.01.2021
-# Last Modified Date: 17.03.2021
-# Last Modified By  : jnordin@physik.hu-berlin.de
+# File:                ampel/contrib/hu/t2/T2TNSEval.py
+# License:             BSD-3-Clause
+# Author:              jnordin@physik.hu-berlin.de
+# Date:                27.01.2021
+# Last Modified Date:  17.03.2021
+# Last Modified By:    jnordin@physik.hu-berlin.de
 
 import numpy as np
 from typing import Dict, List, Optional, Sequence, Any, Union

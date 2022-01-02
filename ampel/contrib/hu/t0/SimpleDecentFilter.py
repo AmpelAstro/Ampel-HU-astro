@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-HU-astro/ampel/contrib/hu/t0/SimpleDecentFilter.py
-# License           : BSD-3-Clause
-# Author            : m. giomi <matteo.giomi@desy.de>
-# Date              : 12.02.2019
-# Last Modified Date: 2.11.2021
-# Last Modified By  : jn <jnordin@physik.hu-berlin.de>
+# File:                Ampel-HU-astro/ampel/contrib/hu/t0/SimpleDecentFilter.py
+# License:             BSD-3-Clause
+# Author:              m. giomi <matteo.giomi@desy.de>
+# Date:                12.02.2019
+# Last Modified Date:  2.11.2021
+# Last Modified By:    jn <jnordin@physik.hu-berlin.de>
 
 import numpy as np
 from typing import Optional, Union, Dict, Any

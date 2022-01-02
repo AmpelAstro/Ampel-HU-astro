@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t2/T2MatchBts.py
-# License           : BSD-3-Clause
-# Author            : jnordin@physik.hu-berlin.de
-# Date              : 01.06.2021
-# Last Modified Date: 13.12.2021
-# Last Modified By  : jnordin@physik.hu-berlin.de
+# File:                ampel/contrib/hu/t2/T2MatchBts.py
+# License:             BSD-3-Clause
+# Author:              jnordin@physik.hu-berlin.de
+# Date:                01.06.2021
+# Last Modified Date:  13.12.2021
+# Last Modified By:    jnordin@physik.hu-berlin.de
 
 from typing import List, Optional, Sequence, Any, Union
 import requests

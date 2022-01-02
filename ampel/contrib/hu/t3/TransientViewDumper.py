@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t3/TransientInfoDumper.py
-# License           : BSD-3-Clause
-# Author            : Jakob van Santen <jakob.van.santen@desy.de>
-# Date              : 15.08.2018
-# Last Modified Date: 15.08.2018
-# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
+# File:                ampel/contrib/hu/t3/TransientInfoDumper.py
+# License:             BSD-3-Clause
+# Author:              Jakob van Santen <jakob.van.santen@desy.de>
+# Date:                15.08.2018
+# Last Modified Date:  15.08.2018
+# Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 import uuid, requests
 from gzip import GzipFile

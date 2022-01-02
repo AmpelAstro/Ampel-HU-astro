@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-contrib-HU/ampel/contrib/hu/t3/TransientTablePublisher.py
-# License           : BSD-3-Clause
-# Author            : jnordin@physik.hu-berlin.de
-# Date              : 06.05.2021
-# Last Modified Date: 05.12.2021
-# Last Modified By  : jnordin@physik.hu-berlin.de
+# File:                Ampel-contrib-HU/ampel/contrib/hu/t3/TransientTablePublisher.py
+# License:             BSD-3-Clause
+# Author:              jnordin@physik.hu-berlin.de
+# Date:                06.05.2021
+# Last Modified Date:  05.12.2021
+# Last Modified By:    jnordin@physik.hu-berlin.de
 
 import re, os, requests, io, backoff
 import pandas as pd

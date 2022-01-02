@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-contrib-HU/ampel/contrib/hu/t3/ChannelSummaryPublisher.py
-# License           : BSD-3-Clause
-# Author            : m. giomi <matteo.giomi@desy.de>
-# Date              : 13.11.2018
-# Last Modified Date: 16.12.2020
-# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
+# File:                Ampel-contrib-HU/ampel/contrib/hu/t3/ChannelSummaryPublisher.py
+# License:             BSD-3-Clause
+# Author:              m. giomi <matteo.giomi@desy.de>
+# Date:                13.11.2018
+# Last Modified Date:  16.12.2020
+# Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 import datetime, backoff, requests
 from io import BytesIO, StringIO
