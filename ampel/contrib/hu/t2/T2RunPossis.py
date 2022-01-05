@@ -70,9 +70,7 @@ class T2RunPossis(T2RunSncosmo):
         fname = os.path.join(self.possis_dir, self.model_gen,
                      "nph1.0e+06_mejdyn{:05.3f}_mejwind{:05.3f}_phi{}.txt".format(self.mej_dyn, self.mej_wind, self.phi))
         if not os.path.exists(fname):
-            self.logger.info('Model not found', extra={'fname':fname})
-            return UnitResult(code=DocumentCode.T2_MISSING_INFO)
-
+            raise FileNotFoundError(fname)
 
         # Read model Parameters from first three lines
         with open(fname, 'r') as fh:
@@ -90,18 +88,12 @@ class T2RunPossis(T2RunSncosmo):
         # Note: U. Feindt developed model where angle was fit, left out for know
         theta_mask = np.isclose(self.cos_theta, model_cos_theta)
         if not sum(theta_mask)==1:
-            self.logger.info('Angle not identified',
-                extra={'model_cos_theta':model_cos_theta})
-            return {}
-#            return UnitResult(code=DocumentCode.T2_MISSING_INFO)
+            raise ValueError("Model cos_theta {model_cos_theta} not defined")
 
         # Read model data
         mdata = np.genfromtxt(fname, skip_header=3)
         wave = mdata[0 : int(nwave), 0] # noqa
-        flux = []
-        for i in range(int(nobs)):
-            flux.append(mdata[i * int(nwave) : i * int(nwave) + int(nwave), 1:]) # noqa
-        flux = np.array(flux).T
+        flux = np.array([mdata[i * int(nwave) : i * int(nwave) + int(nwave), 1:] for i in range(int(nobs))]).T
 
         # Reduce to one angle
         flux_1angle = flux[:,:,theta_mask].squeeze()
@@ -135,7 +127,7 @@ class T2RunPossis(T2RunSncosmo):
         self.default_param_vals = self.sncosmo_model.parameters
 
         # retry on with exponential backoff on "too many open files"
-        self.process = backoff.on_exception(
+        self.process = backoff.on_exception( # type: ignore[assignment]
             backoff.expo,
             OSError,
             giveup=lambda exc: exc.errno != errno.EMFILE,
@@ -160,7 +152,7 @@ class T2RunPossis(T2RunSncosmo):
                 t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
                 if not 'explosion_time' in t2_res.keys():
                     self.logger.info('No explosion time',extra={'t2res':t2_res})
-                    return UnitResult(doc_code=DocumentCode.MISSING_INFO)
+                    return UnitResult(code=DocumentCode.T2_MISSING_INFO)
 
                 if isinstance(t2_res['explosion_time'], float):
                     self.explosion_time_jd = t2_res['explosion_time']

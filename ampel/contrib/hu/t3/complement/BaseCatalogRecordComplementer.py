@@ -19,6 +19,7 @@ from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.abstract.AbsBufferComplement import AbsBufferComplement
+from ampel.view.T3Store import T3Store
 
 
 class BaseCatalogRecordComplementer(AbsBufferComplement, abstract=True):
@@ -48,7 +49,7 @@ class BaseCatalogRecordComplementer(AbsBufferComplement, abstract=True):
         """
         return self.__class__.__name__
 
-    def complement(self, records: Iterable[AmpelBuffer]) -> None:
+    def complement(self, records: Iterable[AmpelBuffer], t3s: T3Store) -> None:
         for record in records:
             if (stock := record["stock"]) is None:
                 raise ValueError(f"{type(self).__name__} requires stock records")

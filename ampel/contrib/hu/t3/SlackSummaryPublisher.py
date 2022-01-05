@@ -206,9 +206,8 @@ class SlackSummaryPublisher(AbsT3ReviewUnit):
             # include other T2 results, flattened
             for t2record in transient.t2 or []:
                 if (
-                    t2record["unit"] == "T2LightCurveSummary" or
-                    not (body := t2record.get("body")) or
-                    not (output := body[-1]) or
+                    t2record.unit == "T2LightCurveSummary" or
+                    not (output := t2record.get_payload()) or
                     not isinstance(output, dict)
                 ):
                     continue

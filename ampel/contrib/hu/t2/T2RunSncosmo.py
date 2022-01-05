@@ -80,24 +80,24 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
 
     # Plot parameters
     plot_db: bool = False
-    plot_props: Optional[PlotProperties] = {
-        "tags": ["SALT", "SNCOSMO"],
-        "file_name": {
+    plot_props: Optional[PlotProperties] = PlotProperties(
+        tags = ["SALT", "SNCOSMO"],
+        file_name = {
             "format_str": "%s_%s_%s.svg",
             "arg_keys": ["stock", "model", "redshift_kind"]
         },
-        "title": {
+        title = {
             "format_str": "%s %s %s",
             "arg_keys": ["stock", "model", "redshift_kind"]
         },
-        "fig_text": {
+        fig_text = {
             "format_str": "%s %s \nz-source %s \nchisq %.2f ndof %s",
             "arg_keys": ["stock", "model", "redshift_kind", "chisq", "ndof"]
         },
-        "width": 10,
-        "height": 6,
-        "id_mapper": "ZTFIdMapper"
-    }
+        width = 10,
+        height = 6,
+        id_mapper = "ZTFIdMapper"
+    )
 
 
 
@@ -141,7 +141,7 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
         self.default_param_vals = self.sncosmo_model.parameters
 
         # retry on with exponential backoff on "too many open files"
-        self.process = backoff.on_exception(
+        self.process = backoff.on_exception( # type: ignore[assignment]
             backoff.expo,
             OSError,
             giveup=lambda exc: exc.errno != errno.EMFILE,
@@ -150,7 +150,7 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
         )(self.process)
 
 
-    def _get_redshift(self, t2_views) -> tuple[Any]:
+    def _get_redshift(self, t2_views) -> tuple[None|float,None|str]:
         """
         Can potentially also be replaced with some sort of T2DigestRershift tabulator?
 
@@ -158,8 +158,8 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
         """
 
         # Examine T2s for eventual information
-        z = None
-        z_source = None
+        z: None | float = None
+        z_source: None | str = None
 
 
         if self.redshift_kind in ['T2MatchBTS', 'T2DigestRedshifts']:
@@ -189,15 +189,15 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
         return z, z_source
 
 
-    def _get_phaselimit(self, t2_views) -> tuple[Any]:
+    def _get_phaselimit(self, t2_views) -> tuple[None|float,None|float]:
         """
         Can potentially also be replaced with some sort of tabulator?
 
         """
 
         # Examine T2s for eventual information
-        jdstart = None
-        jdend = None
+        jdstart: None | float = None
+        jdend: None | float = None
 
         if self.phaseselect_kind is None:
             jdstart = -np.inf
@@ -323,7 +323,7 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
         """
 
         # Initialize output dict
-        t2_output = {"model_name": self.sncosmo_model_name}
+        t2_output: dict[str,UBson] = {"model_name": self.sncosmo_model_name}
 
         # Obtain redshift
         z, z_source = self._get_redshift(t2_views)
@@ -385,6 +385,7 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
         if self.plot_props:
 
             # Construct name
+            assert isinstance(light_curve.stock_id, int)
             tname = ZTFIdMapper.to_ext_id(light_curve.stock_id)
 
             # Add some info

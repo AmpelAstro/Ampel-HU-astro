@@ -94,15 +94,15 @@ class TransientTablePublisher(AbsT3ReviewUnit):
 
         table_rows: list[dict[str, Any]] = []
         for k, tran_view in enumerate(gen, 1):
-            basetdict = {}
+            basetdict: dict[str, Any] = {}
             # Assemble t2 information bound to the transient (e.g. Point T2s)
             for t2unit, table_entries in self.transient_table_schema.items():
                 # New SnapView has method for directly retrieve result.
                 # Possibly use this.
-                if t2res := tran_view.get_latest_t2_body(unit_id=t2unit):
+                if t2res := tran_view.get_latest_t2_body(unit=t2unit):
                     for label, path in table_entries.items():
                         try:
-                            basetdict[label] = reduce(dict.get, path, t2res)
+                            basetdict[label] = reduce(dict.get, path, t2res) # type: ignore[arg-type]
                         except (KeyError, TypeError):
                             pass # We leave missing entries empty
 
@@ -117,7 +117,7 @@ class TransientTablePublisher(AbsT3ReviewUnit):
                     if t2res := tran_view.get_latest_t2_body(unit=t2unit, link=t1_link):
                         for label, path in table_entries.items():
                             try:
-                                tdict[label] = reduce(dict.get, path, t2res)
+                                tdict[label] = reduce(dict.get, path, t2res) # type: ignore[arg-type]
                             except (KeyError, TypeError):
                                 pass # We leave missing entries empty
                 if len(tdict) > 0:
@@ -128,22 +128,21 @@ class TransientTablePublisher(AbsT3ReviewUnit):
 
             # Collect base information applying to all states
             # If here, add stock info (name, channel etcs)
-            if names := (tran_view.stock or {}).get("name"):
+            if names := (tran_view.stock or {}).get("name", []):
                 for label, name_str in self.name_filter.items():
                     r = re.compile(name_str)
                     # While names will mostly be unique, it might not always be the case.
-                    basetdict[label] = list(filter(r.match, names))
+                    basetdict[label] = list(filter(r.match, names)) # type: ignore[arg-type]
                     # Avoid list when possible
-                    if len(basetdict[label]) == 1:
-                        basetdict[label] = basetdict[label][0]
+                    if isinstance((item := basetdict[label]), (list, tuple)) and len(item) == 1:
+                        basetdict[label] = item[0]
 
             if self.include_stock:
                 basetdict['stock'] = tran_view.id
-            if self.include_channels:
-                basetdict['channels'] = tran_view.stock.get("channel")
-            # Allow for both single (most common) and duplacte channels.
-                if len(basetdict['channels']) == 0:
-                    basetdict['channels'] = basetdict['channels'][0]
+            if self.include_channels and tran_view.stock:
+                channels = tran_view.stock.get("channel")
+                # Allow for both single (most common) and duplacte channels.
+                basetdict['channels'] = channels[0] if isinstance(channels, (list, tuple)) and len(channels) == 1 else channels
 
             # Collect and add to table
             if len(stateinfo) > 0:

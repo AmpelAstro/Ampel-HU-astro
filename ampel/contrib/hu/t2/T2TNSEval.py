@@ -494,7 +494,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
 
         # ii. Check the catalog matching criteria
         t2_cat_match = t2_views[0]
-        assert t2_cat_match.unit==self.dependency_unit
+        assert t2_cat_match.unit in (dep.unit for dep in self.t2_dependency)
         catalog_result = t2_cat_match.get_payload()
         assert isinstance(catalog_result, dict)
         if not self.inspect_catalog(catalog_result):

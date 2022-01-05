@@ -77,7 +77,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
         One list for each of the seven redshift cateogries
         """
 
-        group_z = [[], [], [], [], [], [], []]
+        group_z: list[list[float]] = [[], [], [], [], [], [], []]
         for lsname, lsdata in t2_res.items():
             if lsdata is None:
                 continue
@@ -135,9 +135,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
         One list for each of the seven redshift cateogries
         """
 
-        group_z = [[], [], [], [], [], [], []]
-
-
+        group_z: list[list[float]] = [[], [], [], [], [], [], []]
 
         for cat_name, cat_matches in t2_res.items():
             if cat_matches is None or cat_matches is False:
@@ -233,7 +231,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
 
 
 
-    def _get_matchbts_groupz(self, t2_res: dict[str, any])->list[list[float]]:
+    def _get_matchbts_groupz(self, t2_res: dict[str, Any])->list[list[float]]:
         """
         Parse output from T2MatachBTS.
 
@@ -244,13 +242,13 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
         One list for each of the seven redshift cateogries
         """
 
-        group_z = [[], [], [], [], [], [], []]
+        group_z: list[list[float]] = [[], [], [], [], [], [], []]
 
-        if 'bts_redshift' in t2_res.keys() and not t2_res['bts_redshift']== '-':
+        if isinstance(bts_redshift := t2_res.get("bts_redshift"), str) and bts_redshift != "-":        
             # BTS redshifts are stored as strings. Crude way to get to redshift precision for evaluation:
             # Take decimal part, remove initial zeroes and cound digits
-            decimals = len(t2_res['bts_redshift'].split(".")[1].lstrip("0"))
-            z = float(t2_res['bts_redshift'])
+            decimals = len(bts_redshift.split(".")[1].lstrip("0"))
+            z = float(bts_redshift)
 
             if decimals > 2:
                 group_z[0].append(z)
@@ -279,12 +277,12 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
 
         if not t2_views: # Should not happen actually, T2Processor catches that case
             self.logger.error("Missing tied t2 views")
-            return UnitResult(doc_code=DocumentCode.MISSING_INFO)
+            return UnitResult(code=DocumentCode.T2_MISSING_INFO)
 
 
         # Loop through all potential T2s with redshift information. Each should return an array of arrays, corresponding to redshift maches
         # found in each category. These will be added to sn redshifts
-        group_redshifts = [[], [], [], [], [], [], []]
+        group_redshifts: list[list[float]] = [[], [], [], [], [], [], []]
 
 
 		# Loop through t2_views and collect information.
@@ -303,7 +301,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
                 new_zs = self._get_matchbts_groupz(t2_res)
             else:
                 self.logger.error("No instructions for dealing with {}".format(t2_view.unit))
-                return UnitResult(doc_code=DocumentCode.MISSING_INFO)
+                return UnitResult(code=DocumentCode.T2_MISSING_INFO)
 
             for k in range(7):
                 if len(new_zs[k]) > 0:
@@ -312,7 +310,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
 
 
         # Check for best match
-        t2_output = {'group_zs': group_redshifts}
+        t2_output: dict[str,UBson] = {'group_zs': group_redshifts}
         for k in range(7):
             if (k+1) > self.max_redshift_category:
                 # No matches with sufficient precision
@@ -324,7 +322,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
                 # We then do *not* look for higher group (more uncertain) matches
                 break
         if self.catalogmatch_override:
-            t2_output["AmpelZ-Warning"]: "Override catalog in use."
+            t2_output["AmpelZ-Warning"] = "Override catalog in use."
 
         self.logger.debug('digest redshift: %s'%(t2_output))
         return t2_output

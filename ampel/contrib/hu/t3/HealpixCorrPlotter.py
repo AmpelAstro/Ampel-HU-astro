@@ -64,7 +64,7 @@ class HealpixCorrPlotter(AbsPhotoT3Unit):
 		table_rows: list[dict[str, Any]] = []
 		for tran_view in gen:
 			count += 1
-			self.logger.info(count)
+			self.logger.info(str(count))
 			# Stock info
 			tinfo = self._get_stock_info(tran_view)
 
@@ -73,6 +73,7 @@ class HealpixCorrPlotter(AbsPhotoT3Unit):
 			if t2docs is None:
 				continue
 			for t2info in t2docs:
+				assert isinstance(t2info, dict)
 				if self.model_name and not t2info['model_name']==self.model_name:
 					continue
 				tinfo['z'] = t2info['z']
@@ -163,11 +164,10 @@ class HealpixCorrPlotter(AbsPhotoT3Unit):
 		plt.xlabel('Healpix spatial P-value')
 		plt.ylabel(self.target_property)
 		# Determine titel (could be multiple?) from lists
-		channels = []
+		channels = set()
 		for chlist in list(df['channel']):
 			for ch in chlist:
-				channels.append(ch)
-		channels = set(channels)
+				channels.add(ch)
 		plt.title('{}'.format(' '.join(channels)))
 
 		plt.savefig('/home/jnordin/tmp/test.pdf')
@@ -180,10 +180,12 @@ class HealpixCorrPlotter(AbsPhotoT3Unit):
 		Gather relevant information from stock document.
 		"""
 
+		assert isinstance(tran.id, int)
+		assert tran.stock
 		stockinfo = {'id':tran.id, 'name': to_ztf_id(tran.id), 'channel': tran.stock['channel']}
 
 		# Could there be multiple healpix journal entries? I guess it cannot be ruled out
-		hpixs = [el['healpix'] for el in tran.stock['journal'] if 'healpix' in el.keys()]
+		hpixs = [el['extra']['healpix'] for el in tran.stock['journal'] if 'healpix' in el['extra'].keys()]
 		if len(hpixs)==0:
 			self.logger.info('No healpix info')
 			return stockinfo
