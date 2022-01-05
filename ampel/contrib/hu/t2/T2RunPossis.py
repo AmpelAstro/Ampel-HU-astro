@@ -52,7 +52,7 @@ class T2RunPossis(T2RunSncosmo):
     explosion_time_jd: Union[None, float, Literal['StockTriggerTime']]
 
     # Which units should this be changed to
-    t2_dependency: Sequence[StateT2Dependency[Literal[
+    t2_dependency: Sequence[StateT2Dependency[Literal[ # type: ignore[assignment]
                 "T2DigestRedshifts",
                 "T2MatchBTS",
                 "T2PhaseLimit",
