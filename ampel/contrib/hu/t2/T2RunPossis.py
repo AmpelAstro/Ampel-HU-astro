@@ -137,7 +137,7 @@ class T2RunPossis(T2RunSncosmo):
 
     def process(self,
         light_curve: LightCurve, t2_views: Sequence[T2DocView]
-    ) -> UBson |UnitResult:
+    ) -> Union[UBson,UnitResult]:
         """
         Adding the option to dynamically grap explosion time from T2PropagateStockInfo
 

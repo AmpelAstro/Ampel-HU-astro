@@ -8,7 +8,7 @@
 # Last Modified By:   jn <jnordin@physik.hu-berlin.de>
 
 import logging
-from typing import Any, Union, Generator, Sequence, Literal
+from typing import Any, Union, Generator, Sequence, Literal, Optional
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from matplotlib.lines import Line2D
@@ -35,7 +35,7 @@ class HealpixCorrPlotter(AbsPhotoT3Unit):
 	"""
 
 	sncosmo_unit: str = 'T2RunSncosmo'
-	model_name: str | None   # Only use this model
+	model_name: Optional[str]   # Only use this model
 	time_parameter: str = 't0'  # Name of the model parameter determining explosion / peak time
 
 	# What do we study
@@ -55,7 +55,7 @@ class HealpixCorrPlotter(AbsPhotoT3Unit):
 
 
 
-	def process(self, gen: Generator[TransientView, T3Send, None], t3s: T3Store | None = None) -> Union[UBson, UnitResult]:
+	def process(self, gen: Generator[TransientView, T3Send, None], t3s: Optional[T3Store] = None) -> Union[UBson, UnitResult]:
 
 		self.logger.info("Printing transients info")
 		self.logger.info("=" * 80)

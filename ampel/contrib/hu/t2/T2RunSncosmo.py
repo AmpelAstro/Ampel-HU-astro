@@ -150,7 +150,7 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
         )(self.process)
 
 
-    def _get_redshift(self, t2_views) -> tuple[None|float,None|str]:
+    def _get_redshift(self, t2_views) -> tuple[Optional[float],Optional[str]]:
         """
         Can potentially also be replaced with some sort of T2DigestRershift tabulator?
 
@@ -158,8 +158,8 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
         """
 
         # Examine T2s for eventual information
-        z: None | float = None
-        z_source: None | str = None
+        z: Optional[float] = None
+        z_source: Optional[str] = None
 
 
         if self.redshift_kind in ['T2MatchBTS', 'T2DigestRedshifts']:
@@ -189,15 +189,15 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
         return z, z_source
 
 
-    def _get_phaselimit(self, t2_views) -> tuple[None|float,None|float]:
+    def _get_phaselimit(self, t2_views) -> tuple[Optional[float],Optional[float]]:
         """
         Can potentially also be replaced with some sort of tabulator?
 
         """
 
         # Examine T2s for eventual information
-        jdstart: None | float = None
-        jdend: None | float = None
+        jdstart: Optional[float] = None
+        jdend: Optional[float] = None
 
         if self.phaseselect_kind is None:
             jdstart = -np.inf
