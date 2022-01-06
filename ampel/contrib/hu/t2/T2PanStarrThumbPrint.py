@@ -14,7 +14,7 @@ from ampel.types import UBson
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.util.collections import ampel_iter
 from ampel.content.DataPoint import DataPoint
-from ampel.plot.create import mplfig_to_svg_dict1
+from ampel.plot.utils import mplfig_to_svg_dict1
 from ampel.struct.UnitResult import UnitResult
 from ampel.model.PlotProperties import PlotProperties
 
