@@ -1,30 +1,33 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t3/TransientInfoDumper.py
-# License           : BSD-3-Clause
-# Author            : Jakob van Santen <jakob.van.santen@desy.de>
-# Date              : 15.08.2018
-# Last Modified Date: 15.08.2018
-# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
+# File:                ampel/contrib/hu/t3/TransientInfoDumper.py
+# License:             BSD-3-Clause
+# Author:              Jakob van Santen <jakob.van.santen@desy.de>
+# Date:                15.08.2018
+# Last Modified Date:  15.08.2018
+# Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 import uuid, requests
 from gzip import GzipFile
 from io import BytesIO
-from typing import Optional, Generator
+from typing import Optional, Union
+from collections.abc import Generator
 from urllib.parse import ParseResult, urlparse, urlunparse
 from xml.etree import ElementTree
-from ampel.abstract.AbsT3Unit import AbsT3Unit
+from ampel.types import UBson, T3Send
+from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.util.json import AmpelEncoder
-from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.view.SnapView import SnapView
+from ampel.view.T3Store import T3Store
+from ampel.struct.UnitResult import UnitResult
 
 
 def strip_auth_from_url(url):
     try:
         auth = requests.utils.get_auth_from_url(url)
         scheme, netloc, path, params, query, fragment = urlparse(url)
-        netloc = netloc[netloc.index("@") + 1 :]
+        netloc = netloc[(netloc.index("@") + 1):]
         url = urlunparse(ParseResult(scheme, netloc, path, params, query, fragment))
         return url, auth
     except KeyError:
@@ -36,7 +39,7 @@ def strip_path_from_url(url):
     return urlunparse(ParseResult(scheme, netloc, "/", None, None, None))
 
 
-class TransientViewDumper(AbsT3Unit):
+class TransientViewDumper(AbsT3ReviewUnit):
     """"""
 
     version = 0.1
@@ -53,8 +56,8 @@ class TransientViewDumper(AbsT3Unit):
             assert self.resource
             self.webdav_base = self.resource["desycloud"]
             self.ocs_base = (
-                strip_path_from_url(self.resource["desycloud"])
-                + "/ocs/v1.php/apps/files_sharing/api/v1"
+                strip_path_from_url(self.resource["desycloud"]) +
+                "/ocs/v1.php/apps/files_sharing/api/v1"
             )
         else:
             self.outfile = GzipFile(self.outputfile + ".json.gz", mode="w")
@@ -62,7 +65,7 @@ class TransientViewDumper(AbsT3Unit):
         self.encoder = AmpelEncoder(lossy=True)
 
 
-    def process(self, transients: Generator[SnapView, JournalAttributes, None]) -> None:
+    def process(self, transients: Generator[SnapView, T3Send, None], t3s: T3Store) -> Union[UBson, UnitResult]:
 
         count = 0
         for count, tran_view in enumerate(transients, 1):

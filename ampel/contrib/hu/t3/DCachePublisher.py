@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t3/DCachePublisher.py
-# License           : BSD-3-Clause
-# Author            : Jakob van Santen <jakob.van.santen@desy.de>
-# Date              : 27.02.2020
-# Last Modified Date: 27.02.2020
-# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
+# File:                ampel/contrib/hu/t3/DCachePublisher.py
+# License:             BSD-3-Clause
+# Author:              Jakob van Santen <jakob.van.santen@desy.de>
+# Date:                27.02.2020
+# Last Modified Date:  27.02.2020
+# Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 
 import asyncio, datetime, gzip, io, os, ssl, sys, time, traceback, backoff, pytz
 from functools import partial
-from typing import Any, Dict, List, Set, Tuple, Union, Generator
+from typing import Any, Union
+from collections.abc import Generator
 from xml.etree import ElementTree
 from aiohttp import ClientSession, helpers, TCPConnector
 from aiohttp.client_exceptions import (
@@ -19,7 +20,8 @@ from aiohttp.client_exceptions import (
 )
 
 from ampel.types import UBson
-from ampel.abstract.AbsT3Unit import AbsT3Unit
+from ampel.view.T3Store import T3Store
+from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.util.json import AmpelEncoder
 from ampel.view.SnapView import SnapView
@@ -28,10 +30,10 @@ from ampel.struct.UnitResult import UnitResult
 from ampel.struct.JournalAttributes import JournalAttributes
 
 
-class DCachePublisher(AbsT3Unit):
+class DCachePublisher(AbsT3ReviewUnit):
     """
     Publish TransientViews to DCache in gzipped JSON format
-    
+
     Each run writes a manifest file to {baseDir}/{channel}/manifest/latest.json.gz
     The manifest has the form:
     {
@@ -39,14 +41,14 @@ class DCachePublisher(AbsT3Unit):
         "previous": url of previous manifest (or null),
         "updated": list of TransientView URLs
     }
-    
+
     To build a list of TransientViews updated since some date, read latest.json.gz,
     consume all URLs in "updated", and then repeat with the manifest pointed to
     by "previous," repeating until the "time" of the current manifest is larger
     than the target date.
-    
+
     Obtain an authorization macaroon with e.g.::
-        
+
         python -m ampel.contrib.hu.t3.DCachePublisher macaroon -u 'USER:PASS' --validity PT1h
     """
 
@@ -59,8 +61,8 @@ class DCachePublisher(AbsT3Unit):
     authz: NamedSecret[str] = NamedSecret(label="dcache/macaroon")
 
     def post_init(self) -> None:
-        self.updated_urls: List[str] = []
-        self.existing_paths: Set[Tuple[str, ...]] = set()
+        self.updated_urls: list[str] = []
+        self.existing_paths: set[tuple[str, ...]] = set()
         self.dt = 0.0
 
         # don't bother preserving immutable types
@@ -69,7 +71,7 @@ class DCachePublisher(AbsT3Unit):
         self.base_dest = self.resource["dcache"] + self.base_dir
 
 
-    def serialize(self, tran_view: Union[SnapView, Dict[str, Any]]) -> bytes:
+    def serialize(self, tran_view: Union[SnapView, dict[str, Any]]) -> bytes:
         buf = io.BytesIO()
         with gzip.GzipFile(fileobj=buf, mode="w") as f:
             f.write(self.encoder.encode(tran_view).encode("utf-8"))
@@ -164,7 +166,7 @@ class DCachePublisher(AbsT3Unit):
     async def send_requests(self, unbound_tasks):
         """
         Send a batch of requests
-        
+
         :param unbound_tasks: sequence of callables that take a single argument
             that is an aiohttp request object
         """
@@ -212,7 +214,7 @@ class DCachePublisher(AbsT3Unit):
                 return await asyncio.gather(*tasks)
 
 
-    def process(self, gen: Generator[SnapView, JournalAttributes, None]) -> Union[UBson, UnitResult]:
+    def process(self, gen: Generator[SnapView, JournalAttributes, None], t3s: T3Store) -> Union[UBson, UnitResult]:
 
         """
         Publish a transient batch
@@ -307,8 +309,8 @@ def get_macaroon(
     user: helpers.BasicAuth,
     path: str,
     validity: str,
-    activity: List[str] = [],
-    ip: List[str] = [],
+    activity: list[str] = [],
+    ip: list[str] = [],
     host: str = "globe-door.ifh.de",
     port: int = 2880,
 ):
@@ -320,7 +322,7 @@ def get_macaroon(
         caveats.append(f'activity:{",".join(activity)}')
     if ip:
         caveats.append(f'ip:{",".join(ip)}')
-    body: Dict[str, Any] = {"validity": validity}
+    body: dict[str, Any] = {"validity": validity}
     if caveats:
         body["caveats"] = caveats
 

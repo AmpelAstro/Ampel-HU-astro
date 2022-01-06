@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-contrib-HU/ampel/contrib/hu/t0/XShooterFilter.py
-# License           : BSD-3-Clause
-# Author            : m. giomi <matteo.giomi@desy.de>
-# Date              : 28.08.2018
-# Last Modified Date: 24.11.2021
-# Last Modified By  : jnordin
+# File:                Ampel-contrib-HU/ampel/contrib/hu/t0/XShooterFilter.py
+# License:             BSD-3-Clause
+# Author:              m. giomi <matteo.giomi@desy.de>
+# Date:                28.08.2018
+# Last Modified Date:  24.11.2021
+# Last Modified By:    jnordin
 
 from typing import Optional, Union
 from numpy import array

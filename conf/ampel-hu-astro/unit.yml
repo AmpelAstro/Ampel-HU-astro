@@ -14,6 +14,10 @@
 - ampel.contrib.hu.t2.T2RunSncosmo
 - ampel.contrib.hu.t2.T2CatalogMatchLocal
 - ampel.contrib.hu.t2.T2DigestRedshifts
+- ampel.contrib.hu.t2.T2RunPossis
+- ampel.contrib.hu.t2.T2MatchBTS
+- ampel.contrib.hu.t2.T2NedTap
+- ampel.contrib.hu.t2.T2NedSNCosmo
 - ampel.contrib.hu.t3.TransientInfoPrinter
 - ampel.contrib.hu.t3.TransientViewDumper
 - ampel.contrib.hu.t3.ChannelSummaryPublisher

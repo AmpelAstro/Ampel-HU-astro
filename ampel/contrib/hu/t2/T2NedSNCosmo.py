@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-HU-astro/ampel/contrib/hu/t2/T2NedSNCosmo.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 10.03.2021
-# Last Modified Date: 10.10.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-HU-astro/ampel/contrib/hu/t2/T2NedSNCosmo.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                10.03.2021
+# Last Modified Date:  10.10.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import List, Any, Optional, Tuple, Union, Sequence, Literal
+from typing import Any, Optional, Union, Literal
+from collections.abc import Sequence
 from ampel.types import UBson, Tag
 from ampel.contrib.hu.t2.T2SNCosmo import T2SNCosmo
 from ampel.contrib.hu.util.ned import check_ned_res
@@ -59,7 +60,7 @@ class T2NedSNCosmo(AbsTiedLightCurveT2Unit, T2SNCosmo):
 	"""
 
 	t2_dependency: Sequence[StateT2Dependency[Literal["T2NedTap"]]]
-	z_range: Optional[Tuple[float, float]]
+	z_range: Optional[tuple[float, float]]
 	fit_all: bool = False # otherwise, fit only the first matching catalog result
 	spectroscopic: bool = True
 	merge_tags: bool = True
@@ -67,7 +68,7 @@ class T2NedSNCosmo(AbsTiedLightCurveT2Unit, T2SNCosmo):
 
 
 	# mandatory
-	def process(self, light_curve: LightCurve, t2_views: List[T2DocView]) -> Union[UBson, UnitResult]: # type: ignore[override]
+	def process(self, light_curve: LightCurve, t2_views: list[T2DocView]) -> Union[UBson, UnitResult]: # type: ignore[override]
 		"""
 		:param light_curve: see "ampel.view.LightCurve" docstring for more info.
 		"""
@@ -106,7 +107,7 @@ class T2NedSNCosmo(AbsTiedLightCurveT2Unit, T2SNCosmo):
 				if not [t for t in self.require_tags.any_of if t not in t2_view.tag]:
 					return UnitResult(code=30)
 
-		ret: List[Any] = []
+		ret: list[Any] = []
 		# Assimilate T2NedTag tags into the T2SNCosmo doc tags for convenience
 		tags = list(t2_view.tag) if self.merge_tags else []
 

@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t2/T2DigestRedshifts.py
-# License           : BSD-3-Clause
-# Author            : jnordin@physik.hu-berlin.de
-# Date              : 06.06.2021
-# Last Modified Date: 06.06.2021
-# Last Modified By  : jnordin@physik.hu-berlin.de
+# File:                ampel/contrib/hu/t2/T2DigestRedshifts.py
+# License:             BSD-3-Clause
+# Author:              jnordin@physik.hu-berlin.de
+# Date:                06.06.2021
+# Last Modified Date:  06.06.2021
+# Last Modified By:    jnordin@physik.hu-berlin.de
 
-from typing import List, Dict, Any, Optional, Sequence, Literal, Union
+from typing import Any, Optional, Literal, Union
+from collections.abc import Sequence
 from ampel.struct.UnitResult import UnitResult
 
 from ampel.types import UBson
@@ -18,6 +19,7 @@ from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
 from ampel.view.T2DocView import T2DocView
 from ampel.view.LightCurve import LightCurve
 import numpy as np
+
 
 class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
     """
@@ -33,9 +35,6 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
 
     This is for now an AbsTiedLightCurveT2Unit, but lc info currently not used. Is this needed, or shift to AbsTiedT2Unit?
 
-
-
-
     """
 
     # Max redshift uncertainty category: 1-7 (where 7 is any, and 1 only nearby spectroscopic matches)
@@ -43,7 +42,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
 
 
     # Redshift estimates associated with each region ( only rough guideline!!! )
-    category_precision: List[float] = [0.0003, 0.003, 0.01, 0.02, 0.04, 0.1, 0.3]
+    category_precision: list[float] = [0.0003, 0.003, 0.01, 0.02, 0.04, 0.1, 0.3]
 
 
     # CatalogMatch(Local) results might be overriden, for example if specialized catalog is being used
@@ -53,23 +52,23 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
     #                    "max_distance": "max arcsec in which to allow match,
     #                    "max_redshift": "max redshift to use",
     #                    "z_group": "which redshift group to assign to" }
-    catalogmatch_override: Optional[Dict[str, Any]]
+    catalogmatch_override: Optional[dict[str, Any]]
 
 
 
     # These are the units through which we look for redshifts
     # Which units should this be changed to
     t2_dependency: Sequence[StateT2Dependency[Literal[
-		"T2CatalogMatch" ,
-		"T2LSPhotoZTap" ,
-		"T2CatalogMatchLocal" ,
+		"T2CatalogMatch",
+		"T2LSPhotoZTap",
+		"T2CatalogMatchLocal",
 		"T2MatchBTS"
 	]]]
 
 
 
 
-    def _get_lsphotoz_groupz(self, t2_res: Dict[str, any])->List[List[float]]:
+    def _get_lsphotoz_groupz(self, t2_res: dict[str, Any]) -> list[list[float]]:
         """
         Parse output from T2LSPhotoZTap and investigate whether any matches fulfill group
         redshift criteria.
@@ -85,11 +84,11 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
 
             # Warning: all LS checks done with a 10" matching radius, this is thus enforced (in case T2 run with larger radius)
             if lsdata['dist2transient'] > 10:
-                self.logger.debug('No Digest redshift LS estimate.', extra={'dist2transient':lsdata['dist2transient']})
+                self.logger.debug('No Digest redshift LS estimate.', extra={'dist2transient': lsdata['dist2transient']})
                 continue
 
             # First investigate LS spectroscopic redshift
-            if lsdata['z_spec'] is not None and lsdata['z_spec'] >- 1:
+            if lsdata['z_spec'] is not None and lsdata['z_spec'] > -1:
                 if lsdata['z_spec'] < 0.03:
                     # Group I
                     group_z[0].append(lsdata['z_spec'])
@@ -105,7 +104,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
             self.logger.debug('LS debug spec: %s yield %s'%(lsdata, group_z))
 
             # Now, photometric redshifts
-            if lsdata['z_phot_median'] is not None and lsdata['z_phot_median'] >- 1:
+            if lsdata['z_phot_median'] is not None and lsdata['z_phot_median'] > -1:
 
                 if lsdata['z_phot_median'] < 0.1:
                     # Group IV
@@ -125,9 +124,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
 
 
 
-
-
-    def _get_catalogmatch_groupz(self, t2_res: Dict[str, any])->List[List[float]]:
+    def _get_catalogmatch_groupz(self, t2_res: dict[str, Any]) -> list[list[float]]:
         """
         Parse output from T2CatalogMatch.
 
@@ -236,7 +233,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
 
 
 
-    def _get_matchbts_groupz(self, t2_res: Dict[str, any])->List[List[float]]:
+    def _get_matchbts_groupz(self, t2_res: dict[str, any])->list[list[float]]:
         """
         Parse output from T2MatachBTS.
 

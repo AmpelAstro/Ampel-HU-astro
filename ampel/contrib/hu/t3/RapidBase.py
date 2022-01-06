@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-contrib-HU/ampel/contrib/hu/t3/RapidBase.py
-# License           : BSD-3-Clause
-# Author            : jnordin@physik.hu-berlin.de
-# Date              : 15.07.2019
-# Last Modified Date: 06.02.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-contrib-HU/ampel/contrib/hu/t3/RapidBase.py
+# License:             BSD-3-Clause
+# Author:              jnordin@physik.hu-berlin.de
+# Date:                15.07.2019
+# Last Modified Date:  06.02.2020
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any, Dict, List, Optional, Tuple, Generator, Union
+from typing import Any, Optional, Union
+from collections.abc import Generator
 
 from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
 from ampel.secret.NamedSecret import NamedSecret
@@ -15,7 +16,8 @@ from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.struct.UnitResult import UnitResult
 from ampel.view.TransientView import TransientView
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
-from ampel.types import UBson
+from ampel.types import UBson, T3Send
+from ampel.view.T3Store import T3Store
 
 
 # get the science records for the catalog match
@@ -45,7 +47,7 @@ class RapidBase(AbsPhotoT3Unit):
     # Original
     slack_token: Optional[NamedSecret[str]]
     # Hack
-    # slack_token_dict: Optional[ Dict[str,any] ] = {'key':'k','value':'v'}
+    # slack_token_dict: Optional[ dict[str,any] ] = {'key':'k','value':'v'}
     # from ampel.secret.DictSecretProvider import NamedSecret
     # slack_token: Secret = NamedSecret(**slack_token_dict)
 
@@ -53,7 +55,7 @@ class RapidBase(AbsPhotoT3Unit):
     slack_username: str = "AMPEL"
 
     # List of T2 unit names which should be collected for reaction
-    t2info_from: List[str] = []
+    t2info_from: list[str] = []
 
 
     def post_init(self) -> None:
@@ -66,7 +68,7 @@ class RapidBase(AbsPhotoT3Unit):
             self.logger.info(f"Using {k}={getattr(self, k)}")
 
 
-    def process(self, gen: Generator[TransientView, JournalAttributes, None]) -> Union[UBson, UnitResult]:
+    def process(self, gen: Generator[TransientView, T3Send, None], t3s: Optional[T3Store] = None) -> Union[UBson, UnitResult]:
         """
         Loop through transients and check for TNS names and/or candidates to submit
         """
@@ -83,7 +85,7 @@ class RapidBase(AbsPhotoT3Unit):
             # Otherwise, test
             elif self.do_testreact:
                 test_success, jcontent = self.test_react(tv, transientinfo)
-            
+
             if jcontent:
                 gen.send(JournalAttributes(extra=jcontent))
 
@@ -91,8 +93,8 @@ class RapidBase(AbsPhotoT3Unit):
 
 
     def react(
-        self, tran_view: TransientView, info: Optional[Dict[str, Any]]
-    ) -> Tuple[bool, Optional[Dict[str, Any]]]:
+        self, tran_view: TransientView, info: Optional[dict[str, Any]]
+    ) -> tuple[bool, Optional[dict[str, Any]]]:
         """
         Replace with react method adopted to particular facility or output
         """
@@ -102,8 +104,8 @@ class RapidBase(AbsPhotoT3Unit):
 
 
     def test_react(
-        self, tran_view: TransientView, info: Optional[Dict[str, Any]]
-    ) -> Tuple[bool, Optional[Dict[str, Any]]]:
+        self, tran_view: TransientView, info: Optional[dict[str, Any]]
+    ) -> tuple[bool, Optional[dict[str, Any]]]:
         """ Trigger a test slack report """
 
         success = False
@@ -144,15 +146,15 @@ class RapidBase(AbsPhotoT3Unit):
         return success, jcontent
 
 
-    def collect_info(self, tran_view: TransientView) -> Optional[Dict[str, Any]]:
+    def collect_info(self, tran_view: TransientView) -> Optional[dict[str, Any]]:
         """
         Create an information dict from T2 outputs, which can be used by reactors.
         """
 
-        info: Dict[str, Any] = {}
+        info: dict[str, Any] = {}
 
         for t2unit in self.t2info_from:
-            t2_result = tran_view.get_latest_t2_body(unit_id=t2unit)
+            t2_result = tran_view.get_t2_body(unit=t2unit)
             if isinstance(t2_result, dict):
-               info[t2unit] = t2_result
+                info[t2unit] = t2_result
         return info

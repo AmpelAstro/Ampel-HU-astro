@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-contrib-HU/ampel/contrib/hu/t0/TransientInClusterFilter.py
-# License           : BSD-3-Clause
-# Author            : m. giomi <matteo.giomi@desy.de>
-# Date              : 28.08.2018
-# Last Modified Date: 24.11.2021
-# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
+# File:                Ampel-contrib-HU/ampel/contrib/hu/t0/TransientInClusterFilter.py
+# License:             BSD-3-Clause
+# Author:              m. giomi <matteo.giomi@desy.de>
+# Date:                28.08.2018
+# Last Modified Date:  24.11.2021
+# Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 import numpy as np
 from functools import partial

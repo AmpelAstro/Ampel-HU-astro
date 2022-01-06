@@ -4,11 +4,11 @@
 # License		   	: BSD-3-Clause
 # Author			: jnordin@physik.hu-berlin.de, simeon.reusch@desy.de
 # Date			  	: 10.01.2019
-# Last Modified Date: 13.02.2019
-# Last Modified By  : simeon.reusch@desy.de
+# Last Modified Date:  13.02.2019
+# Last Modified By:    simeon.reusch@desy.de
 
 
-from typing import Optional, Dict, List, Union, ClassVar
+from typing import Optional, Union, ClassVar
 from astropy.time import Time
 from astropy.coordinates import SkyCoord
 import astropy.units as u
@@ -42,7 +42,7 @@ class T2MinorPlanetCenter(AbsPointT2Unit):
 	# V-band magnitude limit passed to MPC
 	maglim : float = 22
 	# Potential filter for photopoint selection
-	filters: Optional[Union[Dict, List[Dict]]] = None
+	filters: Optional[Union[dict, list[dict]]] = None
 
 	def process(self, pp: DataPoint) -> Union[UBson, UnitResult]:
 		""" 

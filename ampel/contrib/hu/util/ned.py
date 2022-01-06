@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-HU-astro/ampel/contrib/hu/util/ned.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 14.09.2021
-# Last Modified Date: 14.09.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-HU-astro/ampel/contrib/hu/util/ned.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                14.09.2021
+# Last Modified Date:  14.09.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Optional, Tuple
 from ampel.protocol.LoggerProtocol import LoggerProtocol
@@ -14,7 +14,7 @@ def check_ned_res(
 	cat_res: dict,
 	logger: LoggerProtocol,
 	spectroscopic: bool = False,
-	z_range: Optional[Tuple[float, float]] = None
+	z_range: Optional[tuple[float, float]] = None
 ) -> bool:
 
 	if not cat_res.get('z'):

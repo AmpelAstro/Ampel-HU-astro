@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-contrib-HU/ampel/contrib/hu/t3/ampel_tns.py
-# License           : BSD-3-Clause
-# Author            : Ken Smith
-# Date              : May 2016
-# Last Modified Date: Feb 2018
-# Last Modified By  : Jakob Nordin
+# File:                Ampel-contrib-HU/ampel/contrib/hu/t3/ampel_tns.py
+# License:             BSD-3-Clause
+# Author:              Ken Smith
+# Date:                May 2016
+# Last Modified Date:  Feb 2018
+# Last Modified By:    Jakob Nordin
 
 # -----------------------------------------------------------------------------
 # A python sample code for sending a bulk report to the TNS.
@@ -15,7 +15,7 @@
 import json
 import re
 import time
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Union
 
 from requests.models import Response
 
@@ -51,7 +51,7 @@ class TNSSession(BaseUrlSession):
             )
         )
 
-    def post(self, method: str, payload: Union[str, Dict[str,Any]], payload_key="data", **kwargs) -> Response:
+    def post(self, method: str, payload: Union[str, dict[str,Any]], payload_key="data", **kwargs) -> Response:
         for _ in range(10):
             if (response := super().post(
                 method,
@@ -83,7 +83,7 @@ class TNSClient:
         self.logger = logger
         self.session = TNSSession(token, baseURL)
 
-    def jsonResponse(self, r: Response) -> Dict:
+    def jsonResponse(self, r: Response) -> dict:
         """
         Send JSON response given requests object. Should be a python dict.
 
@@ -91,7 +91,7 @@ class TNSClient:
         :return d: json response converted to python dict
         """
 
-        d : Dict[str, Any] = {}
+        d : dict[str, Any] = {}
         # What response did we get?
         message = None
         status = r.status_code
@@ -157,7 +157,7 @@ class TNSClient:
 
         return reportId
     
-    def sendReports(self, reports: List[Dict]):
+    def sendReports(self, reports: list[dict]):
         """
         Based on a lists of reportlists, send to TNS.
         Return results for journal entries
@@ -233,7 +233,7 @@ class TNSClient:
 
         return reportresult
 
-    def _bulkReportReply(self, report_id: str) -> Dict[str, Any]:
+    def _bulkReportReply(self, report_id: str) -> dict[str, Any]:
         """
         Get the report back from the TNS
 
@@ -300,7 +300,7 @@ class TNSClient:
 
         return parsed["data"]["reply"]["internal_names"], "Got internal name response"
     
-    def search(self, ra: float, dec: float, matchradius: float=5.) -> Tuple[List[str], str]:
+    def search(self, ra: float, dec: float, matchradius: float=5.) -> tuple[list[str], str]:
         """
         formerly tnsName
         """

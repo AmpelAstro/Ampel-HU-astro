@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t2/T2TNSEval.py
-# License           : BSD-3-Clause
-# Author            : jnordin@physik.hu-berlin.de
-# Date              : 27.01.2021
-# Last Modified Date: 17.03.2021
-# Last Modified By  : jnordin@physik.hu-berlin.de
+# File:                ampel/contrib/hu/t2/T2TNSEval.py
+# License:             BSD-3-Clause
+# Author:              jnordin@physik.hu-berlin.de
+# Date:                27.01.2021
+# Last Modified Date:  17.03.2021
+# Last Modified By:    jnordin@physik.hu-berlin.de
 
 import numpy as np
-from typing import Dict, List, Optional, Sequence, Any, Union
+from typing import Optional, Any, Union
+from collections.abc import Sequence
 from astropy.coordinates import Distance, SkyCoord
 from astropy.cosmology import Planck15
 
@@ -31,7 +32,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
 
     # List of catalog-like output to search for redshift. It is assumed that
     # redshifts are stored as 'z'
-    redshift_catalogs: List[str] = ['SDSS_spec', 'NEDz', 'GLADEv23', 'NEDz_extcats']  # Otherwise more
+    redshift_catalogs: list[str] = ['SDSS_spec', 'NEDz', 'GLADEv23', 'NEDz_extcats']  # Otherwise more
     # maximum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
     max_redshift: float = 0.05 # 0.1
     # minimum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
@@ -64,7 +65,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
     # Reported detections in at least this many filters
     min_n_filters: int = 1
     # Require a detection in one of these filters (e.g. ZTF I-band more often spurious)
-    det_filterids: List[int] = [1, 2, 3]   # default to any of them
+    det_filterids: list[int] = [1, 2, 3]   # default to any of them
     # Minimal galactic latitide
     min_gal_lat: float = 14
     # reject alert if ssdistnr smaller than this value for any pp
@@ -86,12 +87,12 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
     # Cut to apply to all the photopoints in the light curve.
     # This will affect most operations, i.e. evaluating the position,
     # computing number of detections ecc.
-    lc_filters: List[Dict[str, Any]] = [
+    lc_filters: list[dict[str, Any]] = [
         {"attribute": "sharpnr", "operator": ">=", "value": -10.15},
         {"attribute": "magfromlim", "operator": ">", "value": 0},
     ]
 
-    def inspect_catalog(self, cat_res: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def inspect_catalog(self, cat_res: dict[str, Any]) -> Optional[dict[str, Any]]:
         """
         Check whether a redshift match can be found in matched catalogs.
         """
@@ -147,7 +148,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
 
 
 
-    def inspect_lc(self, lc: LightCurve) -> Optional[Dict[str, Any]]:
+    def inspect_lc(self, lc: LightCurve) -> Optional[dict[str, Any]]:
         """
         Verify whether the transient lightcurve fulfill criteria for submission.
 
@@ -156,7 +157,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         # apply cut on history: consider photophoints which are sharp enough
         pps = lc.get_photopoints(filters=self.lc_filters)
         assert pps is not None
-        info: Dict[str, Any] = {}
+        info: dict[str, Any] = {}
 
         # cut on number of detection
         if len(pps) < self.min_ndet:

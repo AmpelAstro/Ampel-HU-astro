@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-contrib-HU/ampel/contrib/hu/t2/T2Observability.py
-# License           : BSD-3-Clause
-# Author            : matteo.giomi@desy.de
-# Date              : 19.09.2018
-# Last Modified Date: 05.02.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-contrib-HU/ampel/contrib/hu/t2/T2Observability.py
+# License:             BSD-3-Clause
+# Author:              matteo.giomi@desy.de
+# Date:                19.09.2018
+# Last Modified Date:  05.02.2020
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import astropy.units as u
 from astropy.time import Time
-from typing import Dict, Any, Union
+from typing import Any, Union
 from ampel.types import UBson
-from ampel.model.StrictModel import StrictModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.util.Observatory import Observatory
 from ampel.view.LightCurve import LightCurve
 from ampel.struct.UnitResult import UnitResult
@@ -19,17 +19,17 @@ from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 from ampel.enum.DocumentCode import DocumentCode
 
 
-class VisibilityConstraintModel(StrictModel):
+class VisibilityConstraintModel(AmpelBaseModel):
 	airmass_th: float = 2
 	sun_alt_th: float = -12
 	min_moon_dist: float = 30
 
-class ObservatoryLocationModel(StrictModel):
+class ObservatoryLocationModel(AmpelBaseModel):
 	lat: float
 	long: float
 	alt: float
 
-class ObservatoryModel(StrictModel):
+class ObservatoryModel(AmpelBaseModel):
 	pos: ObservatoryLocationModel
 	constraints: VisibilityConstraintModel = VisibilityConstraintModel()
 
@@ -40,13 +40,13 @@ class T2Observability(AbsLightCurveT2Unit):
 	"""
 
 	# empty dict of named EarthLocation objetcs.
-	observatories: Dict[str, ObservatoryModel]
+	observatories: dict[str, ObservatoryModel]
 
 	# default parameters for LightCurve.get_pos method
-	lc_get_pos_kwargs: Dict[str, Any] = {'ret': "brightest", 'filters': None}
+	lc_get_pos_kwargs: dict[str, Any] = {'ret': "brightest", 'filters': None}
 
 	def post_init(self):
-		self._observatories: Dict[str, Observatory] = {}
+		self._observatories: dict[str, Observatory] = {}
 
 	def init_observatory(self, name, pos: ObservatoryLocationModel) -> Observatory:
 		"""
@@ -128,7 +128,7 @@ class T2Observability(AbsLightCurveT2Unit):
 		)
 
 		# initialize the catalog quer(ies). Use instance variable to aviod duplicates
-		out_dict: Dict[str, Any] = {}
+		out_dict: dict[str, Any] = {}
 
 		for name, observatory in self.observatories.items():
 

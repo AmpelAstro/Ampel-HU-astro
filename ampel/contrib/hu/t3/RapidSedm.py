@@ -1,19 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-contrib-HU/ampel/contrib/hu/t3/RapidSedm.py
-# License           : BSD-3-Clause
-# Author            : jnordin@physik.hu-berlin.de
-# Date              : 05.08.2019
-# Last Modified Date: 06.02.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-contrib-HU/ampel/contrib/hu/t3/RapidSedm.py
+# License:             BSD-3-Clause
+# Author:              jnordin@physik.hu-berlin.de
+# Date:                05.08.2019
+# Last Modified Date:  06.02.2020
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import datetime, requests
-from typing import Any, Dict, Optional, Tuple, Generator, Union
-from ampel.types import StockId, UBson
+from typing import Any, Optional, Tuple
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.contrib.hu.t3.RapidBase import RapidBase
-from ampel.struct.JournalAttributes import JournalAttributes
-from ampel.struct.UnitResult import UnitResult
 from ampel.view.TransientView import TransientView
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 
@@ -28,7 +25,7 @@ class RapidSedm(RapidBase):
 
     # Base SEDM trigger info
     sedm_url: str = "http://pharos.caltech.edu/request"
-    sedm_payload: Dict[str, Any] = {
+    sedm_payload: dict[str, Any] = {
         "obj_ra": None,
         "obj_dec": None,
         "obj_epoch": 2000,
@@ -81,8 +78,8 @@ class RapidSedm(RapidBase):
         super().post_init()
 
     def react(
-        self, tran_view: TransientView, info: Optional[Dict[str, Any]]
-    ) -> Tuple[bool, Optional[dict[str,Any]]]:
+        self, tran_view: TransientView, info: Optional[dict[str, Any]]
+    ) -> tuple[bool, Optional[dict[str, Any]]]:
         """
         Send a trigger to the SEDM. Note that we have no good way of investigating the queue at this time
         """

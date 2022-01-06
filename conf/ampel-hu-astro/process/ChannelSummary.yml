@@ -7,7 +7,7 @@ processor:
   unit: T3Processor
   config:
     supply:
-      unit: T3DefaultSupplier
+      unit: T3DefaultBufferSupplier
       config:
         process_name: ChannelSummary
         select:

@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t3/TNSMirrorUpdater.py
-# License           : BSD-3-Clause
-# Author            : Jakob van Santen <jakob.van.santen@desy.de>
-# Date              : 13.12.2018
-# Last Modified Date: 29.12.2020
-# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
+# File:                ampel/contrib/hu/t3/TNSMirrorUpdater.py
+# License:             BSD-3-Clause
+# Author:              Jakob van Santen <jakob.van.santen@desy.de>
+# Date:                13.12.2018
+# Last Modified Date:  29.12.2020
+# Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 import asyncio
 import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from pymongo import MongoClient
 
@@ -31,7 +31,7 @@ class TNSMirrorUpdater(AbsOpsUnit):
     max_parallel_requests: int = 8
     dry_run: bool = False
 
-    def run(self, beacon: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+    def run(self, beacon: Optional[dict[str, Any]] = None) -> Optional[dict[str, Any]]:
 
         now = datetime.datetime.utcnow()
         last_run = beacon["updated"] if beacon else now - datetime.timedelta(days=7)

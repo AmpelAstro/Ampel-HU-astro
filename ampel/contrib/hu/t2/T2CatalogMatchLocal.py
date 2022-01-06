@@ -1,15 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel-hu-astro/ampel/contrib/hu/t2/T2CatalogMatchLocal.py
-# License           : BSD-3-Clause
-# Author            : matteo.giomi@desy.de
-# Date              : 24.08.2018
-# Last Modified Date: 2.12.2021
-# Last Modified By  : jn <jnordin@physik.hu-berlin.de>
+# File:                ampel-hu-astro/ampel/contrib/hu/t2/T2CatalogMatchLocal.py
+# License:             BSD-3-Clause
+# Author:              matteo.giomi@desy.de
+# Date:                24.08.2018
+# Last Modified Date:  2.12.2021
+# Last Modified By:    jn <jnordin@physik.hu-berlin.de>
 
-from typing import Any, Dict, Literal, Optional, Sequence, TYPE_CHECKING, ClassVar, Union
+from typing import Any, ClassVar, Union
 from functools import cached_property
 from ampel.types import UBson
+
+from extcats import CatalogQuery
+from pymongo import MongoClient
+from pymongo.errors import AutoReconnect
+import backoff
+
 
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
@@ -18,48 +24,46 @@ from numpy import asarray, degrees
 
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.content.DataPoint import DataPoint
-from ampel.model.StrictModel import StrictModel
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.struct.UnitResult import UnitResult
-from ampel.base.LogicalUnit import LogicalUnit
 
 from ampel.model.DPSelection import DPSelection
 
 from ampel.ztf.t2.T2CatalogMatch import CatalogModel
 
-from extcats import CatalogQuery
-from pymongo import MongoClient
-import backoff
 
 
-class ExtcatsUnit(LogicalUnit):
+class ExtcatsUnit:
     """
     Interface to standard extcats
     """
 
-    require = ("extcats",)
+#    require = ("extcats",)
+    extcat_path: str = None
+
+    max_query_time: float = 300
 
     @cached_property
     def catq_client(self):
-        # Presumably authorization not needed
+        # As this is for local use we assume authorization is not needed
         #return MongoClient(self.resource["extcats"], **self.extcats.auth.get())
-        return MongoClient(self.resource["extcats"])
+        return MongoClient(self.extcat_path)
 
-    def get_extcats_query(self, catalog, ra_key="ra", dec_key="dec", *args, **kwargs):
+    def get_extcats_query(self, catalog, logger, ra_key="ra", dec_key="dec", *args, **kwargs):
         q = CatalogQuery.CatalogQuery(
             catalog,
             *args,
             **kwargs,
             ra_key=ra_key,
             dec_key=dec_key,
-            logger=self.logger,
+            logger=logger,
             dbclient=self.catq_client,
         )
         decorate = backoff.on_exception(
             backoff.expo,
             AutoReconnect,
-            logger=self.logger,
-            max_time=self.extcats.max_time,
+            logger=logger,
+            max_time=self.max_query_time,
         )
         for method in 'binaryserach', 'findclosest', 'findwithin':
             setattr(
@@ -86,12 +90,21 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
     eligible: ClassVar[DPSelection] = DPSelection(filter='PPSFilter', sort='jd', select='first')
 
     # Each value specifies a catalog in extcats or catsHTM format and the query parameters
-    catalogs: Dict[str, CatalogModel]
+    catalogs: dict[str, CatalogModel]
 
     # Default behavior is to return the closest match, but can be switched to returning all
     closest_match: bool = True
 
+    # Extcat config from context. Could add auhtorization
+    require = ("extcats",)
+
+
+
     def post_init(self):
+
+        # Select extcat
+        self.extcat_path = self.resource["extcats"]
+
         # dict for catalog query objects
         self.catq_objects = {}
         self.debug = self.logger.verbose > 1
@@ -105,7 +118,7 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
 
         # check if you have already init this peculiar query
         if not (catq := self.catq_objects.get(catalog)):
-            catq = self.get_extcats_query(catalog, **kwargs)
+            catq = self.get_extcats_query(catalog, self.logger, **kwargs)
             self.catq_objects[catalog] = catq
         return catq
 
@@ -139,7 +152,7 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
             )
 
         # initialize the catalog quer(ies). Use instance variable to aviod duplicates
-        out_dict: Dict[str, Any] = {}
+        out_dict: dict[str, Any] = {}
         for catalog, cat_opts in self.catalogs.items():
 
             src = None
