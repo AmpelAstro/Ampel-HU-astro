@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - dev
+      - v*-dev
   pull_request:
     branches:
       - main
