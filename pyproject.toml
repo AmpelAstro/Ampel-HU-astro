@@ -34,7 +34,7 @@ include = [
 [tool.poetry.dependencies]
 python = "3.9"
 ampel-plots = {version = "^0.8.0-alpha.0", source = "pypi"}
-ampel-ztf = {version = "^0.8.0-alpha.2", source = "pypi"}
+ampel-ztf = {version = ">=0.8.2-alpha.0,<0.8.3", source = "pypi"}
 sncosmo = "^2.5.0"
 iminuit = "^2.8.0"
 numpy = "^1"
@@ -63,6 +63,7 @@ channels = ["conda-forge"]
 [tool.conda-lock.dependencies]
 python-confluent-kafka = "1.5"
 matplotlib-base = "3.*"
+pip = "*"
 
 [build-system]
 requires = ["poetry-core>=1.0.0", "setuptools>=40.8.0"]
