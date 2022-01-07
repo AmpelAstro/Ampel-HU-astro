@@ -32,5 +32,7 @@ t2_compute:
       t2_dependency:
       - unit: T2CatalogMatch
         config: '%T2CatalogMatch_general'
-        link_override: 
-          pps: first
+        link_override:
+          filter: PPSFilter
+          sort: jd
+          select: first
