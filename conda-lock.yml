@@ -11,20 +11,21 @@
 # To update a single package to the latest version compatible with the version constraints in the source:
 #     conda-lock lock --lockfile conda-lock.yml --update PACKAGE
 # To re-solve the entire environment, e.g. after changing a version constraint in the source file:
-#     conda-lock -f pyproject.toml --lockfile conda-lock.yml
+#     conda-lock -f pyproject.toml -f unindexed_deps.yml --lockfile conda-lock.yml
 metadata:
   channels:
   - conda-forge
   content_hash:
-    linux-64: ffe4227d7c84e710a42e22888d1bfe9d60f58f4241c119f612b4b80508527db0
-    osx-64: 201ac90091c7defe26eccf9b3d3c09cdad780da678990da7b6a67886501215fa
-    osx-arm64: 48de20abd7b171f94f8d6bab8e6df0c94265f280d1103f5c1756dee8ea4b444a
+    linux-64: 53654b9ec791defdefb74cfd237b1b98bc016a5ee2ab72ef7675e6d516333bc8
+    osx-64: 4f4f78654e18c0f3487314feff07d72543c73119a5fe1e2ae027510aaabb1a87
+    osx-arm64: c4d92ea4c9fb4c062b3fe7093fa678f6c969a7207f860e51fbd07ec8519c227b
   platforms:
   - linux-64
   - osx-64
   - osx-arm64
   sources:
   - pyproject.toml
+  - unindexed_deps.yml
 package:
 - category: main
   dependencies: {}
@@ -463,33 +464,33 @@ package:
 - category: main
   dependencies:
     python: '>=3.6'
-  hash: md5:a57a3f6f2b0a7400e340f850c405df19
+  hash: md5:ea77236c8031cfa821720b21b4cb0ceb
   manager: conda
   name: charset-normalizer
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/noarch/charset-normalizer-2.0.9-pyhd8ed1ab_0.tar.bz2
-  version: 2.0.9
+  url: https://conda.anaconda.org/conda-forge/noarch/charset-normalizer-2.0.10-pyhd8ed1ab_0.tar.bz2
+  version: 2.0.10
 - category: main
   dependencies:
     python: '>=3.6'
-  hash: md5:a57a3f6f2b0a7400e340f850c405df19
+  hash: md5:ea77236c8031cfa821720b21b4cb0ceb
   manager: conda
   name: charset-normalizer
   optional: false
   platform: osx-64
-  url: https://conda.anaconda.org/conda-forge/noarch/charset-normalizer-2.0.9-pyhd8ed1ab_0.tar.bz2
-  version: 2.0.9
+  url: https://conda.anaconda.org/conda-forge/noarch/charset-normalizer-2.0.10-pyhd8ed1ab_0.tar.bz2
+  version: 2.0.10
 - category: main
   dependencies:
     python: '>=3.6'
-  hash: md5:a57a3f6f2b0a7400e340f850c405df19
+  hash: md5:ea77236c8031cfa821720b21b4cb0ceb
   manager: conda
   name: charset-normalizer
   optional: false
   platform: osx-arm64
-  url: https://conda.anaconda.org/conda-forge/noarch/charset-normalizer-2.0.9-pyhd8ed1ab_0.tar.bz2
-  version: 2.0.9
+  url: https://conda.anaconda.org/conda-forge/noarch/charset-normalizer-2.0.10-pyhd8ed1ab_0.tar.bz2
+  version: 2.0.10
 - category: dev
   dependencies:
     libgcc-ng: '>=9.4.0'
@@ -2661,55 +2662,52 @@ package:
   dependencies:
     attrs: '>=19.2.0'
     iniconfig: ''
-    more-itertools: '>=4.0.0'
     packaging: ''
     pluggy: '>=0.12,<2'
     py: '>=1.8.2'
     python: '>=3.9,<3.10.0a0'
     python_abi: 3.9.* *_cp39
     toml: ''
-  hash: md5:5a2cb92ccaac272bbf4d167352d6b4d4
+  hash: md5:b88777273800a6df2120fbcfa4d60569
   manager: conda
   name: pytest
   optional: true
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/linux-64/pytest-6.2.5-py39hf3d152e_1.tar.bz2
+  url: https://conda.anaconda.org/conda-forge/linux-64/pytest-6.2.5-py39hf3d152e_2.tar.bz2
   version: 6.2.5
 - category: dev
   dependencies:
     attrs: '>=19.2.0'
     iniconfig: ''
-    more-itertools: '>=4.0.0'
     packaging: ''
     pluggy: '>=0.12,<2'
     py: '>=1.8.2'
     python: '>=3.9,<3.10.0a0'
     python_abi: 3.9.* *_cp39
     toml: ''
-  hash: md5:21f34c4fc1f9f16d2a41ea6766eadbf3
+  hash: md5:32d8efc972a1b858b8287626952e4ad0
   manager: conda
   name: pytest
   optional: true
   platform: osx-64
-  url: https://conda.anaconda.org/conda-forge/osx-64/pytest-6.2.5-py39h6e9494a_1.tar.bz2
+  url: https://conda.anaconda.org/conda-forge/osx-64/pytest-6.2.5-py39h6e9494a_2.tar.bz2
   version: 6.2.5
 - category: dev
   dependencies:
     attrs: '>=19.2.0'
     iniconfig: ''
-    more-itertools: '>=4.0.0'
     packaging: ''
     pluggy: '>=0.12,<2'
     py: '>=1.8.2'
     python: '>=3.9,<3.10.0a0 *_cpython'
     python_abi: 3.9.* *_cp39
     toml: ''
-  hash: md5:7f37779bafbefe9d1d32a2f5e17fc4fd
+  hash: md5:884ed2eabc6eb0c4b9d42ce8c9d47af5
   manager: conda
   name: pytest
   optional: true
   platform: osx-arm64
-  url: https://conda.anaconda.org/conda-forge/osx-arm64/pytest-6.2.5-py39h2804cbe_1.tar.bz2
+  url: https://conda.anaconda.org/conda-forge/osx-arm64/pytest-6.2.5-py39h2804cbe_2.tar.bz2
   version: 6.2.5
 - category: dev
   dependencies:
@@ -3052,13 +3050,13 @@ package:
     idna: '>=2.5,<4'
     python: '>=3.6'
     urllib3: '>=1.21.1,<1.27'
-  hash: md5:309adb389b0a8613753cce88c7b05eb8
+  hash: md5:7c1c427246b057b8fa97200ecdb2ed62
   manager: conda
   name: requests
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/noarch/requests-2.27.0-pyhd8ed1ab_0.tar.bz2
-  version: 2.27.0
+  url: https://conda.anaconda.org/conda-forge/noarch/requests-2.27.1-pyhd8ed1ab_0.tar.bz2
+  version: 2.27.1
 - category: main
   dependencies:
     certifi: '>=2017.4.17'
@@ -3066,13 +3064,13 @@ package:
     idna: '>=2.5,<4'
     python: '>=3.6'
     urllib3: '>=1.21.1,<1.27'
-  hash: md5:309adb389b0a8613753cce88c7b05eb8
+  hash: md5:7c1c427246b057b8fa97200ecdb2ed62
   manager: conda
   name: requests
   optional: false
   platform: osx-64
-  url: https://conda.anaconda.org/conda-forge/noarch/requests-2.27.0-pyhd8ed1ab_0.tar.bz2
-  version: 2.27.0
+  url: https://conda.anaconda.org/conda-forge/noarch/requests-2.27.1-pyhd8ed1ab_0.tar.bz2
+  version: 2.27.1
 - category: main
   dependencies:
     certifi: '>=2017.4.17'
@@ -3080,13 +3078,13 @@ package:
     idna: '>=2.5,<4'
     python: '>=3.6'
     urllib3: '>=1.21.1,<1.27'
-  hash: md5:309adb389b0a8613753cce88c7b05eb8
+  hash: md5:7c1c427246b057b8fa97200ecdb2ed62
   manager: conda
   name: requests
   optional: false
   platform: osx-arm64
-  url: https://conda.anaconda.org/conda-forge/noarch/requests-2.27.0-pyhd8ed1ab_0.tar.bz2
-  version: 2.27.0
+  url: https://conda.anaconda.org/conda-forge/noarch/requests-2.27.1-pyhd8ed1ab_0.tar.bz2
+  version: 2.27.1
 - category: main
   dependencies:
     libblas: '>=3.8.0,<4.0a0'
@@ -3188,35 +3186,35 @@ package:
   dependencies:
     python: '>=3.9,<3.10.0a0'
     python_abi: 3.9.* *_cp39
-  hash: md5:b751fb1f28a49b9ced5479206c25d32c
+  hash: md5:c6d1e271677675dfa537be1900be9737
   manager: conda
   name: setuptools
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/linux-64/setuptools-60.2.0-py39hf3d152e_0.tar.bz2
-  version: 60.2.0
+  url: https://conda.anaconda.org/conda-forge/linux-64/setuptools-60.3.1-py39hf3d152e_0.tar.bz2
+  version: 60.3.1
 - category: main
   dependencies:
     python: '>=3.9,<3.10.0a0'
     python_abi: 3.9.* *_cp39
-  hash: md5:f21664aa05835b1b325ca725dacaa727
+  hash: md5:5fc92e05b2db6b8acfc138bef23a55dc
   manager: conda
   name: setuptools
   optional: false
   platform: osx-64
-  url: https://conda.anaconda.org/conda-forge/osx-64/setuptools-60.2.0-py39h6e9494a_0.tar.bz2
-  version: 60.2.0
+  url: https://conda.anaconda.org/conda-forge/osx-64/setuptools-60.3.1-py39h6e9494a_0.tar.bz2
+  version: 60.3.1
 - category: main
   dependencies:
     python: '>=3.9,<3.10.0a0 *_cpython'
     python_abi: 3.9.* *_cp39
-  hash: md5:195ca21a231c2b147f0156732b861740
+  hash: md5:13913766f7075730fa262d74a9d03689
   manager: conda
   name: setuptools
   optional: false
   platform: osx-arm64
-  url: https://conda.anaconda.org/conda-forge/osx-arm64/setuptools-60.2.0-py39h2804cbe_0.tar.bz2
-  version: 60.2.0
+  url: https://conda.anaconda.org/conda-forge/osx-arm64/setuptools-60.3.1-py39h2804cbe_0.tar.bz2
+  version: 60.3.1
 - category: main
   dependencies:
     python: ''
@@ -3460,63 +3458,63 @@ package:
 - category: dev
   dependencies:
     python: '>=3.6'
-  hash: md5:36e459e1403873b3f0ef727a50f4604f
+  hash: md5:604f6d0216fc1d9adb93a0f42d4f3dc1
   manager: conda
   name: types-pytz
   optional: true
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/noarch/types-pytz-2021.3.3-pyhd8ed1ab_0.tar.bz2
-  version: 2021.3.3
+  url: https://conda.anaconda.org/conda-forge/noarch/types-pytz-2021.3.4-pyhd8ed1ab_0.tar.bz2
+  version: 2021.3.4
 - category: dev
   dependencies:
     python: '>=3.6'
-  hash: md5:36e459e1403873b3f0ef727a50f4604f
+  hash: md5:604f6d0216fc1d9adb93a0f42d4f3dc1
   manager: conda
   name: types-pytz
   optional: true
   platform: osx-64
-  url: https://conda.anaconda.org/conda-forge/noarch/types-pytz-2021.3.3-pyhd8ed1ab_0.tar.bz2
-  version: 2021.3.3
+  url: https://conda.anaconda.org/conda-forge/noarch/types-pytz-2021.3.4-pyhd8ed1ab_0.tar.bz2
+  version: 2021.3.4
 - category: dev
   dependencies:
     python: '>=3.6'
-  hash: md5:36e459e1403873b3f0ef727a50f4604f
+  hash: md5:604f6d0216fc1d9adb93a0f42d4f3dc1
   manager: conda
   name: types-pytz
   optional: true
   platform: osx-arm64
-  url: https://conda.anaconda.org/conda-forge/noarch/types-pytz-2021.3.3-pyhd8ed1ab_0.tar.bz2
-  version: 2021.3.3
+  url: https://conda.anaconda.org/conda-forge/noarch/types-pytz-2021.3.4-pyhd8ed1ab_0.tar.bz2
+  version: 2021.3.4
 - category: dev
   dependencies:
     python: '>=3.6'
-  hash: md5:f909a2c631b644f7d8863230c8b929ae
+  hash: md5:fd2355824b1fc16d3c527b477f75d9f8
   manager: conda
   name: types-requests
   optional: true
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/noarch/types-requests-2.26.3-pyhd8ed1ab_0.tar.bz2
-  version: 2.26.3
+  url: https://conda.anaconda.org/conda-forge/noarch/types-requests-2.27.2-pyhd8ed1ab_0.tar.bz2
+  version: 2.27.2
 - category: dev
   dependencies:
     python: '>=3.6'
-  hash: md5:f909a2c631b644f7d8863230c8b929ae
+  hash: md5:fd2355824b1fc16d3c527b477f75d9f8
   manager: conda
   name: types-requests
   optional: true
   platform: osx-64
-  url: https://conda.anaconda.org/conda-forge/noarch/types-requests-2.26.3-pyhd8ed1ab_0.tar.bz2
-  version: 2.26.3
+  url: https://conda.anaconda.org/conda-forge/noarch/types-requests-2.27.2-pyhd8ed1ab_0.tar.bz2
+  version: 2.27.2
 - category: dev
   dependencies:
     python: '>=3.6'
-  hash: md5:f909a2c631b644f7d8863230c8b929ae
+  hash: md5:fd2355824b1fc16d3c527b477f75d9f8
   manager: conda
   name: types-requests
   optional: true
   platform: osx-arm64
-  url: https://conda.anaconda.org/conda-forge/noarch/types-requests-2.26.3-pyhd8ed1ab_0.tar.bz2
-  version: 2.26.3
+  url: https://conda.anaconda.org/conda-forge/noarch/types-requests-2.27.2-pyhd8ed1ab_0.tar.bz2
+  version: 2.27.2
 - category: main
   dependencies:
     python: '>=3.6'
@@ -3583,13 +3581,13 @@ package:
     pyopenssl: '>=0.14'
     pysocks: '>=1.5.6,<2.0,!=1.5.7'
     python: <4.0
-  hash: md5:be75bab4820a56f77ba1a3fc9139c36a
+  hash: md5:53f1387c68c21cecb386e2cde51b3f7c
   manager: conda
   name: urllib3
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/noarch/urllib3-1.26.7-pyhd8ed1ab_0.tar.bz2
-  version: 1.26.7
+  url: https://conda.anaconda.org/conda-forge/noarch/urllib3-1.26.8-pyhd8ed1ab_1.tar.bz2
+  version: 1.26.8
 - category: main
   dependencies:
     brotlipy: '>=0.6.0'
@@ -3599,13 +3597,13 @@ package:
     pyopenssl: '>=0.14'
     pysocks: '>=1.5.6,<2.0,!=1.5.7'
     python: <4.0
-  hash: md5:be75bab4820a56f77ba1a3fc9139c36a
+  hash: md5:53f1387c68c21cecb386e2cde51b3f7c
   manager: conda
   name: urllib3
   optional: false
   platform: osx-64
-  url: https://conda.anaconda.org/conda-forge/noarch/urllib3-1.26.7-pyhd8ed1ab_0.tar.bz2
-  version: 1.26.7
+  url: https://conda.anaconda.org/conda-forge/noarch/urllib3-1.26.8-pyhd8ed1ab_1.tar.bz2
+  version: 1.26.8
 - category: main
   dependencies:
     brotlipy: '>=0.6.0'
@@ -3615,13 +3613,13 @@ package:
     pyopenssl: '>=0.14'
     pysocks: '>=1.5.6,<2.0,!=1.5.7'
     python: <4.0
-  hash: md5:be75bab4820a56f77ba1a3fc9139c36a
+  hash: md5:53f1387c68c21cecb386e2cde51b3f7c
   manager: conda
   name: urllib3
   optional: false
   platform: osx-arm64
-  url: https://conda.anaconda.org/conda-forge/noarch/urllib3-1.26.7-pyhd8ed1ab_0.tar.bz2
-  version: 1.26.7
+  url: https://conda.anaconda.org/conda-forge/noarch/urllib3-1.26.8-pyhd8ed1ab_1.tar.bz2
+  version: 1.26.8
 - category: main
   dependencies:
     python: '!=3.0,!=3.1,!=3.2,!=3.3,!=3.4'
