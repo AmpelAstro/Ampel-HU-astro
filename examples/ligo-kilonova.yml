@@ -13,7 +13,7 @@ task:
     iter_max: 100000
     map_name: S191222n
     map_url: https://gracedb.ligo.org/api/superevents/S191222n/files/LALInference.fits.gz
-    scratch_dir: '/home/jnordin/tmp'
+    scratch_dir: '.'
     pvalue_limit: 0.9
     supplier:
       unit: ZiHealpixAlertSupplier
@@ -21,7 +21,6 @@ task:
         loader:
           unit: ZTFHealpixAlertLoader
           config:
-            archive_token:  ztf/archive/token
             chunk_size: 1000
             future_days: 5
             history_days: 10
@@ -173,7 +172,6 @@ task:
             - config:
                 explosion_time_jd: StockTriggerTime
                 max_ampelz_group: 7
-                possis_dir: /home/jnordin/data/models/kilonova_models
                 redshift_kind: T2DigestRedshifts
                 t2_dependency:
                 - config: *id001
@@ -207,3 +205,38 @@ task:
               - journal
               - healpix
               - time
+
+- title: Run T2s
+  unit: T2Worker
+  config:
+    send_beacon: false
+    raise_exc: true
+
+- title: Plot
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3ReviewUnitExecutor
+        config:
+          supply:
+            unit: T3DefaultBufferSupplier
+            config:
+              select:
+                unit: T3StockSelector
+                config:
+                  channel: PossisHQ
+              load:
+                unit: T3SimpleDataLoader
+                config:
+                  directives:
+                    - STOCK
+                    - T2
+          stage:
+            unit: T3SimpleStager
+            config:
+              execute:
+                - unit: HealpixCorrPlotter
+                  config:
+                    sncosmo_unit: T2RunPossis
+                    target_range: [-13.,-17.]
