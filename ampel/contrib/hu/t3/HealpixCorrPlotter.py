@@ -7,6 +7,7 @@
 # Last Modified Date: 04.01.2022
 # Last Modified By:   jn <jnordin@physik.hu-berlin.de>
 
+import os
 import logging
 from typing import Any, Union, Generator, Sequence, Literal, Optional
 import matplotlib.pyplot as plt
@@ -53,7 +54,7 @@ class HealpixCorrPlotter(AbsPhotoT3Unit):
 	background_color: str = "tab:green"
 	ndof_marker: list[Any] = [ [0,0.5,'o', marker_colors[0], '0 dof'], [1,1.5,'^', marker_colors[1], '1 dof'], [2,np.inf,'s', marker_colors[2], '>1 dof'], ]
 
-
+	debug_dir: Optional[str] = None
 
 	def process(self, gen: Generator[TransientView, T3Send, None], t3s: Optional[T3Store] = None) -> Union[UBson, UnitResult]:
 
@@ -75,6 +76,8 @@ class HealpixCorrPlotter(AbsPhotoT3Unit):
 			for t2info in t2docs:
 				assert isinstance(t2info, dict)
 				if self.model_name and not t2info['model_name']==self.model_name:
+					continue
+				if not 'fit_metrics' in t2info:
 					continue
 				tinfo['z'] = t2info['z']
 				if t2info['z_source'] in ['AMPELz_group0', 'AMPELz_group1','AMPELz_group2','AMPELz_group3']:
@@ -170,7 +173,11 @@ class HealpixCorrPlotter(AbsPhotoT3Unit):
 				channels.add(ch)
 		plt.title('{}'.format(' '.join(channels)))
 
-		plt.savefig('/home/jnordin/tmp/test.pdf')
+		if self.debug_dir:
+			pdf = os.path.join(self.debug_dir, "test.pdf")
+			self.logger.info(f"Saving plot to {pdf}")
+			plt.savefig(pdf)
+
 
 		return None
 

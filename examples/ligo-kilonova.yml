@@ -240,3 +240,4 @@ task:
                   config:
                     sncosmo_unit: T2RunPossis
                     target_range: [-13.,-17.]
+                    debug_dir: "."
