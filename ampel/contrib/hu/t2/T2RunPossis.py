@@ -15,6 +15,8 @@ from typing import Union
 import errno, os, backoff, copy
 from astropy.time import Time
 from typing import Literal, Sequence
+from urllib.request import urlopen
+from urllib.parse import urljoin
 
 from ampel.types import UBson
 from ampel.struct.UnitResult import UnitResult
@@ -37,7 +39,7 @@ class T2RunPossis(T2RunSncosmo):
     # Parameters determining which POSSIS model will be read
 
     # Currently references to sample model included in Ampel-HU-astro
-    possis_dir: str = 'data/kilonova_models'
+    possis_base_url: str = 'https://raw.githubusercontent.com/mbulla/kilonova_models/f810e0ec7e7a6ae32624738329e73d561b081372'
     model_gen: str = 'bns_m3_3comp'
     mej_dyn: float = 0.01
     mej_wind: float = 0.09
@@ -66,15 +68,16 @@ class T2RunPossis(T2RunSncosmo):
         Note that this could be done once at instance init.
         """
 
-        # Find file
-        fname = os.path.join(self.possis_dir, self.model_gen,
-                     "nph1.0e+06_mejdyn{:05.3f}_mejwind{:05.3f}_phi{}.txt".format(self.mej_dyn, self.mej_wind, self.phi))
-        if not os.path.exists(fname):
-            raise FileNotFoundError(fname)
+        model_url = urljoin(
+            self.possis_base_url + "/",
+            f"{self.model_gen}/nph1.0e+06_mejdyn{self.mej_dyn:05.3f}_mejwind{self.mej_wind:05.3f}_phi{self.phi}.txt"
+        )
 
-        # Read model Parameters from first three lines
-        with open(fname, 'r') as fh:
-            lines = fh.readlines()
+        # Find file
+        with urlopen(model_url) as fh:
+
+            # Read model Parameters from first three lines
+            lines = [next(fh).decode() for _ in range(3)]
             nobs = int(lines[0])
             nwave = int(lines[1])
             line3 = lines[2].split(' ')
@@ -84,14 +87,14 @@ class T2RunPossis(T2RunSncosmo):
             model_cos_theta = np.linspace(0, 1, nobs)  # 11 viewing angles
             phase = np.linspace(t_i, t_f, ntime)  # epochs
 
-        # Limit to one angle
-        # Note: U. Feindt developed model where angle was fit, left out for know
-        theta_mask = np.isclose(self.cos_theta, model_cos_theta)
-        if not sum(theta_mask)==1:
-            raise ValueError("Model cos_theta {model_cos_theta} not defined")
+            # Limit to one angle
+            # Note: U. Feindt developed model where angle was fit, left out for know
+            theta_mask = np.isclose(self.cos_theta, model_cos_theta)
+            if not sum(theta_mask)==1:
+                raise ValueError("Model cos_theta {model_cos_theta} not defined")
 
-        # Read model data
-        mdata = np.genfromtxt(fname, skip_header=3)
+            # Read model data
+            mdata = np.genfromtxt(fh)
         wave = mdata[0 : int(nwave), 0] # noqa
         flux = np.array([mdata[i * int(nwave) : i * int(nwave) + int(nwave), 1:] for i in range(int(nobs))]).T
 
