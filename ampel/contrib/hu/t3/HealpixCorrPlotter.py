@@ -185,7 +185,8 @@ class HealpixCorrPlotter(AbsPhotoT3Unit):
 		stockinfo = {'id':tran.id, 'name': to_ztf_id(tran.id), 'channel': tran.stock['channel']}
 
 		# Could there be multiple healpix journal entries? I guess it cannot be ruled out
-		hpixs = [el['extra']['healpix'] for el in tran.stock['journal'] if 'healpix' in el['extra'].keys()]
+		# FIXME: extra info should probably be in .extra, not mixed into the top level of JournalRecord
+		hpixs = [el['healpix'] for el in tran.stock['journal'] if 'healpix' in el.keys()]
 		if len(hpixs)==0:
 			self.logger.info('No healpix info')
 			return stockinfo
