@@ -10,7 +10,8 @@ task:
 - title: ProcessLigoSkymap
   unit: T0HealpixPathProcessor
   config:
-    iter_max: 100000
+    # consume all alerts
+    iter_max: 0
     map_name: S191222n
     map_url: https://gracedb.ligo.org/api/superevents/S191222n/files/LALInference.fits.gz
     scratch_dir: '.'
@@ -58,15 +59,12 @@ task:
         mux:
           combine:
           - state_t2:
-            - config: &id001
+            - config: &digest_redshift_config
                 max_redshift_category: 6
                 t2_dependency:
-                - config: &id002
+                - config: &catalog_match_config
                     catalogs:
                       GLADEv23:
-                        catq_kwargs:
-                          dec_key: dec
-                          ra_key: RA
                         keys_to_append:
                         - z
                         - dist
@@ -77,21 +75,13 @@ task:
                         rs_arcsec: 10
                         use: extcats
                       NEDz:
-                        catq_kwargs:
-                          dec_key: Dec
-                          ra_key: RA
                         keys_to_append:
                         - ObjType
                         - Velocity
                         - z
-                        post_filter: null
-                        pre_filter: null
                         rs_arcsec: 10.0
                         use: catsHTM
                       NEDz_extcats:
-                        catq_kwargs:
-                          dec_key: Dec
-                          ra_key: RA
                         keys_to_append:
                         - ObjType
                         - Velocity
@@ -104,26 +94,14 @@ task:
                         rs_arcsec: 60.0
                         use: extcats
                       SDSS_spec:
-                        catq_kwargs:
-                          dec_key: dec
-                          ra_key: ra
                         keys_to_append:
                         - z
                         - bptclass
                         - subclass
-                        post_filter: null
-                        pre_filter: null
                         rs_arcsec: 10.0
                         use: extcats
-                  link_override:
-                    filter: PPSFilter
-                    select: first
-                    sort: jd
-                  unit: T2CatalogMatch
-                - config: &id003
-                    catalogs:
                       LSPhotoZZou:
-                        catq_kwargs: {}
+                        all: true
                         keys_to_append:
                         - photoz
                         - ra
@@ -134,23 +112,19 @@ task:
                         - logMassBest
                         - logMassInf
                         - logMassSup
-                        post_filter: null
-                        pre_filter: null
                         rs_arcsec: 30.0
                         use: extcats
                       twoMPZ:
-                        catq_kwargs: {}
+                        all: true
                         keys_to_append:
                         - zPhoto
                         - ra
                         - dec
                         - zSpec
-                        post_filter: null
-                        pre_filter: null
                         rs_arcsec: 30.0
                         use: extcats
                       wiseScosPhotoz:
-                        catq_kwargs: {}
+                        all: true
                         keys_to_append:
                         - zPhoto_Corr
                         - ra
@@ -158,23 +132,20 @@ task:
                         - wiseID
                         - w1mCorr
                         - w2mCorr
-                        post_filter: null
-                        pre_filter: null
                         rs_arcsec: 30.0
                         use: extcats
-                    closest_match: false
                   link_override:
                     filter: PPSFilter
                     select: first
                     sort: jd
-                  unit: T2CatalogMatchLocal
+                  unit: T2CatalogMatch
               unit: T2DigestRedshifts
             - config:
                 explosion_time_jd: StockTriggerTime
                 max_ampelz_group: 7
                 redshift_kind: T2DigestRedshifts
                 t2_dependency:
-                - config: *id001
+                - config: *digest_redshift_config
                   unit: T2DigestRedshifts
                 - unit: T2PropagateStockInfo
               unit: T2RunPossis
@@ -184,18 +155,12 @@ task:
             history_days: 50
           insert:
             point_t2:
-            - config: *id002
+            - config: *catalog_match_config
               ingest:
                 filter: PPSFilter
                 select: first
                 sort: jd
               unit: T2CatalogMatch
-            - config: *id003
-              ingest:
-                filter: PPSFilter
-                select: first
-                sort: jd
-              unit: T2CatalogMatchLocal
           unit: ZiArchiveMuxer
         stock_t2:
         - unit: T2PropagateStockInfo
