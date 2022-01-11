@@ -193,7 +193,7 @@ class HealpixCorrPlotter(AbsPhotoT3Unit):
 
 		# Could there be multiple healpix journal entries? I guess it cannot be ruled out
 		# FIXME: extra info should probably be in .extra, not mixed into the top level of JournalRecord
-		hpixs = [el['healpix'] for el in tran.stock['journal'] if 'healpix' in el.keys()]
+		hpixs = [el['healpix'] for el in tran.stock['journal'] if 'healpix' in el.keys()] # type: ignore[typeddict-item]
 		if len(hpixs)==0:
 			self.logger.info('No healpix info')
 			return stockinfo
