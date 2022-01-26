@@ -4,29 +4,14 @@
 # License           : BSD-3-Clause
 # Author            : alice.townsend@physik.hu-berlin.de
 # Date              : 22.11.2021
-# Last Modified Date: 10.12.2021
+# Last Modified Date: 26.01.2022
 # Last Modified By  : alice.townsend@physik.hu-berlin.de
 
 
 import numpy as np
-import sncosmo # type: ignore[import]
-import errno, os, backoff, copy
 from astropy.table import Table
-from sfdmap import SFDMap  # type: ignore[import]
-from typing import List, Dict, Any, Optional, Tuple, Union, Sequence, Literal
-
-from ampel.types import UBson
-from ampel.struct.UnitResult import UnitResult
-from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
-from ampel.view.T2DocView import T2DocView
-from ampel.view.LightCurve import LightCurve
-from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper
-from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.contrib.hu.t2.T2RunSncosmo import T2RunSncosmo
-
 from bisect import bisect_left
-from astropy.cosmology import FlatLambdaCDM
-import astropy.units as u
 
 class T2GetLensSNParameters(T2RunSncosmo):
     unc: float
@@ -112,7 +97,7 @@ class T2GetLensSNParameters(T2RunSncosmo):
         #Calculate observed magnitude close to peak
         def calculate_obsmag_peak(band1, epoch):
             '''
-            Calculates absolute magnitude in astropy units of mag
+            Calculates observed magnitude for a particular epoch
             '''
             band1_table = str(band1) + 'cut'
             if band1 not in sncosmo_table['band']:
