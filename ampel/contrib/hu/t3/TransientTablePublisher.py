@@ -67,9 +67,9 @@ class TransientTablePublisher(AbsT3ReviewUnit):
 
     # Two tables describing what information to save into the table.
     # Schema for state dependent T2s (one row for each)
-    table_schema: dict['str', Any]
+    table_schema: dict[str, Any]
     # Schema for transient dependent T2s (added to each row together with base info)
-    transient_table_schema: dict['str', Any]
+    transient_table_schema: dict[str, Any]
 
     name_filter: dict[str, str] = {'ZTF name': 'ZTF', 'TNS ID': 'TNS'}
     include_stock: bool = False
