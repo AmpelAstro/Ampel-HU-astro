@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t3/aiotns
-# License           : BSD-3-Clause
-# Author            : Jakob van Santen <jakob.van.santen@desy.de>
-# Date              : 13.12.2018
-# Last Modified Date: 04.11.2019
-# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
+# File:                ampel/contrib/hu/t3/aiotns
+# License:             BSD-3-Clause
+# Author:              Jakob van Santen <jakob.van.santen@desy.de>
+# Date:                13.12.2018
+# Last Modified Date:  04.11.2019
+# Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 import asyncio
 import json
@@ -32,9 +32,9 @@ async def tns_post(
     semaphore: asyncio.Semaphore,
     method: str,
     token: TNSToken,
-    data: Dict,
+    data: dict,
     max_retries: int = 10,
-) -> Dict:
+) -> dict:
     """
     post to TNS, asynchronously
     """

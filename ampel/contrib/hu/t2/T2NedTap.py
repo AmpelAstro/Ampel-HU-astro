@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-HU-astro/ampel/contrib/hu/t2/T2NedTap.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 09.03.2021
-# Last Modified Date: 24.11.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-HU-astro/ampel/contrib/hu/t2/T2NedTap.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                09.03.2021
+# Last Modified Date:  24.11.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import requests, json
-from typing import Any, Dict, List, Union, Optional
+from typing import Any
 from math import cos, sin, acos, pi
 
 from ampel.types import UBson
@@ -42,17 +42,17 @@ class T2NedTap(AbsPointT2Unit):
 	#: Path to file created by mongoexport. No query will be performed:
 	#: ned results will be imported using the mongo export file.
 	#: Export command example: mongoexport -q '{"unit": "T2NedTap"}' -d Dipole_data -c t2 > /home/ampel/ned.export
-	mongo_data: Optional[str]
+	mongo_data: None | str
 
 	#: Path to file created by mongoexport. No query will be performed:
 	#: mongoexport -q '{"query": {"$exists": true}, "radius": {"$exists": true}}' -d Dipole_ext -c confid > /home/ampel/ned.confid
-	mongo_confid: Optional[str]
+	mongo_confid: None | str
 
 	do_query_if_missing: bool = False
 	do_query_if_no_match: bool = False
 
 
-	def process(self, datapoint: DataPoint) -> Union[UBson, UnitResult]:
+	def process(self, datapoint: DataPoint) -> UBson | UnitResult:
 
 		try:
 			ra = datapoint["body"]["ra"]
@@ -93,7 +93,7 @@ class T2NedTap(AbsPointT2Unit):
 				self.logger.error(f"NED request response code: {resp.status_code}")
 				return UnitResult(code=DocumentCode.RERUN_REQUESTED)
 
-			r: Dict[str, Any] = resp.json()
+			r: dict[str, Any] = resp.json()
 
 		except Exception as e:
 			self.logger.error("Connection error while sending request to NED", exc_info=e)
@@ -101,7 +101,7 @@ class T2NedTap(AbsPointT2Unit):
 			return UnitResult(code=DocumentCode.RERUN_REQUESTED)
 
 		# ex: {0: 'prefname', 1: 'pretype', 2: 'ra', ...
-		d: Dict[int, str] = {i: v['name'] for i, v in enumerate(r['metadata'])}
+		d: dict[int, str] = {i: v['name'] for i, v in enumerate(r['metadata'])}
 
 		# Example:
 		# [{
@@ -123,7 +123,7 @@ class T2NedTap(AbsPointT2Unit):
 		#  'zflag': None,
 		#  'n_spectra': 1
 		# }]
-		reshaped: List[Dict[str, Any]] = [
+		reshaped: list[dict[str, Any]] = [
 			{
 				d[i]: v.strip() if isinstance(v, str) else v
 				for i, v in enumerate(el)
@@ -169,7 +169,7 @@ class T2NedTap(AbsPointT2Unit):
 		return UnitResult(tag=tags, body={'data': data})
 
 
-	def _load_mongo_export(self, fpath, match) -> Optional[dict]:
+	def _load_mongo_export(self, fpath, match) -> None | dict:
 		with open(fpath, "r") as f:
 			for l in f:
 				if match in l:

@@ -1,22 +1,28 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t2/T2RunPossis.py
-# License           : BSD-3-Clause
-# Author            : jnordin@physik.hu-berlin.de
-# Date              : 11.12.2021
-# Last Modified Date: 11.12.2021
-# Last Modified By  : jnordin@physik.hu-berlin.de
+# File:                ampel/contrib/hu/t2/T2RunPossis.py
+# License:             BSD-3-Clause
+# Author:              jnordin@physik.hu-berlin.de
+# Date:                11.12.2021
+# Last Modified Date:  04.01.2022
+# Last Modified By:    jnordin@physik.hu-berlin.de
 
 
 import numpy as np
 import sncosmo # type: ignore[import]
 from sfdmap import SFDMap  # type: ignore[import]
-from typing import List, Dict, Any, Optional, Tuple, Union, Sequence, Literal
 import errno, os, backoff, copy
+from astropy.time import Time
+from typing import Literal, Sequence
 
-#from ampel.types import UBson
+from ampel.types import UBson
 from ampel.struct.UnitResult import UnitResult
 from ampel.contrib.hu.t2.T2RunSncosmo import T2RunSncosmo
+from ampel.model.StateT2Dependency import StateT2Dependency
+from ampel.view.T2DocView import T2DocView
+
+from ampel.enum.DocumentCode import DocumentCode
+from ampel.view.LightCurve import LightCurve
 
 
 class T2RunPossis(T2RunSncosmo):
@@ -41,8 +47,16 @@ class T2RunPossis(T2RunSncosmo):
         mej_wind, phi, cos_theta]) )
 
     # Fix time to specific explosion timestamp
-    explosion_time_jd: Optional[float]
+    # StockTriggerTime assumes the value is updated during runtime
+    explosion_time_jd: None | float | Literal['StockTriggerTime']
 
+    # Which units should this be changed to
+    t2_dependency: Sequence[StateT2Dependency[Literal[
+                "T2DigestRedshifts",
+                "T2MatchBTS",
+                "T2PhaseLimit",
+                "T2PropagateStockInfo"
+            ]]]
 
     def post_init(self)-> None:
         """
@@ -112,7 +126,8 @@ class T2RunPossis(T2RunSncosmo):
             self.fit_params.remove("z")
 
         # If explosion time should be fixed, do so
-        if self.explosion_time_jd is not None:
+        # If explosion time should be fixed, do so
+        if isinstance(self.explosion_time_jd, float):
             self.sncosmo_model.set(t0=self.explosion_time_jd)
             self.fit_params.remove("t0")
 
@@ -126,3 +141,35 @@ class T2RunPossis(T2RunSncosmo):
             logger=self.logger,
             max_time=300,
         )(self.process)
+
+    def process(self,
+        light_curve: LightCurve, t2_views: Sequence[T2DocView]
+    ) -> UBson |UnitResult:
+        """
+        Adding the option to dynamically grap explosion time from T2PropagateStockInfo
+
+        After setting this it will return to normal T2RunSncosmo.
+        """
+
+        if self.explosion_time_jd=='StockTriggerTime':
+            for t2_view in t2_views:
+                if not t2_view.unit == "T2PropagateStockInfo":
+                    continue
+                self.logger.debug('Parsing t2 results from {}'.format(t2_view.unit))
+                t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
+                if not 'explosion_time' in t2_res.keys():
+                    self.logger.info('No explosion time',extra={'t2res':t2_res})
+                    return UnitResult(doc_code=DocumentCode.MISSING_INFO)
+
+                if isinstance(t2_res['explosion_time'], float):
+                    self.explosion_time_jd = t2_res['explosion_time']
+                elif isinstance(t2_res['explosion_time'], str):
+                    # Datetime format
+                    self.explosion_time_jd = Time(t2_res['explosion_time'], scale="utc").jd
+                # Reset model
+                self.logger.debug('reset explosion time', extra={'explosion_time': self.explosion_time_jd})
+                self.sncosmo_model.set(t0=self.explosion_time_jd)
+                self.fit_params.remove("t0")
+
+        # Restart sncosmo processing
+        return super().process(light_curve, t2_views)

@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t2/T2GuessSN.py
-# License           : BSD-3-Clause
-# Author            : jnordin@physik.hu-berlin.de
-# Date              : 06.04.2020
-# Last Modified Date: 03.08.2020
-# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
+# File:                ampel/contrib/hu/t2/T2GuessSN.py
+# License:             BSD-3-Clause
+# Author:              jnordin@physik.hu-berlin.de
+# Date:                06.04.2020
+# Last Modified Date:  03.08.2020
+# Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 import numpy as np
 from typing import Union
@@ -53,7 +53,7 @@ class T2BrightSNProb(AbsLightCurveT2Unit, T2RiseDeclineBase):
         self.xgb_tree = xgb_trees.xgboost_tree()
 
 
-    def process(self, light_curve: LightCurve) -> Union[UBson, UnitResult]:
+    def process(self, light_curve: LightCurve) -> UBson | UnitResult:
 
         # Output dict that we will start to populate
         o = self.compute_stats(light_curve)

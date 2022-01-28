@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t2/T2MatchBts.py
-# License           : BSD-3-Clause
-# Author            : jnordin@physik.hu-berlin.de
-# Date              : 01.06.2021
-# Last Modified Date: 13.12.2021
-# Last Modified By  : jnordin@physik.hu-berlin.de
+# File:                ampel/contrib/hu/t2/T2MatchBts.py
+# License:             BSD-3-Clause
+# Author:              jnordin@physik.hu-berlin.de
+# Date:                01.06.2021
+# Last Modified Date:  13.12.2021
+# Last Modified By:    jnordin@physik.hu-berlin.de
 
-from typing import List, Optional, Sequence, Any, Union
+from typing import Union
 import requests
 import backoff
 import pandas as pd
@@ -70,7 +70,7 @@ class T2MatchBTS(AbsLightCurveT2Unit):
 
 
 
-    def process(self, light_curve: LightCurve) -> Union[UBson, UnitResult]:
+    def process(self, light_curve: LightCurve) -> UBson | UnitResult:
         """
         Check whether transient exists in the bts df.
         If so, return content

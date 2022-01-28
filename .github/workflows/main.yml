@@ -19,7 +19,7 @@ jobs:
     - uses: s-weigand/setup-conda@v1
       with:
         conda-channels: conda-forge
-        python-version: 3.9
+        python-version: '3.10'
     # - uses: actions/cache@v2
     #   id: cache
     #   with:
@@ -42,7 +42,7 @@ jobs:
     - uses: s-weigand/setup-conda@v1
       with:
         conda-channels: conda-forge
-        python-version: 3.9
+        python-version: '3.10'
     # - uses: actions/cache@v2
     #   id: cache
     #   with:

@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t2/T2LCQuality.py
-# License           : BSD-3-Clause
-# Author            : jnordin@physik.hu-berlin.de
-# Date              : 28.12.2018
-# Last Modified Date: 03.08.2020
-# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
+# File:                ampel/contrib/hu/t2/T2LCQuality.py
+# License:             BSD-3-Clause
+# Author:              jnordin@physik.hu-berlin.de
+# Date:                28.12.2018
+# Last Modified Date:  03.08.2020
+# Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 import numpy as np
 from astropy.table import Table
-from typing import Any, Dict, List, Union, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 from ampel.types import UBson
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 from ampel.base.AmpelBaseModel import AmpelBaseModel
@@ -66,12 +66,12 @@ class T2RiseDeclineBase(AmpelBaseModel):
     run parameter.
     """
 
-    filter_names: Dict[int, str] = {1: "g", 2: "r", 3: "i"}
-    filter_ids: List[int] = [1, 2]
+    filter_names: dict[int, str] = {1: "g", 2: "r", 3: "i"}
+    filter_ids: list[int] = [1, 2]
     max_tsep: int = 2
     min_UL: int = 20
     max_tgap: int = 30
-    lc_filter: List[Dict[str, Any]] = [
+    lc_filter: list[dict[str, Any]] = [
         {"attribute": "isdiffpos", "operator": "!=", "value": "f"},
         {"attribute": "isdiffpos", "operator": "!=", "value": "0"},
     ]
@@ -86,10 +86,10 @@ class T2RiseDeclineBase(AmpelBaseModel):
     # ZTF18aaaorhy is another funny case with a repeated mag.
     del_duplicate_rows: bool = True
 
-    def compute_stats(self, light_curve: LightCurve) -> Dict[str, Any]:
+    def compute_stats(self, light_curve: LightCurve) -> dict[str, Any]:
 
         # Output dict that we will start to populate
-        o: Dict[str, Any] = {}
+        o: dict[str, Any] = {}
 
         # Step 1. Base determinations based on combined detections
         self.logger.debug("Starting joint band RiseDeclineStat estimations")
@@ -404,6 +404,6 @@ class T2RiseDeclineStat(AbsLightCurveT2Unit, T2RiseDeclineBase):
         plt.savefig(path)
         plt.clf()
 
-    def process(self, light_curve: LightCurve) -> Union[UBson, UnitResult]:
+    def process(self, light_curve: LightCurve) -> UBson | UnitResult:
 
         return self.compute_stats(light_curve)

@@ -1,19 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t2/T2RunSncosmo.py
-# License           : BSD-3-Clause
-# Author            : jnordin@physik.hu-berlin.de
-# Date              : 11.05.2021
-# Last Modified Date: 15.12.2021
-# Last Modified By  : jnordin@physik.hu-berlin.de
+# File:                ampel/contrib/hu/t2/T2RunSncosmo.py
+# License:             BSD-3-Clause
+# Author:              jnordin@physik.hu-berlin.de
+# Date:                11.05.2021
+# Last Modified Date:  15.12.2021
+# Last Modified By:    jnordin@physik.hu-berlin.de
 
 
 import numpy as np
 import sncosmo # type: ignore[import]
-import errno, os, backoff, copy
+import errno, backoff, copy
 from astropy.table import Table
 from sfdmap import SFDMap  # type: ignore[import]
-from typing import List, Dict, Any, Optional, Tuple, Union, Sequence, Literal
+from typing import Any, Literal
+from collections.abc import Sequence
 
 from ampel.types import UBson
 from ampel.struct.UnitResult import UnitResult
@@ -56,17 +57,17 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
     # T2MatchBTS : use the redshift published by BTS and  synced by that T2. Skip if not existing.
     # T2DigestRedshifts : Use the best redshift as parsed by DigestRedshift. Skip fit it this is not found.
     # None : run sncosmo template fit with redshift as free parameter OR use backup_z if set
-    redshift_kind: Optional[str]
+    redshift_kind: None | str
     # If loading redshifts from DigestRedshifts, provide the max ampel z group to make use of.
     # (note that filtering based on this can also be done for a potential t3)
     max_ampelz_group: int = 3
     # It is also possible to use fixed redshift whenever a dynamic redshift kind is not possible
-    backup_z: Optional[float]
+    backup_z: None | float
 
     # Sncosmo parameters
     # Bounds - This is propagated directly into sncosmo. Beware e.g. clashed with catalog redshifts
     # When fitting redshift this needs to be included here, e.g.     "sncosmo_bounds": {"z":(0.001,0.3)}
-    sncosmo_bounds: Dict[str, List[float]] = {}
+    sncosmo_bounds: dict[str, list[float]] = {}
     # Remove MW dust absorption using SFD maps. This assumes that the position can be retrieved from the light_curve and
     # and that the SFD_DIR env var is set to allow them to be found. The default value of Rv will be used.
     apply_mwcorrection: bool = False
@@ -75,11 +76,11 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
     # T2PhaseLimit : use the jdmin jdmax provided in this unit output
     # None : use full datapoint range
     # (T2BayesianBlocks should be added)
-    phaseselect_kind: Optional[str]
+    phaseselect_kind: None | str
 
     # Plot parameters
     plot_db: bool = False
-    plot_props: Optional[PlotProperties] = {
+    plot_props: None | PlotProperties = {
         "tags": ["SALT", "SNCOSMO"],
         "file_name": {
             "format_str": "%s_%s_%s.svg",
@@ -104,7 +105,7 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
     t2_dependency: Sequence[StateT2Dependency[Literal["T2DigestRedshifts", "T2MatchBTS", "T2PhaseLimit"]]]
 
 
-    def post_init(self)-> None:
+    def post_init(self) -> None:
         """
         Retrieve models.
         """
@@ -149,7 +150,7 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
         )(self.process)
 
 
-    def _get_redshift(self, t2_views) -> Tuple[Any]:
+    def _get_redshift(self, t2_views) -> tuple[Any]:
         """
         Can potentially also be replaced with some sort of T2DigestRershift tabulator?
 
@@ -188,7 +189,7 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
         return z, z_source
 
 
-    def _get_phaselimit(self, t2_views) -> Tuple[Any]:
+    def _get_phaselimit(self, t2_views) -> tuple[Any]:
         """
         Can potentially also be replaced with some sort of tabulator?
 
@@ -297,7 +298,7 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
     # ==================== #
     def process(self,
         light_curve: LightCurve, t2_views: Sequence[T2DocView]
-    ) -> Union[UBson, UnitResult]:
+    ) -> UBson | UnitResult:
         """
 
         Fit the parameters of the initiated snocmo_model to the light_curve

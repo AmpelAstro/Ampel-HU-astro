@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-contrib-HU/ampel/contrib/hu/t3/TransientTablePublisher.py
-# License           : BSD-3-Clause
-# Author            : jnordin@physik.hu-berlin.de
-# Date              : 06.05.2021
-# Last Modified Date: 05.12.2021
-# Last Modified By  : jnordin@physik.hu-berlin.de
+# File:                Ampel-contrib-HU/ampel/contrib/hu/t3/TransientTablePublisher.py
+# License:             BSD-3-Clause
+# Author:              jnordin@physik.hu-berlin.de
+# Date:                06.05.2021
+# Last Modified Date:  05.12.2021
+# Last Modified By:    jnordin@physik.hu-berlin.de
 
 import re, os, requests, io, backoff
 import pandas as pd
 
 from functools import reduce
-from typing import Any, Optional, Generator
+from typing import Any
+from collections.abc import Generator
 
 from ampel.types import T3Send
 from ampel.secret.NamedSecret import NamedSecret
@@ -79,9 +80,9 @@ class TransientTablePublisher(AbsT3ReviewUnit):
     fmt: str = 'csv'
 
     file_name: str = 'TransientTable.csv'
-    slack_channel: Optional[str] = None
-    slack_token: Optional[NamedSecret[str]]
-    local_path: Optional[str] = None
+    slack_channel: None | str = None
+    slack_token: None | NamedSecret[str]
+    local_path: None | str = None
 
 
     def process(self, gen: Generator[SnapView, T3Send, None], t3s: T3Store) -> None:

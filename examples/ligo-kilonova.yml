@@ -1,0 +1,209 @@
+name: ligo-kilonova
+
+channel:
+- name: PossisHQ
+  access: [ZTF, ZTF_PUB, ZTF_PRIV]
+  policy: []
+
+
+task:
+- title: ProcessLigoSkymap
+  unit: T0HealpixPathProcessor
+  config:
+    iter_max: 100000
+    map_name: S191222n
+    map_url: https://gracedb.ligo.org/api/superevents/S191222n/files/LALInference.fits.gz
+    scratch_dir: '/home/jnordin/tmp'
+    pvalue_limit: 0.9
+    supplier:
+      unit: ZiHealpixAlertSupplier
+      config:
+        loader:
+          unit: ZTFHealpixAlertLoader
+          config:
+            archive_token:  ztf/archive/token
+            chunk_size: 1000
+            future_days: 5
+            history_days: 10
+    shaper: ZiDataPointShaper
+    directives:
+    - channel: PossisHQ
+      filter:
+        config:
+          gaia_excessnoise_sig_max: 999
+          gaia_plx_signif: 3
+          gaia_pm_signif: 3
+          gaia_rs: 20
+          gaia_veto_gmag_max: 20
+          gaia_veto_gmag_min: 9
+          max_archive_tspan: 10
+          max_elong: 1.4
+          max_fwhm: 5.5
+          max_magdiff: 1
+          max_nbad: 2
+          max_tspan: 10
+          min_archive_tspan: -99
+          min_drb: 0.995
+          min_gal_lat: 0
+          min_ndet: 1
+          min_rb: 0.2
+          min_sso_dist: 20
+          min_tspan: -99
+          ps1_confusion_rad: 3
+          ps1_confusion_sg_tol: 0.1
+          ps1_sgveto_rad: 1
+          ps1_sgveto_th: 0.8
+        on_stock_match: bypass
+        unit: DecentFilter
+      ingest:
+        mux:
+          combine:
+          - state_t2:
+            - config: &id001
+                max_redshift_category: 6
+                t2_dependency:
+                - config: &id002
+                    catalogs:
+                      GLADEv23:
+                        catq_kwargs:
+                          dec_key: dec
+                          ra_key: RA
+                        keys_to_append:
+                        - z
+                        - dist
+                        - dist_err
+                        - flag1
+                        - flag2
+                        - flag3
+                        rs_arcsec: 10
+                        use: extcats
+                      NEDz:
+                        catq_kwargs:
+                          dec_key: Dec
+                          ra_key: RA
+                        keys_to_append:
+                        - ObjType
+                        - Velocity
+                        - z
+                        post_filter: null
+                        pre_filter: null
+                        rs_arcsec: 10.0
+                        use: catsHTM
+                      NEDz_extcats:
+                        catq_kwargs:
+                          dec_key: Dec
+                          ra_key: RA
+                        keys_to_append:
+                        - ObjType
+                        - Velocity
+                        - z
+                        post_filter:
+                          z:
+                            $gte: 0.002
+                            $lte: 0.03
+                        pre_filter: null
+                        rs_arcsec: 60.0
+                        use: extcats
+                      SDSS_spec:
+                        catq_kwargs:
+                          dec_key: dec
+                          ra_key: ra
+                        keys_to_append:
+                        - z
+                        - bptclass
+                        - subclass
+                        post_filter: null
+                        pre_filter: null
+                        rs_arcsec: 10.0
+                        use: extcats
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2CatalogMatch
+                - config: &id003
+                    catalogs:
+                      LSPhotoZZou:
+                        catq_kwargs: {}
+                        keys_to_append:
+                        - photoz
+                        - ra
+                        - dec
+                        - e_photoz
+                        - specz
+                        - _6
+                        - logMassBest
+                        - logMassInf
+                        - logMassSup
+                        post_filter: null
+                        pre_filter: null
+                        rs_arcsec: 30.0
+                        use: extcats
+                      twoMPZ:
+                        catq_kwargs: {}
+                        keys_to_append:
+                        - zPhoto
+                        - ra
+                        - dec
+                        - zSpec
+                        post_filter: null
+                        pre_filter: null
+                        rs_arcsec: 30.0
+                        use: extcats
+                      wiseScosPhotoz:
+                        catq_kwargs: {}
+                        keys_to_append:
+                        - zPhoto_Corr
+                        - ra
+                        - dec
+                        - wiseID
+                        - w1mCorr
+                        - w2mCorr
+                        post_filter: null
+                        pre_filter: null
+                        rs_arcsec: 30.0
+                        use: extcats
+                    closest_match: false
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2CatalogMatchLocal
+              unit: T2DigestRedshifts
+            - config:
+                explosion_time_jd: StockTriggerTime
+                max_ampelz_group: 7
+                possis_dir: /home/jnordin/data/models/kilonova_models
+                redshift_kind: T2DigestRedshifts
+                t2_dependency:
+                - config: *id001
+                  unit: T2DigestRedshifts
+                - unit: T2PropagateStockInfo
+              unit: T2RunPossis
+            unit: ZiT1Combiner
+          config:
+            future_days: 50
+            history_days: 50
+          insert:
+            point_t2:
+            - config: *id002
+              ingest:
+                filter: PPSFilter
+                select: first
+                sort: jd
+              unit: T2CatalogMatch
+            - config: *id003
+              ingest:
+                filter: PPSFilter
+                select: first
+                sort: jd
+              unit: T2CatalogMatchLocal
+          unit: ZiArchiveMuxer
+        stock_t2:
+        - unit: T2PropagateStockInfo
+          config:
+            prop_paths:
+              explosion_time:
+              - journal
+              - healpix
+              - time

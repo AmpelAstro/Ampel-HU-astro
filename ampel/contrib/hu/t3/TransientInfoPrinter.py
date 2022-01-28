@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-contrib-HU/ampel/contrib/hu/t3/TransientInfoPrinter.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 11.06.2018
-# Last Modified Date: 30.07.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-contrib-HU/ampel/contrib/hu/t3/TransientInfoPrinter.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                11.06.2018
+# Last Modified Date:  30.07.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import logging
-from typing import Optional, Any, Union, Generator
+from typing import Any
+from collections.abc import Generator
 from ampel.types import UBson, T3Send
 from ampel.struct.UnitResult import UnitResult
 from ampel.view.T3Store import T3Store
@@ -19,7 +20,7 @@ from ampel.util.pretty import prettyjson
 
 class TransientInfoPrinter(AbsPhotoT3Unit):
 
-	logfile: Optional[str]	# logging (INFO and onwards) goes to this file.
+	logfile: None | str	# logging (INFO and onwards) goes to this file.
 
 	def post_init(self) -> None:
 
@@ -33,7 +34,7 @@ class TransientInfoPrinter(AbsPhotoT3Unit):
 			self.logger.info("Added logging handle to: {logfile}")
 
 
-	def process(self, gen: Generator[TransientView, T3Send, None], t3s: Optional[T3Store] = None) -> Union[UBson, UnitResult]:
+	def process(self, gen: Generator[TransientView, T3Send, None], t3s: None | T3Store = None) -> UBson | UnitResult:
 
 		self.logger.info("Printing transients info")
 		self.logger.info("=" * 80)

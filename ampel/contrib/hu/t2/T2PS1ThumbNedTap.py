@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-HU-astro/ampel/contrib/hu/t2/T2PS1ThumbNedTap.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 10.03.2021
-# Last Modified Date: 14.09.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-HU-astro/ampel/contrib/hu/t2/T2PS1ThumbNedTap.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                10.03.2021
+# Last Modified Date:  14.09.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Sequence, Union, Optional, Tuple, Literal
+from typing import Literal
+from collections.abc import Sequence
 from ampel.types import UBson
 from ampel.contrib.hu.t2.T2PanStarrThumbPrint import T2PanStarrThumbPrint
 from ampel.contrib.hu.util.ned import check_ned_res
@@ -40,9 +41,9 @@ class T2PS1ThumbNedTap(AbsTiedPointT2Unit):
 	t2_dependency: Sequence[UnitModel[Literal['T2NedTap']]]
 
 	cmaps: Sequence[str] = ["cividis"]
-	band: Union[str, Sequence[str]] = "g"
+	band: str | Sequence[str] = "g"
 	plot_all: bool = False
-	z_range: Optional[Tuple[float, float]]
+	z_range: None | tuple[float | float]
 	spectroscopic: bool = True
 
 	plot_props: PlotProperties = PlotProperties(
@@ -59,7 +60,7 @@ class T2PS1ThumbNedTap(AbsTiedPointT2Unit):
 	)
 
 
-	def process(self, datapoint: DataPoint, t2_views: Sequence[T2DocView]) -> Union[UBson, UnitResult]:
+	def process(self, datapoint: DataPoint, t2_views: Sequence[T2DocView]) -> UBson | UnitResult:
 		""" """
 
 		# That would be a config error

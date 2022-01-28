@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-HU-astro/ampel/contrib/hu/t0/SimpleDecentFilter.py
-# License           : BSD-3-Clause
-# Author            : m. giomi <matteo.giomi@desy.de>
-# Date              : 12.02.2019
-# Last Modified Date: 2.11.2021
-# Last Modified By  : jn <jnordin@physik.hu-berlin.de>
+# File:                Ampel-HU-astro/ampel/contrib/hu/t0/SimpleDecentFilter.py
+# License:             BSD-3-Clause
+# Author:              m. giomi <matteo.giomi@desy.de>
+# Date:                12.02.2019
+# Last Modified Date:  2.11.2021
+# Last Modified By:    jn <jnordin@physik.hu-berlin.de>
 
 import numpy as np
-from typing import Optional, Union, Dict, Any
+from typing import Any
 from astropy.table import Table
 from astropy.coordinates import SkyCoord
 
@@ -150,7 +150,7 @@ class SimpleDecentFilter(AbsAlertFilter):
 
 
     # Override
-    def process(self, alert: AmpelAlertProtocol) -> Optional[Union[bool, int]]:
+    def process(self, alert: AmpelAlertProtocol) -> None | bool | int:
         """
         Mandatory implementation.
         To exclude the alert, return *None*
