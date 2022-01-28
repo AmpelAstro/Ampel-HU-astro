@@ -30,4 +30,4 @@ Access to the DESY archives is mediated via GitHub. If your GitHub user is not a
 
 Once your GitHub user is granted access, log in to your account and visit https://ampel.zeuthen.desy.de/live/dashboard/tokens , where you will be able to generate a token string that can you can add as a `token` variable in the notebook.
 
-
+**Note**: please make sure that you generate a permanent **archive token** for accessing the DESY archives. You can do this by accessing the "Archive tokens" tab in the aforementioned url.
