@@ -4,14 +4,14 @@
 # License           : BSD-3-Clause
 # Author            : jnordin@physik.hu-berlin.de
 # Date              : 28.04.2021
-# Last Modified Date: 28.04.2021
-# Last Modified By  : jnordin@physik.hu-berlin.de
+# Last Modified Date: 25.02.2022
+# Last Modified By  : mf@physik.hu-berlin.de
 
-from typing import Dict, List, Optional, Sequence, Any
+from typing import Dict, List, Optional, Sequence, Any, Union
 from astropy.coordinates import SkyCoord
 import numpy as np
-from ampel.enum.T2RunState import T2RunState
-from ampel.type import T2UnitResult
+from ampel.types import UBson
+from ampel.struct.UnitResult import UnitResult
 from ampel.view.LightCurve import LightCurve
 from ampel.view.T2DocView import T2DocView
 import matplotlib.pyplot as plt
@@ -21,12 +21,9 @@ from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 
 class T2PhaseLimit(AbsLightCurveT2Unit):
 	"""
-
 	Lightcurve analysis tools assume a certain transient life-time (order weeks for SNe).
-
-	These can be confused by spurious early/late detections and/or background 
-	variability at the position of the SN.  
-
+	These can be confused by spurious early/late detections and/or background
+	variability at the position of the SN.
 	This unit tries to identify the most likely time-range for a SN explosion and
 	evaluate whether sufficient data for continued exploration exist.
 	"""
@@ -44,7 +41,7 @@ class T2PhaseLimit(AbsLightCurveT2Unit):
 
 	# Spurious light in references typically manifests as negative flux.
 	# Will require the fraction of obs with negative to be lower than this fraction, in each filter.
-	neg_frac_lim : float = 0.05	
+	neg_frac_lim : float = 0.05
 
 	# Max magnitude to consider (constant low flux can correspond to flux in reference)
 	max_mag : float = 22.5
@@ -52,14 +49,13 @@ class T2PhaseLimit(AbsLightCurveT2Unit):
 	# Plot
 	plot : bool = False
 
-	
-	def run(self, light_curve: LightCurve) -> T2UnitResult:
+
+	def process(self, light_curve: LightCurve) -> Union[UBson,UnitResult]:
 		"""
 		Iteratively reject datapoints with outlying phase estimate.
 		Once completed, check whether remaining data is compatible with expectations.
 		Note: This unit does not differentiate between filters.
-		Note: Upper limits are currently not taken into consideration.		
-
+		Note: Upper limits are currently not taken into consideration.
 		:returns: dict with estimate of likely peak and median time,
 			tentative start and end-date and whether the phase looks like a sn.
 		E.g.:
@@ -77,20 +73,20 @@ class T2PhaseLimit(AbsLightCurveT2Unit):
 		"""
 
 		# Starting set of dates (with positive flux )
-		jd_ispos = light_curve.get_tuples( 'jd', 'isdiffpos', 
+		jd_ispos = light_curve.get_tuples( 'jd', 'isdiffpos',
 			filters = [{'attribute' : 'magpsf', 'operator' : '<', 'value' : self.max_mag},
-				{'attribute' : 'magpsf', 'operator' : '>', 'value' : 0} ]  
+				{'attribute' : 'magpsf', 'operator' : '>', 'value' : 0} ]
 			 )
-			
-			
-			 
+
+		assert jd_ispos is not None
+
 		# Enough data to even start evaluation?
-		if len(jd_ispos) < self.min_det : 
-			return {'t_start' : None, 't_end' : None, 
+		if len(jd_ispos) < self.min_det :
+			return {'t_start' : None, 't_end' : None,
 				't_masked_duration' : None, 't_peak':None,
-				't_median' : None, 'mag_peak' : None, 
+				't_median' : None, 'mag_peak' : None,
 				'n_remaining' : None, 't2eval' : 'fail:detections' }
-			
+
 		jd = np.array( [tup[0] for tup in jd_ispos if (tup[1]=='t' or tup[1]=='1')] )
 		t_median = np.median( jd )
 		mask = (jd>0)
@@ -118,8 +114,8 @@ class T2PhaseLimit(AbsLightCurveT2Unit):
 		# (Re) retrieve data and magnitudes in this range
 		dps = light_curve.get_tuples('jd','magpsf',filters=
 			[{'attribute': 'jd', 'operator': '>', 'value': t_start},
-			{'attribute': 'jd', 'operator': '<', 'value': t_end}, 
-			{'attribute': 'magpsf', 'operator': '>', 'value': 0}, 			
+			{'attribute': 'jd', 'operator': '<', 'value': t_end},
+			{'attribute': 'magpsf', 'operator': '>', 'value': 0},
 			] )
 		if dps is not None:
 			peakpoint = sorted(dps,key=lambda tup: tup[1])[0]
@@ -130,7 +126,7 @@ class T2PhaseLimit(AbsLightCurveT2Unit):
 		else:
 			n_remaining = 0
 			t_peak = None
-			mag_peak = None	
+			mag_peak = None
 
 		# Tighter phase range based on peak time
 		if t_peak is not None:
@@ -140,7 +136,7 @@ class T2PhaseLimit(AbsLightCurveT2Unit):
 			t_start = t_median - self.half_time
 			t_end = t_median + self.half_time
 
-			
+
 
 
 
@@ -170,32 +166,31 @@ class T2PhaseLimit(AbsLightCurveT2Unit):
 
 		# Do plot?
 		if self.plot:
-			
+
 			fig = plt.figure(figsize=(6,5) )
 
 			all_jd = light_curve.get_values( 'jd' )
 			_1, bins, _2 = plt.hist( all_jd, bins=100, label = 'All alerts' )
 
 			plt.hist( jd, bins=bins, label = 'Clipped det.' )
-			plt.hist( jd[mask], bins=bins, label = 'Retained det.' )	
+			plt.hist( jd[mask], bins=bins, label = 'Retained det.' )
 
-			plt.axvline( x=t_start, color='k', linestyle='dashed', 
+			plt.axvline( x=t_start, color='k', linestyle='dashed',
 				label='Start/end' )
 			plt.axvline( x=t_end, color='k', linestyle='dashed')
 
 			if t_peak is not None:
 				plt.axvline( x=t_peak, label = 't(peak)' )
 			plt.axvline( x=t_median, label= 't(median)' )
-			
-			plt.title( '{} {}'.format(light_curve.stock_id, t2eval ) )
-			
+
+			plt.title( f'{light_curve.stock_id} {t2eval}')
+
 			plt.legend(loc='best')
-			plt.savefig( '/home/jnordin/tmp/t2phase/{}.svg'.format(light_curve.stock_id ) )
+			plt.savefig( f'./t2phase/{light_curve.stock_id}.svg')
 			plt.close()
-		
 
-		return {'t_start' : t_start, 't_end' : t_end, 
+
+		return {'t_start' : t_start, 't_end' : t_end,
 			't_masked_duration' : t_masked_duration, 't_peak':t_peak,
-			't_median' : t_median, 'mag_peak' : mag_peak, 
+			't_median' : t_median, 'mag_peak' : mag_peak,
 			'n_remaining' : n_remaining, 't2eval' : t2eval }
-
