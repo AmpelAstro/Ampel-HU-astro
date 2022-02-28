@@ -1,4 +1,6 @@
 /ampel_contrib_hu.egg-info/
+/ampel_hu_astro.egg-info/
+/build/
 __pycache__
 *.swp
 *.swo
