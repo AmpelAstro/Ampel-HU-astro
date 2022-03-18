@@ -4,8 +4,8 @@
 # License:             BSD-3-Clause
 # Author:              jnordin@physik.hu-berlin.de
 # Date:                11.12.2021
-# Last Modified Date:  04.01.2022
-# Last Modified By:    jnordin@physik.hu-berlin.de
+# Last Modified Date:  17.03.2022
+# Last Modified By:    mf@physik.hu-berlin.de
 
 
 import numpy as np
@@ -25,7 +25,8 @@ from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.view.T2DocView import T2DocView
 
 from ampel.enum.DocumentCode import DocumentCode
-from ampel.view.LightCurve import LightCurve
+from ampel.content.T1Document import T1Document
+from ampel.content.DataPoint import DataPoint
 
 class T2RunPossis(T2RunSncosmo):
     """
@@ -150,8 +151,10 @@ class T2RunPossis(T2RunSncosmo):
         )(self.process)
 
     def process(self,
-        light_curve: LightCurve, t2_views: Sequence[T2DocView]
-    ) -> Union[UBson,UnitResult]:
+        compound: T1Document,
+        datapoints: Sequence[DataPoint],
+        t2_views: Sequence[T2DocView]
+    ) -> Union[UBson, UnitResult]:
         """
         Fit the loaded model to the data provided as a LightCurve.
         If requested, retrieve redshift and explosion time from t2_views.
@@ -179,4 +182,4 @@ class T2RunPossis(T2RunSncosmo):
                 self.fit_params.remove("t0")
 
         # Restart sncosmo processing
-        return super().process(light_curve, t2_views)
+        return super().process(compound, datapoints, t2_views)

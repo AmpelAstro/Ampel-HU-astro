@@ -19,9 +19,12 @@ import matplotlib.pyplot as plt
 
 from ampel.types import UBson
 from ampel.struct.UnitResult import UnitResult
-from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
+from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
+from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
+from ampel.content.T1Document import T1Document
+from ampel.content.DataPoint import DataPoint
 from ampel.view.T2DocView import T2DocView
-from ampel.view.LightCurve import LightCurve
+from ampel.enum.DocumentCode import DocumentCode
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper
 
@@ -53,8 +56,7 @@ dcast_class = {
     'object_id' : str,
 }
 
-
-class T2RunParsnip(AbsTiedLightCurveT2Unit):
+class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
     """
     Gathers information and runs the parsnip model and classifier.
     - Obtain model (read from file unless not in sncosmo registry)
@@ -225,33 +227,6 @@ class T2RunParsnip(AbsTiedLightCurveT2Unit):
         return jdstart, jdend
 
 
-    def _get_sncosmo_table(self, light_curve, jdstart, jdend) -> Table:
-        """
-        Generate sncosmo-like table from the provided lightcurve.
-
-        This step is to be replaced by a tabulator.
-        """
-
-        # Datapoint selection filter
-        dp_filter = [
-            {'attribute': 'jd', 'operator': '>=', 'value': jdstart},
-            {'attribute': 'jd', 'operator': '<=', 'value': jdend}
-        ]
-        phot = np.asarray(light_curve.get_ntuples(('jd', 'magpsf', 'sigmapsf',
-		                                           'fid'), filters=dp_filter))
-        phot_tab = Table(phot, names=('jd', 'magpsf', 'sigmapsf', 'fid'))
-        phot_tab['band'] = 'ztfband'
-        for fid, fname in zip([1, 2, 3], ['ztfg', 'ztfr', 'ztfi']):
-            phot_tab['band'][phot_tab['fid'] == fid] = fname
-        phot_tab['flux'] = 10 ** (-(phot_tab['magpsf'] - 25) / 2.5)
-        phot_tab['fluxerr'] = np.abs(phot_tab['flux'] * (-phot_tab['sigmapsf'] / 2.5 * np.log(10)))
-        phot_tab['zp'] = 25
-        phot_tab['zpsys'] = 'ab'
-        phot_tab.sort('jd')
-
-        return phot_tab
-
-
     def _deredden_mw_extinction(self, ebv, phot_tab, rv=3.1) -> Table:
         """
         For an input photometric table, try to correct for mw extinction.
@@ -278,8 +253,10 @@ class T2RunParsnip(AbsTiedLightCurveT2Unit):
     # AMPEL T2 MANDATORY   #
     # ==================== #
     def process(self,
-                light_curve: LightCurve, t2_views: Sequence[T2DocView]
-                ) -> Union[UBson, UnitResult]:
+                compound: T1Document,
+                datapoints: Sequence[DataPoint],
+                t2_views: Sequence[T2DocView]
+    ) -> Union[UBson, UnitResult]:
         """
 
         Fit the parameters of the initiated snocmo_model to the light_curve
@@ -315,15 +292,14 @@ class T2RunParsnip(AbsTiedLightCurveT2Unit):
             return t2_output
 
         # Obtain photometric table
-        sncosmo_table = self._get_sncosmo_table(light_curve,
-                                                t2_output['jdstart'], t2_output['jdend'])
+        sncosmo_table = self.get_flux_table( datapoints, t2_output['jdstart'], t2_output['jdend'] )
         self.logger.debug('Sncosmo table {}'.format(sncosmo_table))
 
         # Potentially correct for dust absorption
         if self.apply_mwcorrection:
             # Get ebv from coordiantes.
             # Here there should be some option to read it from journal/stock etc
-            mwebv = self.dustmap.ebv(*light_curve.get_pos(ret="mean"))
+            mwebv = self.dustmap.ebv(*self.get_pos(datapoints, ret="mean"))
             t2_output['mwebv'] = mwebv
             sncosmo_table = self._deredden_mw_extinction(mwebv, sncosmo_table)
 
@@ -415,8 +391,5 @@ class T2RunParsnip(AbsTiedLightCurveT2Unit):
             plt.close('all')
             del(fig)
             gc.collect()
-
-
-
 
         return t2_output

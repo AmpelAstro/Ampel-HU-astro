@@ -4,8 +4,8 @@
 # License:             BSD-3-Clause
 # Author:              jnordin@physik.hu-berlin.de
 # Date:                11.05.2021
-# Last Modified Date:  15.12.2021
-# Last Modified By:    jnordin@physik.hu-berlin.de
+# Last Modified Date:  21.03.2022
+# Last Modified By:    mf@physik.hu-berlin.de
 
 
 from typing import Any, Optional, Union, Literal
@@ -20,16 +20,18 @@ from sfdmap import SFDMap  # type: ignore[import]
 
 from ampel.types import UBson
 from ampel.struct.UnitResult import UnitResult
-from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
+from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
+from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
+from ampel.content.T1Document import T1Document
+from ampel.content.DataPoint import DataPoint
 from ampel.view.T2DocView import T2DocView
-from ampel.view.LightCurve import LightCurve
 from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.plot.utils import mplfig_to_svg_dict1
 from ampel.model.PlotProperties import PlotProperties
 
 
-class T2RunSncosmo(AbsTiedLightCurveT2Unit):
+class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
     """
     Gathers information and runs Sncosmo. Steps include:
     - Obtain model (read from file unless not in sncosmo registry)
@@ -234,33 +236,6 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
 
         return jdstart, jdend
 
-
-    def _get_sncosmo_table(self, light_curve, jdstart, jdend) -> Table:
-        """
-        Generate sncosmo-like table from the provided lightcurve.
-
-        This step is to be replaced by a tabulator.
-        """
-
-        # Datapoint selection filter
-        dp_filter = [
-            {'attribute': 'jd', 'operator': '>=', 'value': jdstart},
-            {'attribute': 'jd', 'operator': '<=', 'value': jdend}
-        ]
-        phot = np.asarray(light_curve.get_ntuples(('jd', 'magpsf', 'sigmapsf', 'fid'), filters=dp_filter))
-        phot_tab = Table(phot, names=('jd', 'magpsf', 'sigmapsf', 'fid'))
-        phot_tab['band'] = 'ztfband'
-        for fid, fname in zip([1, 2, 3], ['ztfg', 'ztfr', 'ztfi']):
-            phot_tab['band'][phot_tab['fid'] == fid] = fname
-        phot_tab['flux'] = 10 ** (-(phot_tab['magpsf'] - 25) / 2.5)
-        phot_tab['fluxerr'] = np.abs(phot_tab['flux'] * (-phot_tab['sigmapsf'] / 2.5 * np.log(10)))
-        phot_tab['zp'] = 25
-        phot_tab['zpsys'] = 'ab'
-        phot_tab.sort('jd')
-
-        return phot_tab
-
-
     def _get_fit_metrics(self, sncosmo_result, sncosmo_table, sncosmo_model) -> dict:
         """
         Obtain metrics such as peak magnitude and lc residuals.
@@ -285,7 +260,7 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
             lc_metrics['obspeak_model_B'] = None
 
 
-        sncosmo_table['phase'] = (sncosmo_table["jd"] - sncosmo_model.get('t0')) / (1 + z)
+        sncosmo_table['phase'] = (sncosmo_table["time"] - sncosmo_model.get('t0')) / (1 + z)
         # Determine the phase of the first 3 sigma detection
         i_first = np.where((sncosmo_table["flux"] / sncosmo_table["fluxerr"]) > detection_sigma)[0]
         # table might not be ordered
@@ -309,7 +284,7 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
             try:
                 # Using the same zeropoint / sys as when creating the table above
                 band_pulls = (band_tab["flux"] - sncosmo_model.bandflux(
-                    band, band_tab["jd"], zp=25., zpsys='ab')) / band_tab["fluxerr"]
+                    band, band_tab["time"], zp=25., zpsys='ab')) / band_tab["fluxerr"]
                 pulls.extend(list(band_pulls))
             except ValueError as e:
                 self.logger.info('Sncosmo get fit metric error')
@@ -326,8 +301,10 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
     # AMPEL T2 MANDATORY   #
     # ==================== #
     def process(self,
-                light_curve: LightCurve, t2_views: Sequence[T2DocView]
-                ) -> Union[UBson, UnitResult]:
+        compound: T1Document,
+        datapoints: Sequence[DataPoint],
+        t2_views: Sequence[T2DocView]
+    ) -> Union[UBson, UnitResult]:
         """
 
         Fit the parameters of the initiated snocmo_model to the light_curve
@@ -370,8 +347,7 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
             return t2_output
 
         # Obtain photometric table
-        sncosmo_table = self._get_sncosmo_table(light_curve,
-                                                t2_output['jdstart'], t2_output['jdend'])
+        sncosmo_table = self.get_flux_table(datapoints, t2_output['jdstart'], t2_output['jdend'])
         self.logger.debug('Sncosmo table {}'.format(sncosmo_table))
 
         # Fitting section
@@ -379,8 +355,7 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
 
         # Define fit parameter and ranges
         if self.apply_mwcorrection:
-            # We will have to see how this is done using tabulators
-            transient_mwebv = self.dustmap.ebv(*light_curve.get_pos())
+            transient_mwebv = self.dustmap.ebv(*self.get_pos(datapoints, ret="mean"))
             self.sncosmo_model.set(mwebv=transient_mwebv)
 
         # Set redshift if provided
@@ -430,8 +405,8 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
         if self.plot_props:
 
             # Construct name
-            assert isinstance(light_curve.stock_id, int)
-            tname = ZTFIdMapper.to_ext_id(light_curve.stock_id)
+            stock_id = '-'.join(str(self.get_stock_id(datapoints)))
+            tname = '-'.join(self.get_stock_name(datapoints))
 
             # Add some info
             plot_fig_text = "{} {} {} \nchisq {:.2f}\nndof {}".format(
@@ -443,7 +418,7 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
                 'redshift_kind': self.redshift_kind,
                 'chisq': sncosmo_result["chisq"],
                 'ndof': sncosmo_result["ndof"],
-                'stock': light_curve.stock_id
+                'stock': stock_id
             }
 
             fig = sncosmo.plot_lc(
