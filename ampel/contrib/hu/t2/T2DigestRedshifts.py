@@ -4,8 +4,8 @@
 # License:             BSD-3-Clause
 # Author:              jnordin@physik.hu-berlin.de
 # Date:                06.06.2021
-# Last Modified Date:  06.06.2021
-# Last Modified By:    jnordin@physik.hu-berlin.de
+# Last Modified Date:  03.03.2022
+# Last Modified By:    atownsend@physik.hu-berlin.de
 
 from typing import Any, Optional, Literal, Union
 from collections.abc import Sequence
@@ -29,15 +29,17 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
     Using table comparisons from (T3) CompareRedshifts to select best matches
     and provide a general uncertainty estimate.
 
-    Available (studied) redshifts are assigned to one of seven redshift "groups", with decreasing average quality.
-    The mean redshift of the lowest populated group is returned as 'ampel_z', together with info about this group
+    Available (studied) redshifts are assigned to one of seven redshift "groups",
+    with decreasing average quality. The mean redshift of the lowest populated
+    group is returned as 'ampel_z', together with info about this group
     ('group_z_nbr' and 'group_z_precision').
 
-    This is for now an AbsTiedLightCurveT2Unit, but lc info currently not used. Is this needed, or shift to AbsTiedT2Unit?
+    (This is for now an AbsTiedLightCurveT2Unit, but lc info not used.)
 
     """
 
-    # Max redshift uncertainty category: 1-7 (where 7 is any, and 1 only nearby spectroscopic matches)
+    # Max redshift uncertainty category: 1-7
+    # (where 7 is any, and 1 only nearby spectroscopic matches)
     max_redshift_category: int
 
 
@@ -45,7 +47,8 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
     category_precision: list[float] = [0.0003, 0.003, 0.01, 0.02, 0.04, 0.1, 0.3]
 
 
-    # CatalogMatch(Local) results might be overriden, for example if specialized catalog is being used
+    # CatalogMatch(Local) results might be overriden,
+    # for example if specialized catalog is being used
     # Each override dict is assumed to be built asmed to be built according to
     # "catalog_name" : {
     #                    "z_keyword": "redshift field in catalog",
@@ -59,16 +62,16 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
     # These are the units through which we look for redshifts
     # Which units should this be changed to
     t2_dependency: Sequence[StateT2Dependency[Literal[
-		"T2CatalogMatch",
-		"T2LSPhotoZTap",
-		"T2CatalogMatchLocal",
-		"T2MatchBTS"
-	]]]
+        "T2CatalogMatch",
+        "T2LSPhotoZTap",
+        "T2CatalogMatchLocal",
+        "T2MatchBTS"
+        ]]]
 
 
 
 
-    def _get_lsphotoz_groupz(self, t2_res: dict[str, Any]) -> list[list[float]]:
+    def _get_lsphotoz_groupz(self, t2_res: dict[str, Any]) -> (list[list[float]], list[list[float]]):
         """
         Parse output from T2LSPhotoZTap and investigate whether any matches fulfill group
         redshift criteria.
@@ -78,13 +81,16 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
         """
 
         group_z: list[list[float]] = [[], [], [], [], [], [], []]
+        group_dist: list[list[float]] = [[], [], [], [], [], [], []]
         for lsname, lsdata in t2_res.items():
             if lsdata is None:
                 continue
 
-            # Warning: all LS checks done with a 10" matching radius, this is thus enforced (in case T2 run with larger radius)
+            # Warning: all LS checks done with a 10" matching radius,
+            # this is thus enforced (in case T2 run with larger radius)
             if lsdata['dist2transient'] > 10:
-                self.logger.debug('No Digest redshift LS estimate.', extra={'dist2transient': lsdata['dist2transient']})
+                self.logger.debug('No Digest redshift LS estimate.',
+                                  extra={'dist2transient': lsdata['dist2transient']})
                 continue
 
             # First investigate LS spectroscopic redshift
@@ -92,15 +98,19 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
                 if lsdata['z_spec'] < 0.03:
                     # Group I
                     group_z[0].append(lsdata['z_spec'])
+                    group_dist[0].append(lsdata['dist2transient'])
                 elif lsdata['z_spec'] < 0.15:
                     # Group II
                     group_z[1].append(lsdata['z_spec'])
+                    group_dist[1].append(lsdata['dist2transient'])
                 elif lsdata['z_spec'] < 0.4:
                     # Group III
                     group_z[2].append(lsdata['z_spec'])
+                    group_dist[2].append(lsdata['dist2transient'])
                 else:
                     # Group V
                     group_z[4].append(lsdata['z_spec'])
+                    group_dist[4].append(lsdata['dist2transient'])
             self.logger.debug('LS debug spec: %s yield %s'%(lsdata, group_z))
 
             # Now, photometric redshifts
@@ -109,22 +119,26 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
                 if lsdata['z_phot_median'] < 0.1:
                     # Group IV
                     group_z[3].append(lsdata['z_phot_median'])
+                    group_dist[3].append(lsdata['dist2transient'])
                 elif lsdata['z_phot_median'] < 0.2:
                     # Group V
                     group_z[4].append(lsdata['z_phot_median'])
+                    group_dist[4].append(lsdata['dist2transient'])
                 elif lsdata['z_phot_median'] < 0.4:
                     # Group VI
                     group_z[5].append(lsdata['z_phot_median'])
+                    group_dist[5].append(lsdata['dist2transient'])
                 else:
                     # Group VII
                     group_z[6].append(lsdata['z_phot_median'])
+                    group_dist[6].append(lsdata['dist2transient'])
             self.logger.debug('LS debug phot: %s yield %s'%(lsdata, group_z))
 
-        return group_z
+        return group_z, group_dist
 
 
 
-    def _get_catalogmatch_groupz(self, t2_res: dict[str, Any]) -> list[list[float]]:
+    def _get_catalogmatch_groupz(self, t2_res: dict[str, Any]) -> (list[list[float]],list[list[float]]):
         """
         Parse output from T2CatalogMatch.
 
@@ -136,11 +150,12 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
         """
 
         group_z: list[list[float]] = [[], [], [], [], [], [], []]
+        group_dist: list[list[float]] = [[], [], [], [], [], [], []]
 
         for cat_name, cat_matches in t2_res.items():
             if cat_matches is None or cat_matches is False:
                 continue
-            # Could be list or dict depending on whether the closes or all matches are returned from. To be compatible with both...
+            # List or dict depending on whether the closest or all matches are returned from.
             if isinstance(cat_matches, list):
                 cat_match_list = cat_matches
             elif isinstance(cat_matches, tuple):
@@ -153,66 +168,89 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
                 # All catalogs have different structure, so doing this individually
 
                 if cat_name == 'NEDz_extcats':
-                    if cat_match['dist2transient'] < 2 and cat_match['z'] < 0.03:    # TODO - is this nedz_extcat z ??
+                    # at some point: verify whether 0.03 was the NEDz_extcats cut.
+                    if cat_match['dist2transient'] < 2 and cat_match['z'] < 0.03:
                         group_z[0].append(cat_match['z'])
+                        group_dist[0].append(cat_match['dist2transient'])
                     elif cat_match['dist2transient'] < 20 and cat_match['z'] < 0.05:
                         group_z[2].append(cat_match['z'])
+                        group_dist[2].append(cat_match['dist2transient'])
                     else:
                         group_z[3].append(cat_match['z'])
+                        group_dist[3].append(cat_match['dist2transient'])
 
                 if cat_name == 'SDSS_spec':
-                    if cat_match['dist2transient'] < 10:    # Implicit restriction as tests where done with this max matching radius
+                    # Implicit restriction as tests where done with this max matching radius
+                    if cat_match['dist2transient'] < 10:
                         group_z[1].append(cat_match['z'])
-
-                if cat_name == 'GLADEv23' and cat_match['dist2transient'] < 10 and cat_match['z'] is not None:    # Implicit restriction as tests where done with this max matching radius
+                        group_dist[1].append(cat_match['dist2transient'])
+                # Implicit restriction as tests where done with this max matching radius
+                if (cat_name == 'GLADEv23' and cat_match['dist2transient'] < 10
+                        and cat_match['z'] is not None):
                     if cat_match['z'] < 0.05:
                         group_z[2].append(cat_match['z'])
+                        group_dist[2].append(cat_match['dist2transient'])
                     else:
                         group_z[3].append(cat_match['z'])
+                        group_dist[3].append(cat_match['dist2transient'])
 
                 if cat_name == 'LSPhotoZZou':
                     # Spec
-                    if cat_match['specz'] is not None and cat_match['specz'] >- 0.1:
+                    if cat_match['specz'] is not None and cat_match['specz'] > -0.1:
                         if cat_match['specz'] < 0.15 and cat_match['dist2transient'] < 10:
                             group_z[1].append(cat_match['specz'])
+                            group_dist[1].append(cat_match['dist2transient'])
                         elif cat_match['specz'] < 0.2:
                             group_z[2].append(cat_match['specz'])
+                            group_dist[2].append(cat_match['dist2transient'])
                         else:
                             group_z[4].append(cat_match['specz'])
+                            group_dist[4].append(cat_match['dist2transient'])
 
                     # Photo-z
-                    if cat_match['photoz'] is not None and cat_match['photoz'] >- 0.1:
+                    if cat_match['photoz'] is not None and cat_match['photoz'] > -0.1:
                         if cat_match['photoz'] < 0.1:
                             group_z[3].append(cat_match['photoz'])
+                            group_dist[3].append(cat_match['dist2transient'])
                         elif cat_match['photoz'] < 0.2:
                             group_z[4].append(cat_match['photoz'])
+                            group_dist[4].append(cat_match['dist2transient'])
                         elif cat_match['dist2transient'] < 20:
                             group_z[5].append(cat_match['photoz'])
+                            group_dist[5].append(cat_match['dist2transient'])
                         else:
                             group_z[6].append(cat_match['photoz'])
+                            group_dist[6].append(cat_match['dist2transient'])
 
                 if cat_name == 'wiseScosPhotoz':
-                    if cat_match['zPhoto_Corr'] is not None and cat_match['zPhoto_Corr'] >- 0.1:
+                    if cat_match['zPhoto_Corr'] is not None and cat_match['zPhoto_Corr'] > -0.1:
                         if cat_match['zPhoto_Corr'] < 0.2:
                             group_z[4].append(cat_match['zPhoto_Corr'])
+                            group_dist[4].append(cat_match['dist2transient'])
                         else:
                             group_z[5].append(cat_match['zPhoto_Corr'])
+                            group_dist[5].append(cat_match['dist2transient'])
 
 
                 if cat_name == 'twoMPZ':
                     # Photoz
-                    if cat_match['zPhoto'] is not None and cat_match['zPhoto'] >- 0.1:
+                    if cat_match['zPhoto'] is not None and cat_match['zPhoto'] > -0.1:
                         if cat_match['zPhoto'] < 0.03:
                             group_z[2].append(cat_match['zPhoto'])
+                            group_dist[2].append(cat_match['dist2transient'])
                         else:
                             group_z[3].append(cat_match['zPhoto'])
+                            group_dist[3].append(cat_match['dist2transient'])
                     # Specz
-                    if cat_match['zSpec'] is not None and cat_match['zSpec'] >- 0.1:
+                    if cat_match['zSpec'] is not None and cat_match['zSpec'] > -0.1:
                         group_z[1].append(cat_match['zSpec'])
+                        group_dist[1].append(cat_match['dist2transient'])
 
-                if cat_name == 'NEDz' and cat_match['dist2transient'] < 10:    # Implicit restriction as tests where done with this max matching radius
+                # Implicit restriction as tests where done with this max matching radius
+                if cat_name == 'NEDz' and cat_match['dist2transient'] < 10:
                     if cat_match['z'] < 0.4:
                         group_z[2].append(cat_match['z'])
+                        group_dist[2].append(cat_match['dist2transient'])
 
 
                 # Also check for manual override
@@ -221,13 +259,14 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
                         if or_catname == cat_name:
                             try:
                                 cat_z = float(cat_match[or_catdict["z_keyword"]])
-                                if float(cat_match['dist2transient']) < or_catdict["max_distance"] and cat_z < or_catdict["max_redshift"]:
+                                if (float(cat_match['dist2transient']) < or_catdict["max_distance"]
+                                        and cat_z < or_catdict["max_redshift"]):
                                     group_z[or_catdict["z_group"]-1].append(cat_z)
                             except ValueError:
                                 self.logger.info('Cannot parse z', extra={'catdict':cat_match})
 
 
-        return group_z
+        return group_z, group_dist
 
 
 
@@ -244,7 +283,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
 
         group_z: list[list[float]] = [[], [], [], [], [], [], []]
 
-        if isinstance(bts_redshift := t2_res.get("bts_redshift"), str) and bts_redshift != "-":        
+        if isinstance(bts_redshift := t2_res.get("bts_redshift"), str) and bts_redshift != "-":
             # BTS redshifts are stored as strings. Crude way to get to redshift precision for evaluation:
             # Take decimal part, remove initial zeroes and cound digits
             decimals = len(bts_redshift.split(".")[1].lstrip("0"))
@@ -266,8 +305,8 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
     # AMPEL T2 MANDATORY   #
     # ==================== #
     def process(self,
-        light_curve: LightCurve, t2_views: Sequence[T2DocView]
-    ) -> Union[UBson, UnitResult]:
+                light_curve: LightCurve, t2_views: Sequence[T2DocView]
+                ) -> Union[UBson, UnitResult]:
         """
 
             Parse t2_views from catalogs that were part of the redshift studies.
@@ -280,9 +319,11 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
             return UnitResult(code=DocumentCode.T2_MISSING_INFO)
 
 
-        # Loop through all potential T2s with redshift information. Each should return an array of arrays, corresponding to redshift maches
+        # Loop through all potential T2s with redshift information.
+        # Each should return an array of arrays, corresponding to redshift maches
         # found in each category. These will be added to sn redshifts
         group_redshifts: list[list[float]] = [[], [], [], [], [], [], []]
+        group_distances: list[list[float]] = [[], [], [], [], [], [], []]
 
 
 		# Loop through t2_views and collect information.
@@ -294,9 +335,9 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
 			#t2_res =  t2_view.get_data()
 
             if t2_view.unit == 'T2LSPhotoZTap':
-                new_zs = self._get_lsphotoz_groupz(t2_res)
+                new_zs, new_dists = self._get_lsphotoz_groupz(t2_res)
             elif t2_view.unit == 'T2CatalogMatch' or t2_view.unit == 'T2CatalogMatchLocal':
-                new_zs = self._get_catalogmatch_groupz(t2_res)
+                new_zs, new_dists = self._get_catalogmatch_groupz(t2_res)
             elif t2_view.unit == 'T2MatchBTS':
                 new_zs = self._get_matchbts_groupz(t2_res)
             else:
@@ -306,11 +347,13 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
             for k in range(7):
                 if len(new_zs[k]) > 0:
                     group_redshifts[k].extend(new_zs[k])
+                if len(new_dists[k]) > 0:
+                    group_distances[k].extend(new_dists[k])
             self.logger.debug('group_z after %s: %s'%(t2_view.unit, group_redshifts))
 
 
         # Check for best match
-        t2_output: dict[str,UBson] = {'group_zs': group_redshifts}
+        t2_output: dict[str,UBson] = {'group_zs': group_redshifts, 'group_dists': group_distances}
         for k in range(7):
             if (k+1) > self.max_redshift_category:
                 # No matches with sufficient precision
@@ -319,6 +362,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
                 t2_output['ampel_z'] = np.mean(group_redshifts[k])
                 t2_output['group_z_precision'] = self.category_precision[k]
                 t2_output['group_z_nbr'] = k+1
+                t2_output['ampel_dist'] = np.mean(group_distances[k])
                 # We then do *not* look for higher group (more uncertain) matches
                 break
         if self.catalogmatch_override:
