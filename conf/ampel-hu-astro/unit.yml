@@ -19,6 +19,8 @@
 - ampel.contrib.hu.t2.T2NedTap
 - ampel.contrib.hu.t2.T2NedSNCosmo
 - ampel.contrib.hu.t2.T2PropagateStockInfo
+- ampel.contrib.hu.t2.T2GetLensSNParameters
+- ampel.contrib.hu.t2.T2LSPhotoZTap
 - ampel.contrib.hu.t3.TransientInfoPrinter
 - ampel.contrib.hu.t3.TransientViewDumper
 - ampel.contrib.hu.t3.ChannelSummaryPublisher
@@ -30,3 +32,4 @@
 - ampel.contrib.hu.t3.TNSMirrorUpdater
 - ampel.contrib.hu.t3.TransientTablePublisher
 - ampel.contrib.hu.t3.HealpixCorrPlotter
+- ampel.contrib.hu.t3.PlotLightcurveSample
