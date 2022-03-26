@@ -7,21 +7,23 @@
 # Last Modified Date:  05.12.2021
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
+from functools import reduce
+from typing import Any, Optional, Union
+from collections.abc import Generator
 import re, os, requests, io, backoff
 import pandas as pd
 
-from functools import reduce
-from typing import Any, Optional
-from collections.abc import Generator
-
-from ampel.types import T3Send
+from ampel.types import UBson, T3Send
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
+from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
+from ampel.view.TransientView import TransientView
+from ampel.struct.UnitResult import UnitResult
 from ampel.view.T3Store import T3Store
 from ampel.view.SnapView import SnapView
 
 
-class TransientTablePublisher(AbsT3ReviewUnit):
+class TransientTablePublisher(AbsPhotoT3Unit):
     """
 
     Construct a table based on selected T2 output values.
@@ -84,8 +86,9 @@ class TransientTablePublisher(AbsT3ReviewUnit):
     slack_token: Optional[NamedSecret[str]]
     local_path: Optional[str] = None
 
-
-    def process(self, gen: Generator[SnapView, T3Send, None], t3s: T3Store) -> None:
+    def process(self, gen: Generator[TransientView, T3Send, None],
+                t3s: Optional[T3Store] = None) -> Union[UBson, UnitResult]:
+#    def process(self, gen: Generator[SnapView, T3Send, None], t3s: T3Store) -> None:
         """
         Loop through provided TransientViews and extract data according to the
         configured schema.
@@ -94,15 +97,18 @@ class TransientTablePublisher(AbsT3ReviewUnit):
 
         table_rows: list[dict[str, Any]] = []
         for k, tran_view in enumerate(gen, 1):
+
+
             basetdict: dict[str, Any] = {}
             # Assemble t2 information bound to the transient (e.g. Point T2s)
             for t2unit, table_entries in self.transient_table_schema.items():
                 # New SnapView has method for directly retrieve result.
                 # Possibly use this.
                 if t2res := tran_view.get_latest_t2_body(unit=t2unit):
+                    print('transient table schema', t2res)
                     for label, path in table_entries.items():
                         try:
-                            basetdict[label] = reduce(dict.get, path, t2res) # type: ignore[arg-type]
+                            basetdict[label] = reduce(dict.get, path, t2res)
                         except (KeyError, TypeError):
                             pass # We leave missing entries empty
 
@@ -117,7 +123,7 @@ class TransientTablePublisher(AbsT3ReviewUnit):
                     if t2res := tran_view.get_latest_t2_body(unit=t2unit, link=t1_link):
                         for label, path in table_entries.items():
                             try:
-                                tdict[label] = reduce(dict.get, path, t2res) # type: ignore[arg-type]
+                                tdict[label] = reduce(dict.get, path, t2res)
                             except (KeyError, TypeError):
                                 pass # We leave missing entries empty
                 if len(tdict) > 0:
