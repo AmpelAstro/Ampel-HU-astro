@@ -8,17 +8,18 @@
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
 
-import numpy as np
-import sncosmo # type: ignore[import]
-import errno, backoff, copy
-from astropy.table import Table
-from sfdmap import SFDMap  # type: ignore[import]
 from typing import Any, Optional, Union, Literal
 from collections.abc import Sequence
+import errno, backoff, copy
+
+
+import numpy as np
+import sncosmo # type: ignore[import]
+from astropy.table import Table
+from sfdmap import SFDMap  # type: ignore[import]
 
 from ampel.types import UBson
 from ampel.struct.UnitResult import UnitResult
-
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
 from ampel.view.T2DocView import T2DocView
 from ampel.view.LightCurve import LightCurve
@@ -54,8 +55,8 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
     sncosmo_model_name: str
 
     # Redshift usage options. Current options
-    # T2MatchBTS : use the redshift published by BTS and  synced by that T2. Skip if not existing.
-    # T2DigestRedshifts : Use the best redshift as parsed by DigestRedshift. Skip fit it this is not found.
+    # T2MatchBTS : Use the redshift published by BTS and  synced by that T2.
+    # T2DigestRedshifts : Use the best redshift as parsed by DigestRedshift.
     # None : run sncosmo template fit with redshift as free parameter OR use backup_z if set
     redshift_kind: Optional[str]
     # If loading redshifts from DigestRedshifts, provide the max ampel z group to make use of.
@@ -63,13 +64,18 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
     max_ampelz_group: int = 3
     # It is also possible to use fixed redshift whenever a dynamic redshift kind is not possible
     backup_z: Optional[float]
+    # Finally, the provided lens redshift might be multiplied with a scale
+    # Useful for lensing studies, or when trying multiple values
+    scale_z: Optional[float]
+
 
     # Sncosmo parameters
     # Bounds - This is propagated directly into sncosmo. Beware e.g. clashed with catalog redshifts
-    # When fitting redshift this needs to be included here, e.g.     "sncosmo_bounds": {"z":(0.001,0.3)}
+    # When fitting redshift this needs to be included here, e.g. "sncosmo_bounds": {"z":(0.001,0.3)}
     sncosmo_bounds: dict[str, list[float]] = {}
-    # Remove MW dust absorption using SFD maps. This assumes that the position can be retrieved from the light_curve and
-    # and that the SFD_DIR env var is set to allow them to be found. The default value of Rv will be used.
+    # Remove MW dust absorption using SFD maps. This assumes that the position
+    # can be retrieved from the light_curve and that the SFD_DIR env var is set
+    # to allow them to be found. The default value of Rv will be used.
     apply_mwcorrection: bool = False
 
     # Phase range usage. Current option:
@@ -81,28 +87,29 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
     # Plot parameters
     plot_db: bool = False
     plot_props: Optional[PlotProperties] = PlotProperties(
-        tags = ["SALT", "SNCOSMO"],
-        file_name = {
+        tags=["SALT", "SNCOSMO"],
+        file_name={
             "format_str": "%s_%s_%s.svg",
             "arg_keys": ["stock", "model", "redshift_kind"]
         },
-        title = {
+        title={
             "format_str": "%s %s %s",
             "arg_keys": ["stock", "model", "redshift_kind"]
         },
-        fig_text = {
+        fig_text={
             "format_str": "%s %s \nz-source %s \nchisq %.2f ndof %s",
             "arg_keys": ["stock", "model", "redshift_kind", "chisq", "ndof"]
         },
-        width = 10,
-        height = 6,
-        id_mapper = "ZTFIdMapper"
+        width=10,
+        height=6,
+        id_mapper="ZTFIdMapper"
     )
 
 
 
     # Which units should this be changed to
-    t2_dependency: Sequence[StateT2Dependency[Literal["T2DigestRedshifts", "T2MatchBTS", "T2PhaseLimit"]]]
+    t2_dependency: Sequence[StateT2Dependency[Literal[
+                            "T2DigestRedshifts", "T2MatchBTS", "T2PhaseLimit"]]]
 
 
     def post_init(self) -> None:
@@ -111,7 +118,7 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
         """
 
         # Setup model. Currently only parsnip treated separatly
-        # Use of specific parsnip unit encouraged as the parsnip
+        # If possible, use T2RunParnsip as the parsnip
         # sncosmo model is very slow.
         if self.sncosmo_model_name == "parsnip_plasticc":
             import parsnip # type: ignore[import]
@@ -174,7 +181,8 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
                         z = float(t2_res['bts_redshift'])
                         z_source = "BTS"
                 elif self.redshift_kind == 'T2DigestRedshifts':
-                    if 'ampel_z' in t2_res.keys() and t2_res['ampel_z'] is not None and t2_res['group_z_nbr'] <= self.max_ampelz_group:
+                    if ('ampel_z' in t2_res.keys() and t2_res['ampel_z'] is not None
+                            and t2_res['group_z_nbr'] <= self.max_ampelz_group):
                         z = float(t2_res['ampel_z'])
                         z_source = "AMPELz_group" + str(t2_res['group_z_nbr'])
         else:
@@ -185,6 +193,10 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
             else:
                 z = None
                 z_source = "Fitted"
+
+        if z and self.scale_z:
+            z *= self.scale_z
+            z_source += " + scaled {}".format(self.scale_z)
 
         return z, z_source
 
@@ -259,7 +271,8 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
         lc_metrics['restpeak_model_absmag_B'] = sncosmo_model.source_peakabsmag('bessellb', 'ab')
         # Assuming all models have t0 as peak time parameter
         try:
-            lc_metrics['obspeak_model_B'] = sncosmo_model.bandmag('bessellb', 'ab', sncosmo_model.get('t0'))
+            lc_metrics['obspeak_model_B'] = sncosmo_model.bandmag(
+                'bessellb', 'ab', sncosmo_model.get('t0'))
         except ValueError:
             # Likely too high redshift for predicting mag
             lc_metrics['obspeak_model_B'] = None
@@ -267,11 +280,12 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
 
         sncosmo_table['phase'] = (sncosmo_table["jd"] - sncosmo_model.get('t0')) / (1 + z)
         # Determine the phase of the first 3 sigma detection
-        iFirst = np.where((sncosmo_table["flux"] / sncosmo_table["fluxerr"]) > detection_sigma)[0]
+        i_first = np.where((sncosmo_table["flux"] / sncosmo_table["fluxerr"]) > detection_sigma)[0]
         # table might not be ordered
-        lc_metrics['phase_{}sigma'.format(detection_sigma)] = np.min(sncosmo_table['phase'][iFirst])
+        lc_metrics['phase_{}sigma'.format(detection_sigma)] = np.min(sncosmo_table['phase'][i_first])
 
-        # Determine the explosion time (JD) according to the model (i.e. first time when model was defined)
+        # Determine the explosion time (JD) according to the model
+        # i.e. first time when model was defined.
         lc_metrics['jd_model_start'] = sncosmo_model.source.minphase() + sncosmo_model.get('t0')
 
 
@@ -279,13 +293,15 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
         pulls = []
         for band in np.unique(sncosmo_table['band']):
             band_tab = sncosmo_table[
-               (sncosmo_table['band'] == band) &
-               (sncosmo_table['phase'] >= pull_range[0]) &
-               (sncosmo_table['phase'] <= pull_range[1])
+                (sncosmo_table['band'] == band) &
+                (sncosmo_table['phase'] >= pull_range[0]) &
+                (sncosmo_table['phase'] <= pull_range[1])
             ]
-            band_pulls = (band_tab["flux"] - sncosmo_model.bandflux(band, band_tab["jd"], zp=25., zpsys='ab'))
+            band_pulls = (band_tab["flux"] - sncosmo_model.bandflux(
+                band, band_tab["jd"], zp=25., zpsys='ab'))
             # Using the same zeropoint / sys as when creating the table above
-            band_pulls = (band_tab["flux"] - sncosmo_model.bandflux(band, band_tab["jd"], zp=25., zpsys='ab')) / band_tab["fluxerr"]
+            band_pulls = (band_tab["flux"] - sncosmo_model.bandflux(
+                band, band_tab["jd"], zp=25., zpsys='ab')) / band_tab["fluxerr"]
             pulls.extend(list(band_pulls))
         lc_metrics['nbr_peak_pulls'] = len(pulls)
         lc_metrics['absmean_peak_pull'] = np.mean(np.abs(pulls))
@@ -297,8 +313,8 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
     # AMPEL T2 MANDATORY   #
     # ==================== #
     def process(self,
-        light_curve: LightCurve, t2_views: Sequence[T2DocView]
-    ) -> Union[UBson, UnitResult]:
+                light_curve: LightCurve, t2_views: Sequence[T2DocView]
+                ) -> Union[UBson, UnitResult]:
         """
 
         Fit the parameters of the initiated snocmo_model to the light_curve
@@ -341,7 +357,8 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
             return t2_output
 
         # Obtain photometric table
-        sncosmo_table = self._get_sncosmo_table(light_curve, t2_output['jdstart'], t2_output['jdend'])
+        sncosmo_table = self._get_sncosmo_table(light_curve,
+                                                t2_output['jdstart'], t2_output['jdend'])
         self.logger.debug('Sncosmo table {}'.format(sncosmo_table))
 
         # Fitting section
@@ -366,7 +383,8 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
         self.logger.debug('Run results {}'.format(sncosmo_result))
 
         # Derive model metrics
-        t2_output['fit_metrics'] = self._get_fit_metrics(sncosmo_result, sncosmo_table, fitted_model)
+        t2_output['fit_metrics'] = self._get_fit_metrics(sncosmo_result,
+                                                         sncosmo_table, fitted_model)
 
         # How to best serialize these for mongo storage?
         sncosmo_result["parameters"] = sncosmo_result["parameters"].tolist()
@@ -407,17 +425,17 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
                 pulls=True,
                 figtext=plot_fig_text,
                 ncol=3,
-                # fill_data_marker = self.fit_mask,     # Activate if we in corporate some data mask for fit
+                # fill_data_marker = self.fit_mask, # Activate if add fit mask
             )
 
             # Also store to DB if requested
             if self.plot_db:
                 t2_output['plots'] = [
                     mplfig_to_svg_dict1(fig,
-                    self.plot_props, plot_extra, logger = self.logger)
+                                        self.plot_props, plot_extra, logger=self.logger)
                 ]
             else:
                 mplfig_to_svg_dict1(fig,
-                self.plot_props, plot_extra, logger = self.logger)
+                                    self.plot_props, plot_extra, logger=self.logger)
 
         return t2_output
