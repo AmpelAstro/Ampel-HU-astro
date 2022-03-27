@@ -14,7 +14,7 @@ def check_ned_res(
 	cat_res: dict,
 	logger: LoggerProtocol,
 	spectroscopic: bool = False,
-	z_range: None | tuple[float | float] = None
+	z_range: None | tuple[float, float] = None
 ) -> bool:
 
 	if not cat_res.get('z'):

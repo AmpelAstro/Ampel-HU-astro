@@ -60,7 +60,7 @@ class T2NedSNCosmo(AbsTiedLightCurveT2Unit, T2SNCosmo):
 	"""
 
 	t2_dependency: Sequence[StateT2Dependency[Literal["T2NedTap"]]]
-	z_range: None | tuple[float | float]
+	z_range: None | tuple[float, float]
 	fit_all: bool = False # otherwise, fit only the first matching catalog result
 	spectroscopic: bool = True
 	merge_tags: bool = True

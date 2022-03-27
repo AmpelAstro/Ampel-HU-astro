@@ -35,7 +35,7 @@ class T2PS1ThumbNedSNCosmo(AbsTiedLightCurveT2Unit):
 	band: str | Sequence[str] = "g"
 	cmaps: Sequence[str] = ["cividis"]
 	plot_all: bool = False
-	z_range: None | tuple[float | float]
+	z_range: None | tuple[float, float]
 	spectroscopic: bool = True
 	merge_tags: bool = True
 	# Copy selected keys from T2NedCosmo results such as 'fit_results' or 'sncosmo_info'

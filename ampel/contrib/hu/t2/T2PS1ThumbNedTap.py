@@ -43,7 +43,7 @@ class T2PS1ThumbNedTap(AbsTiedPointT2Unit):
 	cmaps: Sequence[str] = ["cividis"]
 	band: str | Sequence[str] = "g"
 	plot_all: bool = False
-	z_range: None | tuple[float | float]
+	z_range: None | tuple[float, float]
 	spectroscopic: bool = True
 
 	plot_props: PlotProperties = PlotProperties(
