@@ -7,7 +7,7 @@
 # Last Modified Date:  03.03.2022
 # Last Modified By:    atownsend@physik.hu-berlin.de
 
-from typing import Any, Optional, Literal, Union
+from typing import Any, Optional, Literal, Union, Tuple, List
 from collections.abc import Sequence
 from ampel.struct.UnitResult import UnitResult
 
@@ -71,7 +71,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
 
 
 
-    def _get_lsphotoz_groupz(self, t2_res: dict[str, Any]) -> (list[list[float]], list[list[float]]):
+    def _get_lsphotoz_groupz(self, t2_res: dict[str, Any]) -> Tuple[Any]:
         """
         Parse output from T2LSPhotoZTap and investigate whether any matches fulfill group
         redshift criteria.
@@ -138,7 +138,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
 
 
 
-    def _get_catalogmatch_groupz(self, t2_res: dict[str, Any]) -> (list[list[float]],list[list[float]]):
+    def _get_catalogmatch_groupz(self, t2_res: dict[str, Any]) -> Tuple[Any]:
         """
         Parse output from T2CatalogMatch.
 
