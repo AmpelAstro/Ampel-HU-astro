@@ -4,12 +4,13 @@
 # License           : BSD-3-Clause
 # Author            : jnordin@physik.hu-berlin.de
 # Date              : 24.09.2021
-# Last Modified Date: 24.09.2021
+# Last Modified Date: 06.04.2022
 # Last Modified By  : jnordin@physik.hu-berlin.de
 
 from typing import Sequence, Literal, Any, Optional, Tuple, Union
 import errno, os, re, backoff, copy, sys
 import math
+from scipy.stats import chi2
 import gc
 import numpy as np
 from astropy.table import Table
@@ -25,9 +26,13 @@ from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper
 
 
-#import sncosmo
 import parsnip
 import lcdata
+
+# The following three only used if correcting for MW dust
+from sfdmap import SFDMap  # type: ignore[import]
+import sncosmo             # type: ignore[import]
+import extinction          # type: ignore[import]
 
 
 
@@ -61,7 +66,6 @@ class T2RunParsnip(AbsTiedLightCurveT2Unit):
 
     TODO:
     - Add option for redoing fits with disturbed initial conditions to avoid local minima
-    - Add plot option
     - Add option for masking data?
     - Add MW correction
     """
@@ -79,10 +83,18 @@ class T2RunParsnip(AbsTiedLightCurveT2Unit):
     # (note that filtering based on this can also be done for a potential t3)
     max_ampelz_group: int = 3
     # It is also possible to use fixed redshift whenever a dynamic redshift kind is not possible
-    backup_z: Optional[float]
+    # This could be either a single value or a list
+    fixed_z: Optional[Union[float, Sequence[float]]]
     # Finally, the provided lens redshift might be multiplied with a scale
     # Useful for lensing studies, or when trying multiple values
     scale_z: Optional[float]
+
+    # Remove MW dust absorption.
+    # MWEBV is either derived from SFD maps using the position from light_curve
+    # (assuming the SFD_DIR env var is set) OR retrieved from stock (ELASTICHOW?)
+    # The default value of Rv will be used.
+    apply_mwcorrection: bool = False
+
 
     # Further fit parameters
     # Bounds - not yet implemented
@@ -111,9 +123,6 @@ class T2RunParsnip(AbsTiedLightCurveT2Unit):
 
 
 
-
-
-
     def post_init(self)-> None:
         """
         Retrieve models.
@@ -125,9 +134,12 @@ class T2RunParsnip(AbsTiedLightCurveT2Unit):
         if self.parsnip_classifier:
             self.classifier = parsnip.Classifier.load(self.parsnip_classifier)
 
+        if self.apply_mwcorrection:
+            self.dustmap = SFDMap()
 
 
-    def _get_redshift(self, t2_views) -> Tuple[Optional[float], Optional[str]]:
+
+    def _get_redshift(self, t2_views) -> Tuple[Optional[Sequence[float]], Optional[str]]:
         """
         Can potentially also be replaced with some sort of T2DigestRershift tabulator?
 
@@ -135,8 +147,8 @@ class T2RunParsnip(AbsTiedLightCurveT2Unit):
         """
 
         # Examine T2s for eventual information
-        z: Optional[float] = None
-        z_source: Optional[str] = None
+        z: Optional[Sequence[float]]
+        z_source: Optional[str]
 
 
         if self.redshift_kind in ['T2MatchBTS', 'T2DigestRedshifts']:
@@ -148,24 +160,27 @@ class T2RunParsnip(AbsTiedLightCurveT2Unit):
                 # Parse this
                 if self.redshift_kind == 'T2MatchBTS':
                     if 'bts_redshift' in t2_res.keys() and not t2_res['bts_redshift'] == '-':
-                        z = float(t2_res['bts_redshift'])
+                        z = [float(t2_res['bts_redshift'])]
                         z_source = "BTS"
                 elif self.redshift_kind == 'T2DigestRedshifts':
                     if ('ampel_z' in t2_res.keys() and t2_res['ampel_z'] is not None
                             and t2_res['group_z_nbr'] <= self.max_ampelz_group):
-                        z = float(t2_res['ampel_z'])
+                        z = [float(t2_res['ampel_z'])]
                         z_source = "AMPELz_group" + str(t2_res['group_z_nbr'])
         else:
             # Check if there is a fixed z set for this run, otherwise keep as free parameter
-            if self.backup_z:
-                z = self.backup_z
+            if self.fixed_z:
+                if isinstance(self.fixed_z, list):
+                    z = self.fixed_z
+                else:
+                    z = [self.fixed_z]
                 z_source = "Fixed"
             else:
                 z = None
                 z_source = "Fitted"
 
         if z and self.scale_z:
-            z *= self.scale_z
+            z = [onez*self.scale_z for onez in z]
             z_source += " + scaled {}".format(self.scale_z)
 
         return z, z_source
@@ -227,6 +242,27 @@ class T2RunParsnip(AbsTiedLightCurveT2Unit):
         return phot_tab
 
 
+    def _deredden_mw_extinction(self, ebv, phot_tab, rv=3.1) -> Table:
+        """
+        For an input photometric table, try to correct for mw extinction.
+        """
+
+        # Find effective wavelength for all filters in phot_tab
+        filterlist = set( phot_tab['band'] )
+        eff_wave = [sncosmo.get_bandpass(f).wave_eff for f in filterlist]
+
+        # Determine flux correction (dereddening) factors
+        flux_corr = 10**(0.4* extinction.ccm89( np.array(eff_wave), ebv*rv, rv) )
+
+        # Assign this appropritately to Table
+        phot_tab['flux_original'] = phot_tab['flux']
+        phot_tab['fluxerr_original'] = phot_tab['fluxerr']
+        for k, band in enumerate(filterlist):
+            phot_tab['flux'][(phot_tab['band']==band)] *= flux_corr[k]
+            phot_tab['fluxerr'][(phot_tab['band']==band)] *= flux_corr[k]
+
+        return phot_tab
+
 
     # ==================== #
     # AMPEL T2 MANDATORY   #
@@ -261,14 +297,6 @@ class T2RunParsnip(AbsTiedLightCurveT2Unit):
         t2_output: dict[str, UBson] = {"model" : self.parsnip_model,
 		                              "classifier" : self.parsnip_classifier}
 
-        # Obtain redshift
-        z, z_source = self._get_redshift(t2_views)
-        t2_output['z'] = z
-        t2_output['z_source'] = z_source
-        # A source class of None indicates that a redshift source was required, but not found.
-        if t2_output['z_source'] is None:
-            return t2_output
-
         # Check for phase limits
         (jdstart, jdend) = self._get_phaselimit(t2_views)
         t2_output['jdstart'] = jdstart
@@ -281,25 +309,79 @@ class T2RunParsnip(AbsTiedLightCurveT2Unit):
                                                 t2_output['jdstart'], t2_output['jdend'])
         self.logger.debug('Sncosmo table {}'.format(sncosmo_table))
 
+        # Potentially correct for dust absorption
+        if self.apply_mwcorrection:
+            # Get ebv from coordiantes.
+            # Here there should be some option to read it from journal/stock etc
+            mwebv = self.dustmap.ebv(*light_curve.get_pos())
+            t2_output['mwebv'] = mwebv
+            sncosmo_table = self._deredden_mw_extinction(mwebv, sncosmo_table)
+
+
+        ## Obtain redshift(s) from catalog fit or a RedshiftSample
+        z, z_source = self._get_redshift(t2_views)
+        t2_output['z'] = z
+        t2_output['z_source'] = z_source
+        # A source class of None indicates that a redshift source was required, but not found.
+        if t2_output['z_source'] is None:
+            return t2_output
+
+
         # Fitting section
 
-        # Deal with redshift and fit
-        if z is None:
-            sys.exit("Implement redshift fitting from parsnip_ztf_classification_no_redshift.ipynb")
+        # If redshift should be fitted, we start with getting samples
+        if z_source == 'Fitted':
+            sys.exit('Parsnip redshift fit depracated??, use list of fixed_z.')
+            #z, z_probabilities = self.model.predict_redshift_distribution(
+            #                    sncosmo_table, max_redshift=self.max_fit_z)
 
-        sncosmo_table.meta["redshift"] = z
-        # Not sure why we need to define a dataset
-        dataset = lcdata.from_light_curves([sncosmo_table])
-        lc_predictions = self.model.predict_dataset(dataset)
+        # Create a list of lightcurves, each at a discrete redshift
+        lcs = []
+        for redshift in z:
+            use_lc = sncosmo_table.copy()
+            use_lc.meta['object_id']  = f'parsnip_z{redshift:4f}'
+            use_lc.meta['redshift'] = redshift
+            lcs.append(use_lc)
+        lc_dataset = lcdata.from_light_curves(lcs)
+
+        # Peform actual model predictions and classifications
+        lc_predictions = self.model.predict_dataset(lc_dataset)
         lc_classifications = self.classifier.classify(lc_predictions)
-        foo = dict(lc_predictions[0][lc_predictions.colnames[1:]])
-        t2_output["prediction"] = {k: dcast_pred[k](v)
-		                           if k in dcast_pred and v is not None
-								   else float(v) for k, v in foo.items()}
-        foo = dict(lc_classifications[0][lc_classifications.colnames[1:]])
-        t2_output["classification"] = {k: dcast_class[k](v)
-		                               if k in dcast_class and v is not None
-									   else float(v) for k, v in foo.items()}
+
+
+        # Cast result for storage and look at relative probabilities
+        t2_output["predictions"] = {}
+        t2_output["classifications"] = {}
+        for i, redshift in enumerate(z):
+            foo = dict(lc_predictions[i][lc_predictions.colnames[1:]])
+            t2_output["predictions"][redshift] = {k: dcast_pred[k](v)
+                                        if k in dcast_pred and v is not None
+								        else float(v) for k, v in foo.items()}
+            # Not sure whether the dof could change? Normalizing now
+            t2_output["predictions"][redshift]['chi2pdf'] = chi2.pdf(
+                                        foo['model_chisq']/foo['model_dof'], 1)
+            foo = dict(lc_classifications[i][lc_classifications.colnames[1:]])
+            t2_output["classifications"][redshift] = {k: dcast_class[k](v)
+		                                  if k in dcast_class and v is not None
+									      else float(v) for k, v in foo.items()}
+
+        # Marginalize over the redshift
+        # p(c|y) = Integral[p(c|z,y) p(z|y) dz]
+        types = lc_classifications.colnames[1:]
+        dtype = lc_classifications[types[0]].dtype
+        probabilities = lc_classifications[types].as_array().view((dtype, len(types)))
+        # Now we could normalize these z prob and normalize types over redshifts
+        z_probabilities = np.array( [lcfit['chi2pdf']
+                    for redshift, lcfit in t2_output["predictions"].items()] )
+        integrated_probabilities = z_probabilities.dot(probabilities)
+        integrated_probabilities /= np.sum(integrated_probabilities)
+        t2_output["marginal_lc_classifications"] = dict(zip(types, integrated_probabilities))
+        # Find the best redshifts
+        t2_output["z_at_minchi"] = z[np.argmax(z_probabilities)]
+        # Map these to singular value predictions/lc_classifications
+        # (wastes DB space, but possible to filter based on)
+        t2_output["prediction"] = t2_output["predictions"][t2_output["z_at_minchi"]]
+        t2_output["classification"] = t2_output["classifications"][t2_output["z_at_minchi"]]
 
         # Plot
         if self.plot_suffix and self.plot_dir:
@@ -308,7 +390,10 @@ class T2RunParsnip(AbsTiedLightCurveT2Unit):
             fig = plt.figure()
             ax = plt.gca()
 
-            parsnip.plot_light_curve(dataset.light_curves[0], self.model, ax=ax)
+            # Set redshift to best value and plot this fit
+            lc_dataset.light_curves[0].meta['redshift'] = t2_output["z_at_minchi"]
+
+            parsnip.plot_light_curve(lc_dataset.light_curves[0], self.model, ax=ax)
             plt.tight_layout()
             plt.savefig(os.path.join(self.plot_dir, 't2parsnip_%s.%s'%(tname, self.plot_suffix)))
 
