@@ -67,8 +67,8 @@ class T2RunParsnip(AbsTiedLightCurveT2Unit):
     TODO:
     - Add option for redoing fits with disturbed initial conditions to avoid local minima
     - Add option for masking data?
-    - Add MW correction
     """
+
     # Name (in case standard) or path to parsnip model to load
     parsnip_model: str
     # Path to classifier to apply to lightcurve fit. If not set, no classification will be done.
@@ -313,7 +313,7 @@ class T2RunParsnip(AbsTiedLightCurveT2Unit):
         if self.apply_mwcorrection:
             # Get ebv from coordiantes.
             # Here there should be some option to read it from journal/stock etc
-            mwebv = self.dustmap.ebv(*light_curve.get_pos())
+            mwebv = self.dustmap.ebv(*light_curve.get_pos(ret="mean"))
             t2_output['mwebv'] = mwebv
             sncosmo_table = self._deredden_mw_extinction(mwebv, sncosmo_table)
 
@@ -354,14 +354,14 @@ class T2RunParsnip(AbsTiedLightCurveT2Unit):
         t2_output["classifications"] = {}
         for i, redshift in enumerate(z):
             foo = dict(lc_predictions[i][lc_predictions.colnames[1:]])
-            t2_output["predictions"][redshift] = {k: dcast_pred[k](v)
+            t2_output["predictions"][str(redshift)] = {k: dcast_pred[k](v)
                                         if k in dcast_pred and v is not None
 								        else float(v) for k, v in foo.items()}
             # Not sure whether the dof could change? Normalizing now
-            t2_output["predictions"][redshift]['chi2pdf'] = chi2.pdf(
+            t2_output["predictions"][str(redshift)]['chi2pdf'] = chi2.pdf(
                                         foo['model_chisq']/foo['model_dof'], 1)
             foo = dict(lc_classifications[i][lc_classifications.colnames[1:]])
-            t2_output["classifications"][redshift] = {k: dcast_class[k](v)
+            t2_output["classifications"][str(redshift)] = {k: dcast_class[k](v)
 		                                  if k in dcast_class and v is not None
 									      else float(v) for k, v in foo.items()}
 
@@ -380,8 +380,8 @@ class T2RunParsnip(AbsTiedLightCurveT2Unit):
         t2_output["z_at_minchi"] = z[np.argmax(z_probabilities)]
         # Map these to singular value predictions/lc_classifications
         # (wastes DB space, but possible to filter based on)
-        t2_output["prediction"] = t2_output["predictions"][t2_output["z_at_minchi"]]
-        t2_output["classification"] = t2_output["classifications"][t2_output["z_at_minchi"]]
+        t2_output["prediction"] = t2_output["predictions"][str(t2_output["z_at_minchi"])]
+        t2_output["classification"] = t2_output["classifications"][str(t2_output["z_at_minchi"])]
 
         # Plot
         if self.plot_suffix and self.plot_dir:
