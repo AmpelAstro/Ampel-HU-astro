@@ -46,6 +46,29 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
     TODO:
     - Add option for redoing fits with disturbed initial conditions to avoid local minima
     - Add option for masking data?
+    - Directly limit to bands which cover redshift model (and exit if none exists)
+    - Save error message to log/t2 output
+
+    Plot props sample use:
+    plot_props: Optional[PlotProperties] = PlotProperties(
+        tags=["SALT", "SNCOSMO"],
+        file_name={
+            "format_str": "%s_%s_%s.svg",
+            "arg_keys": ["stock", "model", "redshift_kind"]
+        },
+        title={
+            "format_str": "%s %s %s",
+            "arg_keys": ["stock", "model", "redshift_kind"]
+        },
+        fig_text={
+            "format_str": "%s %s \nz-source %s \nchisq %.2f ndof %s",
+            "arg_keys": ["stock", "model", "redshift_kind", "chisq", "ndof"]
+        },
+        width=10,
+        height=6,
+        id_mapper="ZTFIdMapper"
+    )
+
 
     """
 
@@ -86,24 +109,7 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
 
     # Plot parameters
     plot_db: bool = False
-    plot_props: Optional[PlotProperties] = PlotProperties(
-        tags=["SALT", "SNCOSMO"],
-        file_name={
-            "format_str": "%s_%s_%s.svg",
-            "arg_keys": ["stock", "model", "redshift_kind"]
-        },
-        title={
-            "format_str": "%s %s %s",
-            "arg_keys": ["stock", "model", "redshift_kind"]
-        },
-        fig_text={
-            "format_str": "%s %s \nz-source %s \nchisq %.2f ndof %s",
-            "arg_keys": ["stock", "model", "redshift_kind", "chisq", "ndof"]
-        },
-        width=10,
-        height=6,
-        id_mapper="ZTFIdMapper"
-    )
+    plot_props: Optional[PlotProperties] = False
 
 
 
@@ -136,6 +142,7 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
             self.dustmap = SFDMap()
             self.fit_params = copy.deepcopy(self.sncosmo_model.param_names)
             self.fit_params.remove("mwebv")
+            self.fit_params.remove("mwr_v")
         else:
             self.sncosmo_model = sncosmo.Model(source=source)
             self.fit_params = copy.deepcopy(self.sncosmo_model.param_names)
@@ -297,12 +304,18 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
                 (sncosmo_table['phase'] >= pull_range[0]) &
                 (sncosmo_table['phase'] <= pull_range[1])
             ]
-            band_pulls = (band_tab["flux"] - sncosmo_model.bandflux(
-                band, band_tab["jd"], zp=25., zpsys='ab'))
-            # Using the same zeropoint / sys as when creating the table above
-            band_pulls = (band_tab["flux"] - sncosmo_model.bandflux(
-                band, band_tab["jd"], zp=25., zpsys='ab')) / band_tab["fluxerr"]
-            pulls.extend(list(band_pulls))
+            #band_pulls = (band_tab["flux"] - sncosmo_model.bandflux(
+            #    band, band_tab["jd"], zp=25., zpsys='ab'))
+            try:
+                # Using the same zeropoint / sys as when creating the table above
+                band_pulls = (band_tab["flux"] - sncosmo_model.bandflux(
+                    band, band_tab["jd"], zp=25., zpsys='ab')) / band_tab["fluxerr"]
+                pulls.extend(list(band_pulls))
+            except ValueError as e:
+                self.logger.info('Sncosmo get fit metric error')
+                lc_metrics['pull_retrieval_error'] = True
+
+
         lc_metrics['nbr_peak_pulls'] = len(pulls)
         lc_metrics['absmean_peak_pull'] = np.mean(np.abs(pulls))
 
@@ -339,7 +352,7 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
         """
 
         # Initialize output dict
-        t2_output: dict[str,UBson] = {"model_name": self.sncosmo_model_name}
+        t2_output: dict[str, UBson] = {"model_name": self.sncosmo_model_name}
 
         # Obtain redshift
         z, z_source = self._get_redshift(t2_views)
@@ -378,8 +391,22 @@ class T2RunSncosmo(AbsTiedLightCurveT2Unit):
             self.fit_params, self.sncosmo_model.param_names, self.sncosmo_model.parameters))
 
         # Carry out fit. Bounds are directly carried from parameters
-        sncosmo_result, fitted_model = sncosmo.fit_lc(
-            sncosmo_table, self.sncosmo_model, self.fit_params, bounds=self.sncosmo_bounds)
+        # todo: gravefully check which observed bands cover redshifted model
+        try:
+            sncosmo_result, fitted_model = sncosmo.fit_lc(
+                sncosmo_table, self.sncosmo_model, self.fit_params, bounds=self.sncosmo_bounds)
+        except ValueError as e:
+            self.logger.info('Sncosmo fit error')
+            print('value error', e)
+            t2_output['run_error'] = True
+            return t2_output
+        except RuntimeError as e:
+            # Might have worked with different initial conditions?
+            print('value error', e)
+            self.logger.info('Sncosmo fit error')
+            t2_output['run_error'] = True
+            return t2_output
+
         self.logger.debug('Run results {}'.format(sncosmo_result))
 
         # Derive model metrics
