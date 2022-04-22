@@ -77,6 +77,7 @@ class T2RunParsnip(AbsTiedLightCurveT2Unit):
     # Redshift usage options. Current options
     # T2MatchBTS : Use the redshift published by BTS and  synced by that T2.
     # T2DigestRedshifts : Use the best redshift as parsed by DigestRedshift.
+    # T2ElasticcRedshiftSampler: Use a list of redshifts and weights from the sampler.
     # None : run sncosmo template fit with redshift as free parameter OR use backup_z if set
     redshift_kind: Optional[str]
     # If loading redshifts from DigestRedshifts, provide the max ampel z group to make use of.
@@ -118,7 +119,10 @@ class T2RunParsnip(AbsTiedLightCurveT2Unit):
 
     # Which units should this be changed to
     t2_dependency: Sequence[StateT2Dependency[Literal[
-                            "T2DigestRedshifts", "T2MatchBTS", "T2PhaseLimit"]]]
+        "T2ElasticcRedshiftSampler",
+        "T2DigestRedshifts",
+        "T2MatchBTS",
+        "T2PhaseLimit"]]]
 
 
 
@@ -147,11 +151,12 @@ class T2RunParsnip(AbsTiedLightCurveT2Unit):
         """
 
         # Examine T2s for eventual information
-        z: Optional[Sequence[float]]
-        z_source: Optional[str]
+        z: Optional[Sequence[float]] = None
+        z_source: Optional[str] = None
+        z_weights: Optional[Sequence[float]] = None
 
 
-        if self.redshift_kind in ['T2MatchBTS', 'T2DigestRedshifts']:
+        if self.redshift_kind in ['T2MatchBTS', 'T2DigestRedshifts', 'T2ElasticcRedshiftSampler']:
             for t2_view in t2_views:
                 if not t2_view.unit == self.redshift_kind:
                     continue
@@ -167,6 +172,10 @@ class T2RunParsnip(AbsTiedLightCurveT2Unit):
                             and t2_res['group_z_nbr'] <= self.max_ampelz_group):
                         z = [float(t2_res['ampel_z'])]
                         z_source = "AMPELz_group" + str(t2_res['group_z_nbr'])
+                elif self.redshift_kind == 'T2ElasticcRedshiftSampler':
+                    z = t2_res['z_samples']
+                    z_source = t2_res['z_source']
+                    z_weights = t2_res['z_weights']
         else:
             # Check if there is a fixed z set for this run, otherwise keep as free parameter
             if self.fixed_z:
@@ -183,7 +192,8 @@ class T2RunParsnip(AbsTiedLightCurveT2Unit):
             z = [onez*self.scale_z for onez in z]
             z_source += " + scaled {}".format(self.scale_z)
 
-        return z, z_source
+
+        return z, z_source, z_weights
 
 
 
@@ -319,9 +329,10 @@ class T2RunParsnip(AbsTiedLightCurveT2Unit):
 
 
         ## Obtain redshift(s) from catalog fit or a RedshiftSample
-        z, z_source = self._get_redshift(t2_views)
+        z, z_source, z_weights = self._get_redshift(t2_views)
         t2_output['z'] = z
         t2_output['z_source'] = z_source
+        t2_output['z_weights'] = z_weights
         # A source class of None indicates that a redshift source was required, but not found.
         if t2_output['z_source'] is None:
             return t2_output
@@ -373,6 +384,9 @@ class T2RunParsnip(AbsTiedLightCurveT2Unit):
         # Now we could normalize these z prob and normalize types over redshifts
         z_probabilities = np.array( [lcfit['chi2pdf']
                     for redshift, lcfit in t2_output["predictions"].items()] )
+        # Take redshift probabilities into account, if available
+        if z_weights is not None:
+            z_probabilities *= z_weights
         integrated_probabilities = z_probabilities.dot(probabilities)
         integrated_probabilities /= np.sum(integrated_probabilities)
         t2_output["marginal_lc_classifications"] = dict(zip(types, integrated_probabilities))
