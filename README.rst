@@ -5,9 +5,9 @@ Install guidelines
 
 Sample instructions for creating a conda environment
 
-- pip3 install ipython jupyter extcats sfdmap iminuit sncosmo light-curve-python
 - conda create -n ampelTutorial python=3.9
 - conda activate ampelTutorial
+- pip3 install ipython jupyter extcats sfdmap iminuit sncosmo light-curve-python
 - pip3 install git+https://github.com/AmpelProject/Ampel-ipython.git
 - git clone https://github.com/AmpelProject/Ampel-HU-astro.git 
 - cd Ampel-HU-astro/
