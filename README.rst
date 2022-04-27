@@ -1,48 +1,31 @@
+Branch containing specific tutorial/demo notebooks based on 0.8.2
 
-Contributed Ampel units from HU/DESY group
-==========================================
+Install guidelines
+==================
 
-Contains as of Jan 2020:
+Sample instructions for creating a conda environment
 
-T0
---
-* DecentFilter
-* LensedTransientFilter
-* NoFilter
-* RandFilter
-* SEDmTargetFilter
-* SimpleDecentFilter
-* ToOFilter
-* TransientInClusterFilter
-* TransientInEllipticalFilter
-* XShooterFilter
+- pip install ipython 
+- pip install jupyter 
+- pip install extcats
+- pip install sfdmap
+- pip install iminuit
+- pip install sncosmo
+- pip install light-curve-python
+- conda create -n ampelTutorial python=3.9
+- conda activate ampelTutorial
+- git clone https://github.com/AmpelProject/Ampel-HU-astro.git 
+- cd Ampel-HU-astro/
+- git checkout AmpelTutorial
+- cd ..
+- git clone https://github.com/AmpelProject/Ampel-ipython.git
+- cd Ampel-ipython/
+- pip install -e .
+- ampel config build -out ampel_conf.yaml >& ampel_conf.log 
 
-T2
---
-* T2CatalogMatch
-* T2LCQuality
-* T2MarshalMonitor
-* T2Observability
-* T2SNCosmo
+The last command will create an Ampel yaml configuration file, which will be required when running any AMPEL context units.
 
-T3
---
-* ChannelSummaryPublisher
-* CompareExternal
-* CompareUli
-* CountSncosmo
-* GrowthMarshalAnnotate
-* MarshalPublisher
-* RapidBase
-* RapidSedm
-* RejectionLogsPublisher
-* SkyPortalPublisher
-* SlackAlertPublisher
-* SlackPublisher
-* SlackSummaryPublisher
-* T3MarshalMonitor
-* TNSTalker
-* TransientInfoPrinter
-* TransientViewDumper
-* TransientWebPublisher
-* aiotns (TNSMatcher)
+Access tokens
+=============
+
+Access data either from the ZTF alert archive or from the live AMPEL instance requires an access token. This is created through a github auth - contact maintainers to get added to the project.
