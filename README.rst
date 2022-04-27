@@ -9,9 +9,11 @@ Sample instructions for creating a conda environment
 - conda activate ampelTutorial
 - pip3 install ipython jupyter extcats sfdmap iminuit sncosmo light-curve-python
 - pip3 install git+https://github.com/AmpelProject/Ampel-ipython.git
+- pip3 install git+https://github.com/AmpelProject/Ampel-ZTF.git@dev/v0.8.2 
 - git clone https://github.com/AmpelProject/Ampel-HU-astro.git 
 - cd Ampel-HU-astro/
 - git checkout AmpelTutorial
+- pip install -e .
 - cd ..
 - ampel config build -out ampel_conf.yaml 
 
