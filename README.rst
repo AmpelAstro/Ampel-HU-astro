@@ -15,7 +15,7 @@ Sample instructions for creating a conda environment
 - git checkout AmpelTutorial
 - pip install -e .
 - cd ..
-- ampel config build -out ampel_conf.yaml 
+- ampel config build -out ampel_conf.yaml >& conf.log
 
 The last command will create an Ampel yaml configuration file, which will be required when running any AMPEL context units.
 
