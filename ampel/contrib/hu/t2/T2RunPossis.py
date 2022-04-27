@@ -27,18 +27,26 @@ from ampel.view.T2DocView import T2DocView
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.view.LightCurve import LightCurve
 
-
 class T2RunPossis(T2RunSncosmo):
     """
+    Load a POSSIS kilnova model and fit to a LightCurve object as process is called.
 
     Load one of the POSSIS models and create an sncosmo_model
     model for fit by T2RunSncosmo.
+    :param possis_base_url: str, path to (github) possis repository
+    :param model_gen: str, name of model generation (subfolder)
+    :mej_dyn: float, Possis parameter
+    :mej_wind: float, Possis parameter
+    :phi: int, Possis parameter
+    :cos_theta: float, Possis parameter
+
+    Dynamically fix model explosion time
+    :param explosion_time_jd: Union[None, float, Literal['StockTriggerTime']]
+
 
     """
 
     # Parameters determining which POSSIS model will be read
-
-    # Currently references to sample model included in Ampel-HU-astro
     possis_base_url: str = 'https://raw.githubusercontent.com/mbulla/kilonova_models/f810e0ec7e7a6ae32624738329e73d561b081372'
     model_gen: str = 'bns_m3_3comp'
     mej_dyn: float = 0.01
@@ -52,6 +60,9 @@ class T2RunPossis(T2RunSncosmo):
     # Fix time to specific explosion timestamp
     # StockTriggerTime assumes the value is updated during runtime
     explosion_time_jd: Union[None, float, Literal['StockTriggerTime']]
+
+
+
 
     # Which units should this be changed to
     t2_dependency: Sequence[StateT2Dependency[Literal[ # type: ignore[assignment]
@@ -142,10 +153,10 @@ class T2RunPossis(T2RunSncosmo):
         light_curve: LightCurve, t2_views: Sequence[T2DocView]
     ) -> Union[UBson,UnitResult]:
         """
-        Adding the option to dynamically grap explosion time from T2PropagateStockInfo
-
-        After setting this it will return to normal T2RunSncosmo.
+        Fit the loaded model to the data provided as a LightCurve.
+        If requested, retrieve redshift and explosion time from t2_views.
         """
+
 
         if self.explosion_time_jd=='StockTriggerTime':
             for t2_view in t2_views:
