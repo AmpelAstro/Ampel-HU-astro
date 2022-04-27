@@ -5,23 +5,15 @@ Install guidelines
 
 Sample instructions for creating a conda environment
 
-- pip install ipython 
-- pip install jupyter 
-- pip install extcats
-- pip install sfdmap
-- pip install iminuit
-- pip install sncosmo
-- pip install light-curve-python
+- pip3 install ipython jupyter extcats sfdmap iminuit sncosmo light-curve-python
 - conda create -n ampelTutorial python=3.9
 - conda activate ampelTutorial
+- pip3 install git+https://github.com/AmpelProject/Ampel-ipython.git
 - git clone https://github.com/AmpelProject/Ampel-HU-astro.git 
 - cd Ampel-HU-astro/
 - git checkout AmpelTutorial
 - cd ..
-- git clone https://github.com/AmpelProject/Ampel-ipython.git
-- cd Ampel-ipython/
-- pip install -e .
-- ampel config build -out ampel_conf.yaml >& ampel_conf.log 
+- ampel config build -out ampel_conf.yaml 
 
 The last command will create an Ampel yaml configuration file, which will be required when running any AMPEL context units.
 
