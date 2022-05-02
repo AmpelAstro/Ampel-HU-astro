@@ -2,7 +2,7 @@
 
 ## Install guidelines
 
-On Mac, additional preparation is needed:
+On Mac (M1), additional preparation is needed:
 - We need to install Rust and a Kafka dependency with ```brew install rustup librdkafka```, then execute
 - ```rustup-init```
 - After that, add the following lines to your ~/.zshrc:
