@@ -3,8 +3,9 @@
 ## Install guidelines
 
 On Mac, additional preparation is needed:
-- ```brew install librdkafka```
-- Add the following lines to your ~/.zshrc:
+- We need to install Rust and a Kafka dependency with ```brew install rustup librdkafka```, then execute
+- ```rustup-init```
+- After that, add the following lines to your ~/.zshrc:
     - ```export C_INCLUDE_PATH=/opt/homebrew/Cellar/librdkafka/1.8.2/include``` and
     - ```export LIBRARY_PATH=/opt/homebrew/Cellar/librdkafka/1.8.2/lib``` 
 - Now read the modified .zshrc by ```source ~/.zshrc```, then
