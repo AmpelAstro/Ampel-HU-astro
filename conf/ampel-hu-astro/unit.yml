@@ -15,6 +15,7 @@
 - ampel.contrib.hu.t2.T2CatalogMatchLocal
 - ampel.contrib.hu.t2.T2DigestRedshifts
 - ampel.contrib.hu.t2.T2RunPossis
+- ampel.contrib.hu.t2.T2RunTDE
 - ampel.contrib.hu.t2.T2RunParsnip
 - ampel.contrib.hu.t2.T2MatchBTS
 - ampel.contrib.hu.t2.T2NedTap
