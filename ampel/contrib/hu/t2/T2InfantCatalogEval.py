@@ -38,7 +38,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
     # minimum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
     min_redshift: float = 0.001
     # max abs mag through peak mag and redshift from catalog mach (require both)
-    max_absmag: float = -13 # -13
+    max_absmag: float = -12 # Originally -13, moved to -12 due to ZTF22aafoqrd
     # min abs mag through peak mag and redshift from catalog mach (require both)
     min_absmag: float = -20 # -17
     # arcsec, minimum distance to remove star matches to transient if found (eg in SDSSDR10)
@@ -108,7 +108,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
                 (self.min_dist < catinfo["dist2transient"] < self.max_dist)
             ):
                 self.logger.info(
-                    "z matched.",
+                    "Found z.",
                     extra={
                         "catalog": catname,
                         "z": catinfo["z"],
@@ -271,7 +271,8 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
 
         # cut on distance to closest solar system object
         # TODO: how to make this check: ('0.0' in list(phot["ssdistnr"])
-        ssdist = np.array([pp["body"]["ssdistnr"] for pp in pps if pp["body"]["ssdistnr"] is not None])
+        ssdist = np.array([pp["body"]["ssdistnr"] for pp in pps
+            if "ssdistnr" in pp['body'].keys() and pp["body"]["ssdistnr"] is not None])
         close_to_sso = np.logical_and(ssdist < self.ssdistnr_max, ssdist > 0)
 
         # TODO: Note that this discards a transient if it was ever close to a ss object!
@@ -328,6 +329,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         info["drb"] = np.median(drbs)
 
         # Transient passed pure LC criteria
+        self.logger.info("Passed T2infantCatalogEval", extra=info)
         return info
 
 
