@@ -1,0 +1,150 @@
+name: nearbyInfantReact
+
+mongo:
+  prefix: AmpelDemo
+
+channel:
+- name: NIRtest
+  access: [ZTF, ZTF_PUB, ZTF_PRIV]
+  policy: []
+
+
+task:
+
+
+- title: NearbyInfantReact
+  unit: AlertConsumer
+  config:
+    iter_max: 1000000
+    supplier:
+      unit: ZiAlertSupplier
+      config:
+        deserialize: null
+        loader:
+          unit: ZTFArchiveAlertLoader
+          config:
+            archive: https://ampel.zeuthen.desy.de/api/ztf/archive/v3
+            stream: oDjuNxdM5ijIdZRvSblCozTNlurniSRIcalnjKlE93U
+    shaper: ZiDataPointShaper
+    directives:
+    - channel: NIRtest
+      filter:
+        config:
+          gaia_excessnoise_sig_max: 999
+          gaia_plx_signif: 3
+          gaia_pm_signif: 3
+          gaia_rs: 20
+          gaia_veto_gmag_max: 20
+          gaia_veto_gmag_min: 9
+          min_ndet: 1
+          min_tspan: -99
+          max_tspan: 1
+          min_archive_tspan: -99
+          max_archive_tspan: 100
+          min_drb: 0.995
+          min_gal_lat: 14
+          min_rb: 0.3
+          min_sso_dist: 20
+          ps1_confusion_rad: 3
+          ps1_confusion_sg_tol: 0.1
+          ps1_sgveto_rad: 1
+          ps1_sgveto_th: 0.8
+          max_fwhm: 5.5
+          max_elong: 2
+          max_magdiff: 1
+          max_nbad: 2
+        on_stock_match: bypass
+        unit: DecentFilter
+      ingest:
+        mux:
+          combine:
+          - state_t2:
+            - config:
+                max_age: 10000
+                maglim_maxago: 10000
+                det_filterids:
+                - 1
+                - 2
+                t2_dependency:
+                - config: &catalog_match_config
+                    catalogs:
+                      GLADEv23:
+                        keys_to_append:
+                        - z
+                        - dist
+                        - dist_err
+                        - flag1
+                        - flag2
+                        - flag3
+                        rs_arcsec: 10
+                        use: extcats
+                      NEDz_extcats:
+                        keys_to_append:
+                        - ObjType
+                        - Velocity
+                        - z
+                        rs_arcsec: 30.0
+                        use: extcats
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2CatalogMatch
+              unit: T2InfantCatalogEval
+            unit: ZiT1Combiner
+          insert:
+            point_t2:
+            - config: *catalog_match_config
+              ingest:
+                filter: PPSFilter
+                select: first
+                sort: jd
+              unit: T2CatalogMatch
+          unit: ZiMongoMuxer
+
+- title: Run T2s
+  unit: T2Worker
+  config:
+    send_beacon: false
+    raise_exc: true
+
+
+
+- title: React
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3ReviewUnitExecutor
+        config:
+          supply:
+            unit: T3DefaultBufferSupplier
+            config:
+              select:
+                unit: T3FilteringStockSelector
+                config:
+                  channel: NIRtest
+                  t2_filter:
+                    unit: T2InfantCatalogEval
+                    match:
+                      action: true
+
+              load:
+                unit: T3SimpleDataLoader
+                config:
+                  directives:
+                    - STOCK
+                    - T2
+                  channel: NIRtest
+          stage:
+            unit: T3SimpleStager
+            config:
+              execute:
+                - unit: RapidBase
+                  config:
+                    do_react: false
+                    do_testreact: true
+                    slack_token:
+                      label: slack/ztf_general/jno
+                    t2info_from:
+                    - T2InfantCatalogEval
