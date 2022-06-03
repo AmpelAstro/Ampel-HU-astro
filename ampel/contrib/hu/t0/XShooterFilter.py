@@ -31,8 +31,9 @@ class XShooterFilter(DecentFilter):
 
     def post_init(self):
         super().post_init()
-        self.keys_to_check += ("jd",)
-        self.select_upper_limits = [{'attribute': 'magpsf', 'operator': 'is', 'value': None}]
+        #self.keys_to_check += ("jd",)
+        # Is none not working, now doing this manually
+        #self.select_upper_limits = [{'attribute': 'magpsf', 'operator': 'is', 'value': None}]
         self.select_photopoints = [{'attribute': 'magpsf', 'operator': 'is not', 'value': None}]
 
     # Override
@@ -90,7 +91,8 @@ class XShooterFilter(DecentFilter):
             return None
 
         # check on the history 2: at least one upper limit in the last 5 days
-        ulim_jds = alert.get_values("jd", filters=self.select_upper_limits)
+        # old version to look for upper limits not working...
+        ulim_jds = [el['jd'] for el in alert.datapoints if el.get("candid") is  None]
         if ulim_jds is None:
             self.logger.debug("Rejected: this alert has no upper limits")
             return None
