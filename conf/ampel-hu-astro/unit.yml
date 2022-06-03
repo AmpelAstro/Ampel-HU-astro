@@ -17,6 +17,7 @@
 - ampel.contrib.hu.t2.T2RunPossis
 - ampel.contrib.hu.t2.T2RunTDE
 - ampel.contrib.hu.t2.T2RunParsnip
+- ampel.contrib.hu.t2.T2RunSnoopy
 - ampel.contrib.hu.t2.T2MatchBTS
 - ampel.contrib.hu.t2.T2NedTap
 - ampel.contrib.hu.t2.T2NedSNCosmo
