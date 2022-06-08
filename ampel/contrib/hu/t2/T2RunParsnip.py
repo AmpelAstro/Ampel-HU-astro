@@ -318,9 +318,11 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
 
         # If redshift should be fitted, we start with getting samples
         if z_source == 'Fitted':
-            sys.exit('Parsnip redshift fit depracated??, use list of fixed_z.')
-            #z, z_probabilities = self.model.predict_redshift_distribution(
-            #                    sncosmo_table, max_redshift=self.max_fit_z)
+            if not hasattr(self.model, 'predict_redshift_distribution'):
+                self.logger.warn("Redshift fitting is not supported in that version of parsnip")
+                return t2_output
+            z, z_probabilities = self.model.predict_redshift_distribution(
+                                sncosmo_table, max_redshift=self.max_fit_z)
 
         # Create a list of lightcurves, each at a discrete redshift
         lcs = []
