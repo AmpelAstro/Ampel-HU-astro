@@ -22,11 +22,18 @@ from ampel.contrib.hu.t3.ElasticcTomClient import ElasticcTomClient
 
 # Tying classification output classes with ELAsTICC taxonomy classes
 parsnip_taxonomy = {
-    'SLSN':  131120,
-    'SNII':  311120,
-    'SNIa':  111120,
-    'SNIbc':  211120,
-    'TDE':  231120,
+    # Correct Elasticc outputs but they changed?
+    # https://github.com/plasticc/taxonomy/blob/main/taxonomy.ipynb ?
+    'SLSN':  131,
+    'SNII':  113,
+    'SNIa':  111,
+    'SNIbc': 112,
+    'TDE':  132,
+    # Added for compatibility with old parsnip models
+    'KN': 121,
+    'SLSN-I': 131,
+    'SNIa-91bg': 115,
+    'SNIax': 114,
     }
 
 class ElasticcClassPublisher(AbsT3ReviewUnit):

@@ -377,7 +377,11 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
 
         # Plot
         if self.plot_suffix and self.plot_dir:
-            tname = ZTFIdMapper.to_ext_id(light_curve.stock_id)
+
+            # How to construct name?
+            tname = compound.get('stock')
+            # Need plotting tools to define id mapper
+            #tname = ZTFIdMapper.to_ext_id(light_curve.stock_id)
 
             fig = plt.figure()
             ax = plt.gca()
