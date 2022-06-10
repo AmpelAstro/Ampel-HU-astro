@@ -1,0 +1,97 @@
+name: elasticc-train
+
+mongo:
+  prefix: TrainElasticc
+
+channel:
+- name: Test
+  access: []
+  policy: []
+  version: 1
+
+task:
+- title: LSST-T0
+  unit: AlertConsumer
+  config:
+    iter_max: 200
+    compiler_opts: LSSTCompilerOptions
+    supplier:
+      unit: ElasticcAlertSupplier
+      config:
+        loader:
+          unit: ElasticcTrainingsetLoader
+          config:
+            file_path: /home/jnordin/data/elasticc/full_elasticc_train/ELASTICC_TRAIN_SNIa-SALT2/ELASTICC_TRAIN_NONIaMODEL0-0001
+    shaper: LSSTDataPointShaper
+    directives:
+    - channel: Test
+      ingest:
+          stock_t2:
+          - unit: T2GetAlertJournal
+          mux:
+            unit: LSSTMongoMuxer
+            insert:
+              point_t2:
+              - unit: T2ElasticcRedshiftSampler
+                ingest:
+                  filter: LSSTObjFilter
+                  select: last
+                  sort: diaObjectId
+              - unit: T2GetAlertId
+                config:
+                  t2_dependency:
+                  - unit: T2GetAlertJournal
+            combine:
+            - unit: T1SimpleCombiner
+              state_t2:
+              - unit: T2RunParsnip
+                config:
+                  max_ampelz_group: 7
+                  redshift_kind: T2ElasticcRedshiftSampler
+                  parsnip_model: "elasticc/models/parsnip_plasticc.pt"
+                  parsnip_classifier: "elasticc/classifier/plasticc-train-aug-100.pk"
+                  t2_dependency:
+                  - unit: T2ElasticcRedshiftSampler
+                  tabulator:
+                    - unit: LSSTT2Tabulator
+
+- title: t2
+  unit: T2Worker
+  config:
+    channel: Test
+
+
+- title: SendClass
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3ReviewUnitExecutor
+        config:
+          supply:
+            unit: T3DefaultBufferSupplier
+            config:
+              select:
+                unit: T3StockSelector
+                config:
+                  channel: Test
+              load:
+                unit: T3SimpleDataLoader
+                config:
+                  directives:
+                    - STOCK
+                    - T1
+                    - T2
+                  channel: Test
+          stage:
+            unit: T3SimpleStager
+            config:
+              execute:
+                - unit: ElasticcClassPublisher
+                  config:
+                    desc_user:
+                      label: desc/user
+                    desc_password:
+                      label: desc/password
+                    t2classifiers:
+                      - T2RunParsnip
