@@ -186,7 +186,6 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
             state_alert = self.search_journal_elasticc(tran_view)
 
             for t1_link, alertinfo in state_alert.items():
-                print('looping states', t1_link, alertinfo)
                 if alertinfo['submitted']:
                     self.logger.info('submitted', extra={'t1':t1_link})
                     continue
@@ -248,7 +247,7 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
                 for cname, clist in classifications.items():
                     class_report['classifications'].extend(clist)
 
-                print('classification report', class_report)
+                self.logger.debug('', extra={'classification_report': class_report})
 
                 # use the ElasticcTomClient
                 desc_response = self.tomclient.tom_post(class_report)
