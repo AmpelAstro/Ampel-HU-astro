@@ -7,7 +7,7 @@
 # Last Modified Date: 12.04.2022
 # Last Modified By  : jnordin@physik.hu-berlin.de
 
-from typing import Sequence, Union
+from typing import Sequence, Union, Literal
 #import errno, os, re, backoff, copy, sys
 #import math
 #from scipy.stats import chi2
@@ -40,6 +40,7 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
     According to information late May (Kessler), uncertainties will likely
     be normal, meaning that there will be no additional information in the
     quantiles. But they _might_ change this.
+    Update from Rob June 10th: They will _likely_ change this.
 
     Note 2:
     Elasticc training lightcurves do not seem to consistently have any photo-z
@@ -56,6 +57,11 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
     Host galaxy properties (mass, sfr) also provided. We could use this to also
     provide constraints on the potential types. This can be saved into the T2Doc
     and considered in the T3.
+
+    Update June 14:
+    From ghost https://iopscience.iop.org/article/10.3847/1538-4357/abd02b/pdf
+    we take it that the first order solution is to take the galaxy with the smallest
+    DDLR.
 
 
     Note 4:
@@ -77,6 +83,11 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
     # Usually would be the case, but for testing we might not want to
     use_final_z: bool = True
 
+    # Can potentially have different metrics for how to choose host galaxy.
+    # (could even involve spanning the joint redshifts according to location prob)
+    # minDDLR: Select the host with smallest DDLR
+    host_selection: Literal['minDDLR'] = 'minDDLR'
+
 
     def get_hostprob(self, hostinfo: dict) -> (float, float):
         """
@@ -93,9 +104,19 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
             return (0.0, 0.0)
         elif hostinfo['HOSTGAL_PHOTOZ']>0 and hostinfo['HOSTGAL2_PHOTOZ']>0:
             # Here we actually need to evaluate the relative probabilities
+            if self.host_selection=='minDDLR':
+                self.logger.info('minDDLR selection', extra={
+                            'hostgal_ddlr':hostinfo['HOSTGAL_DDLR'],
+                            'hostgal2_ddlr':hostinfo['HOSTGAL2_DDLR']})
+                if hostinfo['HOSTGAL_DDLR'] < hostinfo['HOSTGAL2_DDLR']:
+                    return (1.0, 0.0)
+                else:
+                    return (0.0, 1.0)
+
+
             self.logger.info('Two potential hosts')
             print(hostinfo)
-            sys.exit('does this exist in test data? this is where we fig out what to do')
+            sys.exit('should not exist')
             return (0.0, 0.0)
 
         raise DataError('This combination of host data should not exist: {}'.format(hostinfo))
