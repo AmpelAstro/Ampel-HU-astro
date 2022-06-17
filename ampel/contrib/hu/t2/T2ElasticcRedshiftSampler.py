@@ -12,7 +12,7 @@ from typing import Sequence, Union, Literal
 #import math
 #from scipy.stats import chi2
 #import gc
-#import numpy as np
+import numpy as np
 #from astropy.table import Table
 #import matplotlib.pyplot as plt
 
@@ -29,6 +29,31 @@ from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 #from ampel.model.StateT2Dependency import StateT2Dependency
 #from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper
 
+
+# Quantile subselections and weights
+# Dictionaries of redhift weights together with the accompaning quantile entries.
+QUANT_WEIGHTS = {
+    3: [
+        {'w':0.2, 'q': ['000', '010', '020', '030', '040']},
+        {'w':0.6, 'q': ['030', '040', '050', '060', '070']},  # Will always be 050?
+        {'w':0.2, 'q': ['060', '070', '080', '090', '100']},
+        ],
+    5: [
+        {'w':0.2, 'q': ['000', '010', '020']},
+        {'w':0.2, 'q': ['020', '030', '040']},
+        {'w':0.2, 'q': ['060', '070', '080']},
+        {'w':0.2, 'q': ['040', '050', '060']},
+        {'w':0.2, 'q': ['080', '090', '100']},
+        ]
+    }
+
+# For the gaussian case, which sigma deviations should be used for
+# each number of samples?
+NORM_SIGMAS = {
+    1: [0],
+    3: [-1.5,0,1.5],
+    5: [-2.,-1.,0,1.,2.],
+}
 
 class T2ElasticcRedshiftSampler(AbsPointT2Unit):
     """
@@ -63,16 +88,20 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
     we take it that the first order solution is to take the galaxy with the smallest
     DDLR.
 
-
     Note 4:
     The default setting for normal error distribution will be to use
     [-1.5 sig, 0, 1.5 sig] with relative weights [0.19684199, 0.60631602, 0.19684199]
 
+
+    Note 5:
+    Rewrite based on the (lack of) fields in the test alert.
+
     """
 
-    # How many redshifts to return (up to some maximum)
-    # (prop not all values allowed)
-    max_zs: int = 3
+    # How many redshifts samples to return ?
+    # Implemented are 1,3 or 5. Would be traightforward to extend to 11
+    # based on elasticc quantiles, but that seems excessive.
+    nbr_samples: int = 3
 
     # Default redshifts and weights - in particular used for hostless events
     # Values set semi-randomly now.
@@ -81,45 +110,47 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
 
     # Check for final/spectroscopic redshifts, and use if present
     # Usually would be the case, but for testing we might not want to
-    use_final_z: bool = True
+    use_final_z: bool = False
 
     # Can potentially have different metrics for how to choose host galaxy.
     # (could even involve spanning the joint redshifts according to location prob)
     # minDDLR: Select the host with smallest DDLR
-    host_selection: Literal['minDDLR'] = 'minDDLR'
+    #host_selection: Literal['minDDLR'] = 'minDDLR'
 
 
     def get_hostprob(self, hostinfo: dict) -> (float, float):
         """
         Use the information from the alert info to guess relative prob
         for the two different host galaxies.
+
+        To calculate delta/DLR one would need, except SN and galaxy position,
+        some estimate on size, orientation and ellipticity (e.g. moments).
+        As these are not contained in the latest test alerts we will for know
+        choose the host with the smallest separation / radius.
+
         """
 
-        if hostinfo['HOSTGAL_PHOTOZ']>0 and hostinfo['HOSTGAL2_PHOTOZ']<0:
+        if hostinfo['hostgal_snsep']>0 and hostinfo['hostgal2_snsep']<0:
             # The easy case, only have first galaxy
             return (1.0, 0.0)
-        elif hostinfo['HOSTGAL_PHOTOZ']<0 and hostinfo['HOSTGAL2_PHOTOZ']<0:
+        elif hostinfo['hostgal_snsep']<0 and hostinfo['hostgal2_snsep']<0:
             # "Hostless" - if these exist
             self.logger.info('Hostless')
             return (0.0, 0.0)
-        elif hostinfo['HOSTGAL_PHOTOZ']>0 and hostinfo['HOSTGAL2_PHOTOZ']>0:
-            # Here we actually need to evaluate the relative probabilities
-            if self.host_selection=='minDDLR':
-                self.logger.info('minDDLR selection', extra={
-                            'hostgal_ddlr':hostinfo['HOSTGAL_DDLR'],
-                            'hostgal2_ddlr':hostinfo['HOSTGAL2_DDLR']})
-                if hostinfo['HOSTGAL_DDLR'] < hostinfo['HOSTGAL2_DDLR']:
-                    return (1.0, 0.0)
-                else:
-                    return (0.0, 1.0)
 
+        # Does sqradius mean what I believe?
+        hostgal_sigsep = hostinfo['hostgal_snsep'] / np.sqrt(hostinfo['hostgal_sqradius'])
+        hostgal2_sigsep = hostinfo['hostgal2_snsep'] / np.sqrt(hostinfo['hostgal2_sqradius'])
+        self.logger.info('hostselect', extra={'hostgal_sigsep':hostgal_sigsep,
+                                              'hostgal2_sigsep':hostgal2_sigsep})
 
-            self.logger.info('Two potential hosts')
-            print(hostinfo)
-            sys.exit('should not exist')
-            return (0.0, 0.0)
+        # In principle one could calculate relative weights based on this sigma
+        # distances, but skipping for now.
+        if hostgal_sigsep<hostgal2_sigsep:
+            return (1.0, 0.)
+        else:
+            return (0.0, 1.0)
 
-        raise DataError('This combination of host data should not exist: {}'.format(hostinfo))
 
 
 
@@ -155,38 +186,65 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
 
         # Final (simulated) data available and used?
         if self.use_final_z:
-            if dp.get('REDSHIFT_HELIO',-1)>0:
-                z, dz, zsource = dp.get('REDSHIFT_HELIO'), dp.get('REDSHIFT_HELIO_ERR'), 'REDSHIFT_HELIO'
-            elif dp.get('REDSHIFT_FINAL',-1)>0:
-                z, dz, zsource = dp.get('REDSHIFT_FINAL'), dp.get('REDSHIFT_FINAL_ERR'), 'REDSHIFT_FINAL'
+            if dp.get('redshift_helio',-1)>0:
+                z, dz, zsource = dp.get('redshift_helio'), dp.get('redshift_helio_err'), 'REDSHIFT_HELIO'
+            elif dp.get('z_final',-1)>0:
+                z, dz, zsource = dp.get('z_final'), dp.get('z_final_err'), 'Z_FINAL'
 
         # Both sources need to be weighted together
         if zsource is None and probH1>0 and probH2>0:
             raise NotImplementedError
 
-        if zsource is None and probH1>0:
-            # Use data for first host, spec if available
-            if dp.get('HOSTGAL_SPECZ',-1)>0:
-                z, dz, zsource = dp.get('HOSTGAL_SPECZ'), dp.get('HOSTGAL_SPECZ_ERR'), 'HOSTGAL_SPECZ'
-            else:
-                z, dz, zsource = dp.get('HOSTGAL_PHOTOZ'), dp.get('HOSTGAL_PHOTOZ_ERR'), 'HOSTGAL_PHOTOZ'
+        # Get spectroscopiy host redshift if available
+        if zsource is None and probH1>0 and dp.get('hostgal_zspec',-1)>0:
+            z, dz, zsource = dp.get('hostgal_zspec'), dp.get('hostgal_zspec_err'), 'HOSTGAL_ZSPEC'
+        if zsource is None and probH2>0 and dp.get('hostgal2_zspec',-1)>0:
+            z, dz, zsource = dp.get('hostgal2_zspec'), dp.get('hostgal2_zspec_err'), 'HOSTGAL2_ZSPEC'
 
-        # TODO: Retrieve the weighted host galaxy properties and add to t2output
-
+        # Finish up gaussian case
         if zsource is not None:
-            # Finish up gaussian case
-            t2_output: dict[str, UBson] = {"z_source": zsource,
-		                                  "z_samples": [z-1.5*dz, z, z+1.5*dz],
-                                          "z_weights": [0.19684199, 0.60631602, 0.19684199],
-                                          }
+            t2_output= {"z_source": zsource}
+            # Calculate weights
+            pulls = NORM_SIGMAS[self.nbr_samples]
+            weights = np.exp(-0.5 * np.array(pulls)**2) / np.sqrt(2)
+            weights /= np.sum(weights)
+            t2_output["z_weights"] = list(weights)
+            t2_output["z_samples"] = [ z + p*dz for p in pulls]
+
             return t2_output
 
+        # Extract values from photo-z quantiles
+        # (assuming these always exist)
         # Final cases should be the hostless (default)
         if probH1>0 or probH2>0:
-            raise DataError('Unexpected host prob from  {}'.format(dp))
+
+            t2_output, prefix = {}, None
+            if probH1>0:
+                t2_output["z_source"] = 'HOSTGAL_ZQUANT'
+                prefix = 'hostgal_zphot_q'
+            elif probH2>0:
+                t2_output["z_source"] = 'HOSTGAL2_ZQUANT'
+                prefix = 'hostgal2_zphot_q'
+
+            # Get some redshifts
+            if self.nbr_samples==1:
+                t2_output["z_samples"] = [z_quant.get(50)]
+                t2_output["z_weights"] = [1.0]
+            if self.nbr_samples==3 or self.nbr_samples==5:
+                t2_output["z_samples"], t2_output["z_weights"] = [], []
+                for weight_quantiles in QUANT_WEIGHTS[self.nbr_samples]:
+                    weight = weight_quantiles['w']
+                    quantiles = weight_quantiles['q']
+                    t2_output["z_samples"].append( np.mean( [dp.get(prefix+q)
+                                for q in quantiles if dp.get(prefix+q,-9)>-9] ) ) # -9 seems to be null
+                    t2_output["z_weights"].append(weight)
 
 
-        # Initialize output dict for defult/hostless SNe
+            return t2_output
+
+
+
+        # Only left with output dict for defult/hostless SNe
         t2_output: dict[str, UBson] = {"z_source": "default",
 		                              "z_samples": self.default_zs,
                                       "z_weights": self.default_weights,
