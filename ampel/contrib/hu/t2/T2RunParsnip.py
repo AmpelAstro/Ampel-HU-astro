@@ -15,7 +15,8 @@ import gc
 import numpy as np
 from astropy.table import Table
 import matplotlib.pyplot as plt
-
+import requests
+import timeout_decorator
 
 from ampel.types import UBson
 from ampel.struct.UnitResult import UnitResult
@@ -135,7 +136,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         """
 
         # Load model and classifier
-        self.model = parsnip.load_model(self.parsnip_model)
+        self.model = parsnip.load_model(self.parsnip_model, threads=1)
         self.classifier = None
         if self.parsnip_classifier:
             self.classifier = parsnip.Classifier.load(self.parsnip_classifier)
@@ -248,6 +249,30 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
 
         return phot_tab
 
+    @backoff.on_exception(
+        backoff.constant,
+        timeout_decorator.timeout_decorator.TimeoutError,
+        max_tries=3,
+    )
+    @timeout_decorator.timeout(5, use_signals=True)
+    def _classify_parsnip(self, predictions):
+        """
+        Carry out the parsnip classification.
+        """
+
+        return self.classifier.classify(predictions)
+
+    @backoff.on_exception(
+        backoff.constant,
+        timeout_decorator.timeout_decorator.TimeoutError,
+        max_tries=3,
+    )
+    @timeout_decorator.timeout(5, use_signals=True)
+    def _predict_parsnip(self, dataset):
+        """
+        Carry out the parsnip predictions.
+        """
+        return self.model.predict_dataset(dataset)
 
     # ==================== #
     # AMPEL T2 MANDATORY   #
@@ -295,6 +320,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         sncosmo_table = self.get_flux_table( datapoints, t2_output['jdstart'], t2_output['jdend'] )
         self.logger.debug('Sncosmo table {}'.format(sncosmo_table))
 
+
         # Potentially correct for dust absorption
         if self.apply_mwcorrection:
             # Get ebv from coordiantes.
@@ -333,9 +359,8 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             lcs.append(use_lc)
         lc_dataset = lcdata.from_light_curves(lcs)
 
-        # Peform actual model predictions and classifications
-        lc_predictions = self.model.predict_dataset(lc_dataset)
-        lc_classifications = self.classifier.classify(lc_predictions)
+        lc_predictions = self._predict_parsnip(lc_dataset)
+        lc_classifications = self._classify_parsnip(lc_predictions)
 
 
         # Cast result for storage and look at relative probabilities
@@ -347,8 +372,12 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                                         if k in dcast_pred and v is not None
 								        else float(v) for k, v in foo.items()}
             # Not sure whether the dof could change? Normalizing now
-            t2_output["predictions"][str(redshift)]['chi2pdf'] = chi2.pdf(
-                                        foo['model_chisq']/foo['model_dof'], 1)
+            if foo['model_dof']>0:
+                t2_output["predictions"][str(redshift)]['chi2pdf'] = chi2.pdf(
+                                        foo['model_chisq'], foo['model_dof'] )
+            else:
+                # Not enough data - earlier check?
+                t2_output["predictions"][str(redshift)]['chi2pdf'] = 0.
             foo = dict(lc_classifications[i][lc_classifications.colnames[1:]])
             t2_output["classifications"][str(redshift)] = {k: dcast_class[k](v)
 		                                  if k in dcast_class and v is not None
@@ -362,18 +391,24 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         # Now we could normalize these z prob and normalize types over redshifts
         z_probabilities = np.array( [lcfit['chi2pdf']
                     for redshift, lcfit in t2_output["predictions"].items()] )
-        # Take redshift probabilities into account, if available
-        if z_weights is not None:
-            z_probabilities *= z_weights
-        integrated_probabilities = z_probabilities.dot(probabilities)
-        integrated_probabilities /= np.sum(integrated_probabilities)
-        t2_output["marginal_lc_classifications"] = dict(zip(types, integrated_probabilities))
-        # Find the best redshifts
-        t2_output["z_at_minchi"] = z[np.argmax(z_probabilities)]
-        # Map these to singular value predictions/lc_classifications
-        # (wastes DB space, but possible to filter based on)
-        t2_output["prediction"] = t2_output["predictions"][str(t2_output["z_at_minchi"])]
-        t2_output["classification"] = t2_output["classifications"][str(t2_output["z_at_minchi"])]
+
+        if np.sum(z_probabilities)>0:
+            # Take redshift probabilities into account, if available
+            if z_weights is not None:
+                z_probabilities *= z_weights
+            integrated_probabilities = z_probabilities.dot(probabilities)
+            integrated_probabilities /= np.sum(integrated_probabilities)
+            t2_output["marginal_lc_classifications"] = dict(zip(types, integrated_probabilities))
+            # Find the best redshifts
+            t2_output["z_at_minchi"] = z[np.argmax(z_probabilities)]
+            # Map these to singular value predictions/lc_classifications
+            # (wastes DB space, but possible to filter based on)
+            t2_output["prediction"] = t2_output["predictions"][str(t2_output["z_at_minchi"])]
+            t2_output["classification"] = t2_output["classifications"][str(t2_output["z_at_minchi"])]
+        else:
+            # Not enough data for a chi2 estimate
+            t2_output["Failed"] = 'NoDOF'
+            return t2_output
 
         # Plot
         if self.plot_suffix and self.plot_dir:
