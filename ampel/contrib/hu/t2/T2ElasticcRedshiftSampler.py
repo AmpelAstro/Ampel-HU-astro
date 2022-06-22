@@ -130,26 +130,34 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
 
         """
 
+        # Does sqradius mean what I believe?
+        if hostinfo['hostgal_sqradius']>0:
+            hostgal_sigsep = hostinfo['hostgal_snsep'] / np.sqrt(hostinfo['hostgal_sqradius'])
+        else:
+            hostgal_sigsep = -99.
+        if hostinfo['hostgal2_sqradius']>0:
+            hostgal2_sigsep = hostinfo['hostgal2_snsep'] / np.sqrt(hostinfo['hostgal2_sqradius'])
+        else:
+            hostgal2_sigsep = -99.
+        self.logger.info('hostselect', extra={'hostgal_sigsep':hostgal_sigsep,
+                                              'hostgal2_sigsep':hostgal2_sigsep})
+
+
         if hostinfo['hostgal_snsep']>0 and hostinfo['hostgal2_snsep']<0:
             # The easy case, only have first galaxy
-            return (1.0, 0.0)
+            return (1.0, 0.0, hostinfo['hostgal_snsep'])
         elif hostinfo['hostgal_snsep']<0 and hostinfo['hostgal2_snsep']<0:
             # "Hostless" - if these exist
             self.logger.info('Hostless')
-            return (0.0, 0.0)
+            return (0.0, 0.0, -99.)
 
-        # Does sqradius mean what I believe?
-        hostgal_sigsep = hostinfo['hostgal_snsep'] / np.sqrt(hostinfo['hostgal_sqradius'])
-        hostgal2_sigsep = hostinfo['hostgal2_snsep'] / np.sqrt(hostinfo['hostgal2_sqradius'])
-        self.logger.info('hostselect', extra={'hostgal_sigsep':hostgal_sigsep,
-                                              'hostgal2_sigsep':hostgal2_sigsep})
 
         # In principle one could calculate relative weights based on this sigma
         # distances, but skipping for now.
         if hostgal_sigsep<hostgal2_sigsep:
-            return (1.0, 0.)
+            return (1.0, 0., hostinfo['hostgal_snsep'])
         else:
-            return (0.0, 1.0)
+            return (0.0, 1.0, hostinfo['hostgal2_snsep'])
 
 
 
@@ -179,7 +187,7 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
         # to make sure that we here get the diaSource object.
 
         # Guess at relative host galaxy probabilities
-        (probH1, probH2) = self.get_hostprob(dp)
+        (probH1, probH2, host_sep) = self.get_hostprob(dp)
 
         # Depending on the above relative probabilities, choose which redshifts
         z, dz, zsource = 0.0, 0.0, None
@@ -203,7 +211,7 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
 
         # Finish up gaussian case
         if zsource is not None:
-            t2_output= {"z_source": zsource}
+            t2_output= {"z_source": zsource, "host_sep": host_sep}
             # Calculate weights
             pulls = NORM_SIGMAS[self.nbr_samples]
             weights = np.exp(-0.5 * np.array(pulls)**2) / np.sqrt(2)
@@ -218,7 +226,7 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
         # Final cases should be the hostless (default)
         if probH1>0 or probH2>0:
 
-            t2_output, prefix = {}, None
+            t2_output, prefix = {"host_sep":host_sep}, None
             if probH1>0:
                 t2_output["z_source"] = 'HOSTGAL_ZQUANT'
                 prefix = 'hostgal_zphot_q'
