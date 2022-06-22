@@ -164,6 +164,9 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
         # Have already verified this to have completed.
         t2body = t2view.body[-1]
 
+        # Check if Parsnip ran but not produce classification
+        if not 'classification' in t2body:
+            return []
 
         return [ {
                 'classifierName': 'Parsnip',
