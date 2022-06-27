@@ -11,6 +11,21 @@ channel:
 
 task:
 - title: LSST-T0
+  inputs:
+    artifacts:
+      - name: metadata
+        path: ELASTICC/TRAINING_SAMPLES/ELASTICC_TRAIN_SNIa-SALT2/ELASTICC_TRAIN_NONIaMODEL0-{{ item }}_HEAD.FITS.gz
+        http:
+          url: https://portal.nersc.gov/cfs/lsst/DESC_TD_PUBLIC/ELASTICC/TRAINING_SAMPLES/ELASTICC_TRAIN_SNIa-SALT2/ELASTICC_TRAIN_NONIaMODEL0-{{ item }}_HEAD.FITS.gz
+      - name: photometry
+        path: ELASTICC/TRAINING_SAMPLES/ELASTICC_TRAIN_SNIa-SALT2/ELASTICC_TRAIN_NONIaMODEL0-{{ item }}_PHOT.FITS.gz
+        http:
+          url: https://portal.nersc.gov/cfs/lsst/DESC_TD_PUBLIC/ELASTICC/TRAINING_SAMPLES/ELASTICC_TRAIN_SNIa-SALT2/ELASTICC_TRAIN_NONIaMODEL0-{{ item }}_PHOT.FITS.gz
+  expand_with:
+    sequence:
+      start: 1
+      count: 1
+      format: "%04i"
   unit: AlertConsumer
   config:
     iter_max: 200
@@ -21,7 +36,7 @@ task:
         loader:
           unit: ElasticcTrainingsetLoader
           config:
-            file_path: /home/jnordin/data/elasticc/full_elasticc_train/ELASTICC_TRAIN_SNIa-SALT2/ELASTICC_TRAIN_NONIaMODEL0-0001
+            file_path: ELASTICC/TRAINING_SAMPLES/ELASTICC_TRAIN_SNIa-SALT2/ELASTICC_TRAIN_NONIaMODEL0-{{ item }}
     shaper: LSSTDataPointShaper
     directives:
     - channel: Test
