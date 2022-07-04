@@ -228,16 +228,16 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
 
         # Get the max time of obs in signifant bands prior to jd_det
         if flux_table[band_mask]['time'].min()<o['jd_det']:
-            o["t_predetect"] = flux_table[band_mask][
+            o["t_predetect"] = o['jd_det'] - flux_table[band_mask][
                     flux_table['time'][band_mask]<o["jd_det"] ]['time'].max()
         else:
             o["t_predetect"] = None
 
         o["mag_det"] = float( getMag(flux_table[flux_table['time']==o["jd_det"]]) )
-        o["band_det"] = flux_table[flux_table['time']==o["jd_det"]]['band'][0]
+        o["band_det_id"] = getBandBits( [flux_table[flux_table['time']==o["jd_det"]]['band'][0]] )
 
         o["mag_last"] = float( getMag(flux_table[flux_table['time']==o["jd_last"]]) )
-        o["band_last"] = flux_table[flux_table['time']==o["jd_last"]]['band'][0]
+        o["band_last_id"] = getBandBits( [flux_table[flux_table['time']==o["jd_last"]]['band'][0]] )
 
         o["t_lc"] = o["jd_last"] - o["jd_det"]
 
