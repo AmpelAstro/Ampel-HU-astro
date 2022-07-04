@@ -105,8 +105,8 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
 
     # Default redshifts and weights - in particular used for hostless events
     # Values set semi-randomly now.
-    default_zs: Sequence[float] = [0.2, 0.4, 0.6, 1]
-    default_weights: Sequence[float] = [0.2, 0.3, 0.3, 0.2]
+    default_zs: Sequence[float] = [0.01, 0.2, 0.5, 0.8]
+    default_weights: Sequence[float] = [0.4, 0.2, 0.2, 0.2]
 
     # Check for final/spectroscopic redshifts, and use if present
     # Usually would be the case, but for testing we might not want to
@@ -139,7 +139,7 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
             hostgal2_sigsep = hostinfo['hostgal2_snsep'] / np.sqrt(hostinfo['hostgal2_sqradius'])
         else:
             hostgal2_sigsep = -99.
-        self.logger.info('hostselect', extra={'hostgal_sigsep':hostgal_sigsep,
+        self.logger.debug('hostselect', extra={'hostgal_sigsep':hostgal_sigsep,
                                               'hostgal2_sigsep':hostgal2_sigsep})
 
 
@@ -148,7 +148,7 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
             return (1.0, 0.0, hostinfo['hostgal_snsep'])
         elif hostinfo['hostgal_snsep']<0 and hostinfo['hostgal2_snsep']<0:
             # "Hostless" - if these exist
-            self.logger.info('Hostless')
+            self.logger.debug('Hostless')
             return (0.0, 0.0, -99.)
 
 
