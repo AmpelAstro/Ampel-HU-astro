@@ -27,13 +27,20 @@ parsnip_taxonomy = {
     'SLSN':  131,
     'SNII':  113,
     'SNIa':  111,
+    'SNibc': 112,
     'SNIbc': 112,
     'TDE':  132,
-    # Added for compatibility with old parsnip models
+    'CART': 134,
+    'ILOT': 133,
+    'Mdwarf-flare': 122,
+    'PISN': 135,
     'KN': 121,
     'SLSN-I': 131,
-    'SNIa-91bg': 115,
+    'SNIa91bg': 115,
     'SNIax': 114,
+    'dwarf-nova': 123,
+    # mssing
+    # 'uLens': 124,
     }
 
 class ElasticcClassPublisher(AbsT3ReviewUnit):
@@ -131,8 +138,11 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
             for entry in jentries:
                 state_map[entry['link']] = {
                     'alertId': entry['alert'],
+                    # Is this guaranteed the same as alertId ?
+                    # Otherwise we will have to parse t0/t1 collection?
                     'diaSourceId': 666,
                     'brokerIngestTimestamp': entry['ts'],
+                    # Where is this?
                     'elasticcPublishTimestamp': 666 }
                 if entry['link'] in done_t1states:
                     state_map[entry['link']]['submitted'] = True
@@ -168,12 +178,58 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
         if not 'classification' in t2body:
             return []
 
+
         return [ {
                 'classifierName': 'Parsnip',
                 'classifierParams':str(t2view.config),
                 'classId': parsnip_taxonomy[parsnip_type],
                 'probability': prob,
                 } for parsnip_type, prob in t2body['classification'].items() ]
+
+
+    def _get_xgb_classification(self, t2view: TransientView) -> Dict:
+        """
+        Parse a T2Document from T2XgbClassifier and produce a ClassificationDict
+        as expected by ELAsTICC.
+
+        Returns a list of dicts with the following structure:
+        {
+            'classifierName': 'SNguess',
+            'classifierParams':str(config),
+            'classId': parsnip_taxonomy[parsnip_type],
+            'probability': probability,
+        }
+
+
+        """
+
+        # Have already verified this to have completed.
+        t2body = t2view.body[-1]
+
+
+        # Check if Parsnip ran but not produce classification
+        if not 'prob0' in t2body:
+            return []
+
+        if t2body['model'] == 'xgboost_elasticc1v2_':
+            classout = []
+            classout.append(
+                {
+                        'classifierName': 'SNguess',
+                        'classifierParams':str(t2view.config),
+                        'classId': 1,
+                        'probability': t2body['prob0'],
+                }  )
+            classout.append(
+                {
+                        'classifierName': 'SNguess',
+                        'classifierParams':str(t2view.config),
+                        'classId': 2,
+                        'probability': 1.-t2body['prob0'],
+                }  )
+            return classout
+        else:
+            sys.exit('do not understand model', t2body)
 
 
     def process(self, gen: Generator[TransientView, T3Send, None], t3s: T3Store) -> None:
@@ -229,12 +285,59 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
                         elif t2view.code == 0:
                             if t2unit=='T2RunParsnip':
                                 classifications['parsnip'] = self._get_parsnip_classification(t2view)
+                            if t2unit=='T2XgbClassifier':
+                                classifications['snguess'] = self._get_xgb_classification(t2view)
                             # Add the others... Rapid, TDE?, ...
 
                 # Did we find all?
                 if len(classifications)!=len(self.t2classifiers):
                     self.logger.info('Not all classifiers done', extra={'t1':t1_link})
                     continue
+
+
+                # Lets try to merge
+                if self.t2classifiers == ['T2RunParsnip', 'T2XgbClassifier']:
+                    # We know how to merge these...
+                    # Retrieve snguess
+                    nonRecProb = [klass['probability'] for klass in classifications['snguess']
+                                if klass['classId']==1]
+                    # Alt 1 - nothing to say
+                    if len(nonRecProb)==0:
+                        pass
+                    # Alt 2 - nothing from parsnip
+                    elif len(classifications['parsnip'])==0:
+                        # We can more or less copy snguess
+                        classifications['parsnipSnguess'] = [
+                            {
+                                'classifierName': 'SNguessParsnip',
+                                'classifierParams': 'elasticc1v2',
+                                'classId': klass['classId'],
+                                'probability': klass['probability'],
+                            }
+                            for klass in classifications['snguess']
+                        ]
+                    # Alt 3 - combine probabilities
+                    else:
+                        # Add the recurrant directly
+                        classifications['parsnipSnguess'] = [
+                            {
+                                'classifierName': 'SNguessParsnip',
+                                'classifierParams': 'elasticc1v2',
+                                'classId': 2,
+                                'probability': 1.-nonRecProb[0],
+                            }
+                        ]
+                        # Add parnsip classes, modifying prob while at it
+                        classifications['parsnipSnguess'].extend( [
+                            {
+                                'classifierName': 'SNguessParsnip',
+                                'classifierParams': 'elasticc1v2',
+                                'classId': klass['classId'],
+                                'probability': klass['probability'] * nonRecProb[0],
+                            }
+                            for klass in classifications['parsnip']
+                        ] )
+
 
                 # Time to submit!
                 # Convert classifications to elasticc format
