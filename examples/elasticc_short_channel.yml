@@ -13,7 +13,7 @@ task:
 - title: ElasticcShort-T0
   unit: AlertConsumer
   config:
-    iter_max: 10
+    iter_max: 100
     compiler_opts: LSSTCompilerOptions
     supplier:
       unit: LSSTAlertSupplier
@@ -60,6 +60,8 @@ task:
                 config:
                   tabulator:
                     - unit: LSSTT2Tabulator
+                      config:
+                        zp: 31.4
               - unit: T2XgbClassifier
                 config:
                   t2_dependency:
@@ -68,13 +70,15 @@ task:
                     config:
                       tabulator:
                         - unit: LSSTT2Tabulator
+                          config:
+                            zp: 31.4
 - title: ElasticcShort-t2
   multiplier: 1
   unit: T2Worker
   config:
-    channel: TarTest
+    channel: ElasticcShort
     doc_limit: 100000000
-- title: TarTest-SendClass
+- title: ElasticcShort-SendClass
   unit: T3Processor
   config:
     raise_exc: true
