@@ -7,7 +7,7 @@
 # Last Modified Date: 06.04.2022
 # Last Modified By  : jnordin@physik.hu-berlin.de
 
-from typing import Sequence, Literal, Any, Optional, Tuple, Union
+from typing import Sequence, Literal, Any, Optional, Tuple, Union, Dict, List
 import errno, os, re, backoff, copy, sys
 import math
 from scipy.stats import chi2
@@ -115,6 +115,9 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
     # (T2BayesianBlocks should be added)
     phaseselect_kind: Optional[str]
 
+    # Abort veto (if fulfilled, skip run)
+    abort_map: Optional[Dict[str, List]]
+
     # Save / plot parameters
     plot_suffix: Optional[str]
     plot_dir: Optional[str]
@@ -125,7 +128,8 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         "T2ElasticcRedshiftSampler",
         "T2DigestRedshifts",
         "T2MatchBTS",
-        "T2PhaseLimit"]]]
+        "T2PhaseLimit",
+        "T2XgbClassifier"]]]
 
 
 
@@ -198,7 +202,32 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
 
         return z, z_source, z_weights
 
+    def _get_abort(self, t2_views) -> Tuple[bool, Dict]:
+        """
+        Check potential previous t2s for whether the run should be aborted.
+        (For perfomance reasons).
 
+        Implemented case is concerns T2XgbClassifier.
+        """
+
+        if len(self.abort_map)==0:
+            # Not looking for any
+            return (False, {})
+
+        abort, abort_maps = False, {}
+        for t2_view in t2_views:
+            if not t2_view.unit in self.abort_map.keys():
+                continue
+            self.logger.debug('Parsing t2 results from {}'.format(t2_view.unit))
+            t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
+            abort_maps.update(t2_res)
+
+            for abort_map in self.abort_map[t2_view.unit]:
+                if all(t2_res.get(key, None) == val for key, val
+                                 in abort_map.items()):
+                    abort = True
+
+        return (abort, abort_maps)
 
 
     def _get_phaselimit(self, t2_views) -> Tuple[Optional[float], Optional[float]]:
@@ -308,6 +337,14 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         # Initialize output dict
         t2_output: dict[str, UBson] = {"model" : self.parsnip_model,
 		                              "classifier" : self.parsnip_classifier}
+
+        # Check whether no computation should be done (due to previous fit)
+        (abort_run, abort_info) = self._get_abort(t2_views)
+        t2_output['abort_maps'] = abort_info
+        if abort_run:
+            t2_output['aborted'] = True
+            return t2_output
+
 
         # Check for phase limits
         (jdstart, jdend) = self._get_phaselimit(t2_views)

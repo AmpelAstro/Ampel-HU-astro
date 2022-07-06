@@ -319,6 +319,8 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
                     # Alt 3 - combine probabilities
                     else:
                         # Add the recurrant directly
+                        # note that if we abort all snoopy runs this will
+                        # only happen if is_0 is true. 
                         classifications['parsnipSnguess'] = [
                             {
                                 'classifierName': 'SNguessParsnip',
