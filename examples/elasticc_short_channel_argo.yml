@@ -1,10 +1,6 @@
 parameters:
 - name: modelname
   value: TarTest
-- name: classifier_url
-  value: https://cloud.physik.hu-berlin.de/s/6y8q3H8zxm5XNiL/download?path=%2Fclassifier&files=elasticc-30pct-sn%2Bdwarfs-mw-aug10.pkl
-- name: model_url
-  value: https://cloud.physik.hu-berlin.de/s/6y8q3H8zxm5XNiL/download?path=%2Fmodels&files=elasticc-30pct-sn%2Bdwarfs-mw.h5
 - name: xgburl_76_1000
   value: https://box.hu-berlin.de/f/a90c21f0e38c49a8b531/?dl=1
 - name: xgburl_46_75
@@ -29,27 +25,19 @@ parameters:
   value: https://box.hu-berlin.de/f/7fcf682087dd43b0b8fd/?dl=1
 - name: tar_url
   value: https://desycloud.desy.de/index.php/s/ZCoEBZXijTDBgQx/download?path=%2F&files=elasticc-mid-june-test-001.tar.gz
-name: ElasticcLong
+name: ElasticcShort
 mongo:
   prefix: dumpme
 channel:
-- name: ElasticcLong
+- name: ElasticcShort
   access: []
   policy: []
   version: 1
 task:
-- title: ElasticcLong-T0
+- title: ElasticcShort-T0
   unit: AlertConsumer
   inputs:
     artifacts:
-      - name: classifier
-        path: elasticc-30pct-sn+dwarfs-mw-aug10.pkl
-        http:
-          url: "{{ job.parameters.classifier_url }}"
-      - name: model
-        path: elasticc-30pct-sn+dwarfs-mw.h5
-        http:
-          url: "{{ job.parameters.model_url }}"
       - name: ndet76
         path: xgboost_elasticc1v2_ndet76_1000.json
         http:
@@ -99,7 +87,7 @@ task:
         http:
           url: "{{ job.parameters.tar_url }}"
   config:
-    iter_max: 1000
+    iter_max: 10000
     compiler_opts: LSSTCompilerOptions
     supplier:
       unit: LSSTAlertSupplier
@@ -112,11 +100,11 @@ task:
             extension: '*.avro'
     shaper: LSSTDataPointShaper
     directives:
-    - channel: ElasticcLong
+    - channel: ElasticcShort
       filter:
         config:
-          min_ndet: 6
-          min_tspan: 0
+          min_ndet: 0
+          min_tspan: 5
           max_tspan: 10000
         on_stock_match: bypass
         unit: ReallySimpleLSSTFilter
@@ -159,40 +147,13 @@ task:
                         - unit: LSSTT2Tabulator
                           config:
                             zp: 31.4
-              - unit: T2RunParsnip
-                config:
-                  max_ampelz_group: 7
-                  redshift_kind: T2ElasticcRedshiftSampler
-                  parsnip_model: elasticc-30pct-sn+dwarfs-mw.h5
-                  parsnip_classifier: elasticc-30pct-sn+dwarfs-mw-aug10.pkl
-                  abort_map:
-                    T2XgbClassifier:
-                    - model: xgboost_elasticc1v2_
-                      is_0: false
-                  t2_dependency:
-                    - unit: T2ElasticcRedshiftSampler
-                    - unit: T2XgbClassifier
-                      config:
-                        model_folder: .
-                        t2_dependency:
-                        - unit: T2ElasticcRedshiftSampler
-                        - unit: T2TabulatorRiseDecline
-                          config:
-                            tabulator:
-                              - unit: LSSTT2Tabulator
-                                config:
-                                  zp: 31.4
-                  tabulator:
-                    - unit: LSSTT2Tabulator
-                      config:
-                        zp: 31.4
-- title: ElasticcLong-t2
+- title: ElasticcShort-t2
   multiplier: 1
   unit: T2Worker
   config:
-    channel: ElasticcLong
+    channel: ElasticcShort
     doc_limit: 100000000
-- title: ElasticcLong-SendClass
+- title: ElasticcShort-SendClass
   unit: T3Processor
   config:
     raise_exc: true
@@ -205,7 +166,7 @@ task:
               select:
                 unit: T3StockSelector
                 config:
-                  channel: ElasticcLong
+                  channel: ElasticcShort
               load:
                 unit: T3SimpleDataLoader
                 config:
@@ -213,7 +174,7 @@ task:
                     - STOCK
                     - T1
                     - T2
-                  channel: ElasticcLong
+                  channel: ElasticcShort
           stage:
             unit: T3SimpleStager
             config:
@@ -225,5 +186,4 @@ task:
                     desc_password:
                       label: desc/password
                     t2classifiers:
-                      - T2RunParsnip
                       - T2XgbClassifier
