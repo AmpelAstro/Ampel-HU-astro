@@ -131,11 +131,11 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
         """
 
         # Does sqradius mean what I believe?
-        if hostinfo['hostgal_sqradius']>0:
+        if hostinfo.get('hostgal_sqradius',-99)>0:
             hostgal_sigsep = hostinfo['hostgal_snsep'] / np.sqrt(hostinfo['hostgal_sqradius'])
         else:
             hostgal_sigsep = -99.
-        if hostinfo['hostgal2_sqradius']>0:
+        if hostinfo.get('hostgal2_sqradius',-99)>0:
             hostgal2_sigsep = hostinfo['hostgal2_snsep'] / np.sqrt(hostinfo['hostgal2_sqradius'])
         else:
             hostgal2_sigsep = -99.
@@ -143,10 +143,10 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
                                               'hostgal2_sigsep':hostgal2_sigsep})
 
 
-        if hostinfo['hostgal_snsep']>0 and hostinfo['hostgal2_snsep']<0:
+        if hostinfo.get('hostgal_snsep',-99)>0 and hostinfo.get('hostgal2_snsep',-99)<0:
             # The easy case, only have first galaxy
             return (1.0, 0.0, hostinfo['hostgal_snsep'])
-        elif hostinfo['hostgal_snsep']<0 and hostinfo['hostgal2_snsep']<0:
+        elif hostinfo.get('hostgal_snsep',-99)<0 and hostinfo.get('hostgal2_snsep',-99)<0:
             # "Hostless" - if these exist
             self.logger.debug('Hostless')
             return (0.0, 0.0, -99.)
@@ -194,10 +194,10 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
 
         # Final (simulated) data available and used?
         if self.use_final_z:
-            if dp.get('redshift_helio',-1)>0:
-                z, dz, zsource = dp.get('redshift_helio'), dp.get('redshift_helio_err'), 'REDSHIFT_HELIO'
-            elif dp.get('z_final',-1)>0:
-                z, dz, zsource = dp.get('z_final'), dp.get('z_final_err'), 'Z_FINAL'
+            if dp.get('z_final',-1)>0:
+                z, dz, zsource = dp.get('z_final'), dp.get('z_final_err', 0), 'Z_FINAL'
+            elif dp.get('redshift_helio',-1)>0:
+                z, dz, zsource = dp.get('redshift_helio'), dp.get('redshift_helio_err', 0), 'REDSHIFT_HELIO'
 
         # Both sources need to be weighted together
         if zsource is None and probH1>0 and probH2>0:
