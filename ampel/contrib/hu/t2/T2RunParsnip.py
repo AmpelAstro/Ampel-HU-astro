@@ -210,7 +210,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         Implemented case is concerns T2XgbClassifier.
         """
 
-        if len(self.abort_map)==0:
+        if not self.abort_map or len(self.abort_map)==0:
             # Not looking for any
             return (False, {})
 
