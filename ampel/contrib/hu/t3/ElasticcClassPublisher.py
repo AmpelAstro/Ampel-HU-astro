@@ -141,9 +141,8 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
                     # Is this guaranteed the same as alertId ?
                     # Otherwise we will have to parse t0/t1 collection?
                     'diaSourceId': 666,
-                    'brokerIngestTimestamp': entry['ts'],
-                    # Where is this?
-                    'elasticcPublishTimestamp': 666 }
+                    'brokerIngestTimestamp': entry['ts']*1000,
+                    'elasticcPublishTimestamp': int(entry.get('alert_ts', 0.666)*1000) }
                 if entry['link'] in done_t1states:
                     state_map[entry['link']]['submitted'] = True
                 else:
