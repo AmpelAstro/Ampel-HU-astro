@@ -112,7 +112,7 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
         # Create a list of states for which the list of units
         def select(entry: "JournalRecord") -> bool:
             return bool(
-                (entry["extra"] is not None and ("descPutComplete" in entry["extra"])
+                (entry.get("extra") is not None and ("descPutComplete" in entry["extra"])
                 and (entry["extra"]["descPutComplete"]) )
                 and (entry["extra"]["descPutUnits"]==tuple(self.t2classifiers))
                 and entry["unit"] and entry["unit"] == self.__class__.__name__
