@@ -141,7 +141,7 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
                     # LSSTAlertSupplier uses diaSourceId as stock id
                     'diaSourceId': tran_view.id,
                     'brokerIngestTimestamp': entry['ts']*1000,
-                    'elasticcPublishTimestamp': int(entry.get('alert_ts', 0.666)*1000) }
+                    'elasticcPublishTimestamp': entry.get('alert_ts',666) }
                 if entry['link'] in done_t1states:
                     state_map[entry['link']]['submitted'] = True
                 else:
