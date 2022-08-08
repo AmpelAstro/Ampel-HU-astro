@@ -75,6 +75,10 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
     desc_password: NamedSecret[str]
     tomclient = None
 
+    #: submit reports again, even if the journal contains a previous submission
+    force_resubmit: bool = False
+    #: prepare report, but do not submit to TOM
+    dry_run: bool = False
 
     t2classifiers: Sequence[str]
     # If we have classifiers running in multiple configurations we will
@@ -243,7 +247,7 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
             state_alert = self.search_journal_elasticc(tran_view)
 
             for t1_link, alertinfo in state_alert.items():
-                if alertinfo['submitted']:
+                if alertinfo['submitted'] and not self.force_resubmit:
                     self.logger.info('submitted', extra={'t1':t1_link})
                     continue
                 classifications = {}
@@ -354,6 +358,9 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
                     class_report['classifications'].extend(clist)
 
                 self.logger.debug('', extra={'classification_report': class_report})
+
+                if self.dry_run:
+                    continue
 
                 # use the ElasticcTomClient
                 desc_response = self.tomclient.tom_post(class_report)
