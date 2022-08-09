@@ -7,7 +7,8 @@
 # Last Modified Date:  11.04.2022
 # Last Modified By:    jno <jnordin@physik.hu-berlin.de>
 
-from typing import Any, Sequence, Dict
+from itertools import islice
+from typing import Any, Sequence, Dict, Iterable
 from collections.abc import Generator
 
 from ampel.struct.StockAttributes import StockAttributes
@@ -43,6 +44,15 @@ parsnip_taxonomy = {
     # 'uLens': 124,
     }
 
+def chunks(l: Iterable, n: int) -> Generator[list, None, None]:
+    source = iter(l)
+    while True:
+        chunk = list(islice(source, n))
+        if chunk:
+            yield chunk
+        if len(chunk) < n:
+            break
+
 class ElasticcClassPublisher(AbsT3ReviewUnit):
     """
 
@@ -75,10 +85,10 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
     desc_password: NamedSecret[str]
     tomclient = None
 
-    #: submit reports again, even if the journal contains a previous submission
-    force_resubmit: bool = False
     #: prepare report, but do not submit to TOM
     dry_run: bool = False
+    #: submit reports in batches
+    batch_size: int = 1000
 
     t2classifiers: Sequence[str]
     # If we have classifiers running in multiple configurations we will
@@ -233,22 +243,16 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
         else:
             sys.exit('do not understand model', t2body)
 
+    def _get_reports(self, gen: Generator[TransientView, T3Send, None]) -> Generator[tuple[TransientView,dict]]:
 
-    def process(self, gen: Generator[TransientView, T3Send, None], t3s: T3Store) -> None:
-        """
-
-        """
-
-
-        for k, tran_view in enumerate(gen, 1):
-
+        for tran_view in gen:
             # Check journal for state/alertId combos and whether already
             # submitted (for this t2classifiers list).
             state_alert = self.search_journal_elasticc(tran_view)
 
             for t1_link, alertinfo in state_alert.items():
-                if alertinfo['submitted'] and not self.force_resubmit:
-                    self.logger.info('submitted', extra={'t1':t1_link})
+                if alertinfo['submitted']:
+                    self.logger.debug('submitted', extra={'t1':t1_link})
                     continue
                 classifications = {}
                 # Check whether we can get classification for all requested
@@ -359,16 +363,27 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
 
                 self.logger.debug('', extra={'classification_report': class_report})
 
-                if self.dry_run:
-                    continue
+                yield tran_view, t1_link, class_report
 
-                # use the ElasticcTomClient
-                desc_response = self.tomclient.tom_post(class_report)
+    def process(self, gen: Generator[TransientView, T3Send, None], t3s: T3Store) -> None:
+        """
 
-                # Check output:
-                # if as expected store to journal that transfer is complete.
-                # if not as expected, log what data is available and possible
-                # a t3 document with this content??
+        """
+
+        for chunk in chunks(self._get_reports(gen), self.batch_size):
+            tran_views, t1_links, class_reports = zip(*chunk)
+
+            if self.dry_run:
+                continue
+
+            # use the ElasticcTomClient
+            desc_response = self.tomclient.tom_post(class_reports)
+
+            # Check output:
+            # if as expected store to journal that transfer is complete.
+            # if not as expected, log what data is available and possible
+            # a t3 document with this content??
+            for tran_view, t1_link, class_report in zip(tran_views, t1_links, class_reports):
                 if desc_response['success']:
                     gen.send((
                         tran_view.id,

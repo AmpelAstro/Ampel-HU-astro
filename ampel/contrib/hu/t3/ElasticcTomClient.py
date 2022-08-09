@@ -7,7 +7,7 @@
 # Last Modified Date:  11.04.2022
 # Last Modified By:    jno <jnordin@physik.hu-berlin.de>
 
-from typing import Sequence, Dict, Any
+from typing import Sequence, Dict, Any, Union
 
 import requests
 import json
@@ -81,13 +81,13 @@ class ElasticcTomClient:
         giveup=lambda e: e.response.status_code not in {503, 504, 429, 408},
         max_time=60,
         )
-    def tom_post(self, classification: ElasticcClassification)->Dict[Any,Any]:
+    def tom_post(self, classification: Union[ElasticcClassification,list[ElasticcClassification]])->Dict[Any,Any]:
         response = self.session.put(f'{self.tom_url}/elasticc/brokermessage/',
                                 json=classification, headers=self.csrfheader)
 
         if response.ok:
-            self.logger.debug('ElasticcTomClient submit fail', extra=classification)
+            self.logger.debug('ElasticcTomClient submit fail', extra={"payload": classification})
             return {'success':True, **response.json()}
 
-        self.logger.info('ElasticcTomClient submit fail', extra=classification)
+        self.logger.info('ElasticcTomClient submit fail', extra={"payload": classification})
         return {'success':False, 'response':response.status_code}
