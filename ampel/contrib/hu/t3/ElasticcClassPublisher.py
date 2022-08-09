@@ -241,7 +241,7 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
                 }  )
             return classout
         else:
-            sys.exit('do not understand model', t2body)
+            raise RuntimeError(f'do not understand model: {body}')
 
     def _get_reports(self, gen: Generator[TransientView, T3Send, None]) -> Generator[tuple[TransientView,dict]]:
 
@@ -267,7 +267,7 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
                         # are running different configs... if so this unit wont work
                         # and needs to be redesigned!
                         if next(t2views, None) is not None:
-                            sys.exit('ElasticcClassPublisher cannot parse multiple configs.')
+                            raise RuntimeError('ElasticcClassPublisher cannot parse multiple configs.')
                         # Skip if unit running or waiting to be run
                         if t2view.code == -1 or t2view.code == -4:
                             continue
