@@ -27,7 +27,7 @@ from ampel.content.DataPoint import DataPoint
 from ampel.view.T2DocView import T2DocView
 from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper
 from ampel.model.StateT2Dependency import StateT2Dependency
-from ampel.plot.utils import mplfig_to_svg_dict1
+from ampel.plot.create import create_plot_record
 from ampel.model.PlotProperties import PlotProperties
 
 
@@ -431,13 +431,11 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             )
 
             # Also store to DB if requested
-            if self.plot_db:
-                t2_output['plots'] = [
-                    mplfig_to_svg_dict1(fig,
-                                        self.plot_props, plot_extra, logger=self.logger)
-                ]
-            else:
-                mplfig_to_svg_dict1(fig,
+            plots = [
+                create_plot_record(fig,
                                     self.plot_props, plot_extra, logger=self.logger)
+            ]
+            if self.plot_db:
+                t2_output['plots'] = plot
 
         return t2_output

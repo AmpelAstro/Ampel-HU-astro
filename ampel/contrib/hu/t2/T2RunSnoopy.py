@@ -25,7 +25,6 @@ from ampel.view.T2DocView import T2DocView
 from ampel.view.LightCurve import LightCurve
 from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper
 from ampel.model.StateT2Dependency import StateT2Dependency
-from ampel.plot.utils import mplfig_to_svg_dict1
 from ampel.model.PlotProperties import PlotProperties
 
 

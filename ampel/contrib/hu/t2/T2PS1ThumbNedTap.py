@@ -15,7 +15,7 @@ from ampel.contrib.hu.util.ned import check_ned_res
 from ampel.abstract.AbsTiedPointT2Unit import AbsTiedPointT2Unit
 from ampel.util.collections import ampel_iter
 from ampel.content.DataPoint import DataPoint
-from ampel.plot.utils import mplfig_to_svg_dict1
+from ampel.plot.create import create_plot_record
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.struct.UnitResult import UnitResult
 from ampel.model.PlotProperties import PlotProperties
@@ -92,7 +92,7 @@ class T2PS1ThumbNedTap(AbsTiedPointT2Unit):
 				for cmap in ampel_iter(self.cmaps):
 
 					plots.append(
-						mplfig_to_svg_dict1(
+						create_plot_record(
 							pt.show(
 								ellipse=False, band=band, cmap=cmap, show=False,
 								show_target=False, show_coord=(cat_res['ra'], cat_res['dec'])

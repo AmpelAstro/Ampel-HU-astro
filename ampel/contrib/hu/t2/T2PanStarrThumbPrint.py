@@ -14,7 +14,7 @@ from ampel.types import UBson
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.util.collections import ampel_iter
 from ampel.content.DataPoint import DataPoint
-from ampel.plot.utils import mplfig_to_svg_dict1
+from ampel.plot.create import create_plot_record
 from ampel.struct.UnitResult import UnitResult
 from ampel.model.PlotProperties import PlotProperties
 
@@ -50,7 +50,7 @@ class T2PanStarrThumbPrint(AbsPointT2Unit):
 		return {
 			'data': {
 				'plots': [
-					mplfig_to_svg_dict1(
+					create_plot_record(
 						pt.show(ellipse=False, band=band, show_target=False, cmap=cmap, show=False),
 						self.plot_props,
 						extra = {"band": band, "stock": datapoint["stock"][0], "cmap": cmap}, # type: ignore
