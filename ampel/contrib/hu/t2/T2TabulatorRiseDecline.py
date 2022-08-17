@@ -16,7 +16,7 @@ from scipy.optimize import curve_fit
 from ampel.types import UBson
 from ampel.abstract.AbsStateT2Unit import AbsStateT2Unit
 from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
-from ampel.base.AmpelUnit import AmpelUnit
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.protocol.LoggerProtocol import LoggerProtocol
 from ampel.struct.UnitResult import UnitResult
 
@@ -64,7 +64,7 @@ def getBandBits(bands: Sequence):
     return index
 
 
-class T2TabulatorRiseDeclineBase(AmpelUnit):
+class T2TabulatorRiseDeclineBase(AmpelBaseModel):
     """
     Derive a number of simple metrics describing the rise, peak and decline of a lc.
 
@@ -316,7 +316,7 @@ class T2TabulatorRiseDeclineBase(AmpelUnit):
         return o
 
 
-class T2TabulatorRiseDecline(T2TabulatorRiseDeclineBase, AbsTabulatedT2Unit, AbsStateT2Unit):
+class T2TabulatorRiseDecline(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRiseDeclineBase):
 
     plot_prob: float = 0.
     path_testplot: str = "/home/jnordin/tmp/t2test/"
