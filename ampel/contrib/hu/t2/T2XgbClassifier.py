@@ -52,7 +52,7 @@ class T2XgbClassifier(AbsTiedStateT2Unit):
 
     # Columns (in order) used for training
     # Which columsn to use for training
-    use_cols = ['bool_rise', 'bool_fall', 'bool_peaked', 'bool_pure',
+    use_cols: list[str] = ['bool_rise', 'bool_fall', 'bool_peaked', 'bool_pure',
        'bool_fastrise', 'bool_fastfall', 'bool_hasgaps', 'mag_det',
        'mag_last', 'det_bands', 'peak_bands', 'last_bands', 't_predetect',
        't_lc', 't_rise', 't_fall', 'rise_slope_lsstu',
