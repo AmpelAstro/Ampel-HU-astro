@@ -95,5 +95,8 @@ module = [
   "timeout_decorator.*",
   "parsnip.*",
   "sncosmo.*",
+  "requests_toolbelt.*",
+  "adjustText.*",
+  "extcats.*",
 ]
 ignore_missing_imports = true
