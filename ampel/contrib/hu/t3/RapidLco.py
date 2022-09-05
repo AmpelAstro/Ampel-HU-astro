@@ -8,7 +8,7 @@
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 import datetime, requests
-from typing import Any, Optional, Tuple
+from typing import Any, Tuple
 
 from ampel.contrib.hu.t3.RapidBase import RapidBase
 from ampel.secret.NamedSecret import NamedSecret
@@ -172,7 +172,7 @@ class RapidLco(RapidBase):
 
 
     def react(
-        self, tran_view: TransientView, info: Optional[dict[str, Any]]
+        self, tran_view: TransientView, info: None | dict[str, Any]
     ) -> tuple[bool, dict[str, Any]]:
         """
         Send a trigger to the LCO

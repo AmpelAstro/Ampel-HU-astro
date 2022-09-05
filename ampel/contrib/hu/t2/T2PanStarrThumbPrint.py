@@ -28,7 +28,7 @@ class T2PanStarrThumbPrint(AbsPointT2Unit):
 	"""
 
 	cmaps: Sequence[str] = ["cividis"]
-	band: Union[str, Sequence[str]] = "g"
+	band: str | Sequence[str] = "g"
 	plot_props: PlotProperties = PlotProperties(
 		tags = ["THUMBPRINT", "PANSTARRS"],
 		file_name = {
@@ -43,7 +43,7 @@ class T2PanStarrThumbPrint(AbsPointT2Unit):
 	)
 
 
-	def process(self, datapoint: DataPoint) -> Union[UBson, UnitResult]:
+	def process(self, datapoint: DataPoint) -> UBson | UnitResult:
 		""" """
 
 		pt = self.get_ps1_target(datapoint, self.band)
@@ -64,7 +64,7 @@ class T2PanStarrThumbPrint(AbsPointT2Unit):
 
 
 	@staticmethod
-	def get_ps1_target(datapoint: DataPoint, band: Union[str, Sequence[str]]) -> PS1Target:
+	def get_ps1_target(datapoint: DataPoint, band: str | Sequence[str]) -> PS1Target:
 
 		pt = PS1Target(None)
 		pt.set_coordinate(

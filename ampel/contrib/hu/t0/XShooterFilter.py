@@ -7,7 +7,7 @@
 # Last Modified Date:  24.11.2021
 # Last Modified By:    jnordin
 
-from typing import Optional, Union
+from typing import Optional
 from numpy import array
 from ampel.protocol.AmpelAlertProtocol import AmpelAlertProtocol
 from ampel.ztf.t0.DecentFilter import DecentFilter
@@ -37,7 +37,7 @@ class XShooterFilter(DecentFilter):
         self.select_photopoints = [{'attribute': 'magpsf', 'operator': 'is not', 'value': None}]
 
     # Override
-    def process(self, alert: AmpelAlertProtocol) -> Optional[Union[bool, int]]:
+    def process(self, alert: AmpelAlertProtocol) -> None | bool | int:
         """
         run the decent filter on the alert
         """

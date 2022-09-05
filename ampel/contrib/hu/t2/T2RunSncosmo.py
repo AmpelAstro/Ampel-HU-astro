@@ -113,8 +113,6 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
     plot_db: bool = False
     plot_props: None | PlotProperties = None
 
-
-
     # Which units should this be changed to
     t2_dependency: Sequence[StateT2Dependency[Literal[
                             "T2DigestRedshifts", "T2MatchBTS", "T2PhaseLimit"]]]

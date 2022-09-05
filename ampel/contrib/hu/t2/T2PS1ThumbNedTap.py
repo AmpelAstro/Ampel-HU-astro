@@ -7,7 +7,7 @@
 # Last Modified Date:  14.09.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Union, Optional, Literal
+from typing import Literal
 from collections.abc import Sequence
 from ampel.types import UBson
 from ampel.contrib.hu.t2.T2PanStarrThumbPrint import T2PanStarrThumbPrint
@@ -41,9 +41,9 @@ class T2PS1ThumbNedTap(AbsTiedPointT2Unit):
 	t2_dependency: Sequence[UnitModel[Literal['T2NedTap']]]
 
 	cmaps: Sequence[str] = ["cividis"]
-	band: Union[str, Sequence[str]] = "g"
+	band: str | Sequence[str] = "g"
 	plot_all: bool = False
-	z_range: Optional[tuple[float, float]]
+	z_range: None | tuple[float, float]
 	spectroscopic: bool = True
 
 	plot_props: PlotProperties = PlotProperties(
@@ -60,7 +60,7 @@ class T2PS1ThumbNedTap(AbsTiedPointT2Unit):
 	)
 
 
-	def process(self, datapoint: DataPoint, t2_views: Sequence[T2DocView]) -> Union[UBson, UnitResult]:
+	def process(self, datapoint: DataPoint, t2_views: Sequence[T2DocView]) -> UBson | UnitResult:
 		""" """
 
 		# That would be a config error

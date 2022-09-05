@@ -8,7 +8,7 @@
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
 import numpy as np
-from typing import Optional, Any, Union
+from typing import Any
 from collections.abc import Sequence
 from astropy.coordinates import Distance, SkyCoord
 from astropy.cosmology import Planck15
@@ -92,7 +92,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         {"attribute": "magfromlim", "operator": ">", "value": 0},
     ]
 
-    def inspect_catalog(self, cat_res: dict[str, Any]) -> Optional[dict[str, Any]]:
+    def inspect_catalog(self, cat_res: dict[str, Any]) -> None | dict[str, Any]:
         """
         Check whether a redshift match can be found in matched catalogs.
         """
@@ -148,7 +148,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
 
 
 
-    def inspect_lc(self, lc: LightCurve) -> Optional[dict[str, Any]]:
+    def inspect_lc(self, lc: LightCurve) -> None | dict[str, Any]:
         """
         Verify whether the transient lightcurve fulfill criteria for submission.
 
@@ -334,7 +334,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
 
 
     # MANDATORY
-    def process(self, light_curve: LightCurve, t2_views: Sequence[T2DocView]) -> Union[UBson, UnitResult]:
+    def process(self, light_curve: LightCurve, t2_views: Sequence[T2DocView]) -> UBson | UnitResult:
         """
 
         Evaluate whether a transient passes thresholds for being a nearby (young) transient.

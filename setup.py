@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              jvs
 # Date:                Unspecified
-# Last Modified Date:  06.02.2020
+# Last Modified Date:  02.01.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from setuptools import find_namespace_packages, setup
@@ -27,12 +27,13 @@ setup(
             "**/**/*.yml",
         ],
     },
+	python_requires = '>=3.10,<3.11',
     install_requires=[
-        'ampel-interface>=0.8.0a0,<0.9',
-        'ampel-core>=0.8.0a8,<0.9',
-        'ampel-plots>=0.8.0a0,<0.9',
-        'ampel-photometry>=0.8.0a0,<0.9',
-        'ampel-alerts>=0.8.0a0,<0.9',
+        'ampel-interface>=0.8.3a0,<0.9',
+        'ampel-core>=0.8.3a0,<0.9',
+        'ampel-plot>=0.8.0a0,<0.9',
+        'ampel-photometry>=0.8.3a0,<0.9',
+        'ampel-alerts>=0.8.3a0,<0.9',
         'ampel-ztf>=0.8.0a4,<0.9',
         "sncosmo",
         "iminuit",

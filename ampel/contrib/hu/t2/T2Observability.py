@@ -9,7 +9,7 @@
 
 import astropy.units as u
 from astropy.time import Time
-from typing import Any, Union
+from typing import Any
 from ampel.types import UBson
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.util.Observatory import Observatory
@@ -68,7 +68,7 @@ class T2Observability(AbsLightCurveT2Unit):
 			return obs
 
 
-	def process(self, light_curve: LightCurve) -> Union[UBson, UnitResult]:
+	def process(self, light_curve: LightCurve) -> UBson | UnitResult:
 		"""
 		:param run_config: configuration parameter for this job.
 		Eg:

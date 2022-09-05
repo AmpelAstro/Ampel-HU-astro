@@ -12,7 +12,7 @@ from io import BytesIO, StringIO
 from astropy.time import Time
 from pytz import timezone
 from requests.auth import HTTPBasicAuth
-from typing import Any, Optional, Union
+from typing import Any
 from collections.abc import Generator
 
 from ampel.types import ChannelId, UBson, T3Send
@@ -49,7 +49,7 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
 
     def extract_from_transient_view(
         self, tran_view: TransientView
-    ) -> Optional[dict[str, Any]]:
+    ) -> None | dict[str, Any]:
         """
         given transient view object return a dictionary
         with the desired metrics
@@ -81,7 +81,7 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
         return out
 
 
-    def process(self, gen: Generator[TransientView, T3Send, None], t3s: Optional[T3Store] = None) -> Union[UBson, UnitResult]:
+    def process(self, gen: Generator[TransientView, T3Send, None], t3s: None | T3Store = None) -> UBson | UnitResult:
         """
         load the stats from the alerts
         """

@@ -9,7 +9,7 @@
 
 import numpy as np
 from astropy.table import Table
-from typing import Any, Union, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 from ampel.types import UBson
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 from ampel.base.AmpelBaseModel import AmpelBaseModel
@@ -406,6 +406,6 @@ class T2RiseDeclineStat(AbsLightCurveT2Unit, T2RiseDeclineBase):
         plt.savefig(path)
         plt.clf()
 
-    def process(self, light_curve: LightCurve) -> Union[UBson, UnitResult]:
+    def process(self, light_curve: LightCurve) -> UBson | UnitResult:
 
         return self.compute_stats(light_curve)

@@ -22,6 +22,7 @@ task:
         loader:
           unit: ZTFHealpixAlertLoader
           config:
+            archive_token:  ztf/archive/token
             chunk_size: 1000
             future_days: 5
             history_days: 10

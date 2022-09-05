@@ -7,14 +7,14 @@
 # Last Modified Date:  14.09.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Tuple
+from typing import Tuple
 from ampel.protocol.LoggerProtocol import LoggerProtocol
 
 def check_ned_res(
 	cat_res: dict,
 	logger: LoggerProtocol,
 	spectroscopic: bool = False,
-	z_range: Optional[tuple[float, float]] = None
+	z_range: None | tuple[float, float] = None
 ) -> bool:
 
 	if not cat_res.get('z'):

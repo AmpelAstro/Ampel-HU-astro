@@ -60,10 +60,7 @@ class T2RunPossis(T2RunSncosmo):
 
     # Fix time to specific explosion timestamp
     # StockTriggerTime assumes the value is updated during runtime
-    explosion_time_jd: Union[None, float, Literal['StockTriggerTime']]
-
-
-
+    explosion_time_jd: None | float | Literal['StockTriggerTime']
 
     # Which units should this be changed to
     t2_dependency: Sequence[StateT2Dependency[Literal[ # type: ignore[assignment]

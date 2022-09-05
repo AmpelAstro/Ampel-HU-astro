@@ -83,9 +83,9 @@ class TransientTablePublisher(AbsPhotoT3Unit):
     fmt: str = 'csv'
 
     file_name: str = 'TransientTable.csv'
-    slack_channel: Optional[str] = None
-    slack_token: Optional[NamedSecret[str]]
-    local_path: Optional[str] = None
+    slack_channel: None | str = None
+    slack_token: None | NamedSecret[str]
+    local_path: None | str = None
 
     def process(self, gen: Generator[TransientView, T3Send, None],
                 t3s: Optional[T3Store] = None) -> Union[UBson, UnitResult]:

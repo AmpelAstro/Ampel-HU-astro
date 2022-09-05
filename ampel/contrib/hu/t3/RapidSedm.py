@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import datetime, requests
-from typing import Any, Optional, Tuple
+from typing import Any, Tuple
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.contrib.hu.t3.RapidBase import RapidBase
 from ampel.view.TransientView import TransientView
@@ -78,8 +78,8 @@ class RapidSedm(RapidBase):
         super().post_init()
 
     def react(
-        self, tran_view: TransientView, info: Optional[dict[str, Any]]
-    ) -> tuple[bool, Optional[dict[str, Any]]]:
+        self, tran_view: TransientView, info: None | dict[str, Any]
+    ) -> tuple[bool, None | dict[str, Any]]:
         """
         Send a trigger to the SEDM. Note that we have no good way of investigating the queue at this time
         """

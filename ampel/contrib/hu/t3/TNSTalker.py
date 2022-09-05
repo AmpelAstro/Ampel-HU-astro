@@ -9,7 +9,7 @@
 
 import re
 from itertools import islice
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 from collections.abc import Generator, Iterable
 from ampel.struct.StockAttributes import StockAttributes
 from ampel.types import StockId
@@ -81,7 +81,7 @@ class TNSTalker(AbsT3ReviewUnit):
     }
     baseremark: str = "See arXiv:1904.05922 for selection criteria."
 
-    slack_token: Optional[NamedSecret] = None
+    slack_token: None | NamedSecret = None
     slack_channel = "#ztf_tns"
     slack_username = "AMPEL"
     # if you have more than this # of reports, send different files
@@ -103,7 +103,7 @@ class TNSTalker(AbsT3ReviewUnit):
 
     def search_journal_tns(
         self, tran_view: TransientView
-    ) -> tuple[Optional[str], list[str]]:
+    ) -> tuple[None | str, list[str]]:
         """
         Look through the journal for a TNS name.
         Assumes journal entries came from this unit, that the TNS name is saved as "tnsName"
@@ -165,7 +165,7 @@ class TNSTalker(AbsT3ReviewUnit):
             self.logger.info("Not TNS submitted", extra={"tnsSender": self.tns_api_key.get()["name"]})
             return False
 
-    def _query_tns_names(self, tran_view: TransientView, ra: float, dec: float) -> tuple[Optional[str], list]:
+    def _query_tns_names(self, tran_view: TransientView, ra: float, dec: float) -> tuple[None | str, list]:
         """
         query the TNS for names and internals at the position
         of the transient.
@@ -198,7 +198,7 @@ class TNSTalker(AbsT3ReviewUnit):
 
     def _find_tns_tran_names(
         self, tran_view: TransientView
-    ) -> tuple[Optional[str], list[str]]:
+    ) -> tuple[None | str, list[str]]:
         """
         search for TNS name in tran_view.tran_names. If found,
         look in the TNS for internal names and return them
@@ -243,7 +243,7 @@ class TNSTalker(AbsT3ReviewUnit):
 
     def find_tns_name(
         self, tran_view: TransientView, ra: float, dec: float
-    ) -> tuple[Optional[str], list[str], Optional[JournalAttributes]]:
+    ) -> tuple[None | str, list[str], None | JournalAttributes]:
         """
         extensive search for TNS names in:
         - tran_view.tran_names (if added by TNSMatcher)

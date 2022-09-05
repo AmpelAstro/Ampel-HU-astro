@@ -304,8 +304,8 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
     # AMPEL T2 MANDATORY   #
     # ==================== #
     def process(self,
-                light_curve: LightCurve, t2_views: Sequence[T2DocView]
-                ) -> UBson | UnitResult:
+        light_curve: LightCurve, t2_views: Sequence[T2DocView]
+    ) -> UBson | UnitResult:
         """
 
             Parse t2_views from catalogs that were part of the redshift studies.

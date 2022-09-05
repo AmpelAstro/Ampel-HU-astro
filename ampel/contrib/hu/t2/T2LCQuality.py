@@ -7,7 +7,7 @@
 # Last Modified Date:  06.06.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any, Union
+from typing import Any
 from astropy.table import Table
 from scipy.interpolate import interp1d
 
@@ -144,7 +144,7 @@ class T2LCQuality(AbsLightCurveT2Unit):
         plt.title("filter: %d " % fid + textstr)
         plt.show()
 
-    def process(self, light_curve: LightCurve) -> Union[UBson, UnitResult]:
+    def process(self, light_curve: LightCurve) -> UBson | UnitResult:
         """
         :param run_config: `dict` or None
         configuration parameter for this job. If none is given, the
