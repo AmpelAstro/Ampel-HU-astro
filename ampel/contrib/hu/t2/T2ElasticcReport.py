@@ -84,6 +84,19 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
 
         return 'Not submitted.'
 
+    # def _get_alert_metadata(self, compound: T1Document) -> dict[str,UBson]:
+    #     for metarecord in compound['meta']:
+    #         if (
+    #             metarecord['tier'] == 0
+    #             and (alert_id := metarecord.get("alert")) is not None
+    #             and (alert_ts := metarecord.get("alert_ts")) is not None
+    #         ):
+    #             return {
+    #                 "alertId": alert_id,
+    #                 "brokerIngestTimestamp": metarecord["ts"],
+    #                 "elasticcPublishTimestamp": alert_ts,
+    #             }
+    #     return {}
 
     def process(self,
         compound: T1Document,
@@ -105,23 +118,20 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
         """
 
         # Construct the base reply. We have some magic here to fill
-        class_report = {
-            'alertId': 'alertId',
-            'diaSourceId': 'diaSourceId',
-            'elasticcPublishTimestamp': 'elasticcPublishTimestamp',
-            'brokerIngestTimestamp': 'brokerIngestTimestamp',
+        class_report: dict[str,UBson] = {
             'brokerName': self.broker_name,
             'brokerVersion': self.broker_version,
-            'classifications': []
         }
+
+        classifications = []
 
         # Get alert info from T1Document if present
         for metarecord in compound['meta']:
             if 'alert' in metarecord.keys():
-                class_report['alertId'] = metarecord['alert']
+                class_report['alertId'] = metarecord.get('alert') # type: ignore[assignment]
                 class_report['brokerIngestTimestamp'] = metarecord['ts']
             if 'alert_ts' in metarecord.keys():
-                class_report['elasticcPublishTimestamp'] = metarecord['alert_ts']
+                class_report['elasticcPublishTimestamp'] = metarecord.get('alert_ts') # type: ignore[assignment]
 
         # Get diaSourceId
         # Get the last diaSource id in datapoints
@@ -158,7 +168,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
         if is1 is None or is21 is None or is1113 is None:
             self.logger.debug('No XGB result, file none report')
             # This is meant to say that we really do not know.
-            class_report['classifications'].append(
+            classifications.append(
                 {
                     'classifierName': self.classifier_name,
                     'classifierParams': self.classifier_version,
@@ -166,6 +176,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
                     'probability': 1.,
                 }
             )
+            class_report['classifications'] = classifications
             class_report['t2_submit'] = self.submit(class_report)
             return class_report
 
@@ -176,7 +187,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
         prob22 = (1-is1) * (1-is21)
 
         # We can now finalize probabilities for Reucurring events (2)
-        class_report['classifications'].append(
+        classifications.append(
             {
                 'classifierName': self.classifier_name,
                 'classifierParams': self.classifier_version,
@@ -184,7 +195,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
                 'probability': prob21,
             }
         )
-        class_report['classifications'].append(
+        classifications.append(
             {
                 'classifierName': self.classifier_name,
                 'classifierParams': self.classifier_version,
@@ -196,7 +207,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
         # Did Parsnip run?
         if parsnip_class is None:
             self.logger.debug('No Parsnip result, file simple report')
-            class_report['classifications'].append(
+            classifications.append(
                 {
                     'classifierName': self.classifier_name,
                     'classifierParams': self.classifier_version,
@@ -204,6 +215,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
                     'probability': prob1,
                 }
             )
+            class_report['classifications'] = classifications
             return {
                 "report": class_report,
                 "t2_submit": self.submit(class_report),
@@ -222,7 +234,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
 
         # However, lets first complete the base version
         for klass, parsnip_prob in parsnip_class.items():
-            class_report['classifications'].append(
+            classifications.append(
                 {
                     'classifierName': self.classifier_name,
                     'classifierParams': self.classifier_version,
@@ -230,6 +242,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
                     'probability': parsnip_prob*prob1,
                 }
             )
+        class_report['classifications'] = classifications
         return {
             "report": class_report,
             "t2_submit": self.submit(class_report),

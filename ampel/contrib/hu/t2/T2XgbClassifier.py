@@ -48,7 +48,7 @@ class T2XgbClassifier(AbsTiedStateT2Unit):
     model_prefix: str = 'xgboost_elasticc1v2_'
     model_type: str = '.json'
 
-    classifiers: Sequence = []
+    _classifiers: list[xgb.XGBClassifier]
 
     # Columns (in order) used for training
     # Which columsn to use for training
@@ -81,12 +81,14 @@ class T2XgbClassifier(AbsTiedStateT2Unit):
         Load models
         """
 
+        self._classifiers = []
+
         for dbin in self.det_ranges:
             fname = os.path.join(self.model_folder,
                 self.model_prefix+'ndet{}_{}'.format(dbin[0], dbin[1])+ self.model_type)
             model = xgb.XGBClassifier()
             model.load_model(fname=fname)
-            self.classifiers.append( model )
+            self._classifiers.append( model )
 
 
 
@@ -148,7 +150,7 @@ class T2XgbClassifier(AbsTiedStateT2Unit):
         t2out: dict[str, UBson] = {'imodel':b, 'model':self.model_prefix}
 
         # Can we find away round creating a numpy array?
-        prob = self.classifiers[b].predict_proba( np.array([ [t2data[col]
+        prob = self._classifiers[b].predict_proba( np.array([ [t2data[col]
                             if col in t2data.keys() else None
                             for col in self.use_cols] ]) )
         t2out['prob0'] = float( prob[0][0] )

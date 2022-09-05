@@ -26,7 +26,7 @@ def t3_transient_views() -> list[TransientView]:
             stock=StockDocument(
                 {"stock": stock_id, "channel": ["CHANNYCHAN"]},
             ),
-            t0=[DataPoint(id=i, stock=stock_id, body={}) for i in range(10)],
+            t0=[DataPoint(id=i, stock=stock_id, body={}, channel=[], meta=[]) for i in range(10)],
             t2=[
                 T2DocView(
                     stock=stock_id,

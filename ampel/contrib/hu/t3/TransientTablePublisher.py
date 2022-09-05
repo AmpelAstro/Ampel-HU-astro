@@ -21,6 +21,7 @@ from ampel.view.TransientView import TransientView
 from ampel.struct.UnitResult import UnitResult
 from ampel.view.T3Store import T3Store
 from ampel.view.SnapView import SnapView
+from ampel.util.mappings import get_by_path
 
 
 class TransientTablePublisher(AbsPhotoT3Unit):
@@ -104,13 +105,9 @@ class TransientTablePublisher(AbsPhotoT3Unit):
             for t2unit, table_entries in self.transient_table_schema.items():
                 # New SnapView has method for directly retrieve result.
                 # Possibly use this.
-                if t2res := tran_view.get_latest_t2_body(unit=t2unit):
-                    print('transient table schema', t2res)
+                if isinstance(t2res := tran_view.get_latest_t2_body(unit=t2unit), dict):
                     for label, path in table_entries.items():
-                        try:
-                            basetdict[label] = reduce(dict.get, path, t2res)
-                        except (KeyError, TypeError):
-                            pass # We leave missing entries empty
+                        basetdict[label] = get_by_path(t2res, path)
 
             # Assemble info which could vary from state to state
             # Should add config to labels if multiple exports
@@ -120,12 +117,9 @@ class TransientTablePublisher(AbsPhotoT3Unit):
                 t1_link = t1_document['link']
                 tdict = {}
                 for t2unit, table_entries in self.table_schema.items():
-                    if t2res := tran_view.get_latest_t2_body(unit=t2unit, link=t1_link):
+                    if isinstance(t2res := tran_view.get_latest_t2_body(unit=t2unit, link=t1_link), dict):
                         for label, path in table_entries.items():
-                            try:
-                                tdict[label] = reduce(dict.get, path, t2res)
-                            except (KeyError, TypeError):
-                                pass # We leave missing entries empty
+                            tdict[label] = get_by_path(t2res, path)
                 if len(tdict) > 0:
                     stateinfo.append(tdict)
 
@@ -194,7 +188,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
     @backoff.on_exception(
         backoff.expo,
         requests.HTTPError,
-        giveup=lambda e: e.response.status_code not in {503, 429},
+        giveup=lambda e: not isinstance(e, requests.HTTPError) or e.response.status_code not in {503, 429},
         max_time=60,
     )
     def _slack_export(self, df):

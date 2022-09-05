@@ -7,17 +7,12 @@
 # Last Modified Date: 21.04.2021
 # Last Modified By  : jnordin
 
-from typing import Any, Dict, Literal, Optional, Sequence, TYPE_CHECKING, Union
+from typing import Any, Sequence, TYPE_CHECKING, Union
 
-from astropy.coordinates import SkyCoord
 from astropy.table import Table
-from numpy import asarray, degrees
 
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.content.DataPoint import DataPoint
-##from ampel.enum.T2RunState import T2RunState
-##from ampel.type import T2UnitResult
-##from ampel.model.Secret import Secret
 
 from ampel.struct.UnitResult import UnitResult
 from ampel.enum.DocumentCode import DocumentCode
@@ -26,8 +21,6 @@ from ampel.types import UBson
 from math import cos, sin, acos, pi
 # Datalab
 from dl import authClient
-#from dl import queryClient 
-#from dl.helpers.utils import convert
 
 from collections import OrderedDict
 import numpy as np
@@ -165,7 +158,7 @@ class T2LSPhotoZTap(AbsPointT2Unit):
 
     # run only on first datapoint by default
     # NB: this assumes that docs are created by DualPointT2Ingester
-    ingest: Dict = {"eligible": {"pps": "first"}}
+    ingest: dict = {"eligible": {"pps": "first"}}
 
     # Path to noir queries
     datalab_query_url: str = 'https://datalab.noirlab.edu/query'
@@ -186,13 +179,13 @@ class T2LSPhotoZTap(AbsPointT2Unit):
     @backoff.on_exception(
         backoff.expo,
         requests.HTTPError,
-        giveup=lambda e: e.response.status_code not in {503, 429},
+        giveup=lambda e: isinstance(e, requests.HTTPError) and e.response.status_code not in {503, 429},
         max_time=60,
     )
     def _astrolab_query(self,
         ra: float,
         dec: float 
-        )-> Sequence[ Dict[str,any] ]:    # Does one need to add List[None] here for empty returns?
+        )-> Sequence[ dict[str,Any] ]:    # Does one need to add List[None] here for empty returns?
  
         self.logger.debug("Querying %s %s"%(ra,dec))
         
@@ -225,8 +218,8 @@ class T2LSPhotoZTap(AbsPointT2Unit):
 
 
     def add_separation(self, 
-        match_dict: Sequence[ Dict[str,any] ], target_ra: float, target_dec: float
-        )-> Sequence[ Dict[str, any] ]:
+        match_dict: Sequence[ dict[str,Any] ], target_ra: float, target_dec: float
+        )-> Sequence[ dict[str, Any] ]:
         """
         Iterate through catalog entries (dict) and add separation to target.
         """

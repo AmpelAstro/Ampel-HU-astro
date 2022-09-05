@@ -198,7 +198,7 @@ class PlotLightcurveSample(AbsPhotoT3Unit):
         table_rows: list[dict[str, Any]] = []
         for k, tran_view in enumerate(gen, 1):
 
-            sninfo = {}
+            sninfo: dict[str,UBson] = {}
             # Collect base information applying to all states
             # If here, add stock info (name, channel etcs)
             if names := (tran_view.stock or {}).get("name", []):
@@ -210,25 +210,23 @@ class PlotLightcurveSample(AbsPhotoT3Unit):
                     if isinstance((item := sninfo[label]), (list, tuple)) and len(item) == 1:
                         sninfo[label] = item[0]
             sninfo['stock'] = tran_view.id
-            channels = tran_view.stock.get("channel")
-            # Allow for both single (most common) and duplacte channels.
-            sninfo['channels'] = channels[0] if isinstance(channels, (list, tuple)) and len(channels) == 1 else channels
-
+            assert tran_view.stock
+            sninfo['channels'] = tran_view.stock.get("channel") # type: ignore[assignment]
 
             # Get AmpelZ info
             ampelz, ampelz_group = None, 99
-            if t2res := tran_view.get_latest_t2_body(unit='T2DigestRedshifts'):
+            if isinstance(t2res := tran_view.get_latest_t2_body(unit='T2DigestRedshifts'), dict):
                 if 'ampel_z' in t2res.keys():
                     # In case of multiple entries, no way to distinguish these (would have to add config selection to get_t2results)
                     sninfo['ampel_z_group'] = t2res['group_z_nbr']
                     sninfo['ampel_z'] = t2res['ampel_z']
             if self.max_ampelz_group:
-                if not 'ampel_z_group' in sninfo.keys() or self.max_ampelz_group<sninfo['ampel_z_group']:
+                if isinstance(ampel_z_group := sninfo.get("ampel_z_group"), int) and self.max_ampelz_group < ampel_z_group:
                     # Skip this one, z too uncertain
                     continue
 
             # Get BTS class if available
-            if t2res := tran_view.get_latest_t2_body(unit='T2MatchBTS'):
+            if isinstance(t2res := tran_view.get_latest_t2_body(unit='T2MatchBTS'), dict):
                 # Get plot class from BTS matching (if any)
                 bts_class = 'Unknown'
                 if 'bts_type' in t2res.keys():
@@ -275,7 +273,7 @@ class PlotLightcurveSample(AbsPhotoT3Unit):
         # Compare properties with absolute mag, if chosen
         if self.include_absmag:
             plt.figure(2, figsize=(20,10) )
-            g = sns.PairGrid(df, hue="class_from_bts", x_vars=["absmag"].extend(self.param), y_vars="absmag")
+            g = sns.PairGrid(df, hue="class_from_bts", x_vars=["absmag"] + self.param, y_vars="absmag")
             g.map_diag(sns.histplot, color=".3")
             g.map_offdiag(sns.scatterplot)
             g.add_legend()
@@ -287,3 +285,5 @@ class PlotLightcurveSample(AbsPhotoT3Unit):
 
         if self.save_table:
             df.to_csv( os.path.join( self.plot_dir, 'plot_lightcurvesample.csv' ) )
+        
+        return None

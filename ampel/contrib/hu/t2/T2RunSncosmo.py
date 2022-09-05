@@ -8,7 +8,7 @@
 # Last Modified By:    mf@physik.hu-berlin.de
 
 
-from typing import Any, Optional, Union, Literal
+from typing import Literal
 from collections.abc import Sequence
 import errno, backoff, copy
 
@@ -83,15 +83,15 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
     # T2MatchBTS : Use the redshift published by BTS and  synced by that T2.
     # T2DigestRedshifts : Use the best redshift as parsed by DigestRedshift.
     # None : run sncosmo template fit with redshift as free parameter OR use backup_z if set
-    redshift_kind: Optional[str]
+    redshift_kind: None | str
     # If loading redshifts from DigestRedshifts, provide the max ampel z group to make use of.
     # (note that filtering based on this can also be done for a potential t3)
     max_ampelz_group: int = 3
     # It is also possible to use fixed redshift whenever a dynamic redshift kind is not possible
-    backup_z: Optional[float]
+    backup_z: None | float
     # Finally, the provided lens redshift might be multiplied with a scale
     # Useful for lensing studies, or when trying multiple values
-    scale_z: Optional[float]
+    scale_z: None | float
 
 
     # Sncosmo parameters
@@ -107,11 +107,11 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
     # T2PhaseLimit : use the jdmin jdmax provided in this unit output
     # None : use full datapoint range
     # (T2BayesianBlocks should be added)
-    phaseselect_kind: Optional[str]
+    phaseselect_kind: None | str
 
     # Plot parameters
     plot_db: bool = False
-    plot_props: Optional[PlotProperties] = False
+    plot_props: None | PlotProperties = None
 
 
 
@@ -160,13 +160,13 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         self.process = backoff.on_exception( # type: ignore[assignment]
             backoff.expo,
             OSError,
-            giveup=lambda exc: exc.errno != errno.EMFILE,
-            logger=self.logger,
+            giveup=lambda exc: not isinstance(exc, OSError) or exc.errno != errno.EMFILE,
+            logger=self.logger, # type: ignore[arg-type]
             max_time=300,
         )(self.process)
 
 
-    def _get_redshift(self, t2_views) -> tuple[Optional[float],Optional[str]]:
+    def _get_redshift(self, t2_views) -> tuple[None | float, None | str]:
         """
         Can potentially also be replaced with some sort of T2DigestRershift tabulator?
 
@@ -174,8 +174,8 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         """
 
         # Examine T2s for eventual information
-        z: Optional[float] = None
-        z_source: Optional[str] = None
+        z: None | float = None
+        z_source: None | str = None
 
 
         if self.redshift_kind in ['T2MatchBTS', 'T2DigestRedshifts']:
@@ -203,22 +203,22 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                 z = None
                 z_source = "Fitted"
 
-        if z and self.scale_z:
+        if (z is not None) and (z_source is not None) and self.scale_z:
             z *= self.scale_z
             z_source += " + scaled {}".format(self.scale_z)
 
         return z, z_source
 
 
-    def _get_phaselimit(self, t2_views) -> tuple[Optional[float],Optional[float]]:
+    def _get_phaselimit(self, t2_views) -> tuple[None | float,None | float]:
         """
         Can potentially also be replaced with some sort of tabulator?
 
         """
 
         # Examine T2s for eventual information
-        jdstart: Optional[float] = None
-        jdend: Optional[float] = None
+        jdstart: None | float = None
+        jdend: None | float = None
 
         if self.phaseselect_kind is None:
             jdstart = -np.inf
@@ -304,7 +304,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         compound: T1Document,
         datapoints: Sequence[DataPoint],
         t2_views: Sequence[T2DocView]
-    ) -> Union[UBson, UnitResult]:
+    ) -> UBson | UnitResult:
         """
 
         Fit the parameters of the initiated snocmo_model to the light_curve
@@ -347,7 +347,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             return t2_output
 
         # Obtain photometric table
-        sncosmo_table = self.get_flux_table(datapoints, t2_output['jdstart'], t2_output['jdend'])
+        sncosmo_table = self.get_flux_table(datapoints, jdstart, jdend)
         self.logger.debug('Sncosmo table {}'.format(sncosmo_table))
 
         # Fitting section
@@ -355,7 +355,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
 
         # Define fit parameter and ranges
         if self.apply_mwcorrection:
-            transient_mwebv = self.dustmap.ebv(*self.get_pos(datapoints, ret="mean"))
+            transient_mwebv = self.dustmap.ebv(*self.get_pos(datapoints, which="mean"))
             self.sncosmo_model.set(mwebv=transient_mwebv)
 
         # Set redshift if provided
@@ -405,8 +405,8 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         if self.plot_props:
 
             # Construct name
-            stock_id = '-'.join(str(self.get_stock_id(datapoints)))
-            tname = '-'.join(self.get_stock_name(datapoints))
+            stock_id = '-'.join([str(v) for v in self.get_stock_id(datapoints)])
+            tname = '-'.join([str(v) for v in self.get_stock_name(datapoints)])
 
             # Add some info
             plot_fig_text = "{} {} {} \nchisq {:.2f}\nndof {}".format(
@@ -436,6 +436,6 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                                     self.plot_props, plot_extra, logger=self.logger)
             ]
             if self.plot_db:
-                t2_output['plots'] = plot
+                t2_output['plots'] = plots
 
         return t2_output

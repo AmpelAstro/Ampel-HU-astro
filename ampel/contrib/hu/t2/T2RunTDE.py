@@ -237,7 +237,7 @@ class T2RunTDE(T2RunSncosmo):
             self.fit_params = copy.deepcopy(self.sncosmo_model.param_names)
             self.fit_params.remove("mwebv")
         else:
-            self.sncosmo_model = sncosmo.Model(source=source)
+            self.sncosmo_model = sncosmo.Model(source=tde_source)
             self.fit_params = copy.deepcopy(self.sncosmo_model.param_names)
 
         # If redshift _should_ be provided we remove this from fit parameters
@@ -250,17 +250,7 @@ class T2RunTDE(T2RunSncosmo):
         self.process = backoff.on_exception(  # type: ignore[assignment]
             backoff.expo,
             OSError,
-            giveup=lambda exc: exc.errno != errno.EMFILE,
-            logger=self.logger,
+            giveup=lambda exc: not isinstance(exc, OSError) or exc.errno != errno.EMFILE,
+            logger=self.logger, # type: ignore[arg-type]
             max_time=300,
         )(self.process)
-
-    def process(
-        self, light_curve: LightCurve, t2_views: Sequence[T2DocView]
-    ) -> Union[UBson, UnitResult]:
-        """
-        Fit the loaded model to the data provided as a LightCurve.
-        """
-
-        # Restart sncosmo processing
-        return super().process(light_curve, t2_views)

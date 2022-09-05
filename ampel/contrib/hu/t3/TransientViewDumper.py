@@ -8,6 +8,7 @@
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 import uuid, requests
+from requests.auth import HTTPBasicAuth
 from gzip import GzipFile
 from io import BytesIO
 from typing import Optional, Union
@@ -81,15 +82,16 @@ class TransientViewDumper(AbsT3ReviewUnit):
             assert isinstance(self.outfile.fileobj, BytesIO)
             mb = len(self.outfile.fileobj.getvalue()) / 2.0 ** 20
             self.logger.info("{:.1f} MB of gzipped JSONy goodness".format(mb))
+            auth = HTTPBasicAuth(**self.desycloud_auth.get())
             self.session.put(
                 self.webdav_base + self.path,
                 data=self.outfile.fileobj.getvalue(),
-                auth=self.desycloud_auth.get(),
+                auth=auth,
             ).raise_for_status()
             response = self.session.post(
                 self.ocs_base + "/shares",
                 data=dict(path=self.path, shareType=3),
-                auth=self.desycloud_auth.get(),
+                auth=auth,
                 headers={"OCS-APIRequest": "true"},  # i'm not a CSRF attack, i swear
             )
             self.outfile.close()

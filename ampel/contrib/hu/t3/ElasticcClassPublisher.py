@@ -16,6 +16,7 @@ from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit, T3Send
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.view.TransientView import TransientView
+from ampel.view.T2DocView import T2DocView
 from ampel.view.T3Store import T3Store
 
 from ampel.contrib.hu.t3.ElasticcTomClient import ElasticcTomClient
@@ -97,7 +98,7 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
     # need to also sort based on config. Solve this if needed.
 
     def post_init(self) -> None:
-        self.tomclient = ElasticcTomClient(self.desc_user, self.desc_password, self.logger)
+        self.tomclient = ElasticcTomClient(self.desc_user.get(), self.desc_password.get(), self.logger)
 
     def search_journal_elasticc(
         self, tran_view: TransientView
@@ -148,25 +149,26 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
         state_map = {}
         def select_alerts(entry: "JournalRecord") -> bool:
             return bool(
-                entry["alert"] is not None and entry["link"] is not None
+                entry.get("alert") is not None and entry.get("link") is not None
             )
         if jentries := list(tran_view.get_journal_entries(tier=0, filter_func=select_alerts)):
             for entry in jentries:
-                state_map[entry['link']] = {
-                    'alertId': entry['alert'],
+                assert isinstance(link := entry.get("link"), int)
+                state_map[link] = {
+                    'alertId': entry.get('alert'),
                     # LSSTAlertSupplier uses diaSourceId as stock id
                     'diaSourceId': tran_view.id,
                     'brokerIngestTimestamp': entry['ts']*1000,
                     'elasticcPublishTimestamp': entry.get('alert_ts',666) }
-                if entry['link'] in done_t1states:
-                    state_map[entry['link']]['submitted'] = True
+                if link in done_t1states:
+                    state_map[link]['submitted'] = True
                 else:
-                    state_map[entry['link']]['submitted'] = False
+                    state_map[link]['submitted'] = False
         return state_map
 
 
 
-    def _get_parsnip_classification(self, t2view: TransientView) -> list[dict]:
+    def _get_parsnip_classification(self, t2view: T2DocView) -> list[dict]:
         """
         Parse a T2Document from parsnip and produce a ClassificationDict
         as expected by ELAsTICC.
@@ -185,8 +187,9 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
 
         """
 
-        # Have already verified this to have completed.
-        t2body = t2view.body[-1]
+        # Have already verified this to have completed (but assert anyway to constrain type)
+        assert t2view.body is not None
+        assert isinstance(t2body := t2view.body[-1], dict)
 
         # Check if Parsnip ran but not produce classification
         if not 'classification' in t2body:
@@ -201,7 +204,7 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
                 } for parsnip_type, prob in t2body['classification'].items() ]
 
 
-    def _get_xgb_classification(self, t2view: TransientView) -> list[dict]:
+    def _get_xgb_classification(self, t2view: T2DocView) -> list[dict]:
         """
         Parse a T2Document from T2XgbClassifier and produce a ClassificationDict
         as expected by ELAsTICC.
@@ -217,9 +220,9 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
 
         """
 
-        # Have already verified this to have completed.
-        t2body = t2view.body[-1]
-
+        # Have already verified this to have completed (but assert anyway to constrain type)
+        assert t2view.body is not None
+        assert isinstance(t2body := t2view.body[-1], dict)
 
         # Check if Parsnip ran but not produce classification
         if not 'prob0' in t2body:

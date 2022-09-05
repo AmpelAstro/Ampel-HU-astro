@@ -7,13 +7,12 @@
 # Last Modified Date:  03.03.2022
 # Last Modified By:    atownsend@physik.hu-berlin.de
 
-from typing import Any, Optional, Literal, Union, Tuple, List
+from typing import Any, Literal
 from collections.abc import Sequence
 from ampel.struct.UnitResult import UnitResult
 
 from ampel.types import UBson
 from ampel.enum.DocumentCode import DocumentCode
-#from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
 from ampel.view.T2DocView import T2DocView
@@ -55,7 +54,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
     #                    "max_distance": "max arcsec in which to allow match,
     #                    "max_redshift": "max redshift to use",
     #                    "z_group": "which redshift group to assign to" }
-    catalogmatch_override: Optional[dict[str, Any]]
+    catalogmatch_override: None | dict[str, Any]
 
 
 
@@ -71,7 +70,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
 
 
 
-    def _get_lsphotoz_groupz(self, t2_res: dict[str, Any]) -> Tuple[Any]:
+    def _get_lsphotoz_groupz(self, t2_res: dict[str, Any]) -> tuple[list[list[float]],list[list[float]]]:
         """
         Parse output from T2LSPhotoZTap and investigate whether any matches fulfill group
         redshift criteria.
@@ -138,7 +137,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
 
 
 
-    def _get_catalogmatch_groupz(self, t2_res: dict[str, Any]) -> Tuple[Any]:
+    def _get_catalogmatch_groupz(self, t2_res: dict[str, Any]) -> tuple[list[list[float]],list[list[float]]]:
         """
         Parse output from T2CatalogMatch.
 
@@ -306,7 +305,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
     # ==================== #
     def process(self,
                 light_curve: LightCurve, t2_views: Sequence[T2DocView]
-                ) -> Union[UBson, UnitResult]:
+                ) -> UBson | UnitResult:
         """
 
             Parse t2_views from catalogs that were part of the redshift studies.
@@ -359,10 +358,10 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
                 # No matches with sufficient precision
                 break
             if len(group_redshifts[k]) > 0:
-                t2_output['ampel_z'] = np.mean(group_redshifts[k])
+                t2_output['ampel_z'] = float(np.mean(group_redshifts[k]))
                 t2_output['group_z_precision'] = self.category_precision[k]
                 t2_output['group_z_nbr'] = k+1
-                t2_output['ampel_dist'] = np.mean(group_distances[k])
+                t2_output['ampel_dist'] = float(np.mean(group_distances[k]))
                 # We then do *not* look for higher group (more uncertain) matches
                 break
         if self.catalogmatch_override:

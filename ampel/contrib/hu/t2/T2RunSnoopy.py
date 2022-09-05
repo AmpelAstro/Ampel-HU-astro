@@ -10,7 +10,7 @@
 
 from typing import Any, Optional, Union, Literal
 from collections.abc import Sequence
-import errno, backoff, copy, os
+import os
 
 
 import numpy as np
@@ -18,7 +18,7 @@ import snpy # type: ignore[import]
 from astropy.table import Table
 from sfdmap import SFDMap  # type: ignore[import]
 
-from ampel.types import UBson
+from ampel.types import StockId, UBson
 from ampel.struct.UnitResult import UnitResult
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
 from ampel.view.T2DocView import T2DocView
@@ -104,16 +104,6 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
             self.dustmap = SFDMap()
 
 
-        # retry on with exponential backoff on "too many open files"
-        self.process = backoff.on_exception( # type: ignore[assignment]
-            backoff.expo,
-            OSError,
-            giveup=lambda exc: exc.errno != errno.EMFILE,
-            logger=self.logger,
-            max_time=300,
-        )(self.process)
-
-
     def _get_redshift(self, t2_views) -> tuple[Optional[float],Optional[str]]:
         """
         Can potentially also be replaced with some sort of T2DigestRershift tabulator?
@@ -151,7 +141,7 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
                 z = None
                 z_source = "Fitted"
 
-        if z and self.scale_z:
+        if (z is not None) and (z_source is not None) and self.scale_z:
             z *= self.scale_z
             z_source += " + scaled {}".format(self.scale_z)
 
@@ -257,7 +247,7 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
         t2_output['z'] = z
         t2_output['z_source'] = z_source
         # A source class of None indicates that a redshift source was required, but not found.
-        if t2_output['z_source'] is None:
+        if z is None or z_source is None:
             return t2_output
 
         # Check for phase limits
@@ -268,7 +258,9 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
             return t2_output
 
         # Initialize SN
-        (ra, dec) = light_curve.get_pos()
+        assert isinstance(pos := light_curve.get_pos(), tuple)
+        (ra, dec) = pos
+        assert isinstance(light_curve.stock_id, int)
         if self.apply_mwcorrection:
             transient_mwebv = self.dustmap.ebv(ra, dec)
             snoopy_sn = snpy.sn(name=ZTFIdMapper.to_ext_id(light_curve.stock_id),
@@ -281,7 +273,7 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
         snoopy_sn.replot = 0 # default plot is off
 
         # Obtain and add photometric table
-        lc_dict = self._get_snoopy_lcs(snoopy_sn, light_curve, t2_output['jdstart'], t2_output['jdend'])
+        lc_dict = self._get_snoopy_lcs(snoopy_sn, light_curve, jdstart, jdend)
         for fname, lc in lc_dict.items():
             snoopy_sn.data[fname] = lc
         snoopy_sn.get_restbands()

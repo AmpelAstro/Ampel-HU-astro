@@ -29,6 +29,8 @@ def _to_datapoint(d):
         id=d.pop("_id"),
         body=d,
         tag=[_ampel_photo_flags[f] for f in d.pop("alTags") if f in _ampel_photo_flags],
+        channel=[],
+        meta=[]
     )
 
 

@@ -7,32 +7,27 @@
 # Last Modified Date: 12.04.2022
 # Last Modified By  : jnordin@physik.hu-berlin.de
 
-from typing import Sequence, Union, Literal
-#import errno, os, re, backoff, copy, sys
-#import math
-#from scipy.stats import chi2
-#import gc
+from typing import Sequence, Union, TypedDict, cast
 import numpy as np
-#from astropy.table import Table
-#import matplotlib.pyplot as plt
-
 
 from ampel.types import UBson
 from ampel.struct.UnitResult import UnitResult
 from ampel.content.DataPoint import DataPoint
-#from ampel.content.StockDocument import StockDocument
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
-#from ampel.abstract.AbsStockT2Unit import AbsStockT2Unit
 
-#from ampel.view.T2DocView import T2DocView
-#from ampel.view.LightCurve import LightCurve
-#from ampel.model.StateT2Dependency import StateT2Dependency
-#from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper
+class QuantileEntry(TypedDict):
+    w: float
+    q: list[str]
 
+class RedshiftSamples(TypedDict):
+    z_source: str
+    host_sep: float
+    z_samples: list[float]
+    z_weights: list[float]
 
 # Quantile subselections and weights
 # Dictionaries of redhift weights together with the accompaning quantile entries.
-QUANT_WEIGHTS = {
+QUANT_WEIGHTS: dict[int, list[QuantileEntry]] = {
     3: [
         {'w':0.2, 'q': ['000', '010', '020', '030', '040']},
         {'w':0.6, 'q': ['030', '040', '050', '060', '070']},  # Will always be 050?
@@ -49,7 +44,7 @@ QUANT_WEIGHTS = {
 
 # For the gaussian case, which sigma deviations should be used for
 # each number of samples?
-NORM_SIGMAS = {
+NORM_SIGMAS: dict[int,list[float]] = {
     1: [0],
     3: [-1.5,0,1.5],
     5: [-2.,-1.,0,1.,2.],
@@ -105,8 +100,8 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
 
     # Default redshifts and weights - in particular used for hostless events
     # Values set semi-randomly now.
-    default_zs: Sequence[float] = [0.01, 0.2, 0.5, 0.8]
-    default_weights: Sequence[float] = [0.4, 0.2, 0.2, 0.2]
+    default_zs: list[float] = [0.01, 0.2, 0.5, 0.8]
+    default_weights: list[float] = [0.4, 0.2, 0.2, 0.2]
 
     # Check for final/spectroscopic redshifts, and use if present
     # Usually would be the case, but for testing we might not want to
@@ -118,7 +113,7 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
     #host_selection: Literal['minDDLR'] = 'minDDLR'
 
 
-    def get_hostprob(self, hostinfo: dict) -> (float, float):
+    def get_hostprob(self, hostinfo: dict) -> tuple[float, float, float]:
         """
         Use the information from the alert info to guess relative prob
         for the two different host galaxies.
@@ -195,9 +190,9 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
         # Final (simulated) data available and used?
         if self.use_final_z:
             if dp.get('z_final',-1)>0:
-                z, dz, zsource = dp.get('z_final'), dp.get('z_final_err', 0), 'Z_FINAL'
+                z, dz, zsource = dp.get('z_final',-1), dp.get('z_final_err', 0), 'Z_FINAL'
             elif dp.get('redshift_helio',-1)>0:
-                z, dz, zsource = dp.get('redshift_helio'), dp.get('redshift_helio_err', 0), 'REDSHIFT_HELIO'
+                z, dz, zsource = dp.get('redshift_helio',-1), dp.get('redshift_helio_err', 0), 'REDSHIFT_HELIO'
 
         # Both sources need to be weighted together
         if zsource is None and probH1>0 and probH2>0:
@@ -205,57 +200,61 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
 
         # Get spectroscopiy host redshift if available
         if zsource is None and probH1>0 and dp.get('hostgal_zspec',-1)>0:
-            z, dz, zsource = dp.get('hostgal_zspec'), dp.get('hostgal_zspec_err'), 'HOSTGAL_ZSPEC'
+            z, dz, zsource = dp.get('hostgal_zspec',-1), dp.get('hostgal_zspec_err',0), 'HOSTGAL_ZSPEC'
         if zsource is None and probH2>0 and dp.get('hostgal2_zspec',-1)>0:
-            z, dz, zsource = dp.get('hostgal2_zspec'), dp.get('hostgal2_zspec_err'), 'HOSTGAL2_ZSPEC'
+            z, dz, zsource = dp.get('hostgal2_zspec',-1), dp.get('hostgal2_zspec_err',0), 'HOSTGAL2_ZSPEC'
 
         # Finish up gaussian case
         if zsource is not None:
-            t2_output= {"z_source": zsource, "host_sep": host_sep}
             # Calculate weights
             pulls = NORM_SIGMAS[self.nbr_samples]
             weights = np.exp(-0.5 * np.array(pulls)**2) / np.sqrt(2)
             weights /= np.sum(weights)
-            t2_output["z_weights"] = list(weights)
-            t2_output["z_samples"] = [ z + p*dz for p in pulls]
+            t2_output: RedshiftSamples = {
+                "z_source": zsource,
+                "host_sep": host_sep,
+                "z_weights": list(weights),
+                "z_samples": [z + p*dz for p in pulls]
+            }
 
-            return t2_output
+            return cast(UBson, t2_output)
 
         # Extract values from photo-z quantiles
         # (assuming these always exist)
         # Final cases should be the hostless (default)
         if probH1>0 or probH2>0:
 
-            t2_output, prefix = {"host_sep":host_sep}, None
-            if probH1>0:
-                t2_output["z_source"] = 'HOSTGAL_ZQUANT'
-                prefix = 'hostgal_zphot_q'
-            elif probH2>0:
-                t2_output["z_source"] = 'HOSTGAL2_ZQUANT'
-                prefix = 'hostgal2_zphot_q'
+            
+            t2_output = {
+                "z_source": "HOSTGAL_ZQUANT" if probH1 > 0 else "HOSTGAL_ZQUANT",
+                "host_sep": host_sep,
+                "z_samples": [],
+                "z_weights": []
+            }
+            prefix = "hostgal_zphot_q" if t2_output["z_source"] == "HOSTGAL_ZQUANT" else "hostgal2_zphot_q"
 
             # Get some redshifts
             if self.nbr_samples==1:
-                t2_output["z_samples"] = [z_quant.get(50)]
+                t2_output["z_samples"] = [dp.get(f"{prefix}050", -1)]
                 t2_output["z_weights"] = [1.0]
             if self.nbr_samples==3 or self.nbr_samples==5:
                 t2_output["z_samples"], t2_output["z_weights"] = [], []
                 for weight_quantiles in QUANT_WEIGHTS[self.nbr_samples]:
                     weight = weight_quantiles['w']
                     quantiles = weight_quantiles['q']
-                    t2_output["z_samples"].append( np.mean( [dp.get(prefix+q)
-                                for q in quantiles if dp.get(prefix+q,-9)>-9] ) ) # -9 seems to be null
+                    t2_output["z_samples"].append( np.mean( [qv
+                                for q in quantiles if (qv := dp.get(prefix+q,-9))>-9] ) ) # -9 seems to be null
                     t2_output["z_weights"].append(weight)
 
 
-            return t2_output
-
-
+            return cast(UBson, t2_output)
 
         # Only left with output dict for defult/hostless SNe
-        t2_output: dict[str, UBson] = {"z_source": "default",
-		                              "z_samples": self.default_zs,
-                                      "z_weights": self.default_weights,
-                                      }
+        t2_output = {
+            "z_source": "default",
+            "host_sep": np.nan,
+		    "z_samples": self.default_zs,
+            "z_weights": self.default_weights,
+        }
 
-        return t2_output
+        return cast(UBson, t2_output)

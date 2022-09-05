@@ -12,7 +12,7 @@ import numpy as np
 import sncosmo # type: ignore[import]
 from sfdmap import SFDMap  # type: ignore[import]
 from typing import Union
-import errno, os, backoff, copy
+import copy
 from astropy.time import Time
 from typing import Literal, Sequence
 from urllib.request import urlopen
@@ -141,14 +141,6 @@ class T2RunPossis(T2RunSncosmo):
 
         self.default_param_vals = self.sncosmo_model.parameters
 
-        # retry on with exponential backoff on "too many open files"
-        self.process = backoff.on_exception( # type: ignore[assignment]
-            backoff.expo,
-            OSError,
-            giveup=lambda exc: exc.errno != errno.EMFILE,
-            logger=self.logger,
-            max_time=300,
-        )(self.process)
 
     def process(self,
         compound: T1Document,

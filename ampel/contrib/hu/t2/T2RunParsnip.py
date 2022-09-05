@@ -7,15 +7,13 @@
 # Last Modified Date: 06.04.2022
 # Last Modified By  : jnordin@physik.hu-berlin.de
 
-from typing import Sequence, Literal, Any, Optional, Tuple, Union, Dict, List
-import errno, os, re, backoff, copy, sys
-import math
+from typing import Sequence, Literal, Optional
+import os, backoff
 from scipy.stats import chi2
 import gc
 import numpy as np
 from astropy.table import Table
 import matplotlib.pyplot as plt
-import requests
 import timeout_decorator
 
 from ampel.types import UBson
@@ -88,10 +86,12 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
     max_ampelz_group: int = 3
     # It is also possible to use fixed redshift whenever a dynamic redshift kind is not possible
     # This could be either a single value or a list
-    fixed_z: Optional[Union[float, Sequence[float]]]
+    fixed_z: Optional[float | Sequence[float]]
     # Finally, the provided lens redshift might be multiplied with a scale
     # Useful for lensing studies, or when trying multiple values
     scale_z: Optional[float]
+
+    max_fit_z: None | float = None
 
     # Remove MW dust absorption.
     # MWEBV is either derived from SFD maps using the position from light_curve
@@ -116,7 +116,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
     phaseselect_kind: Optional[str]
 
     # Abort veto (if fulfilled, skip run)
-    abort_map: Optional[Dict[str, List]]
+    abort_map: Optional[dict[str, list]]
 
     # Save / plot parameters
     plot_suffix: Optional[str]
@@ -150,7 +150,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
 
 
 
-    def _get_redshift(self, t2_views) -> Tuple[Optional[Sequence[float]], Optional[str]]:
+    def _get_redshift(self, t2_views) -> tuple[Optional[list[float]], Optional[str], Optional[list[float]]]:
         """
         Can potentially also be replaced with some sort of T2DigestRershift tabulator?
 
@@ -158,9 +158,9 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         """
 
         # Examine T2s for eventual information
-        z: Optional[Sequence[float]] = None
+        z: Optional[list[float]] = None
         z_source: Optional[str] = None
-        z_weights: Optional[Sequence[float]] = None
+        z_weights: Optional[list[float]] = None
 
 
         if self.redshift_kind in ['T2MatchBTS', 'T2DigestRedshifts', 'T2ElasticcRedshiftSampler']:
@@ -185,24 +185,24 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                     z_weights = t2_res['z_weights']
         else:
             # Check if there is a fixed z set for this run, otherwise keep as free parameter
-            if self.fixed_z:
-                if isinstance(self.fixed_z, list):
-                    z = self.fixed_z
-                else:
+            if self.fixed_z is not None:
+                if isinstance(self.fixed_z, float):
                     z = [self.fixed_z]
+                else:
+                    z = list(self.fixed_z)
                 z_source = "Fixed"
             else:
                 z = None
                 z_source = "Fitted"
 
-        if z and self.scale_z:
+        if (z is not None) and (z_source is not None) and self.scale_z:
             z = [onez*self.scale_z for onez in z]
             z_source += " + scaled {}".format(self.scale_z)
 
 
         return z, z_source, z_weights
 
-    def _get_abort(self, t2_views) -> Tuple[bool, Dict]:
+    def _get_abort(self, t2_views) -> tuple[bool, dict]:
         """
         Check potential previous t2s for whether the run should be aborted.
         (For perfomance reasons).
@@ -230,7 +230,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         return (abort, abort_maps)
 
 
-    def _get_phaselimit(self, t2_views) -> Tuple[Optional[float], Optional[float]]:
+    def _get_phaselimit(self, t2_views) -> tuple[Optional[float], Optional[float]]:
         """
         Can potentially also be replaced with some sort of tabulator?
 
@@ -310,7 +310,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                 compound: T1Document,
                 datapoints: Sequence[DataPoint],
                 t2_views: Sequence[T2DocView]
-    ) -> Union[UBson, UnitResult]:
+    ) -> UBson | UnitResult:
         """
 
         Fit the parameters of the initiated snocmo_model to the light_curve
@@ -354,7 +354,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             return t2_output
 
         # Obtain photometric table
-        sncosmo_table = self.get_flux_table( datapoints, t2_output['jdstart'], t2_output['jdend'] )
+        sncosmo_table = self.get_flux_table( datapoints, jdstart, jdend )
         self.logger.debug('Sncosmo table {}'.format(sncosmo_table))
 
 
@@ -362,7 +362,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         if self.apply_mwcorrection:
             # Get ebv from coordiantes.
             # Here there should be some option to read it from journal/stock etc
-            mwebv = self.dustmap.ebv(*self.get_pos(datapoints, ret="mean"))
+            mwebv = self.dustmap.ebv(*self.get_pos(datapoints, which="mean"))
             t2_output['mwebv'] = mwebv
             sncosmo_table = self._deredden_mw_extinction(mwebv, sncosmo_table)
 
@@ -373,7 +373,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         t2_output['z_source'] = z_source
         t2_output['z_weights'] = z_weights
         # A source class of None indicates that a redshift source was required, but not found.
-        if t2_output['z_source'] is None:
+        if z is None or z_source is None:
             return t2_output
 
 
@@ -386,6 +386,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                 return t2_output
             z, z_probabilities = self.model.predict_redshift_distribution(
                                 sncosmo_table, max_redshift=self.max_fit_z)
+        assert z is not None
 
         # Create a list of lightcurves, each at a discrete redshift
         lcs = []
@@ -401,22 +402,22 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
 
 
         # Cast result for storage and look at relative probabilities
-        t2_output["predictions"] = {}
-        t2_output["classifications"] = {}
+        predictions = {}
+        classifcations = {}
         for i, redshift in enumerate(z):
             foo = dict(lc_predictions[i][lc_predictions.colnames[1:]])
-            t2_output["predictions"][str(redshift)] = {k: dcast_pred[k](v)
+            predictions[str(redshift)] = {k: dcast_pred[k](v)
                                         if k in dcast_pred and v is not None
 								        else float(v) for k, v in foo.items()}
             # Not sure whether the dof could change? Normalizing now
             if foo['model_dof']>0:
-                t2_output["predictions"][str(redshift)]['chi2pdf'] = chi2.pdf(
+                predictions[str(redshift)]['chi2pdf'] = chi2.pdf(
                                         foo['model_chisq'], foo['model_dof'] )
             else:
                 # Not enough data - earlier check?
-                t2_output["predictions"][str(redshift)]['chi2pdf'] = 0.
+                predictions[str(redshift)]['chi2pdf'] = 0.
             foo = dict(lc_classifications[i][lc_classifications.colnames[1:]])
-            t2_output["classifications"][str(redshift)] = {k: dcast_class[k](v)
+            classifcations[str(redshift)] = {k: dcast_class[k](v)
 		                                  if k in dcast_class and v is not None
 									      else float(v) for k, v in foo.items()}
 
@@ -427,7 +428,10 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         probabilities = lc_classifications[types].as_array().view((dtype, len(types)))
         # Now we could normalize these z prob and normalize types over redshifts
         z_probabilities = np.array( [lcfit['chi2pdf']
-                    for redshift, lcfit in t2_output["predictions"].items()] )
+                    for redshift, lcfit in predictions.items()] )
+
+        t2_output["predictions"] = predictions
+        t2_output["classifications"] = classifcations
 
         if np.sum(z_probabilities)>0:
             # Take redshift probabilities into account, if available
@@ -440,8 +444,8 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             t2_output["z_at_minchi"] = z[np.argmax(z_probabilities)]
             # Map these to singular value predictions/lc_classifications
             # (wastes DB space, but possible to filter based on)
-            t2_output["prediction"] = t2_output["predictions"][str(t2_output["z_at_minchi"])]
-            t2_output["classification"] = t2_output["classifications"][str(t2_output["z_at_minchi"])]
+            t2_output["prediction"] = predictions[str(t2_output["z_at_minchi"])]
+            t2_output["classification"] = classifcations[str(t2_output["z_at_minchi"])]
         else:
             # Not enough data for a chi2 estimate
             t2_output["Failed"] = 'NoDOF'

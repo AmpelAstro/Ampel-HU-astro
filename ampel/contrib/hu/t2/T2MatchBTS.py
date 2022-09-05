@@ -47,7 +47,7 @@ class T2MatchBTS(AbsLightCurveT2Unit):
     @backoff.on_exception(
         backoff.expo,
         requests.HTTPError,
-        giveup=lambda e: e.response.status_code not in {503, 429},
+        giveup=lambda e: not isinstance(e, requests.HTTPError) or e.response.status_code not in {503, 429},
         max_time=60,
     )
     def post_init(self)->None:
