@@ -485,9 +485,9 @@ class TNSTalker(AbsT3ReviewUnit):
         import io
         import json
 
-        from slack import WebClient
-        from slack.errors import SlackClientError
-        from slack.web.slack_reponse import SlackResponse
+        from slack_sdk import WebClient
+        from slack_sdk.errors import SlackClientError
+        from slack_sdk.web import SlackResponse
 
         sc = WebClient(token=self.slack_token.get())
 
