@@ -74,12 +74,11 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
         Placeholder for actually doing a quick T2 submit.
         """
 
-        print(report)
         # For now we do a quick probability eval
         psum = 0
         for klass in report['classifications']:
             psum += klass['probability']
-        print('Total alert probability: ', psum)
+
         if not psum==1:
             print('WARNING; SOMETHING NOT RIGHT.')
 
@@ -205,8 +204,10 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
                     'probability': prob1,
                 }
             )
-            class_report['t2_submit'] = self.submit(class_report)
-            return class_report
+            return {
+                "report": class_report,
+                "t2_submit": self.submit(class_report),
+            }
 
 
         # Time to integrate Parsnip results.
@@ -229,5 +230,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
                     'probability': parsnip_prob*prob1,
                 }
             )
-        class_report['t2_submit'] = self.submit(class_report)
-        return class_report
+        return {
+            "report": class_report,
+            "t2_submit": self.submit(class_report),
+        }
