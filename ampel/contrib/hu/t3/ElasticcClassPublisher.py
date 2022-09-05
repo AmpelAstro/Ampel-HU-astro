@@ -8,7 +8,7 @@
 # Last Modified By:    jno <jnordin@physik.hu-berlin.de>
 
 from itertools import islice
-from typing import Any, Sequence, Dict, Iterable
+from typing import Any, Sequence, Dict, Iterable, TYPE_CHECKING
 from collections.abc import Generator
 
 from ampel.struct.StockAttributes import StockAttributes
@@ -19,6 +19,9 @@ from ampel.view.TransientView import TransientView
 from ampel.view.T3Store import T3Store
 
 from ampel.contrib.hu.t3.ElasticcTomClient import ElasticcTomClient
+
+if TYPE_CHECKING:
+    from ampel.content.JournalRecord import JournalRecord
 
 
 # Tying classification output classes with ELAsTICC taxonomy classes
@@ -83,7 +86,6 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
     broker_version: str = 'v0.1'
     desc_user: NamedSecret[str]
     desc_password: NamedSecret[str]
-    tomclient = None
 
     #: prepare report, but do not submit to TOM
     dry_run: bool = False
@@ -124,7 +126,7 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
         """
 
         # Create a list of states for which the list of units
-        def select(entry: "JournalRecord") -> bool:
+        def select_submitted(entry: "JournalRecord") -> bool:
             return bool(
                 (entry.get("extra") is not None and ("descPutComplete" in entry["extra"])
                 and (entry["extra"]["descPutComplete"]) )
@@ -135,7 +137,7 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
         done_t1states = []
 
         # All entries which we found should correspond to correctly sumitted classifications
-        if jentries := list(tran_view.get_journal_entries(tier=3, filter_func=select)):
+        if jentries := list(tran_view.get_journal_entries(tier=3, filter_func=select_submitted)):
             for entry in jentries:
                 done_t1states.append( entry['extra']['t1State'])
 
@@ -144,11 +146,11 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
         # Perform another journal search and check whether this unit was run
         # for this state
         state_map = {}
-        def select(entry: "JournalRecord") -> bool:
+        def select_alerts(entry: "JournalRecord") -> bool:
             return bool(
                 entry["alert"] is not None and entry["link"] is not None
             )
-        if jentries := list(tran_view.get_journal_entries(tier=0, filter_func=select)):
+        if jentries := list(tran_view.get_journal_entries(tier=0, filter_func=select_alerts)):
             for entry in jentries:
                 state_map[entry['link']] = {
                     'alertId': entry['alert'],
@@ -164,7 +166,7 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
 
 
 
-    def _get_parsnip_classification(self, t2view: TransientView) -> Dict:
+    def _get_parsnip_classification(self, t2view: TransientView) -> list[dict]:
         """
         Parse a T2Document from parsnip and produce a ClassificationDict
         as expected by ELAsTICC.
@@ -199,7 +201,7 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
                 } for parsnip_type, prob in t2body['classification'].items() ]
 
 
-    def _get_xgb_classification(self, t2view: TransientView) -> Dict:
+    def _get_xgb_classification(self, t2view: TransientView) -> list[dict]:
         """
         Parse a T2Document from T2XgbClassifier and produce a ClassificationDict
         as expected by ELAsTICC.
@@ -241,9 +243,9 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
                 }  )
             return classout
         else:
-            raise RuntimeError(f'do not understand model: {body}')
+            raise RuntimeError(f'do not understand model: {t2body}')
 
-    def _get_reports(self, gen: Generator[TransientView, T3Send, None]) -> Generator[tuple[TransientView,dict]]:
+    def _get_reports(self, gen: Generator[TransientView, T3Send, None]) -> Generator[tuple[TransientView,int,dict],None,None]:
 
         for tran_view in gen:
             # Check journal for state/alertId combos and whether already
@@ -254,7 +256,7 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
                 if alertinfo['submitted']:
                     self.logger.debug('submitted', extra={'t1':t1_link})
                     continue
-                classifications = {}
+                classifications: dict[str,list[dict]] = {}
                 # Check whether we can get classification for all requested
                 # units for this state
                 for t2unit in self.t2classifiers:
