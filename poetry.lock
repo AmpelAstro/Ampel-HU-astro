@@ -58,7 +58,7 @@ docs = ["Sphinx (>=5.1.1,<5.2.0)", "sphinx-autodoc-typehints (>=1.11.1,<2.0.0)",
 
 [[package]]
 name = "ampel-core"
-version = "0.8.3b3"
+version = "0.8.3b4"
 description = "Alice in Modular Provenance-Enabled Land"
 category = "main"
 optional = false
@@ -127,7 +127,7 @@ mpl = ["matplotlib"]
 
 [[package]]
 name = "ampel-ztf"
-version = "0.8.3a2"
+version = "0.8.3a3"
 description = "Zwicky Transient Facility support for the Ampel system"
 category = "main"
 optional = false
@@ -135,10 +135,10 @@ python-versions = ">=3.10,<3.11"
 
 [package.dependencies]
 aiohttp = ">=3.7.3,<4.0.0"
-ampel-alerts = ">=0.8.3-alpha.9,<0.9.0"
-ampel-core = ">=0.8.3-alpha.11,<0.9.0"
-ampel-interface = ">=0.8.3-alpha.11,<0.9.0"
-ampel-photometry = ">=0.8.3-alpha.1,<0.9.0"
+ampel-alerts = ">=0.8.3-beta.1,<0.9.0"
+ampel-core = ">=0.8.3-beta.3,<0.9.0"
+ampel-interface = ">=0.8.3-beta.5,<0.9.0"
+ampel-photometry = ">=0.8.3-alpha.2,<0.9.0"
 astropy = ">=5.0,<6.0"
 backoff = ">=2.0.0,<3.0.0"
 fastavro = ">=1.3.2,<2.0.0"
@@ -150,8 +150,8 @@ requests-toolbelt = ">=0.9.1,<0.10.0"
 [package.extras]
 kafka = ["confluent-kafka (>=1.5.0,<2.0.0)"]
 healpix = ["healpy (>=1.15,<2.0)"]
-light-curve = ["light-curve (>=0.2.5,<0.6)"]
-archive = ["ampel-ztf-archive (>=0.8.0-alpha.0,<0.9.0)"]
+light-curve = ["light-curve (>=0.6,<0.7)"]
+archive = ["ampel-ztf-archive (<empty>)"]
 
 [[package]]
 name = "appdirs"
@@ -932,7 +932,7 @@ pycryptodome = "*"
 
 [[package]]
 name = "slack-sdk"
-version = "3.18.2"
+version = "3.18.3"
 description = "The Slack API Platform SDK for Python"
 category = "main"
 optional = true
@@ -1182,8 +1182,8 @@ ampel-alerts = [
     {file = "ampel_alerts-0.8.3b1-py3-none-any.whl", hash = "sha256:73138c7c4b8772b7f43d4076cdc15c5d39a3df170732bcc36f3c9ffdc2f0816f"},
 ]
 ampel-core = [
-    {file = "ampel-core-0.8.3b3.tar.gz", hash = "sha256:1da78fff46b3d7ea7f8e0b325290ed321c5e8ed3da0234c5fcab3066e76b4069"},
-    {file = "ampel_core-0.8.3b3-py3-none-any.whl", hash = "sha256:578722a35b92ff9d870653f49ac2af557dbf4e0439cb67f488bbbe303e136edf"},
+    {file = "ampel-core-0.8.3b4.tar.gz", hash = "sha256:aca9487e2f15dd6579e54f5327ca9e1bc88f7bf51ffd1a62d2295439a95ccc0b"},
+    {file = "ampel_core-0.8.3b4-py3-none-any.whl", hash = "sha256:94d8501105802b49ca23644f454d7427121c67cf9e9d8b2f094010ff877e7688"},
 ]
 ampel-interface = [
     {file = "ampel-interface-0.8.3b5.tar.gz", hash = "sha256:6984bc0a5fe1281b829c0409e6f4ceca6cd6d5c2571b353db25084b0a343d8fa"},
@@ -1195,8 +1195,8 @@ ampel-photometry = [
 ]
 ampel-plot = []
 ampel-ztf = [
-    {file = "ampel-ztf-0.8.3a2.tar.gz", hash = "sha256:9cf2a6dbfaa2d5642a72a21de98788ff86d692e47df01a651b1db0e385a1a533"},
-    {file = "ampel_ztf-0.8.3a2-py3-none-any.whl", hash = "sha256:35ace8c7ebd4bb690fe46982d4cdfba19dea592e9f7fe6ac5e240710dd2737b7"},
+    {file = "ampel-ztf-0.8.3a3.tar.gz", hash = "sha256:98c46fe129b5f108ed826d2e93896f29475d2f15979ce43ac23fd7375464b67e"},
+    {file = "ampel_ztf-0.8.3a3-py3-none-any.whl", hash = "sha256:f1def76f55950448d41d4f56a1c3325a285a7a690d993889eb7920feea949a26"},
 ]
 appdirs = []
 argcomplete = []
@@ -1802,8 +1802,8 @@ sfdmap = []
 six = []
 sjcl = []
 slack-sdk = [
-    {file = "slack_sdk-3.18.2-py2.py3-none-any.whl", hash = "sha256:d895fa191f2288d74cbbf20055be2f39c54397b3288c766fcd31e3f5828ef937"},
-    {file = "slack_sdk-3.18.2.tar.gz", hash = "sha256:69befeadfbfc9238e85d0641c864cd12bfb162fbdf3e8f9eef30180f171ea675"},
+    {file = "slack_sdk-3.18.3-py2.py3-none-any.whl", hash = "sha256:d28a661a7fde37c1763e594be19899a51e76ce7c480172c9cf22e217a72731c3"},
+    {file = "slack_sdk-3.18.3.tar.gz", hash = "sha256:1bac09ed465bf9a0a120afce495b328969af7f032fe38cacbadace3dc1e49709"},
 ]
 sncosmo = [
     {file = "sncosmo-2.8.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:564f3eab264046a29a3d06f21560a294696ea9ff569dc693022f813ba141b42c"},
