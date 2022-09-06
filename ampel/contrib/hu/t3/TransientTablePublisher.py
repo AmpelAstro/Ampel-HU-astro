@@ -7,21 +7,24 @@
 # Last Modified Date:  05.12.2021
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
+from functools import reduce
+from typing import Any, Optional, Union
+from collections.abc import Generator
 import re, os, requests, io, backoff
 import pandas as pd
 
-from functools import reduce
-from typing import Any
-from collections.abc import Generator
-
-from ampel.types import T3Send
+from ampel.types import UBson, T3Send
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
+from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
+from ampel.view.TransientView import TransientView
+from ampel.struct.UnitResult import UnitResult
 from ampel.view.T3Store import T3Store
 from ampel.view.SnapView import SnapView
+from ampel.util.mappings import get_by_path
 
 
-class TransientTablePublisher(AbsT3ReviewUnit):
+class TransientTablePublisher(AbsPhotoT3Unit):
     """
 
     Construct a table based on selected T2 output values.
@@ -67,9 +70,9 @@ class TransientTablePublisher(AbsT3ReviewUnit):
 
     # Two tables describing what information to save into the table.
     # Schema for state dependent T2s (one row for each)
-    table_schema: dict['str', Any]
+    table_schema: dict[str, Any]
     # Schema for transient dependent T2s (added to each row together with base info)
-    transient_table_schema: dict['str', Any]
+    transient_table_schema: dict[str, Any]
 
     name_filter: dict[str, str] = {'ZTF name': 'ZTF', 'TNS ID': 'TNS'}
     include_stock: bool = False
@@ -84,8 +87,9 @@ class TransientTablePublisher(AbsT3ReviewUnit):
     slack_token: None | NamedSecret[str]
     local_path: None | str = None
 
-
-    def process(self, gen: Generator[SnapView, T3Send, None], t3s: T3Store) -> None:
+    def process(self, gen: Generator[TransientView, T3Send, None],
+                t3s: Optional[T3Store] = None) -> Union[UBson, UnitResult]:
+#    def process(self, gen: Generator[SnapView, T3Send, None], t3s: T3Store) -> None:
         """
         Loop through provided TransientViews and extract data according to the
         configured schema.
@@ -94,17 +98,16 @@ class TransientTablePublisher(AbsT3ReviewUnit):
 
         table_rows: list[dict[str, Any]] = []
         for k, tran_view in enumerate(gen, 1):
-            basetdict = {}
+
+
+            basetdict: dict[str, Any] = {}
             # Assemble t2 information bound to the transient (e.g. Point T2s)
             for t2unit, table_entries in self.transient_table_schema.items():
                 # New SnapView has method for directly retrieve result.
                 # Possibly use this.
-                if t2res := tran_view.get_latest_t2_body(unit_id=t2unit):
+                if isinstance(t2res := tran_view.get_latest_t2_body(unit=t2unit), dict):
                     for label, path in table_entries.items():
-                        try:
-                            basetdict[label] = reduce(dict.get, path, t2res)
-                        except (KeyError, TypeError):
-                            pass # We leave missing entries empty
+                        basetdict[label] = get_by_path(t2res, path)
 
             # Assemble info which could vary from state to state
             # Should add config to labels if multiple exports
@@ -114,12 +117,9 @@ class TransientTablePublisher(AbsT3ReviewUnit):
                 t1_link = t1_document['link']
                 tdict = {}
                 for t2unit, table_entries in self.table_schema.items():
-                    if t2res := tran_view.get_latest_t2_body(unit=t2unit, link=t1_link):
+                    if isinstance(t2res := tran_view.get_latest_t2_body(unit=t2unit, link=t1_link), dict):
                         for label, path in table_entries.items():
-                            try:
-                                tdict[label] = reduce(dict.get, path, t2res)
-                            except (KeyError, TypeError):
-                                pass # We leave missing entries empty
+                            tdict[label] = get_by_path(t2res, path)
                 if len(tdict) > 0:
                     stateinfo.append(tdict)
 
@@ -128,22 +128,21 @@ class TransientTablePublisher(AbsT3ReviewUnit):
 
             # Collect base information applying to all states
             # If here, add stock info (name, channel etcs)
-            if names := (tran_view.stock or {}).get("name"):
+            if names := (tran_view.stock or {}).get("name", []):
                 for label, name_str in self.name_filter.items():
                     r = re.compile(name_str)
                     # While names will mostly be unique, it might not always be the case.
-                    basetdict[label] = list(filter(r.match, names))
+                    basetdict[label] = list(filter(r.match, names)) # type: ignore[arg-type]
                     # Avoid list when possible
-                    if len(basetdict[label]) == 1:
-                        basetdict[label] = basetdict[label][0]
+                    if isinstance((item := basetdict[label]), (list, tuple)) and len(item) == 1:
+                        basetdict[label] = item[0]
 
             if self.include_stock:
                 basetdict['stock'] = tran_view.id
-            if self.include_channels:
-                basetdict['channels'] = tran_view.stock.get("channel")
-            # Allow for both single (most common) and duplacte channels.
-                if len(basetdict['channels']) == 0:
-                    basetdict['channels'] = basetdict['channels'][0]
+            if self.include_channels and tran_view.stock:
+                channels = tran_view.stock.get("channel")
+                # Allow for both single (most common) and duplacte channels.
+                basetdict['channels'] = channels[0] if isinstance(channels, (list, tuple)) and len(channels) == 1 else channels
 
             # Collect and add to table
             if len(stateinfo) > 0:
@@ -189,7 +188,7 @@ class TransientTablePublisher(AbsT3ReviewUnit):
     @backoff.on_exception(
         backoff.expo,
         requests.HTTPError,
-        giveup=lambda e: e.response.status_code not in {503, 429},
+        giveup=lambda e: not isinstance(e, requests.HTTPError) or e.response.status_code not in {503, 429},
         max_time=60,
     )
     def _slack_export(self, df):

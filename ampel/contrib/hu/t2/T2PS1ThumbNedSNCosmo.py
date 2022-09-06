@@ -13,7 +13,7 @@ from ampel.types import UBson
 from ampel.contrib.hu.t2.T2PanStarrThumbPrint import T2PanStarrThumbPrint
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
 from ampel.util.collections import ampel_iter
-from ampel.plot.utils import mplfig_to_svg_dict1
+from ampel.plot.create import create_plot_record
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.struct.UnitResult import UnitResult
 from ampel.model.PlotProperties import PlotProperties
@@ -99,7 +99,7 @@ class T2PS1ThumbNedSNCosmo(AbsTiedLightCurveT2Unit):
 				for cmap in ampel_iter(self.cmaps):
 					d2 = {
 						'plot': [
-							mplfig_to_svg_dict1(
+							create_plot_record(
 								pt.show(
 									ellipse=False, band=band, cmap=cmap, show=False,
 									show_target = False, show_coord = (d['catalog']['ra'], d['catalog']['dec'])

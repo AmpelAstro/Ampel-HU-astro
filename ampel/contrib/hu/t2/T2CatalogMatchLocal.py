@@ -7,7 +7,7 @@
 # Last Modified Date:  2.12.2021
 # Last Modified By:    jn <jnordin@physik.hu-berlin.de>
 
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Literal
 from functools import cached_property
 from ampel.types import UBson
 
@@ -39,7 +39,7 @@ class ExtcatsUnit:
     """
 
 #    require = ("extcats",)
-    extcat_path: str = None
+    extcat_path: None | str = None
 
     max_query_time: float = 300
 
@@ -74,6 +74,10 @@ class ExtcatsUnit:
         return q
 
 
+class ExtcatsCatalogModel(CatalogModel):
+    catq_kwargs: dict[str,Any] = {}
+    use: Literal["extcats"]
+
 class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
     """
     Cross matches the position of a transient to those of sources in a set of catalogs
@@ -90,7 +94,7 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
     eligible: ClassVar[DPSelection] = DPSelection(filter='PPSFilter', sort='jd', select='first')
 
     # Each value specifies a catalog in extcats or catsHTM format and the query parameters
-    catalogs: dict[str, CatalogModel]
+    catalogs: dict[str, ExtcatsCatalogModel]
 
     # Default behavior is to return the closest match, but can be switched to returning all
     closest_match: bool = True

@@ -1,0 +1,114 @@
+name: ElasticcShort
+
+mongo:
+  prefix: TarTest
+
+channel:
+- name: ElasticcShort
+  access: []
+  policy: []
+  version: 1
+
+task:
+- title: ElasticcShort-T0
+  unit: AlertConsumer
+  config:
+    iter_max: 100
+    compiler_opts: LSSTCompilerOptions
+    supplier:
+      unit: LSSTAlertSupplier
+      config:
+        deserialize: avro
+        loader:
+          unit: TarAlertLoader
+          config:
+            file_path: /home/jnordin/github/elasticc/elasticc-mid-june-test-001.tar.gz
+    shaper: LSSTDataPointShaper
+    directives:
+    - channel: ElasticcShort
+      filter:
+        config:
+          min_ndet: 0
+          max_ndet: 5
+          min_tspan: 0
+          max_tspan: 10000
+        on_stock_match: bypass
+        unit: ReallySimpleLSSTFilter
+      ingest:
+          mux:
+            unit: LSSTMongoMuxer
+            insert:
+              point_t2:
+              - unit: T2ElasticcRedshiftSampler
+                ingest:
+                  filter: LSSTObjFilter
+                  select: last
+                  sort: diaObjectId
+              - unit: T2GetDiaObject
+                config:
+                  params:
+                  - diaObjectId
+                  - simVersion
+                ingest:
+                  filter: LSSTObjFilter
+                  select: last
+                  sort: diaObjectId
+            combine:
+            - unit: T1SimpleCombiner
+              state_t2:
+              - unit: T2TabulatorRiseDecline
+                config:
+                  tabulator:
+                    - unit: LSSTT2Tabulator
+                      config:
+                        zp: 31.4
+              - unit: T2XgbClassifier
+                config:
+                  t2_dependency:
+                  - unit: T2ElasticcRedshiftSampler
+                  - unit: T2TabulatorRiseDecline
+                    config:
+                      tabulator:
+                        - unit: LSSTT2Tabulator
+                          config:
+                            zp: 31.4
+- title: ElasticcShort-t2
+  multiplier: 1
+  unit: T2Worker
+  config:
+    channel: ElasticcShort
+    doc_limit: 100000000
+- title: ElasticcShort-SendClass
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3ReviewUnitExecutor
+        config:
+          supply:
+            unit: T3DefaultBufferSupplier
+            config:
+              select:
+                unit: T3StockSelector
+                config:
+                  channel: ElasticcShort
+              load:
+                unit: T3SimpleDataLoader
+                config:
+                  directives:
+                    - STOCK
+                    - T1
+                    - T2
+                  channel: ElasticcShort
+          stage:
+            unit: T3SimpleStager
+            config:
+              execute:
+                - unit: ElasticcClassPublisher
+                  config:
+                    desc_user:
+                      label: desc/user
+                    desc_password:
+                      label: desc/password
+                    t2classifiers:
+                      - T2XgbClassifier

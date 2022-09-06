@@ -47,7 +47,7 @@ class T2MatchBTS(AbsLightCurveT2Unit):
     @backoff.on_exception(
         backoff.expo,
         requests.HTTPError,
-        giveup=lambda e: e.response.status_code not in {503, 429},
+        giveup=lambda e: not isinstance(e, requests.HTTPError) or e.response.status_code not in {503, 429},
         max_time=60,
     )
     def post_init(self)->None:
@@ -96,10 +96,11 @@ class T2MatchBTS(AbsLightCurveT2Unit):
         """
 
         # Get name used by BTS
+        assert isinstance(light_curve.stock_id, int)
         ztf_name = ZTFIdMapper.to_ext_id(light_curve.stock_id)
 
         if self.bts_df is None:
-            return UnitResult(doc_code=DocumentCode.MISSING_INFO)
+            return UnitResult(code=DocumentCode.T2_MISSING_INFO)
 
 
         match = self.bts_df[self.bts_df['bts_ZTFID'] == ztf_name].to_dict(orient='index')

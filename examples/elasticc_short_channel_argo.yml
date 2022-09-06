@@ -1,0 +1,189 @@
+parameters:
+- name: modelname
+  value: TarTest
+- name: xgburl_76_1000
+  value: https://box.hu-berlin.de/f/a90c21f0e38c49a8b531/?dl=1
+- name: xgburl_46_75
+  value: https://box.hu-berlin.de/f/93501f94f21c4dc19d93/?dl=1
+- name: xgburl_31_45
+  value: https://box.hu-berlin.de/f/db754d7f03a540cfbd0b/?dl=1
+- name: xgburl_21_30
+  value: https://box.hu-berlin.de/f/5af29a1abd9e4dc4b000/?dl=1
+- name: xgburl_15_20
+  value: https://box.hu-berlin.de/f/902f1b9428164b5a92e9/?dl=1
+- name: xgburl_10_14
+  value: https://box.hu-berlin.de/f/f80509297e3942f98791/?dl=1
+- name: xgburl_7_9
+  value: https://box.hu-berlin.de/f/7beac256a62f4cfbb30c/?dl=1
+- name: xgburl_5_6
+  value: https://box.hu-berlin.de/f/22e1faa7047142398331/?dl=1
+- name: xgburl_3_4
+  value: https://box.hu-berlin.de/f/410b6c8fb58241e795b4/?dl=1
+- name: xgburl_2_2
+  value: https://box.hu-berlin.de/f/6ed25d42b97843f9b219/?dl=1
+- name: xgburl_1_1
+  value: https://box.hu-berlin.de/f/7fcf682087dd43b0b8fd/?dl=1
+- name: tar_url
+  value: https://desycloud.desy.de/index.php/s/ZCoEBZXijTDBgQx/download?path=%2F&files=elasticc-mid-june-test-001.tar.gz
+name: ElasticcShort
+mongo:
+  prefix: dumpme
+channel:
+- name: ElasticcShort
+  access: []
+  policy: []
+  version: 1
+task:
+- title: ElasticcShort-T0
+  unit: AlertConsumer
+  inputs:
+    artifacts:
+      - name: ndet76
+        path: xgboost_elasticc1v2_ndet76_1000.json
+        http:
+          url: "{{ job.parameters.xgburl_76_1000 }}"
+      - name: ndet46
+        path: xgboost_elasticc1v2_ndet46_75.json
+        http:
+          url: "{{ job.parameters.xgburl_46_75 }}"
+      - name: ndet31
+        path: xgboost_elasticc1v2_ndet31_45.json
+        http:
+          url: "{{ job.parameters.xgburl_31_45 }}"
+      - name: ndet21
+        path: xgboost_elasticc1v2_ndet21_30.json
+        http:
+          url: "{{ job.parameters.xgburl_21_30 }}"
+      - name: ndet15
+        path: xgboost_elasticc1v2_ndet15_20.json
+        http:
+          url: "{{ job.parameters.xgburl_15_20 }}"
+      - name: ndet10
+        path: xgboost_elasticc1v2_ndet10_14.json
+        http:
+          url: "{{ job.parameters.xgburl_10_14 }}"
+      - name: ndet7
+        path: xgboost_elasticc1v2_ndet7_9.json
+        http:
+          url: "{{ job.parameters.xgburl_7_9 }}"
+      - name: ndet5
+        path: xgboost_elasticc1v2_ndet5_6.json
+        http:
+          url: "{{ job.parameters.xgburl_5_6 }}"
+      - name: ndet3
+        path: xgboost_elasticc1v2_ndet3_4.json
+        http:
+          url: "{{ job.parameters.xgburl_3_4 }}"
+      - name: ndet2
+        path: xgboost_elasticc1v2_ndet2_2.json
+        http:
+          url: "{{ job.parameters.xgburl_2_2 }}"
+      - name: ndet1
+        path: xgboost_elasticc1v2_ndet1_1.json
+        http:
+          url: "{{ job.parameters.xgburl_1_1 }}"
+      - name: tar
+        path: elasticc-mid-june-test-001.tar.gz
+        http:
+          url: "{{ job.parameters.tar_url }}"
+  config:
+    iter_max: 10000
+    compiler_opts: LSSTCompilerOptions
+    supplier:
+      unit: LSSTAlertSupplier
+      config:
+        deserialize: avro
+        loader:
+          unit: DirAlertLoader
+          config:
+            folder: elasticc-mid-june-test-001.tar.gz
+            extension: '*.avro'
+    shaper: LSSTDataPointShaper
+    directives:
+    - channel: ElasticcShort
+      filter:
+        config:
+          min_ndet: 0
+          min_tspan: 5
+          max_tspan: 10000
+        on_stock_match: bypass
+        unit: ReallySimpleLSSTFilter
+      ingest:
+          mux:
+            unit: LSSTMongoMuxer
+            insert:
+              point_t2:
+              - unit: T2ElasticcRedshiftSampler
+                ingest:
+                  filter: LSSTObjFilter
+                  select: last
+                  sort: diaObjectId
+              - unit: T2GetDiaObject
+                config:
+                  params:
+                  - diaObjectId
+                  - simVersion
+                ingest:
+                  filter: LSSTObjFilter
+                  select: last
+                  sort: diaObjectId
+            combine:
+            - unit: T1SimpleCombiner
+              state_t2:
+              - unit: T2TabulatorRiseDecline
+                config:
+                  tabulator:
+                    - unit: LSSTT2Tabulator
+                      config:
+                        zp: 31.4
+              - unit: T2XgbClassifier
+                config:
+                  model_folder: .
+                  t2_dependency:
+                  - unit: T2ElasticcRedshiftSampler
+                  - unit: T2TabulatorRiseDecline
+                    config:
+                      tabulator:
+                        - unit: LSSTT2Tabulator
+                          config:
+                            zp: 31.4
+- title: ElasticcShort-t2
+  multiplier: 1
+  unit: T2Worker
+  config:
+    channel: ElasticcShort
+    doc_limit: 100000000
+- title: ElasticcShort-SendClass
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3ReviewUnitExecutor
+        config:
+          supply:
+            unit: T3DefaultBufferSupplier
+            config:
+              select:
+                unit: T3StockSelector
+                config:
+                  channel: ElasticcShort
+              load:
+                unit: T3SimpleDataLoader
+                config:
+                  directives:
+                    - STOCK
+                    - T1
+                    - T2
+                  channel: ElasticcShort
+          stage:
+            unit: T3SimpleStager
+            config:
+              execute:
+                - unit: ElasticcClassPublisher
+                  config:
+                    desc_user:
+                      label: desc/user
+                    desc_password:
+                      label: desc/password
+                    t2classifiers:
+                      - T2XgbClassifier

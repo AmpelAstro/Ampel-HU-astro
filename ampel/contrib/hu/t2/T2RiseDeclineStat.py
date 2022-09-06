@@ -66,7 +66,7 @@ class T2RiseDeclineBase(AmpelBaseModel):
     run parameter.
     """
 
-    filter_names: dict[int, str] = {1: "g", 2: "r", 3: "i"}
+    filters: dict[str, int] = {"g": 1, "r": 2, "i": 3}
     filter_ids: list[int] = [1, 2]
     max_tsep: int = 2
     min_UL: int = 20
@@ -272,7 +272,9 @@ class T2RiseDeclineBase(AmpelBaseModel):
         # Look at filter dependent qualities
 
         # Slopes
-        for filtid in self.filter_ids:
+        for band, filtid in self.filters.items():
+            if filtid not in self.filter_ids:
+                continue
 
             self.logger.debug(f"Starting slope fit filt {filtid}")
             filter_det = dets[dets["filter"] == filtid]
@@ -285,7 +287,7 @@ class T2RiseDeclineBase(AmpelBaseModel):
                 # Rise
                 # Check that lc had rise with sufficient detections
                 if o["bool_norise"] or filter_det_rise["jd"].size < 2:
-                    o[f"slope_rise_{self.filter_names[filtid]}"] = None
+                    o[f"slope_rise_{band}"] = None
                 else:
                     p = np.polyfit(
                         filter_det_rise["jd"],
@@ -293,7 +295,7 @@ class T2RiseDeclineBase(AmpelBaseModel):
                         1,
                         w=1.0 / filter_det_rise["sigmapsf"],
                     )
-                    o[f"slope_rise_{self.filter_names[filtid]}"] = p[0]
+                    o[f"slope_rise_{band}"] = p[0]
 
                 # Decline
                 # Only makes sense to check this if lc peaked and declined for significant time
@@ -307,13 +309,13 @@ class T2RiseDeclineBase(AmpelBaseModel):
                         1,
                         w=1.0 / filter_det_fall["sigmapsf"],
                     )
-                    o[f"slope_fall_{self.filter_names[filtid]}"] = p[0]
+                    o[f"slope_fall_{band}"] = p[0]
                 else:
-                    o[f"slope_fall_{self.filter_names[filtid]}"] = None
+                    o[f"slope_fall_{band}"] = None
             else:
                 # Will use all the data to fit rise parameter, set others to none
                 if o["bool_norise"] or filter_det["jd"].size < 2:
-                    o[f"slope_rise_{self.filter_names[filtid]}"] = None
+                    o[f"slope_rise_{band}"] = None
                 else:
                     p = np.polyfit(
                         filter_det["jd"],
@@ -321,7 +323,7 @@ class T2RiseDeclineBase(AmpelBaseModel):
                         1,
                         w=1.0 / filter_det["sigmapsf"],
                     )
-                    o[f"slope_rise_{self.filter_names[filtid]}"] = p[0]
+                    o[f"slope_rise_{band}"] = p[0]
 
         # Colors at specific phases
         for coljd, colname in zip(

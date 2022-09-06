@@ -61,7 +61,7 @@ class T2Observability(AbsLightCurveT2Unit):
 			)
 
 			# init your obs depending on the position
-			self._observatories[name] = Observatory(name, logger=self.logger, **pos.dict())
+			self._observatories[name] = Observatory(name, logger=self.logger, latitude=pos.lat, longitude=pos.long, altitude=pos.alt)
 			return self._observatories[name]
 		else:
 			self.logger.debug(f"Observatory {name} already exists.")
@@ -142,7 +142,10 @@ class T2Observability(AbsLightCurveT2Unit):
 
 			ret = my_obs.compute_visibility(
 				transient_ra, transient_dec,
-				trange, **observatory.constraints.dict()
+				trange,
+				airmass_th=observatory.constraints.airmass_th,
+				sun_alt_th=observatory.constraints.sun_alt_th,
+				min_moon_dist=observatory.constraints.min_moon_dist,
 			)
 
 			out_dict[name][f'night{k+1}'] = {

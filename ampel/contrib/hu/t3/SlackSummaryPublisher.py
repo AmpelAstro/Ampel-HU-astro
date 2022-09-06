@@ -16,8 +16,8 @@ from collections.abc import Iterable, Generator
 import numpy as np
 import pandas as pd
 import requests
-from slack import WebClient
-from slack.errors import SlackClientError
+from slack_sdk import WebClient
+from slack_sdk.errors import SlackClientError
 
 from ampel.types import T3Send
 from ampel.view.T3Store import T3Store
@@ -26,7 +26,7 @@ from ampel.log.utils import log_exception
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.view.TransientView import TransientView
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
-from slack.web.slack_response import SlackResponse
+from slack_sdk.web import SlackResponse
 
 
 class SlackSummaryPublisher(AbsT3ReviewUnit):
@@ -206,9 +206,8 @@ class SlackSummaryPublisher(AbsT3ReviewUnit):
             # include other T2 results, flattened
             for t2record in transient.t2 or []:
                 if (
-                    t2record["unit"] == "T2LightCurveSummary" or
-                    not (body := t2record.get("body")) or
-                    not (output := body[-1]) or
+                    t2record.unit == "T2LightCurveSummary" or
+                    not (output := t2record.get_payload()) or
                     not isinstance(output, dict)
                 ):
                     continue

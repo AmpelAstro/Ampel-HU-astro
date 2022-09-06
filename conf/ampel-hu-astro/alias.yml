@@ -28,9 +28,6 @@ t2:
     catalogs:
       SDSS_spec:
         use: extcats
-        catq_kwargs:
-          ra_key: ra
-          dec_key: dec
         rs_arcsec: 10
         keys_to_append:
           - z
@@ -38,9 +35,6 @@ t2:
           - subclass
       NEDz:
         use: catsHTM
-        catq_kwargs:
-          ra_key: RA
-          dec_key: Dec
         rs_arcsec: 10
         keys_to_append:
           - ObjType
@@ -48,27 +42,18 @@ t2:
           - z
       SDSSDR10:
         use: catsHTM
-        catq_kwargs:
-          ra_key: RA
-          dec_key: Dec
         rs_arcsec: 3
         keys_to_append:
           - type
           - flags
       brescia:
         use: extcats
-        catq_kwargs:
-          ra_key: ra
-          dec_key: dec
         rs_arcsec: 3
         keys_to_append:
           - subclass
           - z
       milliquas:
         use: extcats
-        catq_kwargs:
-          ra_key: ra
-          dec_key: dec
         rs_arcsec: 3
         keys_to_append:
           - broad_type
@@ -77,9 +62,6 @@ t2:
           - qso_prob
       GAIADR2:
         use: catsHTM
-        catq_kwargs:
-          ra_key: RA
-          dec_key: Dec
         rs_arcsec: 30
         keys_to_append:
           - Mag_G
@@ -93,25 +75,16 @@ t2:
           - ExcessNoiseSig
       CRTS_DR1:
         use: extcats
-        catq_kwargs:
-          ra_key: RA
-          dec_key: Dec
         rs_arcsec: 3
         keys_to_append:
           - VarType
       AAVSOVSX:
         use: extcats
-        catq_kwargs:
-          ra_key: RA
-          dec_key: DEC
         rs_arcsec: 3
         keys_to_append:
           - TYPE
       LAMOSTDR4:
         use: extcats
-        catq_kwargs:
-          ra_key: ra
-          dec_key: dec
         rs_arcsec: 3
         keys_to_append:
           - objtype
@@ -120,9 +93,6 @@ t2:
           - snrg
       GLADEv23:
         use: extcats
-        catq_kwargs:
-          ra_key: RA
-          dec_key: dec
         rs_arcsec: 10
         keys_to_append:
           - z
@@ -133,9 +103,6 @@ t2:
           - flag3
       allWISE_skymotion:
         use: extcats
-        catq_kwargs:
-          ra_key: RA
-          dec_key: DEC
         rs_arcsec: 30
         keys_to_append:
           - pmRA
@@ -144,9 +111,6 @@ t2:
           - e_pmDE
       voidGalPan:
         use: extcats
-        catq_kwargs:
-          ra_key: ra
-          dec_key: dec
         rs_arcsec: 30
         keys_to_append:
           - z
@@ -155,9 +119,6 @@ t2:
           - voidid3
       NEDz_extcats:
         use: extcats
-        catq_kwargs:
-          ra_key: RA
-          dec_key: Dec
         rs_arcsec: 60
         post_filter:
           z:
@@ -171,9 +132,6 @@ t2:
     catalogs:
       SDSS_spec:
         use: extcats
-        catq_kwargs:
-          ra_key: ra
-          dec_key: dec
         rs_arcsec: 10
         keys_to_append:
           - z
@@ -181,9 +139,6 @@ t2:
           - subclass
       NEDz:
         use: catsHTM
-        catq_kwargs:
-          ra_key: RA
-          dec_key: Dec
         rs_arcsec: 10
         keys_to_append:
           - ObjType
@@ -191,27 +146,18 @@ t2:
           - z
       SDSSDR10:
         use: catsHTM
-        catq_kwargs:
-          ra_key: RA
-          dec_key: Dec
         rs_arcsec: 3
         keys_to_append:
           - type
           - flags
       brescia:
         use: extcats
-        catq_kwargs:
-          ra_key: ra
-          dec_key: dec
         rs_arcsec: 3
         keys_to_append:
           - subclass
           - z
       milliquas:
         use: extcats
-        catq_kwargs:
-          ra_key: ra
-          dec_key: dec
         rs_arcsec: 3
         keys_to_append:
           - broad_type
@@ -220,9 +166,6 @@ t2:
           - qso_prob
       GAIADR2:
         use: catsHTM
-        catq_kwargs:
-          ra_key: RA
-          dec_key: Dec
         rs_arcsec: 30
         keys_to_append:
           - Mag_G
@@ -236,25 +179,16 @@ t2:
           - ExcessNoiseSig
       CRTS_DR1:
         use: extcats
-        catq_kwargs:
-          ra_key: RA
-          dec_key: Dec
         rs_arcsec: 3
         keys_to_append:
           - VarType
       AAVSOVSX:
         use: extcats
-        catq_kwargs:
-          ra_key: RA
-          dec_key: DEC
         rs_arcsec: 3
         keys_to_append:
           - TYPE
       LAMOSTDR4:
         use: extcats
-        catq_kwargs:
-          ra_key: ra
-          dec_key: dec
         rs_arcsec: 3
         keys_to_append:
           - objtype
@@ -263,9 +197,6 @@ t2:
           - snrg
       GLADEv23:
         use: extcats
-        catq_kwargs:
-          ra_key: RA
-          dec_key: dec
         rs_arcsec: 10
         keys_to_append:
           - z
@@ -276,9 +207,6 @@ t2:
           - flag3
       allWISE_skymotion:
         use: extcats
-        catq_kwargs:
-          ra_key: RA
-          dec_key: DEC
         rs_arcsec: 30
         keys_to_append:
           - pmRA
@@ -287,9 +215,6 @@ t2:
           - e_pmDE
       NEDz_extcats:
         use: extcats
-        catq_kwargs:
-          ra_key: RA
-          dec_key: Dec
         rs_arcsec: 60
         post_filter:
           z:
@@ -303,9 +228,6 @@ t2:
     catalogs:
       masterlens:
         use: extcats
-        catq_kwargs:
-          ra_key: ra_degrees
-          dec_key: dec_degrees
         rs_arcsec: 10
         keys_to_append:
           - z_lens
@@ -314,9 +236,6 @@ t2:
           - comment
       cluslist:
         use: extcats
-        catq_kwargs:
-          ra_key: ra_deg
-          dec_key: dec_deg
         rs_arcsec: 60
         keys_to_append:
           - target

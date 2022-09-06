@@ -4,6 +4,7 @@
 - ampel.contrib.hu.t0.LensedTransientFilter
 - ampel.contrib.hu.t0.RandFilter
 - ampel.contrib.hu.t2.T2PanStarrThumbPrint
+- ampel.contrib.hu.t2.T2PhaseLimit
 - ampel.contrib.hu.t2.T2PS1ThumbExtCat
 - ampel.contrib.hu.t2.T2PS1ThumbNedSNCosmo
 - ampel.contrib.hu.t2.T2PS1ThumbNedTap
@@ -15,10 +16,19 @@
 - ampel.contrib.hu.t2.T2CatalogMatchLocal
 - ampel.contrib.hu.t2.T2DigestRedshifts
 - ampel.contrib.hu.t2.T2RunPossis
+- ampel.contrib.hu.t2.T2RunTDE
+- ampel.contrib.hu.t2.T2RunParsnip
+- ampel.contrib.hu.t2.T2RunSnoopy
 - ampel.contrib.hu.t2.T2MatchBTS
 - ampel.contrib.hu.t2.T2NedTap
 - ampel.contrib.hu.t2.T2NedSNCosmo
 - ampel.contrib.hu.t2.T2PropagateStockInfo
+- ampel.contrib.hu.t2.T2GetLensSNParameters
+- ampel.contrib.hu.t2.T2LSPhotoZTap
+- ampel.contrib.hu.t2.T2ElasticcRedshiftSampler
+- ampel.contrib.hu.t2.T2TabulatorRiseDecline
+- ampel.contrib.hu.t2.T2XgbClassifier
+- ampel.contrib.hu.t2.T2ElasticcReport
 - ampel.contrib.hu.t3.TransientInfoPrinter
 - ampel.contrib.hu.t3.TransientViewDumper
 - ampel.contrib.hu.t3.ChannelSummaryPublisher
@@ -30,3 +40,5 @@
 - ampel.contrib.hu.t3.TNSMirrorUpdater
 - ampel.contrib.hu.t3.TransientTablePublisher
 - ampel.contrib.hu.t3.HealpixCorrPlotter
+- ampel.contrib.hu.t3.PlotLightcurveSample
+- ampel.contrib.hu.t3.ElasticcClassPublisher

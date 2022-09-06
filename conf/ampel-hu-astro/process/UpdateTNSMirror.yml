@@ -8,4 +8,4 @@ processor:
       unit: TNSMirrorUpdater
       config:
         api_key:
-          key: tns/complete
+          label: tns/complete

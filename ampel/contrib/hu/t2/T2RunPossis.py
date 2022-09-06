@@ -4,16 +4,19 @@
 # License:             BSD-3-Clause
 # Author:              jnordin@physik.hu-berlin.de
 # Date:                11.12.2021
-# Last Modified Date:  04.01.2022
-# Last Modified By:    jnordin@physik.hu-berlin.de
+# Last Modified Date:  17.03.2022
+# Last Modified By:    mf@physik.hu-berlin.de
 
 
 import numpy as np
 import sncosmo # type: ignore[import]
 from sfdmap import SFDMap  # type: ignore[import]
-import errno, os, backoff, copy
+from typing import Union
+import copy
 from astropy.time import Time
 from typing import Literal, Sequence
+from urllib.request import urlopen
+from urllib.parse import urljoin
 
 from ampel.types import UBson
 from ampel.struct.UnitResult import UnitResult
@@ -22,21 +25,30 @@ from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.view.T2DocView import T2DocView
 
 from ampel.enum.DocumentCode import DocumentCode
-from ampel.view.LightCurve import LightCurve
-
+from ampel.content.T1Document import T1Document
+from ampel.content.DataPoint import DataPoint
 
 class T2RunPossis(T2RunSncosmo):
     """
+    Load a POSSIS kilnova model and fit to a LightCurve object as process is called.
 
     Load one of the POSSIS models and create an sncosmo_model
     model for fit by T2RunSncosmo.
+    :param possis_base_url: str, path to (github) possis repository
+    :param model_gen: str, name of model generation (subfolder)
+    :mej_dyn: float, Possis parameter
+    :mej_wind: float, Possis parameter
+    :phi: int, Possis parameter
+    :cos_theta: float, Possis parameter
+
+    Dynamically fix model explosion time
+    :param explosion_time_jd: Union[None, float, Literal['StockTriggerTime']]
+
 
     """
 
     # Parameters determining which POSSIS model will be read
-
-    # Currently references to sample model included in Ampel-HU-astro
-    possis_dir: str = 'data/kilonova_models'
+    possis_base_url: str = 'https://raw.githubusercontent.com/mbulla/kilonova_models/f810e0ec7e7a6ae32624738329e73d561b081372'
     model_gen: str = 'bns_m3_3comp'
     mej_dyn: float = 0.01
     mej_wind: float = 0.09
@@ -51,7 +63,7 @@ class T2RunPossis(T2RunSncosmo):
     explosion_time_jd: None | float | Literal['StockTriggerTime']
 
     # Which units should this be changed to
-    t2_dependency: Sequence[StateT2Dependency[Literal[
+    t2_dependency: Sequence[StateT2Dependency[Literal[ # type: ignore[assignment]
                 "T2DigestRedshifts",
                 "T2MatchBTS",
                 "T2PhaseLimit",
@@ -65,17 +77,16 @@ class T2RunPossis(T2RunSncosmo):
         Note that this could be done once at instance init.
         """
 
+        model_url = urljoin(
+            self.possis_base_url + "/",
+            f"{self.model_gen}/nph1.0e+06_mejdyn{self.mej_dyn:05.3f}_mejwind{self.mej_wind:05.3f}_phi{self.phi}.txt"
+        )
+
         # Find file
-        fname = os.path.join(self.possis_dir, self.model_gen,
-                     "nph1.0e+06_mejdyn{:05.3f}_mejwind{:05.3f}_phi{}.txt".format(self.mej_dyn, self.mej_wind, self.phi))
-        if not os.path.exists(fname):
-            self.logger.info('Model not found', extra={'fname':fname})
-            return UnitResult(code=DocumentCode.T2_MISSING_INFO)
+        with urlopen(model_url) as fh:
 
-
-        # Read model Parameters from first three lines
-        with open(fname, 'r') as fh:
-            lines = fh.readlines()
+            # Read model Parameters from first three lines
+            lines = [next(fh).decode() for _ in range(3)]
             nobs = int(lines[0])
             nwave = int(lines[1])
             line3 = lines[2].split(' ')
@@ -85,22 +96,16 @@ class T2RunPossis(T2RunSncosmo):
             model_cos_theta = np.linspace(0, 1, nobs)  # 11 viewing angles
             phase = np.linspace(t_i, t_f, ntime)  # epochs
 
-        # Limit to one angle
-        # Note: U. Feindt developed model where angle was fit, left out for know
-        theta_mask = np.isclose(self.cos_theta, model_cos_theta)
-        if not sum(theta_mask)==1:
-            self.logger.info('Angle not identified',
-                extra={'model_cos_theta':model_cos_theta})
-            return {}
-#            return UnitResult(code=DocumentCode.T2_MISSING_INFO)
+            # Limit to one angle
+            # Note: U. Feindt developed model where angle was fit, left out for know
+            theta_mask = np.isclose(self.cos_theta, model_cos_theta)
+            if not sum(theta_mask)==1:
+                raise ValueError("Model cos_theta {model_cos_theta} not defined")
 
-        # Read model data
-        mdata = np.genfromtxt(fname, skip_header=3)
+            # Read model data
+            mdata = np.genfromtxt(fh)
         wave = mdata[0 : int(nwave), 0] # noqa
-        flux = []
-        for i in range(int(nobs)):
-            flux.append(mdata[i * int(nwave) : i * int(nwave) + int(nwave), 1:]) # noqa
-        flux = np.array(flux).T
+        flux = np.array([mdata[i * int(nwave) : i * int(nwave) + int(nwave), 1:] for i in range(int(nobs))]).T
 
         # Reduce to one angle
         flux_1angle = flux[:,:,theta_mask].squeeze()
@@ -133,23 +138,17 @@ class T2RunPossis(T2RunSncosmo):
 
         self.default_param_vals = self.sncosmo_model.parameters
 
-        # retry on with exponential backoff on "too many open files"
-        self.process = backoff.on_exception(
-            backoff.expo,
-            OSError,
-            giveup=lambda exc: exc.errno != errno.EMFILE,
-            logger=self.logger,
-            max_time=300,
-        )(self.process)
 
     def process(self,
-        light_curve: LightCurve, t2_views: Sequence[T2DocView]
-    ) -> UBson |UnitResult:
+        compound: T1Document,
+        datapoints: Sequence[DataPoint],
+        t2_views: Sequence[T2DocView]
+    ) -> Union[UBson, UnitResult]:
         """
-        Adding the option to dynamically grap explosion time from T2PropagateStockInfo
+        Fit the loaded model to the data provided as a LightCurve.
+        If requested, retrieve redshift and explosion time from t2_views.
+        """
 
-        After setting this it will return to normal T2RunSncosmo.
-        """
 
         if self.explosion_time_jd=='StockTriggerTime':
             for t2_view in t2_views:
@@ -159,7 +158,7 @@ class T2RunPossis(T2RunSncosmo):
                 t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
                 if not 'explosion_time' in t2_res.keys():
                     self.logger.info('No explosion time',extra={'t2res':t2_res})
-                    return UnitResult(doc_code=DocumentCode.MISSING_INFO)
+                    return UnitResult(code=DocumentCode.T2_MISSING_INFO)
 
                 if isinstance(t2_res['explosion_time'], float):
                     self.explosion_time_jd = t2_res['explosion_time']
@@ -172,4 +171,4 @@ class T2RunPossis(T2RunSncosmo):
                 self.fit_params.remove("t0")
 
         # Restart sncosmo processing
-        return super().process(light_curve, t2_views)
+        return super().process(compound, datapoints, t2_views)

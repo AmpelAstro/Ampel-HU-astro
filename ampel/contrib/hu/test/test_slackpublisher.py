@@ -1,3 +1,5 @@
+from ampel.view.T2DocView import T2DocView, TYPE_STATE_T2
+from ampel.view.T3Store import T3Store
 import pytest
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.contrib.hu.t3.SlackSummaryPublisher import SlackSummaryPublisher
@@ -6,11 +8,12 @@ from ampel.secret.NamedSecret import NamedSecret
 from ampel.content.StockDocument import StockDocument
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T2Document import T2Document
+from ampel.enum.DocumentCode import DocumentCode
 from ampel.view.TransientView import TransientView
 from ampel.ztf.util.ZTFIdMapper import to_ampel_id
 
 import requests
-from slack import WebClient
+from slack_sdk import WebClient
 import csv
 from io import StringIO
 
@@ -23,11 +26,25 @@ def t3_transient_views() -> list[TransientView]:
             stock=StockDocument(
                 {"stock": stock_id, "channel": ["CHANNYCHAN"]},
             ),
-            t0=[DataPoint(id=i, stock=stock_id, body={}) for i in range(10)],
+            t0=[DataPoint(id=i, stock=stock_id, body={}, channel=[], meta=[]) for i in range(10)],
             t2=[
-                T2Document(stock=stock_id, unit="T2LightCurveSummary", body=[{"len": 10}]),
-                T2Document(
+                T2DocView(
                     stock=stock_id,
+                    link=0,
+                    tag=[],
+                    code=DocumentCode.OK,
+                    meta=[{"code": DocumentCode.OK, "tier": 2}],
+                    t2_type=TYPE_STATE_T2,
+                    unit="T2LightCurveSummary",
+                    body=[{"len": 10}],
+                ),
+                T2DocView(
+                    stock=stock_id,
+                    link=0,
+                    tag=[],
+                    code=DocumentCode.OK,
+                    meta=[{"code": DocumentCode.OK, "tier": 2}],
+                    t2_type=TYPE_STATE_T2,
                     unit="T2SNCosmo",
                     body=[
                         {
@@ -47,7 +64,7 @@ def t3_transient_views() -> list[TransientView]:
     ]
 
 
-def test_slacksummary(t3_transient_views, mocker):
+def test_slacksummary(t3_transient_views: list[TransientView], mocker):
 
     unit = SlackSummaryPublisher(
         **{
@@ -78,40 +95,41 @@ def test_slacksummary(t3_transient_views, mocker):
 
     # intercept Slack API calls
     mocker.patch("requests.post")
-    mocker.patch("slack.WebClient.api_call")
+    mocker.patch("slack_sdk.WebClient.api_call")
 
-    unit.process(iter(t3_transient_views))
+    unit.process(iter(t3_transient_views), T3Store()) # type: ignore[arg-type]
 
     api_call = WebClient.api_call
-    api_call.assert_called_once()
+    api_call.assert_called_once() # type: ignore[attr-defined]
     assert (
-        "MEH!" in api_call.call_args[1]["json"]["text"]
+        "MEH!" in api_call.call_args[1]["json"]["text"] # type: ignore[attr-defined]
     ), "Text matches number of transients selected"
 
-    requests.post.assert_called()
-    assert len(requests.post.call_args_list) == 2, "2 explicit requests issued"
+    requests.post.assert_called() # type: ignore[attr-defined]
+    assert len(requests.post.call_args_list) == 2, "2 explicit requests issued" # type: ignore[attr-defined]
 
     # Verify summary
-    content = requests.post.call_args_list[0][1]["files"]["file"]
+    content = requests.post.call_args_list[0][1]["files"]["file"] # type: ignore[attr-defined]
     with StringIO(content) as f:
         reader = csv.DictReader(f)
         rows = list(reader)
 
     # verify that T2 information is in summary
-    t2s = set(t2["unit"] for tv in t3_transient_views for t2 in tv.t2)
+    t2s = set(t2.unit for tv in t3_transient_views for t2 in (tv.t2 or []))
     assert len(t2s) > 0
 
     # Verify that nested t2 results were extrected
     # This tests assumes that sncosmo was run on the test data
+    assert reader.fieldnames
     for key in ["T2-model", "T2-sncosmo_info_ndof", "T2-fit_results_t0"]:
         assert key in reader.fieldnames
 
     assert len(rows) == len(t3_transient_views), "1 row per transient"
 
     # Verify photometry dump
-    content = requests.post.call_args_list[1][1]["files"]["file"]
+    content = requests.post.call_args_list[1][1]["files"]["file"] # type: ignore[attr-defined]
     with StringIO(content) as f:
-        rows = list(csv.reader(f))
+        rows = list(csv.DictReader(f))
     assert (
-        len(rows) == sum(len(v.t0) for v in t3_transient_views) + 1
+        len(rows) == sum(len(v.t0 or []) for v in t3_transient_views)
     ), "1 row per photopoint"

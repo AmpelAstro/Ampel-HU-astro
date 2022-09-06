@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t2/T2RunSncosmo.py
+# File              : ampel/contrib/hu/t2/T2GetLensSNParameters.py
 # License           : BSD-3-Clause
 # Author            : alice.townsend@physik.hu-berlin.de
 # Date              : 22.11.2021

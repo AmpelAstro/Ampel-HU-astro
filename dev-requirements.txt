@@ -1,7 +1,0 @@
-wheel
-mypy==0.910.0
-types-requests
-types-pytz
-pytest
-pytest-mock
-pytest-cov
