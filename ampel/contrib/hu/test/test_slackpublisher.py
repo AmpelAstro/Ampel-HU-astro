@@ -13,7 +13,7 @@ from ampel.view.TransientView import TransientView
 from ampel.ztf.util.ZTFIdMapper import to_ampel_id
 
 import requests
-from slack import WebClient
+from slack_sdk import WebClient
 import csv
 from io import StringIO
 
@@ -95,7 +95,7 @@ def test_slacksummary(t3_transient_views: list[TransientView], mocker):
 
     # intercept Slack API calls
     mocker.patch("requests.post")
-    mocker.patch("slack.WebClient.api_call")
+    mocker.patch("slack_sdk.WebClient.api_call")
 
     unit.process(iter(t3_transient_views), T3Store()) # type: ignore[arg-type]
 
