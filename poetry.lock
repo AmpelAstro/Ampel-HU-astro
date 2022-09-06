@@ -15,7 +15,7 @@ name = "aiohttp"
 version = "3.8.1"
 description = "Async http client/server framework (asyncio)"
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.6"
 
 [package.dependencies]
@@ -35,7 +35,7 @@ name = "aiosignal"
 version = "1.2.0"
 description = "aiosignal: a list of registered asynchronous callbacks"
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.6"
 
 [package.dependencies]
@@ -46,7 +46,7 @@ name = "ampel-alerts"
 version = "0.8.3b1"
 description = "Alert support for the Ampel system"
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.10,<3.11"
 
 [package.dependencies]
@@ -130,7 +130,7 @@ name = "ampel-ztf"
 version = "0.8.3a3"
 description = "Zwicky Transient Facility support for the Ampel system"
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.10,<3.11"
 
 [package.dependencies]
@@ -141,6 +141,7 @@ ampel-interface = ">=0.8.3-beta.5,<0.9.0"
 ampel-photometry = ">=0.8.3-alpha.2,<0.9.0"
 astropy = ">=5.0,<6.0"
 backoff = ">=2.0.0,<3.0.0"
+confluent-kafka = {version = ">=1.5.0,<2.0.0", optional = true, markers = "extra == \"kafka\""}
 fastavro = ">=1.3.2,<2.0.0"
 matplotlib = ">=3.3.4,<4.0.0"
 nest-asyncio = ">=1.4.3,<2.0.0"
@@ -222,7 +223,7 @@ name = "async-timeout"
 version = "4.0.2"
 description = "Timeout context manager for asyncio programs"
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.6"
 
 [[package]]
@@ -298,6 +299,22 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
+name = "confluent-kafka"
+version = "1.9.2"
+description = "Confluent's Python client for Apache Kafka"
+category = "main"
+optional = true
+python-versions = "*"
+
+[package.extras]
+schema-registry = ["requests"]
+protobuf = ["requests", "protobuf"]
+json = ["pyrsistent", "pyrsistent (==0.16.1)", "requests", "jsonschema"]
+doc = ["fastavro (>=1.0)", "fastavro (>=0.23.0,<1.0)", "requests", "avro (==1.10.0)", "sphinx-rtd-theme", "sphinx"]
+dev = ["pytest", "fastavro (>=1.0)", "fastavro (>=0.23.0,<1.0)", "pytest (==4.6.4)", "requests", "avro (==1.10.0)", "flake8", "pytest-timeout"]
+avro = ["fastavro (>=1.0)", "fastavro (>=0.23.0,<1.0)", "requests", "avro (==1.10.0)"]
+
+[[package]]
 name = "coverage"
 version = "6.4.4"
 description = "Code coverage measurement for Python"
@@ -348,7 +365,7 @@ name = "fastavro"
 version = "1.6.0"
 description = "Fast read/write of AVRO files"
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.7"
 
 [package.extras]
@@ -384,7 +401,7 @@ name = "frozenlist"
 version = "1.3.1"
 description = "A list-like structure which implements collections.abc.MutableSequence"
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.7"
 
 [[package]]
@@ -521,7 +538,7 @@ name = "multidict"
 version = "6.0.2"
 description = "multidict implementation"
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.7"
 
 [[package]]
@@ -554,7 +571,7 @@ name = "nest-asyncio"
 version = "1.5.5"
 description = "Patch asyncio to allow nested event loops"
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.5"
 
 [[package]]
@@ -825,7 +842,7 @@ name = "requests-toolbelt"
 version = "0.9.1"
 description = "A utility belt for advanced users of python-requests"
 category = "main"
-optional = false
+optional = true
 python-versions = "*"
 
 [package.dependencies]
@@ -1136,7 +1153,7 @@ name = "yarl"
 version = "1.8.1"
 description = "Yet another URL library"
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.7"
 
 [package.dependencies]
@@ -1165,11 +1182,12 @@ elasticc = ["xgboost", "astro-parsnip"]
 extcats = ["extcats"]
 slack = ["slack-sdk"]
 sncosmo = ["sncosmo", "iminuit", "sfdmap"]
+ztf = ["ampel-ztf"]
 
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.10,<3.11"
-content-hash = "bd47b5df00beffc605f2ecdb58cf9236056da270ba4a3db0095bed3777b69159"
+content-hash = "16a92d73ed68ea3ad32df9581259e4c13fe5396df6fb0fe399950a83eca2b8e0"
 
 [metadata.files]
 adjusttext = [
@@ -1224,6 +1242,7 @@ charset-normalizer = [
     {file = "charset_normalizer-2.1.1-py3-none-any.whl", hash = "sha256:83e9a75d1911279afd89352c68b45348559d1fc0506b054b346651b5e7fee29f"},
 ]
 colorama = []
+confluent-kafka = []
 coverage = [
     {file = "coverage-6.4.4-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:e7b4da9bafad21ea45a714d3ea6f3e1679099e420c8741c74905b92ee9bfa7cc"},
     {file = "coverage-6.4.4-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:fde17bc42e0716c94bf19d92e4c9f5a00c5feb401f5bc01101fdf2a8b7cacf60"},
