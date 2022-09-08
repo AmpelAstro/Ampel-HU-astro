@@ -129,11 +129,11 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
 
         # Get alert info from T1Document if present
         for metarecord in compound['meta']:
-            if 'alert' in metarecord.keys():
-                class_report['alertId'] = metarecord.get('alert') # type: ignore[assignment]
+            if isinstance(alert_id := metarecord.get('alert'), int):
+                class_report['alertId'] = alert_id
                 class_report['brokerIngestTimestamp'] = metarecord['ts']
-            if 'alert_ts' in metarecord.keys():
-                class_report['elasticcPublishTimestamp'] = metarecord.get('alert_ts') # type: ignore[assignment]
+            if isinstance(alert_ts := metarecord.get('alert_ts'), int):
+                class_report['elasticcPublishTimestamp'] = alert_ts
 
         # Get diaSourceId
         # Get the last diaSource id in datapoints
@@ -217,7 +217,6 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
                     'probability': prob1,
                 }
             )
-            class_report['classifications'] = classifications
             return {
                 "report": class_report,
                 "t2_submit": self.submit(class_report),
@@ -244,7 +243,6 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
                     'probability': parsnip_prob*prob1,
                 }
             )
-        class_report['classifications'] = classifications
         return {
             "report": class_report,
             "t2_submit": self.submit(class_report),
