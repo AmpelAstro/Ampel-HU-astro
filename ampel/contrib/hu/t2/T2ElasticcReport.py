@@ -9,6 +9,7 @@
 
 from typing import Literal, Union
 from collections.abc import Sequence
+from typing_extensions import reveal_type
 
 from ampel.types import UBson
 from ampel.struct.UnitResult import UnitResult
@@ -123,7 +124,8 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
             'brokerVersion': self.broker_version,
         }
 
-        classifications = []
+        # use an alias variable to inform mypy that classifications is always a list
+        class_report['classifications'] = classifications = []
 
         # Get alert info from T1Document if present
         for metarecord in compound['meta']:
@@ -176,10 +178,10 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
                     'probability': 1.,
                 }
             )
-            class_report['classifications'] = classifications
-            class_report['t2_submit'] = self.submit(class_report)
-            return class_report
-
+            return {
+                "report": class_report,
+                "t2_submit": self.submit(class_report),
+            }
 
         # Create first set of probabilities
         prob1 = is1
