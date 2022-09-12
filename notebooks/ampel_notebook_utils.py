@@ -64,7 +64,7 @@ def api_name2candid(name, token):
     return sorted(alerts, key=lambda i: (i['candidate']['jd']), reverse=True)[0]['candid']
 
 
-def api_to_lightcurve(name, token, shaper=None):
+def api_get_lightcurve(name, token, shaper=None):
     """
     Retrieve the alert history of a SN and convert to a LightCurve object.
 
@@ -130,7 +130,7 @@ def api_get_lightcurves(name, token, shaper=None):
         shaper = ZiDataPointShaper(logger=AmpelLogger.get_logger())
 
     # Setup connection
-    endpoint = "https://ampel.zeuthen.desy.de/api/ztf/archive/object/{}/alerts?with_history=true&with_cutouts=false".format(name)
+    endpoint = "https://ampel.zeuthen.desy.de/api/ztf/archive/v3/object/{}/alerts?with_history=true&with_cutouts=false".format(name)
     header = {"Authorization": "bearer "+token}
 
     response = requests.get(endpoint, headers=header )
