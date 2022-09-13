@@ -9,7 +9,6 @@
 
 from typing import Literal, Union
 from collections.abc import Sequence
-from typing_extensions import reveal_type
 
 from ampel.types import UBson
 from ampel.struct.UnitResult import UnitResult
