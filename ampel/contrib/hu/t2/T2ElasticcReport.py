@@ -74,29 +74,15 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
         Placeholder for actually doing a quick T2 submit.
         """
 
-        # For now we do a quick probability eval
-        psum = 0
-        for klass in report['classifications']:
-            psum += klass['probability']
-
-        if not psum==1:
-            print('WARNING; SOMETHING NOT RIGHT.')
+        # Possibly check total probability
+        #psum = 0
+        #for klass in report['classifications']:
+        #    psum += klass['probability']
+        #if not abs(psum-1)<0.0001:
+        #    self.log.info('Probability does not add.')
 
         return 'Not submitted.'
 
-    # def _get_alert_metadata(self, compound: T1Document) -> dict[str,UBson]:
-    #     for metarecord in compound['meta']:
-    #         if (
-    #             metarecord['tier'] == 0
-    #             and (alert_id := metarecord.get("alert")) is not None
-    #             and (alert_ts := metarecord.get("alert_ts")) is not None
-    #         ):
-    #             return {
-    #                 "alertId": alert_id,
-    #                 "brokerIngestTimestamp": metarecord["ts"],
-    #                 "elasticcPublishTimestamp": alert_ts,
-    #             }
-    #     return {}
 
     def process(self,
         compound: T1Document,
@@ -221,16 +207,6 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
                 "t2_submit": self.submit(class_report),
             }
 
-
-        # Time to integrate Parsnip results.
-        # The operative question is whether we should make use of the
-        # is1113 probability.
-        # Something like
-        # parsnip_prob12: float = # sum up prob in this subset
-        # parsnip_prob1113: float = 1.-parsnip_prob12# sum up prob for the 11113 classes
-        # prob111 = is1 * is1113 * parsnip[111] / parsnip_prob1113
-        # ...
-        # prob121 = is1 * (1-is1113) * parsnip[121] / parsnip_prob1113
 
         # However, lets first complete the base version
         for klass, parsnip_prob in parsnip_class.items():
