@@ -123,6 +123,9 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
                         ['lsstr','lssti'], ['lssti','lsstz'],['lsstz','lssty']]
     max_tgap: int = 30
 
+    # Cut the lightcurve if longer than this limit.
+    # Motivated by worse classification for longer (inbalanced training?)
+    max_ndet: int = 20
 
     if TYPE_CHECKING:
         logger: LoggerProtocol
@@ -201,6 +204,21 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
         # be as useful?
 
         return banddata
+
+
+
+    def cut_flux_table(self, flux_table: Table) -> Table:
+        """
+        Limit to some _total_ set of significant detections.
+        """
+        sig_mask = (flux_table['flux']) / flux_table['fluxerr']>self.sigma_det
+        sig_time = list( flux_table['time'][sig_mask] )
+        if len(sig_time)>self.max_ndet:
+            max_time = sorted(sig_time)[self.max_ndet]
+            flux_table = flux_table[ flux_table['time']<=max_time ]
+
+        return flux_table
+
 
 
 
@@ -416,6 +434,9 @@ class T2TabulatorRiseDecline(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRise
         # Using standard tabulators
         flux_table = self.get_flux_table(datapoints)
 
+        # Cut the flux table if requested
+        if self.max_ndet>0 and len(flux_table)>self.max_ndet:
+            flux_table = self.cut_flux_table(flux_table)
 
         # Calculate get_features
         features = self.compute_stats(flux_table)
@@ -425,3 +446,4 @@ class T2TabulatorRiseDecline(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRise
             self.test_plot(compound.get('stock'), flux_table, features)
 
         return features
+        
