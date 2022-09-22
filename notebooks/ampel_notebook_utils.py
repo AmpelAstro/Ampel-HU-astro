@@ -159,6 +159,28 @@ def api_get_lightcurves(name, token, shaper=None):
     return lcs
 
 
+def alert2dps(alert, shaper=None):
+    """
+
+    Convert the content of an alert into a list of ampel datapoints.
+
+    :param alert: dict, ZTF alert object.
+    :param shaper: optional, AMPEL data point shaper (otherwise using default)
+
+    return List[DataPoint object]
+
+    """
+
+    if shaper is None:
+        shaper = ZiDataPointShaper(logger=AmpelLogger.get_logger())
+
+    alert['candidate']['candid'] = alert['candid']
+    pps = [alert['candidate']]
+    pps.extend( [prv_cand for prv_cand in alert['prv_candidates'] ] )
+    stockId = ZTFIdMapper.to_ampel_id(alert['objectId'])
+    return shaper.process( pps, stockId)
+
+
 DecentFilterSingle = {
     'min_ndet': 1,
     'min_tspan': -99,
