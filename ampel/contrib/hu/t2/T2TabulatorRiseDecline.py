@@ -239,6 +239,11 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
         if o['ndet']==0:
             o['success'] = False
             o['cause'] = "No data survive significance criteria."
+            # Gather additional information for evaluation
+            o['alldet'] = len(flux_table)
+            neg_mask = (-flux_table['flux']) / flux_table['fluxerr']>self.sigma_det
+            o['nnegdet'] = len( flux_table[band_mask & neg_mask] )
+
             return o
 
         o["jd_det"] = det_table['time'].min()
@@ -446,4 +451,3 @@ class T2TabulatorRiseDecline(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRise
             self.test_plot(compound.get('stock'), flux_table, features)
 
         return features
-        

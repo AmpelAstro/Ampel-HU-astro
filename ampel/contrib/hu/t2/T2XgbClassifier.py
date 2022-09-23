@@ -124,12 +124,16 @@ class T2XgbClassifier(AbsTiedStateT2Unit):
                 t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
                 # For some reason we trained xgb using z, zerr and host_sep
                 zdata = {'z':None, 'z_err':None, 'host_sep': None}
-                if t2_res['z_source'] in ['HOSTGAL2_ZQUANT', 'HOSTGAL_ZQUANT', 'HOSTGAL_ZSPEC']:
+                if t2_res['z_source'] in ['HOSTGAL2_ZQUANT', 'HOSTGAL_ZQUANT', 'HOSTGAL_ZSPEC', 'default']:
                     if len(t2_res['z_samples'])==3:
                         # This was the sampling used for job_training
                         zdata['z'] = t2_res['z_samples'][1]
                         zdata['z_err'] = t2_res['z_samples'][1] - t2_res['z_samples'][0]
                         zdata['host_sep'] = t2_res['host_sep']
+                    elif len(t2_res['z_samples'])==4 and t2_res['z_samples'][0]==0.01:
+                        # ... unless the event was hostless, in which case
+                        # xgboost use None values.
+                        pass
                     else:
                         self.logger.info('Do not know how to handle z info', extra=t2_res)
                         print(t2_res)
@@ -137,6 +141,20 @@ class T2XgbClassifier(AbsTiedStateT2Unit):
                 t2data.update(zdata)
 
         if t2data['ndet']==0:
+            # Explore whether negative detections can be used to parse type
+            if 'nnegdet' in t2data.keys() and t2data['nnegdet']>0:
+                if t2data['z'] is not None and t2data['z']>0.001:
+                    # High redshifts are typically AGNs
+                    return {'model': self.model_prefix, 'xgbsuccess': False, 'cause': 'No pos det', 'direct_eval':'AGN'}
+                else:
+                    # Low redshifts are (typically) either uLens or EB.
+                    # The former have a large fraction of neg det (if any)
+                    nfrac = float(t2data['nnegdet']) / t2data['alldet']
+                    if nfrac > 0.2:
+                        return {'model': self.model_prefix, 'xgbsuccess': False, 'cause': 'No pos det', 'direct_eval':'uLens'}
+                    else:
+                        return {'model': self.model_prefix, 'xgbsuccess': False, 'cause': 'No pos det', 'direct_eval':'EB'}
+            # Otherwise, not much to go by
             return {'model': self.model_prefix, 'xgbsuccess': False, 'imodel':-1, 'cause': 'No sig. det'}
         if t2data['success']==False:
             return {'model': self.model_prefix, 'xgbsuccess': False, 'imodel':-1, 'cause': 'RiseDecline error.'}
