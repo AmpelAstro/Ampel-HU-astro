@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              jno <jnordin@physik.hu-berlin.de>
 # Date:                11.04.2022
-# Last Modified Date:  11.04.2022
+# Last Modified Date:  24.09.2022
 # Last Modified By:    jno <jnordin@physik.hu-berlin.de>
 
 from itertools import islice
@@ -42,7 +42,7 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
 
     This will have to proceed through the following stages for each stock:
     - Retrieve all of the states and associate these to elasticc alertId.
-    - Check logs for which of these states a report was already (successfully) sent.
+    - Check logs for which of these states and t2configs a report was already (successfully) sent.
     - For still unsubmitted states, check whether T2 results exists for all
       classification units listed in the config.
     - If so, parse the T2Documents for the classifications and shape as ClassificationDict.
@@ -60,8 +60,6 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
 
     """
 
-    broker_name: str = 'AMPEL'
-    broker_version: str = 'v0.1'
     desc_user: NamedSecret[str]
     desc_password: NamedSecret[str]
 
@@ -77,13 +75,14 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
 
     def search_journal_elasticc(
         self, tran_view: TransientView
-    ) -> dict[int,bool]:
+    ) -> dict[int,list]:
         """
         Look through the journal for mapping between alert ID, timestampe and state id.
 
         Assuming journal entries from this unit has the following layout
         extra = {
             "t1State": t1_link,
+            "t2Config": t2_config,
             "descPutResponse": response,
             "descPutComplete": True,
             "descPutUnit": self.unit,
@@ -91,7 +90,7 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
 
         Returns dict:
         {state:
-            bool      # report submitted for this state
+            list(t2config)      # List of t2config for which report is done
               },
          ...}
 
@@ -106,12 +105,14 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
                 and entry["unit"] and entry["unit"] == self.__class__.__name__
             )
 
-        done_t1states = set()
+        done_t1states: dict[int,list] = {}
 
         # All entries which we found should correspond to correctly sumitted classifications
         if jentries := list(tran_view.get_journal_entries(tier=3, filter_func=select_submitted)):
             for entry in jentries:
-                done_t1states.add( entry['extra']['t1State'])
+                if entry['extra']['t1State'] not in done_t1states.keys():
+                    done_t1states[entry['extra']['t1State']] = []
+                done_t1states[entry['extra']['t1State']].append( entry['extra']['t2Config'] )
 
         # Next section would look through the journal and find the elasticc alert
         # data needed. Here we are doing some short version of it
@@ -125,36 +126,28 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
         if jentries := list(tran_view.get_journal_entries(tier=0, filter_func=select_alerts)):
             for entry in jentries:
                 assert isinstance(link := entry.get("link"), int)
-                if link in done_t1states:
-                    state_map[link] = True
-                else:
-                    state_map[link]= False
+                state_map[link] = done_t1states.get(link, [])
         return state_map
 
-    def _get_reports(self, gen: Generator[TransientView, T3Send, None]) -> Generator[tuple[TransientView,int,dict],None,None]:
+
+    def _get_reports(self, gen: Generator[TransientView, T3Send, None]) -> Generator[tuple[TransientView,int,dict,dict],None,None]:
 
         for tran_view in gen:
             # Check journal for state/alertId combos and whether already
             # submitted (for this t2classifiers list).
             state_alert = self.search_journal_elasticc(tran_view)
 
-            for t1_link, submitted in state_alert.items():
-                if submitted:
-                    self.logger.debug('submitted', extra={'t1':t1_link})
-                    continue
+            for t1_link, submitted_configs in state_alert.items():
+#                if submitted:
                 if t2views := tran_view.get_t2_views(unit=self.unit, link=t1_link, code=DocumentCode.OK):
-                    t2view = next(t2views, None)
-                    if t2view is None:
-                        self.logger.info('No T2Doc found', extra={'unit':self.unit})
-                        continue   # No T2 ticket found
-                    # Only reason there could be multiple views here is if we
-                    # are running different configs... if so this unit wont work
-                    # and needs to be redesigned!
-                    if next(t2views, None) is not None:
-                        raise RuntimeError('ElasticcClassPublisher cannot parse multiple configs.')
-                    if not isinstance((body := t2view.get_payload()), dict):
-                        continue
-                    yield tran_view, t1_link, body["report"]
+                    for t2view in t2views:
+                        # Check whether report for t1link/state & t2config done
+                        if t2view.config in submitted_configs:
+                            self.logger.debug('submitted', extra={'t1':t1_link, 'config':t2view.config})
+                            continue
+                        if not isinstance((body := t2view.get_payload()), dict):
+                            continue
+                        yield tran_view, t1_link, t2view.config, body["report"]
 
     def process(self, gen: Generator[TransientView, T3Send, None], t3s: T3Store) -> None:
         """
@@ -162,7 +155,7 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
         """
 
         for chunk in chunks(self._get_reports(gen), self.batch_size):
-            tran_views, t1_links, class_reports = zip(*chunk)
+            tran_views, t1_links, t2_configs, class_reports = zip(*chunk)
 
             if self.dry_run:
                 continue
@@ -174,7 +167,7 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
             # if as expected store to journal that transfer is complete.
             # if not as expected, log what data is available and possible
             # a t3 document with this content??
-            for tran_view, t1_link, class_report in zip(tran_views, t1_links, class_reports):
+            for tran_view, t1_link, t2_config, class_report in zip(tran_views, t1_links, t2_configs, class_reports):
                 if desc_response['success']:
                     gen.send((
                         tran_view.id,
@@ -182,6 +175,7 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
                             journal=JournalAttributes(
                                 extra={
                                     "t1State": t1_link,
+                                    "t2Config": t2_config,
                                     "descPutResponse": desc_response,
                                     "descPutComplete": True,
                                     "descPutUnit": self.unit,
