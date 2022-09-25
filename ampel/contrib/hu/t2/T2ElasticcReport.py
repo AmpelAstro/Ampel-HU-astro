@@ -86,8 +86,11 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
     # Setting for report to construct
     broker_name: str = 'AMPEL'
     broker_version: str = 'v0.2'
-    classifier_name: str = 'SNguessParsnip'
+    classifier_name: str = 'ElasticcLive'
     classifier_version: str = 'XGBUnified+Parsnip04'
+
+    # Combine multiple classifiers in report
+    multiple_classifiers: bool = False
 
     # Use a redshift prior from elasticc alerts and obs rate prior from BTS.
     use_priors: bool = False
@@ -249,7 +252,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
         # We can now finalize probabilities for Reucurring events (2)
         classifications.append(
             {
-                'classifierName': self.classifier_name,
+                'classifierName': self.classifier_name + 'SNGuess',
                 'classifierParams': self.classifier_version,
                 'classId': 21,
                 'probability': prob21,
@@ -257,48 +260,78 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
         )
         classifications.append(
             {
-                'classifierName': self.classifier_name,
+                'classifierName': self.classifier_name + 'SNGuess',
                 'classifierParams': self.classifier_version,
                 'classId': 22,
                 'probability': prob22,
             }
         )
+        classifications.append(
+            {
+                'classifierName': self.classifier_name + 'SNGuess',
+                'classifierParams': self.classifier_version,
+                'classId': 1,
+                'probability': prob1,
+            }
+        )
 
-        # Did Parsnip run?
+        # If Parsnip did not run we are done here
         if parsnip_class is None:
             self.logger.debug('No Parsnip result, file simple report')
-            classifications.append(
-                {
-                    'classifierName': self.classifier_name,
-                    'classifierParams': self.classifier_version,
-                    'classId': 1,
-                    'probability': prob1,
-                }
-            )
             return {
                 "report": class_report,
                 "t2_submit": self.submit(class_report),
             }
 
-
-        # Scale parsnip with redshift prior if requested
-        if self.use_priors:
-            # Redshift
-            if parsnip_z is not None:
-                parsnip_class = self.add_zprior(parsnip_class, parsnip_z)
-            # Rate
-            parsnip_class = self.add_rateprior(parsnip_class)
-
-        # However, lets first complete the base version
+        # Create a new series of classifications including base Parsnip
+        parsnip_classifications = [ dict(d, classifierName = self.classifier_name + 'SNGuess'+ 'Parsnip')
+                            for d in classifications if not d['classId']==1 ]
         for klass, parsnip_prob in parsnip_class.items():
-            classifications.append(
+            parsnip_classifications.append(
                 {
-                    'classifierName': self.classifier_name,
+                    'classifierName': self.classifier_name + 'SNGuess'+ 'Parsnip',
                     'classifierParams': self.classifier_version,
                     'classId': klass,
                     'probability': parsnip_prob*prob1,
                 }
             )
+
+
+        # Scale parsnip with redshift prior if requested
+        if self.use_priors:
+            # Modify the parsnip probabilities based on the priors
+            if parsnip_z is not None:
+                parsnip_class = self.add_zprior(parsnip_class, parsnip_z)
+            parsnip_class = self.add_rateprior(parsnip_class)
+            # Create a new series of classifications including priored  Parsnip
+            pprior_classifications = [ dict(d, classifierName = self.classifier_name + 'SNGuess'+ 'Parsnip' + 'Prior')
+                                for d in classifications if not d['classId']==1 ]
+            for klass, parsnip_prob in parsnip_class.items():
+                pprior_classifications.append(
+                    {
+                        'classifierName': self.classifier_name + 'SNGuess'+ 'Parsnip' + 'Prior',
+                        'classifierParams': self.classifier_version,
+                        'classId': klass,
+                        'probability': parsnip_prob*prob1,
+                    }
+                )
+
+            # Done with prob collection, decide what to submit
+            if self.multiple_classifiers:
+                classifications.extend( parsnip_classifications)
+                classifications.extend( pprior_classifications )
+            else:
+                # Only submit prior version here
+                class_report['classifications'] = pprior_classifications
+        else:
+            # Done with prob collection, decide what to submit
+            if self.multiple_classifiers:
+                classifications.extend( parsnip_classifications)
+            else:
+                # Only submit parsnip
+                class_report['classifications'] = parsnip_classifications
+
+        # Return report
         return {
             "report": class_report,
             "t2_submit": self.submit(class_report),
