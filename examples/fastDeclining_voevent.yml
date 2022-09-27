@@ -1,0 +1,91 @@
+name: fastDecliningVoevent
+mongo:
+  prefix: AmpelFast
+channel:
+- name: Demo
+  access: [ZTF, ZTF_PUB, ZTF_PRIV]
+  policy: []
+task:
+- title: GetAlerts
+  unit: AlertConsumer
+  config:
+    iter_max: 1000000
+    supplier:
+      unit: ZiAlertSupplier
+      config:
+        deserialize: null
+        loader:
+          unit: ZTFArchiveAlertLoader
+          config:
+            archive: https://ampel.zeuthen.desy.de/api/ztf/archive/v3
+#            stream: oDjuNxdM5ijIdZRvSblCozTNlurniSRIcalnjKlE93U
+            stream:
+              ztf_name: ZTF22abhrjld
+              archive_token: a6f6fbf2-be0b-4f47-9bfd-810dfec8b184
+    shaper: ZiDataPointShaper
+    directives:
+    - channel: Demo
+      filter:
+        config:
+          min_ndet: 2
+          min_drb: 0.995
+          min_gal_lat: 14
+          min_rb: 0.3
+        on_stock_match: bypass
+        unit: SimpleDecentFilter
+      ingest:
+        mux:
+          combine:
+          - state_t2:
+            - unit: T2FastDecliner
+              config:
+                min_declinerate: 0.1
+            unit: ZiT1Combiner
+          unit: ZiMongoMuxer
+
+- title: Run T2s
+  unit: T2Worker
+  config:
+    send_beacon: false
+
+- title: React
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3ReviewUnitExecutor
+        config:
+          supply:
+            unit: T3DefaultBufferSupplier
+            config:
+              select:
+                unit: T3FilteringStockSelector
+                config:
+                  channel: Demo
+                  t2_filter:
+                    unit: T2FastDecliner
+                    match:
+                      fast_decliner: true
+              load:
+                unit: T3SimpleDataLoader
+                config:
+                  directives:
+                    - STOCK
+                    - T0
+                    - T1
+                    - T2
+                  channel: Demo
+          stage:
+            unit: T3SimpleStager
+            config:
+              execute:
+                - unit: VOEventPublisher
+                  config:
+                    why_schema:
+                      T2FastDecliner:
+                        "Decline-rate g-band":
+                          - g
+                          - decline_rate
+                        "Decline-rate R-band":
+                          - R
+                          - decline_rate

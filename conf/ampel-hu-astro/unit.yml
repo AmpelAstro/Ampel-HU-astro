@@ -29,6 +29,7 @@
 - ampel.contrib.hu.t2.T2TabulatorRiseDecline
 - ampel.contrib.hu.t2.T2XgbClassifier
 - ampel.contrib.hu.t2.T2ElasticcReport
+- ampel.contrib.hu.t2.T2FastDecliner
 - ampel.contrib.hu.t3.TransientInfoPrinter
 - ampel.contrib.hu.t3.TransientViewDumper
 - ampel.contrib.hu.t3.ChannelSummaryPublisher
@@ -42,3 +43,4 @@
 - ampel.contrib.hu.t3.HealpixCorrPlotter
 - ampel.contrib.hu.t3.PlotLightcurveSample
 - ampel.contrib.hu.t3.ElasticcClassPublisher
+- ampel.contrib.hu.t3.VOEventPublisher
