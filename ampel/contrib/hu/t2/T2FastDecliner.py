@@ -44,22 +44,18 @@ class T2FastDecliner(AbsLightCurveT2Unit):
                     {"attribute": "fid", "operator": "==", "value": int(filt_id)},
                 ]
             )
-            print(pps)
             if pps is None or len(pps)<2:
                 continue
-            print(pps)
-            print(pps[0])
+            # Simple diffs of two most resent observations
             pps = sorted(pps, key=lambda d: d[0])
             delta_t = pps[-1][0] - pps[-2][0]
             delta_mag = pps[-1][1] - pps[-2][1]
             decline_rate = delta_mag / delta_t
+
+            # Create output structure, annotating if lc "fast declining"
             t2_output[filt_name] = {'delta_t': delta_t, 'decline_rate': decline_rate}
-            print(delta_t)
-            print(delta_mag)
-            print(decline_rate)
             if (delta_t>self.min_trange and delta_t<self.max_trange and
                     decline_rate>self.min_declinerate):
                 t2_output['fast_decliner'] = True
-            print(t2_output)
 
         return t2_output
