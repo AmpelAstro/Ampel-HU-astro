@@ -301,12 +301,11 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
         if self.use_priors:
             # Modify the parsnip probabilities based on the priors
             if parsnip_z is not None:
-                parsnip_class = self.add_zprior(parsnip_class, parsnip_z)
-            parsnip_class = self.add_rateprior(parsnip_class)
+                parsnip_class = self.add_rateprior(self.add_rateprior(self.add_zprior(parsnip_class, parsnip_z)))
             # Create a new series of classifications including priored  Parsnip
             pprior_classifications = [ dict(d, classifierName = self.classifier_name + 'SNGuess'+ 'Parsnip' + 'Prior')
                                 for d in classifications if not d['classId']==1 ]
-            for klass, parsnip_prob in parsnip_class.items():
+            for klass, parsnip_prob in (parsnip_class or {}).items():
                 pprior_classifications.append(
                     {
                         'classifierName': self.classifier_name + 'SNGuess'+ 'Parsnip' + 'Prior',
