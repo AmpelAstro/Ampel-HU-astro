@@ -107,6 +107,11 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
     # Usually would be the case, but for testing we might not want to
     use_final_z: bool = False
 
+    # Which bands should be used to estimate the galaxy color?
+    # Should these be corrected for MW absorption?
+    # Quick trial did not find a strong correlation.
+    use_galcol: list[str] = ['u','i']
+
     # Can potentially have different metrics for how to choose host galaxy.
     # (could even involve spanning the joint redshifts according to location prob)
     # minDDLR: Select the host with smallest DDLR
@@ -185,10 +190,11 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
         (probH1, probH2, host_sep) = self.get_hostprob(dp)
 
         # Depending on the above relative probabilities, choose which redshifts
-        z, dz, zsource = 0.0, 0.0, None
+        z, dz, zsource, galcol = 0.0, 0.0, None, None
 
         # Final (simulated) data available and used?
         if self.use_final_z:
+            # TODO: implement galaxy color determination - but not using final z anyway?
             if dp.get('z_final',-1)>0:
                 z, dz, zsource = dp.get('z_final',-1), dp.get('z_final_err', 0), 'Z_FINAL'
             elif dp.get('redshift_helio',-1)>0:
@@ -204,6 +210,13 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
         if zsource is None and probH2>0 and dp.get('hostgal2_zspec',-1)>0:
             z, dz, zsource = dp.get('hostgal2_zspec',-1), dp.get('hostgal2_zspec_err',0), 'HOSTGAL2_ZSPEC'
 
+        # Get galaxy color for most likely host
+        # Hostless events will get prefix hostgal2, but if statement should fail
+        prefix = "hostgal_mag_" if probH1 > 0 else "hostgal2_mag_"
+        if ( (bluemag:= dp.get(prefix+self.use_galcol[0], 99)) <90 and
+                (redmag:= dp.get(prefix+self.use_galcol[1], 99)) <90  ):
+                galcol = bluemag-redmag
+
         # Finish up gaussian case
         if zsource is not None:
             # Calculate weights
@@ -213,6 +226,7 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
             t2_output: RedshiftSamples = {
                 "z_source": zsource,
                 "host_sep": host_sep,
+                "galaxy_color": galcol,
                 "z_weights": list(weights),
                 "z_samples": [z + p*dz for p in pulls]
             }
@@ -224,15 +238,15 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
         # Final cases should be the hostless (default)
         if probH1>0 or probH2>0:
 
-            
+
             t2_output = {
-                "z_source": "HOSTGAL_ZQUANT" if probH1 > 0 else "HOSTGAL_ZQUANT",
+                "z_source": "HOSTGAL_ZQUANT" if probH1 > 0 else "HOSTGAL2_ZQUANT",
                 "host_sep": host_sep,
+                "galaxy_color": galcol,
                 "z_samples": [],
                 "z_weights": []
             }
             prefix = "hostgal_zphot_q" if t2_output["z_source"] == "HOSTGAL_ZQUANT" else "hostgal2_zphot_q"
-
             # Get some redshifts
             if self.nbr_samples==1:
                 t2_output["z_samples"] = [dp.get(f"{prefix}050", -1)]
@@ -253,6 +267,7 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
         t2_output = {
             "z_source": "default",
             "host_sep": np.nan,
+            "galaxy_color": None,
 		    "z_samples": self.default_zs,
             "z_weights": self.default_weights,
         }
