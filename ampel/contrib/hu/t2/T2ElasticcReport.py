@@ -9,6 +9,7 @@
 
 from typing import Literal, Union
 from collections.abc import Sequence
+import numpy as np
 
 from ampel.types import UBson
 from ampel.struct.UnitResult import UnitResult
@@ -50,6 +51,7 @@ direct_evaluations = {
 }
 
 
+
 # Prior section - can be applied as demo, but not matching the simulations.
 
 # Elasticc redshift priors.
@@ -63,6 +65,23 @@ zmap = {'CART': {0: 9, 1: 124, 2: 135, 3: 143, 4: 143, 5: 127, 6: 97, 7: 62, 8: 
 # Probabilities assumed to add up to 1000
 btsmap = {'SNIa': 663, 'uLens': 10, 'SLSN': 14, 'dwarf-nova': 10, 'SNIa91bg': 10, 'ILOT': 10, 'SNIax': 10, 'TDE': 10, 'KN': 10, 'SNII': 168, 'SNIbc': 58, 'Mdwarf-flare': 10, 'PISN': 10, 'CART': 10}
 
+# Priors based on the host galaxy u-g color (from elasticc_galcol notebook)
+galcol_prior = {'CART': [1.1681864134021618, 0.5451610139053239],
+ 'ILOT': [1.1458356003495815, 0.5093055923613805],
+ 'KN': [1.3089799059907905, 0.3303618787483199],
+ 'PISN': [0.3426406749881123, 0.4465663913955291],
+ 'SLSN': [0.37962520970022234, 0.3723189361658543],
+ 'SNIa91bg': [1.8926892171924607, 0.4252978932935133],
+ 'SNIa': [0.6102884945155177, 0.39269590167347995],
+ 'SNIax': [0.6945950080255028, 0.36977359393920906],
+ 'SNIbc': [0.9490882652856778, 0.5687292278916529],
+ 'SNII': [0.8752024059665746, 0.5297978836976114],
+ 'TDE': [0.8753566579007913, 0.7194828408852172],
+ 'uLens': [0, 0],
+ 'Mdwarf-flare': [0,0],
+ 'dwarf-nova':[0,0]}
+# Correlation between galaxy color and mwebv
+galcol_mwebv_slope =  1.1582821
 
 
 class T2ElasticcReport(AbsTiedStateT2Unit):
@@ -146,6 +165,58 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
         p = sum( [v for v in scaled_prob.values()] )
 
         return { k:v/p for k,v in scaled_prob.items() }
+
+
+    def add_hostprior(self, parsnip_prob: dict, host_ug: float | None, mwebv: float):
+        """
+        Modify fit probabilities based on u-g color, if available.
+        """
+
+        if host_ug is None:
+            return parsnip_prob
+
+        # Correct for mwebv dependence
+        host_ug = host_ug-galcol_mwebv_slope*mwebv
+
+        scaled_prob = {}
+        for model_name, model_prob in galcol_prior.items():
+            if model_prob[1]>0:
+                scaled_prob[parsnip_taxonomy[model_name]] = parsnip_prob[parsnip_taxonomy[model_name]] * np.exp(-(host_ug-model_prob[0])**2/(2.*model_prob[1]**2))
+            else:
+                scaled_prob[parsnip_taxonomy[model_name]] = 0.
+
+        # Reweight probabilities (or rescale host properties first? write it out to see...)
+        p = sum( [v for v in scaled_prob.values()] )
+
+        return { k:v/p for k,v in scaled_prob.items() }
+
+
+    def get_hostcol(self, dia_object: dict, z: float):
+        '''
+        Extract the most relevant u-g color, if present.
+        '''
+
+        z1 = dia_object.get('hostgal_zphot_q050', None)
+        z2 = dia_object.get('hostgal2_zphot_q050', None)
+        # No z information
+        if z1 is None and z2 is None:
+            return None
+
+        # Can this happen?
+        if z1 is None or z2 is None:
+            print(dia_object)
+
+        # Which "mid"fix, '' or '2'?
+        midfix = ''
+        if abs(z-z2)<abs(z-z1):
+            midfix = '2'
+        u = dia_object['hostgal'+midfix+'_mag_u']
+        g = dia_object['hostgal'+midfix+'_mag_g']
+        if not u<40:
+            return None
+        if not g<40:
+            return None
+        return u-g
 
 
     def process(self,
@@ -233,7 +304,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
             # This is meant to say that we really do not know.
             classifications.append(
                 {
-                    'classifierName': self.classifier_name,
+                    'classifierName': self.classifier_name + 'SNGuess',
                     'classifierParams': self.classifier_version,
                     'classId': classId,
                     'probability': 1.,
@@ -298,10 +369,21 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
 
 
         # Scale parsnip with redshift prior if requested
-        if self.use_priors:
+        if self.use_priors and parsnip_z is not None:
             # Modify the parsnip probabilities based on the priors
-            if parsnip_z is not None:
-                parsnip_class = self.add_rateprior(self.add_rateprior(self.add_zprior(parsnip_class, parsnip_z)))
+
+            # Need to identify the host galaxy_color
+            host_ug, mwebv = None, 0
+            for dp in (datapoints):
+                if 'mwebv' in dp['body'].keys():
+                    host_ug = self.get_hostcol(dp['body'], parsnip_z)
+                    mwebv = dp['body']['mwebv']
+                    break
+
+
+            # This requires a redshift to be present, but should also be the
+            # case if parsnip has completed (?)
+            parsnip_class = self.add_hostprior(self.add_rateprior(self.add_zprior(parsnip_class, parsnip_z)), host_ug, mwebv)
             # Create a new series of classifications including priored  Parsnip
             pprior_classifications = [ dict(d, classifierName = self.classifier_name + 'SNGuess'+ 'Parsnip' + 'Prior')
                                 for d in classifications if not d['classId']==1 ]
