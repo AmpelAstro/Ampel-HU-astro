@@ -66,7 +66,7 @@ zmap = {'CART': {0: 9, 1: 124, 2: 135, 3: 143, 4: 143, 5: 127, 6: 97, 7: 62, 8: 
 btsmap = {'SNIa': 663, 'uLens': 10, 'SLSN': 14, 'dwarf-nova': 10, 'SNIa91bg': 10, 'ILOT': 10, 'SNIax': 10, 'TDE': 10, 'KN': 10, 'SNII': 168, 'SNIbc': 58, 'Mdwarf-flare': 10, 'PISN': 10, 'CART': 10}
 
 # Priors based on the host galaxy u-g color (from elasticc_galcol notebook)
-galcol_prior = {'CART': [1.1681864134021618, 0.5451610139053239],
+galcol_prior: dict[str, list[float]] = {'CART': [1.1681864134021618, 0.5451610139053239],
  'ILOT': [1.1458356003495815, 0.5093055923613805],
  'KN': [1.3089799059907905, 0.3303618787483199],
  'PISN': [0.3426406749881123, 0.4465663913955291],

@@ -22,6 +22,7 @@ class QuantileEntry(TypedDict):
 class RedshiftSamples(TypedDict):
     z_source: str
     host_sep: float
+    galaxy_color: float | None
     z_samples: list[float]
     z_weights: list[float]
 

@@ -37,7 +37,7 @@ class T2FastDecliner(AbsLightCurveT2Unit):
     def process(self, light_curve: LightCurve) -> UBson | UnitResult:
 
         # For each filter, check datapoints for latest datapoints
-        t2_output = {'fast_decliner': False}
+        t2_output: dict[str,UBson] = {'fast_decliner': False}
         for filt_id, filt_name in self.filter_keys.items():
             pps = light_curve.get_ntuples( ["jd", "magpsf", "sigmapsf"],
                  filters = [

@@ -113,6 +113,7 @@ module = [
   "requests_toolbelt.*",
   "adjustText.*",
   "extcats.*",
+  "voeventparse.*",
 ]
 ignore_missing_imports = true
 

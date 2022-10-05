@@ -72,11 +72,14 @@ class VOEventPublisher(AbsPhotoT3Unit):
             # Chategorized by stock (internal ampel ID) and channel
             stock = tran_view.id
             print(stock)
+            assert tran_view.stock is not None
             channels = tran_view.stock.get("channel")
-            channel = channels[0] if isinstance(channels, (list, tuple)) and len(channels) == 1 else '/'.join(channels)
+            assert channels is not None
+            channel = channels[0] if isinstance(channels, (list, tuple)) and len(channels) == 1 else '/'.join([str(c) for c in channels])
 
             # Get photometry from first|last visit
             dps = tran_view.get_photopoints()
+            assert dps is not None
             dps = sorted(dps, key=lambda d: d['body']['jd'])
             if self.which_photometry=='first':
                 dp = dps[0]['body']
@@ -90,7 +93,9 @@ class VOEventPublisher(AbsPhotoT3Unit):
             for t2unit, table_entries in self.why_schema.items():
                 for t2res in tran_view.get_t2_views(unit=t2unit):
                     for label, path in table_entries.items():
-                        if result := get_by_path(t2res.body[-1], path):
+                        assert t2res.body
+                        assert isinstance((body := t2res.body[-1]), dict)
+                        if result := get_by_path(body, path):
                             t2dict[label] = result
             if len(t2dict.keys()) == 0:
                 continue
@@ -123,10 +128,10 @@ class VOEventPublisher(AbsPhotoT3Unit):
             v.Why.Description = "Selected based on AMPEL T2s: {}".format(
                 ' '.join(self.why_schema.keys() ) )
 
-            with open(self.fname, 'wb') as f:
-                vp.dump(v, f)
-            with open(self.fname, 'r') as f:
-                for l in f.readlines():
+            with open(self.fname, 'wb') as fw:
+                vp.dump(v, fw)
+            with open(self.fname, 'r') as fr:
+                for l in fr.readlines():
                     print(l.rstrip())
 
 
