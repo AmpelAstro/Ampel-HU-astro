@@ -132,19 +132,19 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
         """
 
         # Does sqradius mean what I believe?
-        if hostinfo.get('hostgal_sqradius',-99)>0:
+        if hostinfo.get('hostgal_sqradius',-99)>=0:
             hostgal_sigsep = hostinfo['hostgal_snsep'] / np.sqrt(hostinfo['hostgal_sqradius'])
         else:
             hostgal_sigsep = -99.
-        if hostinfo.get('hostgal2_sqradius',-99)>0:
+        if hostinfo.get('hostgal2_sqradius',-99)>=0:
             hostgal2_sigsep = hostinfo['hostgal2_snsep'] / np.sqrt(hostinfo['hostgal2_sqradius'])
         else:
             hostgal2_sigsep = -99.
         self.logger.debug('hostselect', extra={'hostgal_sigsep':hostgal_sigsep,
                                               'hostgal2_sigsep':hostgal2_sigsep})
 
-
-        if hostinfo.get('hostgal_snsep',-99)>0 and hostinfo.get('hostgal2_snsep',-99)<0:
+        # SNsep can be exactly zero.
+        if hostinfo.get('hostgal_snsep',-99)>=0 and hostinfo.get('hostgal2_snsep',-99)<0:
             # The easy case, only have first galaxy
             return (1.0, 0.0, hostinfo['hostgal_snsep'])
         elif hostinfo.get('hostgal_snsep',-99)<0 and hostinfo.get('hostgal2_snsep',-99)<0:
