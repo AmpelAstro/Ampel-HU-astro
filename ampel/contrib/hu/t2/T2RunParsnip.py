@@ -118,6 +118,14 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
     # Abort veto (if fulfilled, skip run)
     abort_map: Optional[dict[str, list]]
 
+    # Zeropoint parameters
+    # These are separately set in the Parsnip model settings. The zeropoint
+    # can does vary between input data, training data and the model.
+    # Try to adjust this relative to the 'zp' field of the input tabulated lc
+    training_zeropoint: float = 27.5    # Used in Elasticc training sample
+    default_zeropoint: float = 25.      # Default parsnip value
+
+
     # Save / plot parameters
     plot_suffix: Optional[str]
     plot_dir: Optional[str]
@@ -357,6 +365,15 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         sncosmo_table = self.get_flux_table( datapoints, jdstart, jdend )
         self.logger.debug('Sncosmo table {}'.format(sncosmo_table))
 
+        # Adjust zeropoint - does this matter? and should we have changed it?
+        run_zeropoint = set( sncosmo_table['zp'] )
+        if len(run_zeropoint)>1:
+            self.logger.info('Warning, multiple zeropoints, using avg.')
+            run_zeropoint = np.mean(list(run_zeropoint))
+        else:
+            run_zeropoint = run_zeropoint.pop()
+        self.model.settings['zeropoint'] = self.default_zeropoint + run_zeropoint - self.training_zeropoint
+
 
         # Potentially correct for dust absorption
         if self.apply_mwcorrection:
@@ -375,9 +392,6 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         # A source class of None indicates that a redshift source was required, but not found.
         if z is None or z_source is None:
             return t2_output
-
-
-        # Fitting section
 
         # If redshift should be fitted, we start with getting samples
         if z_source == 'Fitted':

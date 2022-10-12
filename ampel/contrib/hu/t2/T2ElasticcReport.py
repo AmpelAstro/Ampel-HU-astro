@@ -106,7 +106,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
     broker_name: str = 'AMPEL'
     broker_version: str = 'v0.2'
     classifier_name: str = 'ElasticcLive'
-    classifier_version: str = 'XGBUnified+Parsnip04'
+    classifier_version: str = 'XGBUnified+Parsnip05'
 
     # Combine multiple classifiers in report
     multiple_classifiers: bool = False
