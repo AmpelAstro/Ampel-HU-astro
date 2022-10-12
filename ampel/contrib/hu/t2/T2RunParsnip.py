@@ -366,12 +366,12 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         self.logger.debug('Sncosmo table {}'.format(sncosmo_table))
 
         # Adjust zeropoint - does this matter? and should we have changed it?
-        run_zeropoint = set( sncosmo_table['zp'] )
-        if len(run_zeropoint)>1:
+        run_zeropoints = set( sncosmo_table['zp'] )
+        if len(run_zeropoints)>1:
             self.logger.info('Warning, multiple zeropoints, using avg.')
-            run_zeropoint = np.mean(list(run_zeropoint))
+            run_zeropoint = np.mean(list(run_zeropoints))
         else:
-            run_zeropoint = run_zeropoint.pop()
+            run_zeropoint = run_zeropoints.pop()
         self.model.settings['zeropoint'] = self.default_zeropoint + run_zeropoint - self.training_zeropoint
 
 
