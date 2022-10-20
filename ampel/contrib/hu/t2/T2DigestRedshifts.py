@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              jnordin@physik.hu-berlin.de
 # Date:                06.06.2021
-# Last Modified Date:  03.03.2022
+# Last Modified Date:  19.10.2022
 # Last Modified By:    atownsend@physik.hu-berlin.de
 
 from typing import Any, Literal
@@ -245,6 +245,22 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
                         group_z[1].append(cat_match['zSpec'])
                         group_dist[1].append(cat_match['dist2transient'])
 
+                if cat_name == 'PS1_photoz':
+                    ps1_z_phot = float(cat_match['z_phot'])/1000
+                    if cat_match['z_phot'] is not None and ps1_z_phot > -0.1:
+                        if ps1_z_phot < 0.2:
+                            group_z[3].append(ps1_z_phot)
+                            group_dist[3].append(cat_match['dist2transient'])
+                        elif ps1_z_phot < 0.4:
+                            group_z[4].append(ps1_z_phot)
+                            group_dist[4].append(cat_match['dist2transient'])
+                        elif cat_match['dist2transient'] < 20:
+                            group_z[5].append(ps1_z_phot)
+                            group_dist[5].append(cat_match['dist2transient'])
+                        else:
+                            group_z[6].append(ps1_z_phot)
+                            group_dist[6].append(cat_match['dist2transient'])
+                
                 # Implicit restriction as tests where done with this max matching radius
                 if cat_name == 'NEDz' and cat_match['dist2transient'] < 10:
                     if cat_match['z'] < 0.4:

@@ -4,8 +4,8 @@
 # License:             BSD-3-Clause
 # Author:              jnordin@physik.hu-berlin.de
 # Date:                11.05.2021
-# Last Modified Date:  21.03.2022
-# Last Modified By:    mf@physik.hu-berlin.de
+# Last Modified Date:  19.10.2022
+# Last Modified By:    alice.townsend@physik.hu-berlin.de
 
 
 from typing import Literal
@@ -15,6 +15,7 @@ import errno, backoff, copy
 
 import numpy as np
 import sncosmo # type: ignore[import]
+from sncosmo.fitting import DataQualityError
 from astropy.table import Table
 from sfdmap import SFDMap  # type: ignore[import]
 
@@ -379,6 +380,12 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             self.logger.info('Sncosmo fit error')
             t2_output['run_error'] = True
             return t2_output
+        except DataQualityError as e:
+            print('value error', e)
+            self.logger.info('Sncosmo fit error')
+            t2_output['run_error'] = True
+            return t2_output
+
 
         self.logger.debug('Run results {}'.format(sncosmo_result))
 
@@ -388,8 +395,9 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
 
         # How to best serialize these for mongo storage?
         sncosmo_result["parameters"] = sncosmo_result["parameters"].tolist()
-        sncosmo_result["covariance"] = sncosmo_result["covariance"].tolist()
         sncosmo_result["data_mask"] = sncosmo_result["data_mask"].tolist()
+        if sncosmo_result['covariance'] != None:
+            sncosmo_result["covariance"] = sncosmo_result["covariance"].tolist()
 
         # For filtering purposes we want a proper dict
         sncosmo_result["paramdict"] = {}
