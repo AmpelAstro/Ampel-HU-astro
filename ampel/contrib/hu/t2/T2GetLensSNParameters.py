@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : alice.townsend@physik.hu-berlin.de
 # Date              : 22.11.2021
-# Last Modified Date: 26.01.2022
+# Last Modified Date: 19.10.2022
 # Last Modified By  : alice.townsend@physik.hu-berlin.de
 
 
@@ -22,7 +22,7 @@ class T2GetLensSNParameters(T2RunSncosmo):
         # Record the closest detection to peak in each band
         t0 = sncosmo_model.get('t0') # get time at peak of light curve
         sncosmo_table.add_column('temporary', name='epoch', index = 0) # add column with temp values for epoch
-        sncosmo_table.sort(['jd']) # sort data chronologically
+        sncosmo_table.sort(['time']) # sort data chronologically
         
         def take_closest(myList, myNumber):
             '''
@@ -45,20 +45,20 @@ class T2GetLensSNParameters(T2RunSncosmo):
             table_name = str(band) + 'cut'
             globals()[table_name] = Table(sncosmo_table[0:0]) # create empty table for each band
             band_table = sncosmo_table[(sncosmo_table['band'] == band)] # split data into different bands
-            time_minus7 = take_closest(band_table['jd'], t0 - 7) # find closest time to t0-7 days in each band
+            time_minus7 = take_closest(band_table['time'], t0 - 7) # find closest time to t0-7 days in each band
             if (t0 - 7 - self.unc) <= time_minus7 <= (t0 - 7 + self.unc):
-                band_table['epoch'][np.where(band_table['jd'] == time_minus7)] = 'minus7'
-                for row in band_table[np.where(band_table['jd'] == time_minus7)]:  # iterate over temporary table that is a subset of data  
+                band_table['epoch'][np.where(band_table['time'] == time_minus7)] = 'minus7'
+                for row in band_table[np.where(band_table['time'] == time_minus7)]:  # iterate over temporary table that is a subset of data  
                     globals()[table_name].add_row(row)
-            time_closest = take_closest(band_table['jd'], t0) # find closest time to peak in each band
+            time_closest = take_closest(band_table['time'], t0) # find closest time to peak in each band
             if (t0 - self.unc) <= time_closest <= (t0 + self.unc):
-                band_table['epoch'][np.where(band_table['jd'] == time_closest)] = 't0'
-                for row in band_table[np.where(band_table['jd'] == time_closest)]:  # iterate over temporary table that is a subset of data  
+                band_table['epoch'][np.where(band_table['time'] == time_closest)] = 't0'
+                for row in band_table[np.where(band_table['time'] == time_closest)]:  # iterate over temporary table that is a subset of data  
                     globals()[table_name].add_row(row)
-            time_plus7 = take_closest(band_table['jd'], t0 + 7) # find closest time to t0+7 days in each band
+            time_plus7 = take_closest(band_table['time'], t0 + 7) # find closest time to t0+7 days in each band
             if (t0 + 7 - self.unc) <= time_plus7 <= (t0 + 7 + self.unc):
-                band_table['epoch'][np.where(band_table['jd'] == time_plus7)] = 'plus7'
-                for row in band_table[np.where(band_table['jd'] == time_plus7)]:  # iterate over temporary table that is a subset of data  
+                band_table['epoch'][np.where(band_table['time'] == time_plus7)] = 'plus7'
+                for row in band_table[np.where(band_table['time'] == time_plus7)]:  # iterate over temporary table that is a subset of data  
                     globals()[table_name].add_row(row)
 
         # Calculate the colour at different epochs
