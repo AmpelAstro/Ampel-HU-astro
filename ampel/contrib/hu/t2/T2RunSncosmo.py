@@ -396,7 +396,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         # How to best serialize these for mongo storage?
         sncosmo_result["parameters"] = sncosmo_result["parameters"].tolist()
         sncosmo_result["data_mask"] = sncosmo_result["data_mask"].tolist()
-        if sncosmo_result['covariance'] != None:
+        if sncosmo_result['covariance'].all() != None:
             sncosmo_result["covariance"] = sncosmo_result["covariance"].tolist()
 
         # For filtering purposes we want a proper dict
