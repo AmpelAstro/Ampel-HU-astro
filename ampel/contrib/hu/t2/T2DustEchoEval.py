@@ -25,7 +25,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import uncertainties.umath as umath
 import uncertainties.unumpy as unumpy
-
+import os
 
 class T2DustEchoEval(AbsTiedLightCurveT2Unit):
     """
@@ -397,8 +397,12 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                     ax[1].text(position[fid][0]+0.4, position[0][-1]-0.50, 'NaN', fontsize=21)
                     ax[1].text(position[fid][0]+0.4, position[0][-1]-0.58, 'NaN', fontsize=21 )
 
-            plt.savefig(self.directory+'Stage_'+str(t2_output['status'])+'/'+str(light_curve.stock_id)+'.svg', bbox_inches='tight') 
-#            plt.savefig(self.directory+'/'+str(light_curve.stock_id)+'.svg', bbox_inches='tight')
+            
+            output_dir = os.path.join(self.directory, 'Stage_'+str(t2_output['status'])) 
+            if not os.path.isdir(output_dir):
+                os.makedirs(output_dir)
+            
+            plt.savefig(output_dir+'/'+str(light_curve.stock_id)+'.pdf', bbox_inches='tight')
             plt.close()       
 
         t2_output: dict[str,UBson] = t2_output
