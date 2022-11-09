@@ -350,7 +350,8 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                         'mag.err': np.mean(all_value_per_block).std_dev,
                         'measurements_nu': len(baye_block_all),
                         'mag_edge': baye_block_all['mag'][baye_block_all['jd'].idxmax()]
-                    }
+                    },
+                    index=[0]
                 )
 
                 if self.Npoints:
