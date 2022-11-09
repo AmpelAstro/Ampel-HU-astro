@@ -336,7 +336,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             edges = bayesian_blocks(df['jd'], df['mag'], sigma=df['mag.err'], ncp_prior=ncp_prior, fitness='measures')
  
             for i in range(1, len(edges)):
-                baye_block_all = df.loc[df['jd'].between(edges[i-1], edges[i], inclusive=True)]
+                baye_block_all = df.loc[df['jd'].between(edges[i-1], edges[i], inclusive="both")]
    
                 all_value_per_block = unumpy.uarray(np.array(baye_block_all['mag']), np.array(baye_block_all['mag.err']))
 
