@@ -35,8 +35,6 @@ from scipy.signal import find_peaks
 from scipy.stats import sem
 from sklearn.metrics import mean_squared_error
 
-import warnings
-warnings.filterwarnings('ignore')
 
 class T2BayesianBlocks(AbsLightCurveT2Unit):
     """
@@ -103,8 +101,8 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             baseline_sigma = baye_block['mag.err'][baye_block['mag'].idxmin()]
 
             if baye_block['measurements_nu'][baye_block['mag'].idxmin()] == 1:
-                baye_block['level'][baye_block['mag'].idxmin()] = 'baseline'
-                baye_block['level'][baye_block.index[baye_block['mag'] == baye_block.sort_values(by=['mag']).iloc[1]['mag']].tolist()[0] ] = 'baseline'
+                baye_block.loc[baye_block['mag'].idxmin(), "level"] = 'baseline'
+                baye_block.loc[baye_block.index[baye_block['mag'] == baye_block.sort_values(by=['mag']).iloc[1]['mag']].tolist()[0], "level"] = 'baseline'
                 value =  unumpy.uarray(np.array(baye_block[baye_block['level']=='baseline']['mag']), np.array(baye_block[baye_block['level']=='baseline']['mag.err']))
                 baseline = np.mean(value).nominal_value
                 baseline_sigma = np.mean(value).std_dev
@@ -129,14 +127,14 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             idx = baye_block.index.tolist()[nu]
             if np.isnan(baye_block['mag.err'][idx]):
                 if abs((baseline-mag)/baseline_sigma) < self.rej_sigma:
-                    baye_block['level'][idx] = 'baseline'
+                    baye_block.loc[idx, "level"] = 'baseline'
                 else:
-                    baye_block['level'][idx] = 'excess'
+                    baye_block.loc[idx, "level"] = 'excess'
             elif baye_block['level'][idx] != 'baseline':
                 if (baseline+(self.rej_sigma *baseline_sigma) >= mag >= baseline-(self.rej_sigma *baseline_sigma)) and (baseline+(self.rej_sigma  *baseline_sigma) >= mag-baye_block['mag.err'][idx]) :
-                    baye_block['level'][idx] = 'baseline'
+                    baye_block.loc[idx, "level"] = 'baseline'
                 else:
-                    baye_block['level'][idx] = 'excess'
+                    baye_block.loc[idx, "level"] = 'excess'
         return baye_block
 
     def idx_of_excess_regions(self, excess_region):
@@ -336,20 +334,28 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             edges = bayesian_blocks(df['jd'], df['mag'], sigma=df['mag.err'], ncp_prior=ncp_prior, fitness='measures')
  
             for i in range(1, len(edges)):
-                baye_block_all = df.loc[df['jd'].between(edges[i-1], edges[i], inclusive=True)]
+                baye_block_all = df.loc[df['jd'].between(edges[i-1], edges[i], inclusive="both")]
    
                 all_value_per_block = unumpy.uarray(np.array(baye_block_all['mag']), np.array(baye_block_all['mag.err']))
+
+                to_append = pd.DataFrame(
+                    {
+                        'jd_start': edges[i - 1],
+                        'jd_end': edges[i],
+                        'jd_measurement_start': min(baye_block_all['jd']),
+                        'jd_measurement_end': max(baye_block_all['jd']),
+                        'mag': np.mean(all_value_per_block).nominal_value,
+                        'mag.err': np.mean(all_value_per_block).std_dev,
+                        'measurements_nu': len(baye_block_all),
+                        'mag_edge': baye_block_all['mag'][baye_block_all['jd'].idxmax()]
+                    },
+                    index=[0]
+                )
+
+                if self.Npoints:
+                    to_append['Npoints'] = [np.array(baye_block_all['Npoints'])]
  
-                if len(baye_block_all)==1:
-                    if self.Npoints:
-                        baye_block = baye_block.append({'jd_start': edges[i-1], 'jd_end': edges[i], 'jd_measurement_start': min(baye_block_all['jd']), 'jd_measurement_end': max(baye_block_all['jd']), 'mag': np.mean(all_value_per_block).nominal_value, 'mag.err': np.mean(all_value_per_block).std_dev, 'measurements_nu':len(baye_block_all), 'mag_edge': baye_block_all['mag'][baye_block_all['jd'].idxmax()], 'Npoints': np.array(baye_block_all['Npoints'])}, ignore_index=True)
-                    else:
-                        baye_block = baye_block.append({'jd_start': edges[i-1], 'jd_end': edges[i], 'jd_measurement_start': min(baye_block_all['jd']), 'jd_measurement_end': max(baye_block_all['jd']), 'mag': np.mean(all_value_per_block).nominal_value, 'mag.err': np.mean(all_value_per_block).std_dev, 'measurements_nu':len(baye_block_all), 'mag_edge': baye_block_all['mag'][baye_block_all['jd'].idxmax()]}, ignore_index=True)
-                else:
-                    if self.Npoints: 
-                        baye_block = baye_block.append({'jd_start': edges[i-1], 'jd_end': edges[i], 'jd_measurement_start': min(baye_block_all['jd']), 'jd_measurement_end': max(baye_block_all['jd']), 'mag': np.mean(all_value_per_block).nominal_value, 'mag.err': np.mean(all_value_per_block).std_dev, 'measurements_nu': len(baye_block_all), 'mag_edge': baye_block_all['mag'][baye_block_all['jd'].idxmax()], 'Npoints': np.array(baye_block_all['Npoints'])}, ignore_index=True)
-                    else:
-                        baye_block = baye_block.append({'jd_start': edges[i-1], 'jd_end': edges[i], 'jd_measurement_start': min(baye_block_all['jd']),   'jd_measurement_end': max(baye_block_all['jd']), 'mag': np.mean(all_value_per_block).nominal_value, 'mag.err': np.mean(all_value_per_block).std_dev  , 'measurements_nu': len(baye_block_all), 'mag_edge': baye_block_all['mag'][baye_block_all['jd'].idxmax()]}, ignore_index=True)
+                baye_block = pd.concat([baye_block, to_append], ignore_index=True)
 
             baye_block['level'] = None
             baye_block = baye_block.astype({"jd_start":'float64', "jd_end":'float64', "jd_measurement_start": 'float64', "jd_measurement_end": 'float64', "mag": 'float64', "mag.err": 'float64', "measurements_nu": 'float64', 'sigma_from_old_baseline': 'float64', 'sigma_from_baseline': 'float64', "mag_edge": 'float64'})
@@ -461,7 +467,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     if global_peak_idx == each_excess_max_idx: 
               #      else: #Inside the excess region with the highest intensity
                         #Calculate the local peaks inside the excess region of the highest intensity
-                        local_peaks, _ = np.array(find_peaks(np.concatenate(([min(baye_block['mag'].loc[idx].values )], baye_block['mag'].loc[idx].values, [min(baye_block['mag'].loc[idx].values)] ))) )
+                        local_peaks, _ = np.array(find_peaks(np.concatenate(([min(baye_block['mag'].loc[idx].values )], baye_block['mag'].loc[idx].values, [min(baye_block['mag'].loc[idx].values)] ))), dtype=object)
                         local_peaks = local_peaks -1  
                         for peak in local_peaks:
                             if idx[peak] != global_peak_idx:
