@@ -339,17 +339,24 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 baye_block_all = df.loc[df['jd'].between(edges[i-1], edges[i], inclusive=True)]
    
                 all_value_per_block = unumpy.uarray(np.array(baye_block_all['mag']), np.array(baye_block_all['mag.err']))
+
+                to_append = pd.DataFrame(
+                    {
+                        'jd_start': edges[i - 1],
+                        'jd_end': edges[i],
+                        'jd_measurement_start': min(baye_block_all['jd']),
+                        'jd_measurement_end': max(baye_block_all['jd']),
+                        'mag': np.mean(all_value_per_block).nominal_value,
+                        'mag.err': np.mean(all_value_per_block).std_dev,
+                        'measurements_nu': len(baye_block_all),
+                        'mag_edge': baye_block_all['mag'][baye_block_all['jd'].idxmax()]
+                    }
+                )
+
+                if self.Npoints:
+                    to_append['Npoints'] = np.array(baye_block_all['Npoints'])
  
-                if len(baye_block_all)==1:
-                    if self.Npoints:
-                        baye_block = baye_block.append({'jd_start': edges[i-1], 'jd_end': edges[i], 'jd_measurement_start': min(baye_block_all['jd']), 'jd_measurement_end': max(baye_block_all['jd']), 'mag': np.mean(all_value_per_block).nominal_value, 'mag.err': np.mean(all_value_per_block).std_dev, 'measurements_nu':len(baye_block_all), 'mag_edge': baye_block_all['mag'][baye_block_all['jd'].idxmax()], 'Npoints': np.array(baye_block_all['Npoints'])}, ignore_index=True)
-                    else:
-                        baye_block = baye_block.append({'jd_start': edges[i-1], 'jd_end': edges[i], 'jd_measurement_start': min(baye_block_all['jd']), 'jd_measurement_end': max(baye_block_all['jd']), 'mag': np.mean(all_value_per_block).nominal_value, 'mag.err': np.mean(all_value_per_block).std_dev, 'measurements_nu':len(baye_block_all), 'mag_edge': baye_block_all['mag'][baye_block_all['jd'].idxmax()]}, ignore_index=True)
-                else:
-                    if self.Npoints: 
-                        baye_block = baye_block.append({'jd_start': edges[i-1], 'jd_end': edges[i], 'jd_measurement_start': min(baye_block_all['jd']), 'jd_measurement_end': max(baye_block_all['jd']), 'mag': np.mean(all_value_per_block).nominal_value, 'mag.err': np.mean(all_value_per_block).std_dev, 'measurements_nu': len(baye_block_all), 'mag_edge': baye_block_all['mag'][baye_block_all['jd'].idxmax()], 'Npoints': np.array(baye_block_all['Npoints'])}, ignore_index=True)
-                    else:
-                        baye_block = baye_block.append({'jd_start': edges[i-1], 'jd_end': edges[i], 'jd_measurement_start': min(baye_block_all['jd']),   'jd_measurement_end': max(baye_block_all['jd']), 'mag': np.mean(all_value_per_block).nominal_value, 'mag.err': np.mean(all_value_per_block).std_dev  , 'measurements_nu': len(baye_block_all), 'mag_edge': baye_block_all['mag'][baye_block_all['jd'].idxmax()]}, ignore_index=True)
+                baye_block = pd.concat([baye_block, to_append], ignore_index=True)
 
             baye_block['level'] = None
             baye_block = baye_block.astype({"jd_start":'float64', "jd_end":'float64', "jd_measurement_start": 'float64', "jd_measurement_end": 'float64', "mag": 'float64', "mag.err": 'float64', "measurements_nu": 'float64', 'sigma_from_old_baseline': 'float64', 'sigma_from_baseline': 'float64', "mag_edge": 'float64'})
