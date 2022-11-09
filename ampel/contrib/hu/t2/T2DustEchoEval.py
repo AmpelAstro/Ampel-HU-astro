@@ -402,7 +402,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
             if not os.path.isdir(output_dir):
                 os.makedirs(output_dir)
             
-            plt.savefig(output_dir+'/'+str(light_curve.stock_id)+'.pdf', bbox_inches='tight')
+            #plt.savefig(output_dir+'/'+str(light_curve.stock_id)+'.pdf', bbox_inches='tight')
             plt.close()       
 
         t2_output: dict[str,UBson] = t2_output
