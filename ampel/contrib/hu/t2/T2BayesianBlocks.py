@@ -35,8 +35,6 @@ from scipy.signal import find_peaks
 from scipy.stats import sem
 from sklearn.metrics import mean_squared_error
 
-# import warnings
-# warnings.filterwarnings('ignore')
 
 class T2BayesianBlocks(AbsLightCurveT2Unit):
     """
