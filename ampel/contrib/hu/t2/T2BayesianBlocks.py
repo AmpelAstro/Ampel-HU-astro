@@ -469,7 +469,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     if global_peak_idx == each_excess_max_idx: 
               #      else: #Inside the excess region with the highest intensity
                         #Calculate the local peaks inside the excess region of the highest intensity
-                        local_peaks, _ = np.array(find_peaks(np.concatenate(([min(baye_block['mag'].loc[idx].values )], baye_block['mag'].loc[idx].values, [min(baye_block['mag'].loc[idx].values)] ))) )
+                        local_peaks, _ = np.array(find_peaks(np.concatenate(([min(baye_block['mag'].loc[idx].values )], baye_block['mag'].loc[idx].values, [min(baye_block['mag'].loc[idx].values)] ))), dtype=object)
                         local_peaks = local_peaks -1  
                         for peak in local_peaks:
                             if idx[peak] != global_peak_idx:
