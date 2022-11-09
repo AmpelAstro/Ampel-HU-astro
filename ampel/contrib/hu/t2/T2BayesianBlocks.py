@@ -129,14 +129,14 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             idx = baye_block.index.tolist()[nu]
             if np.isnan(baye_block['mag.err'][idx]):
                 if abs((baseline-mag)/baseline_sigma) < self.rej_sigma:
-                    baye_block['level'][idx] = 'baseline'
+                    baye_block.loc[idx, "level"] = 'baseline'
                 else:
-                    baye_block['level'][idx] = 'excess'
+                    baye_block.loc[idx, "level"] = 'excess'
             elif baye_block['level'][idx] != 'baseline':
                 if (baseline+(self.rej_sigma *baseline_sigma) >= mag >= baseline-(self.rej_sigma *baseline_sigma)) and (baseline+(self.rej_sigma  *baseline_sigma) >= mag-baye_block['mag.err'][idx]) :
-                    baye_block['level'][idx] = 'baseline'
+                    baye_block.loc[idx, "level"] = 'baseline'
                 else:
-                    baye_block['level'][idx] = 'excess'
+                    baye_block.loc[idx, "level"] = 'excess'
         return baye_block
 
     def idx_of_excess_regions(self, excess_region):
