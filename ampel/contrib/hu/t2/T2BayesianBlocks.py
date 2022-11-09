@@ -103,8 +103,8 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             baseline_sigma = baye_block['mag.err'][baye_block['mag'].idxmin()]
 
             if baye_block['measurements_nu'][baye_block['mag'].idxmin()] == 1:
-                baye_block['level'][baye_block['mag'].idxmin()] = 'baseline'
-                baye_block['level'][baye_block.index[baye_block['mag'] == baye_block.sort_values(by=['mag']).iloc[1]['mag']].tolist()[0] ] = 'baseline'
+                baye_block.loc[baye_block['mag'].idxmin(), "level"] = 'baseline'
+                baye_block.loc[baye_block.index[baye_block['mag'] == baye_block.sort_values(by=['mag']).iloc[1]['mag']].tolist()[0], "level"] = 'baseline'
                 value =  unumpy.uarray(np.array(baye_block[baye_block['level']=='baseline']['mag']), np.array(baye_block[baye_block['level']=='baseline']['mag.err']))
                 baseline = np.mean(value).nominal_value
                 baseline_sigma = np.mean(value).std_dev
