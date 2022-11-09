@@ -35,8 +35,8 @@ from scipy.signal import find_peaks
 from scipy.stats import sem
 from sklearn.metrics import mean_squared_error
 
-import warnings
-warnings.filterwarnings('ignore')
+# import warnings
+# warnings.filterwarnings('ignore')
 
 class T2BayesianBlocks(AbsLightCurveT2Unit):
     """
@@ -355,7 +355,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 )
 
                 if self.Npoints:
-                    to_append['Npoints'] = np.array(baye_block_all['Npoints'])
+                    to_append['Npoints'] = [np.array(baye_block_all['Npoints'])]
  
                 baye_block = pd.concat([baye_block, to_append], ignore_index=True)
 
