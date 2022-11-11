@@ -3,6 +3,8 @@
 - ampel.contrib.hu.t0.TransientInClusterFilter
 - ampel.contrib.hu.t0.LensedTransientFilter
 - ampel.contrib.hu.t0.RandFilter
+- ampel.contrib.hu.t0.RcfFilter
+- ampel.contrib.hu.t0.RedshiftCatalogFilter
 - ampel.contrib.hu.t2.T2PanStarrThumbPrint
 - ampel.contrib.hu.t2.T2PhaseLimit
 - ampel.contrib.hu.t2.T2PS1ThumbExtCat
