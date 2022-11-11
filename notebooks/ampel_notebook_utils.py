@@ -7,13 +7,15 @@ from ampel.content.T1Document import T1Document
 from ampel.view.LightCurve import LightCurve
 
 
-def api_name2alerts(name, token):
+def api_name2alerts(name, token, with_history=True):
     """
     Find all alerts belonging to ZTF transient
     """
+    from ampel.log.AmpelLogger import AmpelLogger
+
 
     # Setup connection
-    endpoint = "https://ampel.zeuthen.desy.de/api/ztf/archive/v3/object/{}/alerts?".format(name)
+    endpoint = "https://ampel.zeuthen.desy.de/api/ztf/archive/v3/object/{}/alerts?with_history={}".format(name, with_history)
     header = {"Authorization": "bearer "+token}
     response = requests.get(endpoint, headers=header )
 
@@ -31,7 +33,7 @@ def api_name2candids(name, token):
     """
 
     # Setup connection
-    endpoint = "https://ampel.zeuthen.desy.de/api/ztf/archive/v3/object/{}/alerts?".format(name)
+    endpoint = "https://ampel.zeuthen.desy.de/api/ztf/archive/v3/object/{}/alerts?with_history=True".format(name)
     header = {"Authorization": "bearer "+token}
     response = requests.get(endpoint, headers=header )
 
@@ -50,7 +52,7 @@ def api_name2candid(name, token):
     """
 
     # Setup connection
-    endpoint = "https://ampel.zeuthen.desy.de/api/ztf/archive/v3/object/{}/alerts?".format(name)
+    endpoint = "https://ampel.zeuthen.desy.de/api/ztf/archive/v3/object/{}/alerts?with_history=False".format(name)
     header = {"Authorization": "bearer "+token}
     response = requests.get(endpoint, headers=header )
 
@@ -109,7 +111,7 @@ def api_get_lightcurve(name, token, shaper=None):
     return LightCurve.build(t1d, dps)
 
 
-def api_get_lightcurves(name, token, shaper=None):
+def api_get_lightcurves(name, token, shaper=None, with_history=True):
     """
 
     Retrieve alert history of a SN and convert to a list of LightCurve objects.
@@ -130,7 +132,7 @@ def api_get_lightcurves(name, token, shaper=None):
         shaper = ZiDataPointShaper(logger=AmpelLogger.get_logger())
 
     # Setup connection
-    endpoint = "https://ampel.zeuthen.desy.de/api/ztf/archive/v3/object/{}/alerts?with_history=true&with_cutouts=false".format(name)
+    endpoint = "https://ampel.zeuthen.desy.de/api/ztf/archive/v3/object/{}/alerts?with_history=true&with_cutouts=with_history".format(name)
     header = {"Authorization": "bearer "+token}
 
     response = requests.get(endpoint, headers=header )
