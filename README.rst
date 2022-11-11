@@ -1,12 +1,25 @@
-
 Contributed Ampel units from HU/DESY group
 ==========================================
 
-Contains as of Jan 2020:
+Demo install instructions:
+==========================
+
+Create environment with python 3.10+ / poetry. Then run:
+- `git clone https://github.com/AmpelProject/Ampel-HU-astro.git`
+- `cd Ampel-HU-astro/`
+- `poetry install -E "ztf sncosmo extcats notebook"`
+- `cd notebooks`
+- `poetry run jupyter notebook`
+
+This will allow a number of _Demo_ notebooks to be run. Note that most of them
+requires an access token if data is to be retrieved.
+
+Contains as of Nov 2022:
+========================
 
 T0
 --
-* DecentFilter
+* SimpleDecentFilter
 * LensedTransientFilter
 * NoFilter
 * RandFilter
@@ -16,33 +29,52 @@ T0
 * TransientInClusterFilter
 * TransientInEllipticalFilter
 * XShooterFilter
+* RcfFilter
+* RedshiftCatalogFilter
 
 T2
 --
-* T2CatalogMatch
+* T2PanStarrThumbPrint
+* T2PhaseLimit
+* T2PS1ThumbExtCat
+* T2PS1ThumbNedSNCosmo
+* T2PS1ThumbNedTap
 * T2LCQuality
-* T2MarshalMonitor
-* T2Observability
-* T2SNCosmo
+* T2BrightSNProb
+* T2TNSEval
+* T2InfantCatalogEval
+* T2RunSncosmo
+* T2CatalogMatchLocal
+* T2DigestRedshifts
+* T2RunPossis
+* T2RunTDE
+* T2RunParsnip
+* T2RunSnoopy
+* T2MatchBTS
+* T2NedTap
+* T2NedSNCosmo
+* T2PropagateStockInfo
+* T2GetLensSNParameters
+* T2LSPhotoZTap
+* T2ElasticcRedshiftSampler
+* T2TabulatorRiseDecline
+* T2XgbClassifier
+* T2ElasticcReport
+* T2FastDecliner
 
 T3
 --
-* ChannelSummaryPublisher
-* CompareExternal
-* CompareUli
-* CountSncosmo
-* GrowthMarshalAnnotate
-* MarshalPublisher
-* RapidBase
-* RapidSedm
-* RejectionLogsPublisher
-* SkyPortalPublisher
-* SlackAlertPublisher
-* SlackPublisher
-* SlackSummaryPublisher
-* T3MarshalMonitor
-* TNSTalker
 * TransientInfoPrinter
 * TransientViewDumper
-* TransientWebPublisher
-* aiotns (TNSMatcher)
+* ChannelSummaryPublisher
+* SlackSummaryPublisher
+* RapidBase
+* RapidSedm
+* RapidLco
+* TNSTalker
+* TNSMirrorUpdater
+* TransientTablePublisher
+* HealpixCorrPlotter
+* PlotLightcurveSample
+* ElasticcClassPublisher
+* VOEventPublisher
