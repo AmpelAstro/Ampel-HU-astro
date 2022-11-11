@@ -13,7 +13,7 @@ Create environment with python 3.10+ / poetry. Then run:
 * `cd notebooks`
 * `poetry run jupyter notebook`
 
-This will allow a number of _Demo_ notebooks to be run. Note that most of them
+This will allow a number of Demo / access / development notebooks to be run. Note that most of them
 requires an access token if data is to be retrieved.
 
 Contains as of Nov 2022:
