@@ -5,11 +5,13 @@ Demo install instructions:
 ==========================
 
 Create environment with python 3.10+ / poetry. Then run:
-- `git clone https://github.com/AmpelProject/Ampel-HU-astro.git`
-- `cd Ampel-HU-astro/`
-- `poetry install -E "ztf sncosmo extcats notebook"`
-- `cd notebooks`
-- `poetry run jupyter notebook`
+
+
+* `git clone https://github.com/AmpelProject/Ampel-HU-astro.git`
+* `cd Ampel-HU-astro/`
+* `poetry install -E "ztf sncosmo extcats notebook"`
+* `cd notebooks`
+* `poetry run jupyter notebook`
 
 This will allow a number of _Demo_ notebooks to be run. Note that most of them
 requires an access token if data is to be retrieved.
