@@ -387,7 +387,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                 timescale = t2_res[key]['jd_excess_regions'][idx][-1]-t2_res[key]['jd_excess_regions'][idx][0]
                 ax[1].text(position[fid][0]+0.4, position[fid][-1]-0.2, str(key)+'\n\n', color=self.PlotColor[fid+1], fontsize=25)
                 ax[1].text(position[fid][0]+0.4, position[0][-1]-0.18, format(max(flatten(t2_res[key]['sigma_from_baseline'][0])),".2f"), fontsize=21)
-                ax[1].text(position[fid][0]+0.4, position[0][-1]-0.26, format(flatten(min(t2_res[key]['max_mag_excess_region']))[0],'.2f'),fontsize=21)
+                ax[1].text(position[fid][0]+0.4, position[0][-1]-0.26, format(t2_res[key]['max_mag_excess_region'][idx][0],'.2f'),fontsize=21)
                 ax[1].text(position[fid][0]+0.4, position[0][-1]-0.34, format(t2_res[key]['baseline'][0], '.2f'), fontsize=21)
                 ax[1].text(position[fid][0]+0.4, position[0][-1]-0.42, format(timescale,'.2f'), fontsize=21)
                 if excess_region['e_rise'][fid] is not 'nan':
