@@ -59,7 +59,7 @@ task:
             - unit: T2BayesianBlocks
               config: &bayes_conf
                 min_det: 6
-                rej_sigma: 3
+                rej_sigma: 4
                 plot: True
                 data_type: ztf_fp
                 debug: True

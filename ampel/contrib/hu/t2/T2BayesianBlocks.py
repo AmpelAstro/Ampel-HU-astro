@@ -1010,6 +1010,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 output["description"].append(None)
 
             output_per_filter[str(passband)] = dict(output)
+
             ##############################################
             ################## Plots #####################
             if self.plot:
@@ -1117,20 +1118,29 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 baye_block["mjd_start"] = baye_block["jd_start"] - 2400000.5
                 baye_block["mjd_end"] = baye_block["jd_end"] - 2400000.5
 
-                print(baye_block.keys())
-                print(baye_block[["mag", "mag.err", "mjd_start", "mjd_end", "level"]])
-
                 for nu, value in enumerate(baye_block["mag"]):
-                    if baye_block["level"][nu] != "outlier":
+                    linestyle = "solid"
+                    linewidth = 1.5
+                    if baye_block["level"][nu] == "excess":
                         color_block = self.PlotColor[fid - 1]
+                        if self.data_type == "ztf_fp":
+                            linestyle = "dashdot"
+                    elif baye_block["level"][nu] == "baseline":
+                        color_block = self.PlotColor[fid - 1]
+                        if self.data_type == "ztf_fp":
+                            linewidth = 3
                     else:
                         color_block = "lightgray"
+                        if self.data_type == "ztf_fp":
+                            linestyle = "dashdot"
+
                     locals()[str("ax") + str(passband)] = plt.hlines(
                         value,
                         baye_block["mjd_start"][nu],
                         baye_block["mjd_end"][nu],
                         color=color_block,
-                        linestyles="solid",
+                        linestyles=linestyle,
+                        linewidth=linewidth,
                     )
                     locals()[str("ax") + str(passband)] = plt.hlines(
                         value + baye_block["mag.err"][nu],
