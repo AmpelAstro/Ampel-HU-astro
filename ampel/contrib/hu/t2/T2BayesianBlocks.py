@@ -998,8 +998,9 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             ##############################################
             ################## Plots #####################
             if self.plot:
+                df["mjd"] = df["jd"] - 2400000.5
                 ax.errorbar(
-                    df[df["Outlier"] == False]["jd"] - 2400000.5,
+                    df[df["Outlier"] == False]["mjd"],
                     df[df["Outlier"] == False]["mag"],
                     yerr=df[df["Outlier"] == False]["mag.err"],
                     label=passband,
@@ -1011,7 +1012,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     capsize=0,
                 )
                 ax.errorbar(
-                    df[df["Outlier"] == True]["jd"] - 2400000.5,
+                    df[df["Outlier"] == True]["mjd"],
                     df[df["Outlier"] == True]["mag"],
                     yerr=df[df["Outlier"] == True]["mag.err"],
                     label="Outlier",
@@ -1068,7 +1069,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     len(self.filter) + 1, 1, fid + 1, sharex=ax
                 )
                 locals()[str("ax") + str(passband)] = plt.errorbar(
-                    df[df["Outlier"] == False]["jd"] - 2400000.5,
+                    df[df["Outlier"] == False]["mjd"],
                     df[df["Outlier"] == False]["mag"],
                     yerr=df[df["Outlier"] == False]["mag.err"],
                     label=passband,
@@ -1080,7 +1081,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     capsize=0,
                 )
                 locals()[str("ax") + str(passband)] = plt.errorbar(
-                    df[df["Outlier"] == True]["jd"] - 2400000.5,
+                    df[df["Outlier"] == True]["mjd"],
                     df[df["Outlier"] == True]["mag"],
                     yerr=df[df["Outlier"] == True]["mag.err"],
                     label="Outlier",
@@ -1091,6 +1092,11 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     elinewidth=3,
                     capsize=0,
                 )
+                baye_block["mjd_start"] = baye_block["jd_start"] - 2400000.5
+                baye_block["mjd_end"] = baye_block["jd_end"] - 2400000.5
+
+                print(baye_block[["mag", "mag.err"]])
+                quit()
 
                 for nu, value in enumerate(baye_block["mag"]):
                     if baye_block["level"][nu] != "outlier":
@@ -1099,22 +1105,22 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                         color_block = "lightgray"
                     locals()[str("ax") + str(passband)] = plt.hlines(
                         value,
-                        baye_block["jd_start"][nu] - 2400000.5,
-                        baye_block["jd_end"][nu] - 2400000.5,
+                        baye_block["mjd_start"][nu],
+                        baye_block["mjd_end"][nu],
                         color=color_block,
                         linestyles="solid",
                     )
                     locals()[str("ax") + str(passband)] = plt.hlines(
                         value + baye_block["mag.err"][nu],
-                        baye_block["jd_start"][nu] - 2400000.5,
-                        baye_block["jd_end"][nu] - 2400000.5,
+                        baye_block["mjd_start"][nu],
+                        baye_block["mjd_end"][nu],
                         color=color_block,
                         linestyles="dashed",
                     )
                     locals()[str("ax") + str(passband)] = plt.hlines(
                         value - baye_block["mag.err"][nu],
-                        baye_block["jd_start"][nu] - 2400000.5,
-                        baye_block["jd_end"][nu] - 2400000.5,
+                        baye_block["mjd_start"][nu],
+                        baye_block["mjd_end"][nu],
                         color=color_block,
                         linestyles="dashed",
                     )
@@ -1145,6 +1151,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 fig.supylabel("Difference flux", fontsize=30)
             else:
                 fig.supylabel("Difference magnitude", fontsize=30)
+
             fig.supxlabel("MJD", fontsize=30)
 
             if self.plot:
@@ -1156,6 +1163,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                         #     logger = self.logger
                     )
                 ]
+                fig.savefig("test.png")
                 plt.close()
             fig.tight_layout()
 
