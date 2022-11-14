@@ -496,7 +496,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             if self.data_type == "wise":
                 ncp_prior = 1.32 + 0.577 * math.log10(len(df))
             elif self.data_type == "ztf_fp":
-                ncp_prior = 500 * math.log10(len(df))
+                ncp_prior = 10 * math.log10(len(df))
 
             edges = bayesian_blocks(
                 df["jd"],
@@ -515,6 +515,16 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     np.array(baye_block_all["mag"]), np.array(baye_block_all["mag.err"])
                 )
 
+                if self.data_type == "wise":
+                    mag_err = np.mean(all_value_per_block).std_dev
+                elif self.data_type == "ztf_fp":
+                    mag_err = mean_squared_error(
+                        unumpy.nominal_values(all_value_per_block),
+                        [np.mean(all_value_per_block).nominal_value]
+                        * len(all_value_per_block),
+                        squared=False,
+                    )
+
                 to_append = pd.DataFrame(
                     {
                         "jd_start": edges[i - 1],
@@ -523,6 +533,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                         "jd_measurement_end": max(baye_block_all["jd"]),
                         "mag": np.mean(all_value_per_block).nominal_value,
                         "mag.err": np.mean(all_value_per_block).std_dev,
+                        "mag.err": mag_err,
                         "measurements_nu": len(baye_block_all),
                         "mag_edge": baye_block_all["mag"][
                             baye_block_all["jd"].idxmax()
@@ -1075,6 +1086,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     label=passband,
                     fmt="s",
                     color=self.PlotColor[fid - 1],
+                    alpha=0.05,
                     ecolor="lightgray",
                     markeredgecolor="black",
                     elinewidth=3,
@@ -1095,8 +1107,10 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 baye_block["mjd_start"] = baye_block["jd_start"] - 2400000.5
                 baye_block["mjd_end"] = baye_block["jd_end"] - 2400000.5
 
-                print(baye_block[["mag", "mag.err"]])
-                quit()
+                print(baye_block.keys())
+                print(baye_block[["mag", "mag.err", "mjd_start", "mjd_end", "level"]])
+                # print(baye_block)
+                # quit()
 
                 for nu, value in enumerate(baye_block["mag"]):
                     if baye_block["level"][nu] != "outlier":
@@ -1141,12 +1155,6 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             if self.flux == False and "ax" in locals():
                 ax.invert_yaxis()
 
-            #     if self.flux==True:
-            #         plt.ylabel('Difference flux', fontsize=25)
-            #     else:
-            #         plt.ylabel('Difference magnitude', fontsize=25)
-            #     plt.xlabel("MJD", fontsize=20)
-
             if self.flux == True:
                 fig.supylabel("Difference flux", fontsize=30)
             else:
@@ -1163,7 +1171,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                         #     logger = self.logger
                     )
                 ]
-                fig.savefig("test.png")
+                fig.savefig(f"{light_curve.stock_id}_test.pdf")
                 plt.close()
             fig.tight_layout()
 
