@@ -6,7 +6,7 @@
 # Date              : 28.04.2021
 # Last Modified Date: 14.11.2022
 # Last Modified By  : Simeon
-
+import os
 from typing import Dict, List, Optional, Sequence, Any
 from astropy.coordinates import SkyCoord
 import numpy as np
@@ -60,6 +60,10 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
     # Type of data we will process, valid ztf_alert, ztf_fp, wise
     data_type: str
+
+    debug: bool = False
+
+    debug_dir: Optional[str]
 
     #
     filter: Sequence[str]
@@ -695,7 +699,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                                 )
                             ]["mag"].values
                         )
-                        #                        everything_except_excess_rms =  np.sqrt(sum((baseline- list(everything_except_excess_values)[0] )**2)/len(list(everything_except_excess_values)[0]) )
+
                         everything_except_excess_rms = mean_squared_error(
                             list(everything_except_excess_values)[0],
                             [baseline] * len(list(everything_except_excess_values)[0]),
@@ -1079,6 +1083,12 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 locals()[str("ax") + str(passband)] = fig.add_subplot(
                     len(self.filter) + 1, 1, fid + 1, sharex=ax
                 )
+
+                if self.debug:
+                    alpha = 0.07
+                else:
+                    alpha = 1
+
                 locals()[str("ax") + str(passband)] = plt.errorbar(
                     df[df["Outlier"] == False]["mjd"],
                     df[df["Outlier"] == False]["mag"],
@@ -1086,7 +1096,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     label=passband,
                     fmt="s",
                     color=self.PlotColor[fid - 1],
-                    alpha=0.05,
+                    alpha=alpha,
                     ecolor="lightgray",
                     markeredgecolor="black",
                     elinewidth=3,
@@ -1109,8 +1119,6 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
                 print(baye_block.keys())
                 print(baye_block[["mag", "mag.err", "mjd_start", "mjd_end", "level"]])
-                # print(baye_block)
-                # quit()
 
                 for nu, value in enumerate(baye_block["mag"]):
                     if baye_block["level"][nu] != "outlier":
@@ -1171,7 +1179,14 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                         #     logger = self.logger
                     )
                 ]
-                fig.savefig(f"{light_curve.stock_id}_test.pdf")
+                if self.debug and self.debug_dir != None:
+                    if not os.path.exists(self.debug_dir):
+                        os.makedirs(self.debug_dir)
+                    fig.savefig(
+                        os.path.join(
+                            self.debug_dir, f"debug_{light_curve.stock_id}.pdf"
+                        )
+                    )
                 plt.close()
             fig.tight_layout()
 
