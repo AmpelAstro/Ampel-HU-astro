@@ -4,11 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : Eleni
 # Date              : 28.04.2021
-# Last Modified Date: 14.11.2022
+# Last Modified Date: 15.11.2022
 # Last Modified By  : Simeon
+
 import os
 from typing import Dict, List, Optional, Sequence, Any
-from astropy.coordinates import SkyCoord
 import numpy as np
 import matplotlib.pyplot as plt
 import more_itertools as mit
@@ -25,14 +25,11 @@ from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 from ampel.model.PlotProperties import PlotProperties
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 from ampel.plot.create import create_plot_record
-from uncertainties import ufloat
-import uncertainties.umath as umath
 import uncertainties.unumpy as unumpy
 from nltk import flatten
 import itertools
 import math
 from scipy.signal import find_peaks
-from scipy.stats import sem
 from sklearn.metrics import mean_squared_error
 
 
@@ -42,37 +39,29 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
     # Min number of detections remaining in the target range for subsequent analysis
     min_det: int = 3
 
-    # Rejection sigma.
-    rej_sigma: float  # A lower number will more aggressively reject data
-
-    # Spurious light in references typically manifests as negative flux.
-    # Will require the fraction of obs with negative to be lower than this fraction, in each filter.
-    #    neg_frac_lim : float = 0.05
-
-    # Max magnitude to consider (constant low flux can correspond to flux in reference)
-    #    max_mag : float = 22.5
+    # Rejection sigma
+    rej_sigma: float = 3  # A lower number will more aggressively reject data
 
     # Plot
-    plot: bool
+    plot: bool = True
 
     # Use Npoints per observed datapoint
     Npoints: bool = False
 
     # Type of data we will process, valid ztf_alert, ztf_fp, wise
-    data_type: str
+    data_type: str = "wise"
 
     debug: bool = False
 
     debug_dir: Optional[str]
 
-    #
     filter: Sequence[str]
 
     # Work with fluxes instead of magnitude
     flux: bool = False
     #
     plot_props: Optional[PlotProperties]
-    # Color of filters on the plots
+    # Color of filters for the plots
 
     PlotColor: Sequence[str] = ["red", "red", "blue"]
 
@@ -574,7 +563,6 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 )
                 baseline = np.mean(value).nominal_value
                 baseline_sigma = np.mean(value).std_dev
-                #                baseline_rms = np.sqrt(sum((np.array(list(itertools.chain(*baseline_values)))-baseline)**2)/len(list(itertools.chain(*baseline_values)))  )
                 baseline_rms = mean_squared_error(
                     list(itertools.chain(*baseline_values)),
                     [baseline] * len(list(itertools.chain(*baseline_values))),
@@ -589,7 +577,6 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             excess_region = baye_block[baye_block["level"] == "excess"]
             if not excess_region.empty:
                 # Find the excess regions (baye block that are accumulated to a region)
-                import more_itertools as mit
 
                 excess_regions_idx = [
                     list(group)
@@ -669,8 +656,6 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                         )
             else:
                 everything_except_excess_rms = baseline_rms
-
-            import more_itertools as mit
 
             baseline_regions_idx = [
                 list(group)
@@ -1026,12 +1011,9 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                             color=self.PlotColor[fid - 1],
                         )
 
-                ax.spines["left"].set_linewidth(3)
-                ax.spines["bottom"].set_linewidth(3)
-                ax.spines["top"].set_linewidth(3)
-                ax.spines["right"].set_linewidth(3)
-                ##                if self.flux==False:
-                ##                      plt.gca().invert_yaxis()
+                for sp in ["left", "bottom", "top", "right"]:
+                    ax.spines[sp].set_linewidth(3)
+
                 ax.set_title(light_curve.stock_id, fontsize=25)
                 ax.legend(
                     bbox_to_anchor=(1.05, 1),
@@ -1123,10 +1105,9 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     plt.gca().invert_yaxis()
 
                 locals()[str("ax") + str(passband)] = plt.gca()
-                locals()[str("ax") + str(passband)].spines["left"].set_linewidth(3)
-                locals()[str("ax") + str(passband)].spines["bottom"].set_linewidth(3)
-                locals()[str("ax") + str(passband)].spines["top"].set_linewidth(3)
-                locals()[str("ax") + str(passband)].spines["right"].set_linewidth(3)
+                for sp in ["left", "bottom", "top", "right"]:
+                    locals()[str("ax") + str(passband)].spines[sp].set_linewidth(3)
+
                 plt.tick_params(axis="both", which="major", pad=22, length=10, width=3)
                 plt.xticks(fontsize=20)
                 plt.yticks(fontsize=20)
