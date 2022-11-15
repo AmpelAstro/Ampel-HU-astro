@@ -268,7 +268,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
         assert self.data_type in ["ztf_alert", "ztf_fp", "wise"]
 
         if self.data_type in ["ztf_alert", "ztf_fp"]:
-
+            self.ztfid = to_ztf_id(light_curve.stock_id)
             self.PlotColor = ["green", "red", "orange"]
         ################################
         ######## Bayesian blocks #######
@@ -453,6 +453,9 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             elif self.data_type == "ztf_fp":
                 ncp_prior = 10 * math.log10(len(df))
 
+            print("------------")
+            print(self.ztfid)
+            print("------------")
             edges = bayesian_blocks(
                 df["jd"],
                 df["mag"],
@@ -1123,7 +1126,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
             fig.supxlabel("MJD", fontsize=30)
 
-            if self.plot and not self.debug:
+            if self.plot or self.debug:
                 output_per_filter["Plots"] = [
                     create_plot_record(
                         fig,
@@ -1132,9 +1135,10 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                         #     logger = self.logger
                     )
                 ]
+
                 if self.debug and self.debug_dir != None:
                     if self.data_type in ["ztf_alert", "ztf_fp"]:
-                        object_id = to_ztf_id(light_curve.stock_id)
+                        object_id = self.ztfid
                     else:
                         object_id = light_curve.stock_id
 
@@ -1143,6 +1147,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
                     fig.savefig(os.path.join(self.debug_dir, f"{object_id}.pdf"))
                 plt.close()
+
             fig.tight_layout()
 
         ##################### Further check if the bayesian excess regions of different filter coincide (Maybe move to T2) ##########################
@@ -1174,12 +1179,15 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 )
 
         t2_output: dict[str, UBson] = output_per_filter
-        for fil in self.filter:
-            print(f"{fil}\n")
-            print(f"# excess regions: {t2_output[fil]['nu_of_excess_regions']}")
-            print(f"# excess blocks: {t2_output[fil]['nu_of_excess_blocks']}")
-            print("--------")
 
-        print(t2_output)
-        quit()
+        if self.debug and self.data_type in ["ztf_alert", "ztf_fp"]:
+            for fil in self.filter:
+                print(f"{fil}\n")
+                print(f"# excess regions: {t2_output[fil]['nu_of_excess_regions']}")
+                print(f"# excess blocks: {t2_output[fil]['nu_of_excess_blocks']}")
+                print("--------")
+            print(
+                f"coincident regions between g and r: {t2_output['coincide_peak_block']}"
+            )
+
         return t2_output
