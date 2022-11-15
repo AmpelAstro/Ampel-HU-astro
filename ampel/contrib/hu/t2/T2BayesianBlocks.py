@@ -1190,13 +1190,15 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     )
                 ]
                 if self.debug and self.debug_dir != None:
+                    if self.data_type in ["ztf_alert", "ztf_fp"]:
+                        object_id = to_ztf_id(light_curve.stock_id)
+                    else:
+                        object_id = light_curve.stock_id
+
                     if not os.path.exists(self.debug_dir):
                         os.makedirs(self.debug_dir)
-                    fig.savefig(
-                        os.path.join(
-                            self.debug_dir, f"debug_{light_curve.stock_id}.pdf"
-                        )
-                    )
+
+                    fig.savefig(os.path.join(self.debug_dir, f"{object_id}.pdf"))
                 plt.close()
             fig.tight_layout()
 
