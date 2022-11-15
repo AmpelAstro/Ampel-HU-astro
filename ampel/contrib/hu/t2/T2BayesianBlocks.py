@@ -205,110 +205,72 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 description.append([2])
         return description
 
-    def coincide(self, output_per_filter):
-        # It returns 1: bayesian regions of different filters coincide, -1: bayesian regions of different filters do not coincide
-        coincide_region = 0
-        for id_key, keys in enumerate(
-            list(output_per_filter.keys())[0 : len(self.filter)]
-        ):
-            for nu_of_excess in np.arange(
-                output_per_filter[keys]["nu_of_excess_regions"][0]
-            ):
-                start_region = output_per_filter[keys]["jd_excess_regions"][
-                    nu_of_excess
-                ][0]
-                end_region = output_per_filter[keys]["jd_excess_regions"][nu_of_excess][
-                    -1
-                ]
-
-                for compare_keys in list(output_per_filter.keys())[
-                    id_key + 1 : len(self.filter)
-                ]:
-                    for compare_nu_of_excess in np.arange(
-                        output_per_filter[compare_keys]["nu_of_excess_regions"][0]
-                    ):
-                        if (
-                            (
-                                output_per_filter[compare_keys]["jd_excess_regions"][
-                                    compare_nu_of_excess
-                                ][-1]
-                                >= start_region
-                                >= output_per_filter[compare_keys]["jd_excess_regions"][
-                                    compare_nu_of_excess
-                                ][0]
-                            )
-                            or (
-                                output_per_filter[compare_keys]["jd_excess_regions"][
-                                    compare_nu_of_excess
-                                ][-1]
-                                >= end_region
-                                >= output_per_filter[compare_keys]["jd_excess_regions"][
-                                    compare_nu_of_excess
-                                ][0]
-                            )
-                            or (
-                                start_region
-                                <= output_per_filter[compare_keys]["jd_excess_regions"][
-                                    compare_nu_of_excess
-                                ][0]
-                                <= end_region
-                            )
-                        ):
-                            coincide_region += 1
-        return coincide_region
-
     def coincide_peak_block(self, output_per_filter):
         # It returns 1: bayesian regions of different filters coincide, -1: bayesian regions of different filters do not coincide
+
         coincide_region = 0
-        keys = list(output_per_filter.keys())[0]
-        if output_per_filter[keys]["nu_of_excess_regions"][0] == 0:
+        # we select the first filter to later compare it to the others
+        base_filter = list(output_per_filter.keys())[0]
+
+        if output_per_filter[base_filter]["nu_of_excess_regions"][0] == 0:
             return coincide_region
         else:
             if self.flux:
-                idx = np.argmax(output_per_filter[keys]["max_mag_excess_region"])
+                idx = np.argmax(output_per_filter[base_filter]["max_mag_excess_region"])
             else:
-                idx = np.argmin(output_per_filter[keys]["max_mag_excess_region"])
-            start_region = output_per_filter[keys]["jd_excess_regions"][idx][0]
-            end_region = output_per_filter[keys]["jd_excess_regions"][idx][-1]
+                idx = np.argmin(output_per_filter[base_filter]["max_mag_excess_region"])
+            start_region = output_per_filter[base_filter]["jd_excess_regions"][idx][0]
+            end_region = output_per_filter[base_filter]["jd_excess_regions"][idx][-1]
 
-            for compare_keys in list(output_per_filter.keys())[1 : len(self.filter)]:
-                if int(output_per_filter[compare_keys]["nu_of_excess_regions"][0]) != 0:
+            # now we select the other filters
+            for compare_filter in list(output_per_filter.keys())[1 : len(self.filter)]:
+
+                # as the i-band is spotty in the case of ZTF, we skip it
+                if self.data_type in ["ztf_alert", "ztf_fp"]:
+                    if compare_filter in ["ZTF_i", "ztf_i", "ztfi"]:
+                        continue
+
+                if (
+                    int(output_per_filter[compare_filter]["nu_of_excess_regions"][0])
+                    != 0
+                ):
                     if self.flux:
                         idx = np.argmax(
-                            output_per_filter[compare_keys]["max_mag_excess_region"]
+                            output_per_filter[compare_filter]["max_mag_excess_region"]
                         )
                     else:
                         idx = np.argmin(
-                            output_per_filter[compare_keys]["max_mag_excess_region"]
+                            output_per_filter[compare_filter]["max_mag_excess_region"]
                         )
                     if (
                         (
-                            output_per_filter[compare_keys]["jd_excess_regions"][idx][
+                            output_per_filter[compare_filter]["jd_excess_regions"][idx][
                                 -1
                             ]
                             >= start_region
-                            >= output_per_filter[compare_keys]["jd_excess_regions"][
+                            >= output_per_filter[compare_filter]["jd_excess_regions"][
                                 idx
                             ][0]
                         )
                         or (
-                            output_per_filter[compare_keys]["jd_excess_regions"][idx][
+                            output_per_filter[compare_filter]["jd_excess_regions"][idx][
                                 -1
                             ]
                             >= end_region
-                            >= output_per_filter[compare_keys]["jd_excess_regions"][
+                            >= output_per_filter[compare_filter]["jd_excess_regions"][
                                 idx
                             ][0]
                         )
                         or (
                             start_region
-                            <= output_per_filter[compare_keys]["jd_excess_regions"][
+                            <= output_per_filter[compare_filter]["jd_excess_regions"][
                                 idx
                             ][0]
                             <= end_region
                         )
                     ):
                         coincide_region += 1
+
         return coincide_region
 
     def process(self, light_curve: LightCurve) -> UBson | UnitResult:
@@ -1180,7 +1142,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
             fig.supxlabel("MJD", fontsize=30)
 
-            if self.plot:
+            if self.plot and not self.debug:
                 output_per_filter["Plots"] = [
                     create_plot_record(
                         fig,
@@ -1229,9 +1191,14 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     output_per_filter[keys]["jd_excess_regions"][idxmax][-1]
                     - output_per_filter[keys]["jd_excess_regions"][idxmax][0]
                 )
-        #            else:
-        #                output_per_filter['start_excess'] = None
-        #                output_per_filter['size_excess'] = 0
 
         t2_output: dict[str, UBson] = output_per_filter
+        for fil in self.filter:
+            print(f"{fil}\n")
+            print(f"# excess regions: {t2_output[fil]['nu_of_excess_regions']}")
+            print(f"# excess blocks: {t2_output[fil]['nu_of_excess_blocks']}")
+            print("--------")
+
+        print(t2_output)
+        quit()
         return t2_output
