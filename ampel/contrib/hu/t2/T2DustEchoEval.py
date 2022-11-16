@@ -13,6 +13,7 @@ from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.view.T2DocView import T2DocView
 from ampel.struct.UnitResult import UnitResult
+from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 from ampel.types import UBson
 from ampel.enum.DocumentCode import DocumentCode
 
@@ -462,6 +463,12 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                         (df["jd"] >= excess_region["start_baseline_jd"][fid - 1])
                         & (df["jd"] <= excess_region["baseline_jd"][fid - 1])
                     ]
+
+                    ztfid = to_ztf_id(light_curve.stock_id)
+                    print("-----------")
+                    print(light_curve.stock_id)
+                    print(ztfid)
+                    print("-----------")
 
                     baseline = np.mean(
                         unumpy.uarray(

@@ -453,13 +453,19 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             elif self.data_type == "ztf_fp":
                 ncp_prior = 10 * math.log10(len(df))
 
-            print("------------")
-            print(self.ztfid)
-            print("------------")
+            """
+            in case multiple measurements have the same
+            jd (there are cases where df['jd'].unique() contains no
+            unique values, but np.unique(df['jd'].values) does, for
+            whichever reason). We simply use the first of the measurements
+            with the same jd
+            """
+            unique_jd, unique_jd_idx = np.unique(df["jd"].values, return_index=True)
+
             edges = bayesian_blocks(
-                df["jd"],
-                df["mag"],
-                sigma=df["mag.err"],
+                unique_jd,
+                df["mag"].values[unique_jd_idx],
+                sigma=df["mag.err"].values[unique_jd_idx],
                 ncp_prior=ncp_prior,
                 fitness="measures",
             )
