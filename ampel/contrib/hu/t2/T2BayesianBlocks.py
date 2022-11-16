@@ -67,6 +67,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
     def baseline(self, baye_block, flux):
         if flux:
+
             baseline = baye_block["mag"][baye_block["mag"].idxmin()]
             baseline_sigma = baye_block["mag.err"][baye_block["mag"].idxmin()]
 
@@ -163,7 +164,8 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
     def outliers(self, excess_regions, df, baye_block, measurements_nu):
         for nu, value in enumerate(excess_regions):
             if len(value) == 1:
-                if measurements_nu[value[0]] == 1.0:
+                # if measurements_nu[value[0]] == 1.0:
+                if measurements_nu[value[0]] < 5:
                     if (
                         baye_block["Npoints"][value[0]] == 1
                         and baye_block["sigma_from_baseline"][value[0]] > 5.0
@@ -445,6 +447,15 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             else:
                 df = pd.DataFrame(phot_tuple, columns=["jd", "mag", "mag.err"])
 
+            # Now we use a rolling window as extreme outlier rejection for ZTF data
+            if self.data_type in ["ztf_alert", "ztf_fp"]:
+                df["median"] = df["mag"].rolling(10).median()
+                df["std"] = df["mag"].rolling(10).std()
+                df = df[
+                    (df.mag <= df["median"] + 3 * df["std"])
+                    & (df.mag >= df["median"] - 3 * df["std"])
+                ]
+
             df = df.sort_values(by=["jd"], ignore_index=True)
             df["Outlier"] = False
 
@@ -529,6 +540,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
             #######################################
             ######### Find the baseline ###########
+
             (baseline, baseline_sigma) = self.baseline(baye_block, self.flux)
 
             for sigma_discr in ["sigma_from_old_baseline", "sigma_from_baseline"]:
@@ -1152,6 +1164,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                         os.makedirs(self.debug_dir)
 
                     fig.savefig(os.path.join(self.debug_dir, f"{object_id}.pdf"))
+                    output_per_filter.pop("Plots")
                 plt.close()
 
             fig.tight_layout()
