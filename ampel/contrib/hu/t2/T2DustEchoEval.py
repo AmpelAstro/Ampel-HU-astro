@@ -4,8 +4,8 @@
 # License           : BSD-3-Clause
 # Author            :
 # Date              : 01.09.2021
-# Last Modified Date: 02.11.2021
-# Last Modified By  : Eleni
+# Last Modified Date: 16.11.2021
+# Last Modified By  : Simeon
 
 from typing import Dict, Sequence, Tuple, List, Literal
 from ampel.view.LightCurve import LightCurve
@@ -67,6 +67,13 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
         #            return T2RunState.ERROR
 
         assert self.data_type in ["ztf_alert", "ztf_fp", "wise"]
+
+        if self.data_type in ["ztf_alert", "ztf_fp"]:
+            self.ztfid = to_ztf_id(light_curve.stock_id)
+            self.PlotColor = ["green", "red", "orange"]
+
+        else:
+            self.ztfid = None
 
         if not light_curve.photopoints:
             self.logger.error("LightCurve has no photopoint")
@@ -677,7 +684,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                     yerr=datapoints["mag.err"],
                     label=passband,
                     fmt="s",
-                    color=self.PlotColor[fid],
+                    color=self.PlotColor[fid - 1],
                     ecolor="lightgray",
                     markeredgecolor="black",
                     elinewidth=3,
@@ -697,35 +704,35 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                 ax[0].axvline(
                     x=(t2_res[key]["jd_excess_regions"][idx][0] - 40) - 2400000.5,
                     label="T2 guess " + str(key),
-                    color=self.PlotColor[fid],
+                    color=self.PlotColor[fid - 1],
                 )
                 ax[0].axvline(
                     x=(t2_res[key]["jd_excess_regions"][idx][-1] + 40) - 2400000.5,
-                    color=self.PlotColor[fid],
+                    color=self.PlotColor[fid - 1],
                 )
                 ax[0].axvspan(
                     (t2_res[key]["jd_excess_regions"][idx][0] - 40) - 2400000.5,
                     (t2_res[key]["jd_excess_regions"][idx][-1] + 40) - 2400000.5,
                     alpha=0.05,
-                    color=self.PlotColor[fid],
+                    color=self.PlotColor[fid - 1],
                 )
                 ax[0].axhline(
                     y=t2_res[key]["baseline"],
                     label="Baseline " + str(key),
                     ls="-",
-                    color=self.PlotColor[fid],
+                    color=self.PlotColor[fid - 1],
                 )
                 ax[0].axhline(
                     y=t2_res[key]["baseline"][0] - t2_res[key]["baseline_sigma"][0],
                     label="Baseline sigma " + str(key),
                     ls="--",
-                    color=self.PlotColor[fid],
+                    color=self.PlotColor[fid - 1],
                 )
                 ax[0].axhline(
                     y=t2_res[key]["baseline"][0] + t2_res[key]["baseline_sigma"][0],
                     label="Baseline sigma " + str(key),
                     ls="--",
-                    color=self.PlotColor[fid],
+                    color=self.PlotColor[fid - 1],
                 )
 
             if self.flux:
@@ -757,7 +764,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
             ax[1].axes.xaxis.set_visible(False)
             ax[1].axes.yaxis.set_visible(False)
 
-            position = ([0.1, 0.8], [0.25, 0.8])
+            position = ([0.1, 0.8], [0.25, 0.8], [0.4, 0.8])
             ax[1].text(
                 0.1, 0.8, "Final class: " + str(t2_output["status"]), fontsize=25
             )
@@ -785,9 +792,13 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                 position[0][0], position[0][-1] - 0.58, "e-folding fade", fontsize=21
             )
 
-            for fid, key in enumerate(self.filter):
+            for fid, key in enumerate(self.filter, 1):
 
-                if has_data[fid + 1] == False:
+                print(fid)
+                print(has_data)
+                print(self.PlotColor)
+
+                if has_data[fid] == False:
                     continue
 
                 if self.flux:
@@ -799,58 +810,58 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                     - t2_res[key]["jd_excess_regions"][idx][0]
                 )
                 ax[1].text(
-                    position[fid][0] + 0.4,
-                    position[fid][-1] - 0.2,
+                    position[fid - 1][0] + 0.4,
+                    position[fid - 1][-1] - 0.2,
                     str(key) + "\n\n",
-                    color=self.PlotColor[fid + 1],
+                    color=self.PlotColor[fid - 1],
                     fontsize=25,
                 )
                 ax[1].text(
-                    position[fid][0] + 0.4,
+                    position[fid - 1][0] + 0.4,
                     position[0][-1] - 0.18,
                     format(max(flatten(t2_res[key]["sigma_from_baseline"][0])), ".2f"),
                     fontsize=21,
                 )
                 ax[1].text(
-                    position[fid][0] + 0.4,
+                    position[fid - 1][0] + 0.4,
                     position[0][-1] - 0.26,
                     format(t2_res[key]["max_mag_excess_region"][idx][0], ".2f"),
                     fontsize=21,
                 )
                 ax[1].text(
-                    position[fid][0] + 0.4,
+                    position[fid - 1][0] + 0.4,
                     position[0][-1] - 0.34,
                     format(t2_res[key]["baseline"][0], ".2f"),
                     fontsize=21,
                 )
                 ax[1].text(
-                    position[fid][0] + 0.4,
+                    position[fid - 1][0] + 0.4,
                     position[0][-1] - 0.42,
                     format(timescale, ".2f"),
                     fontsize=21,
                 )
-                if excess_region["e_rise"][fid] != "nan":
+                if excess_region["e_rise"][fid - 1] != "nan":
                     ax[1].text(
-                        position[fid][0] + 0.4,
+                        position[fid - 1][0] + 0.4,
                         position[0][-1] - 0.50,
-                        format(excess_region["e_rise"][fid], ".2f"),
+                        format(excess_region["e_rise"][fid - 1], ".2f"),
                         fontsize=21,
                     )
                     ax[1].text(
-                        position[fid][0] + 0.4,
+                        position[fid - 1][0] + 0.4,
                         position[0][-1] - 0.58,
-                        format(excess_region["e_fade"][fid], ".2f"),
+                        format(excess_region["e_fade"][fid - 1], ".2f"),
                         fontsize=21,
                     )
                 else:
                     ax[1].text(
-                        position[fid][0] + 0.4,
+                        position[fid - 1][0] + 0.4,
                         position[0][-1] - 0.50,
                         "NaN",
                         fontsize=21,
                     )
                     ax[1].text(
-                        position[fid][0] + 0.4,
+                        position[fid - 1][0] + 0.4,
                         position[0][-1] - 0.58,
                         "NaN",
                         fontsize=21,
