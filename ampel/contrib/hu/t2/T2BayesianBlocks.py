@@ -324,6 +324,10 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
         if self.data_type in ["ztf_alert", "ztf_fp"]:
             self.ztfid = to_ztf_id(light_curve.stock_id)
+            if self.debug:
+                print("---------------------------")
+                print(f"Processing {self.ztfid}")
+                print("---------------------------")
             self.PlotColor = ["green", "red", "orange"]
             for entry in self.filter:
                 assert entry in ["ZTF_g", "ZTF_r", "ZTF_i"]
