@@ -69,24 +69,37 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
     def baseline(self, baye_block, flux):
         if flux:
 
-            baseline = baye_block["mag"][baye_block["mag"].idxmin()]
-            baseline_sigma = baye_block["mag.err"][baye_block["mag"].idxmin()]
+            if self.data_type in ["ztf_alert", "ztf_fp"]:
+                baseline_df = baye_block.copy()
+                baseline_df.sort_values(by="mag", inplace=True)
+                for index, row in baseline_df.iterrows():
+                    if row["measurements_nu"] < 5:
+                        baseline_df.drop(index, inplace=True)
 
-            if baye_block["measurements_nu"][baye_block["mag"].idxmin()] == 1:
-                baye_block.loc[baye_block["mag"].idxmin(), "level"] = "baseline"
-                baye_block.loc[
-                    baye_block.index[
-                        baye_block["mag"]
-                        == baye_block.sort_values(by=["mag"]).iloc[1]["mag"]
-                    ].tolist()[0],
-                    "level",
-                ] = "baseline"
-                value = unumpy.uarray(
-                    np.array(baye_block[baye_block["level"] == "baseline"]["mag"]),
-                    np.array(baye_block[baye_block["level"] == "baseline"]["mag.err"]),
-                )
-                baseline = np.mean(value).nominal_value
-                baseline_sigma = np.mean(value).std_dev
+                baseline = baseline_df["mag"][baseline_df["mag"].idxmin()]
+                baseline_sigma = baseline_df["mag.err"][baseline_df["mag"].idxmin()]
+
+            elif self.data_type == "wise":
+                baseline = baye_block["mag"][baye_block["mag"].idxmin()]
+                baseline_sigma = baye_block["mag.err"][baye_block["mag"].idxmin()]
+
+                if baye_block["measurements_nu"][baye_block["mag"].idxmin()] == 1:
+                    baye_block.loc[baye_block["mag"].idxmin(), "level"] = "baseline"
+                    baye_block.loc[
+                        baye_block.index[
+                            baye_block["mag"]
+                            == baye_block.sort_values(by=["mag"]).iloc[1]["mag"]
+                        ].tolist()[0],
+                        "level",
+                    ] = "baseline"
+                    value = unumpy.uarray(
+                        np.array(baye_block[baye_block["level"] == "baseline"]["mag"]),
+                        np.array(
+                            baye_block[baye_block["level"] == "baseline"]["mag.err"]
+                        ),
+                    )
+                    baseline = np.mean(value).nominal_value
+                    baseline_sigma = np.mean(value).std_dev
         else:
             baseline = baye_block["mag"][baye_block["mag"].idxmax()]
             baseline_sigma = baye_block["mag.err"][baye_block["mag"].idxmax()]
@@ -290,6 +303,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
         remaining_regions = compareoutput["jd_excess_regions"]
         comp_regions_checked = []
+
         for region_base in baseoutput["jd_excess_regions"]:
             for region_comp in remaining_regions:
                 if region_comp not in comp_regions_checked:
