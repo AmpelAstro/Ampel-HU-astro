@@ -55,6 +55,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
     debug_dir: Optional[str]
 
+    # in case of ZTF: Must be called 'ZTF_g', 'ZTF_r', 'ZTF_i'
     filter: Sequence[str]
 
     # Work with fluxes instead of magnitude
@@ -197,7 +198,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
         return description
 
     def coincide_peak_block(self, output_per_filter):
-        # It returns 1: bayesian regions of different filters coincide, -1: bayesian regions of different filters do not coincide
+        # It returns 1 if the PEAK mag bayesian regions of different filters coincide; -1 otherwise
 
         coincide_region = 0
         # we select the first filter to later compare it to the others
@@ -218,12 +219,12 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
                 # as the i-band is spotty in the case of ZTF, we skip it
                 if self.data_type in ["ztf_alert", "ztf_fp"]:
-                    if compare_filter in ["ZTF_i", "ztf_i", "ztfi"]:
+                    if compare_filter == "ZTF_i":
                         continue
 
                 if (
                     int(output_per_filter[compare_filter]["nu_of_excess_regions"][0])
-                    != 0
+                    > 0
                 ):
                     if self.flux:
                         idx = np.argmax(
@@ -264,6 +265,44 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
         return coincide_region
 
+    def count_overlapping_regions(self, output_per_filter: dict) -> int:
+        """
+        Returns the number of overlapping regions. Note: In case of ZTF data, we only consider the g- and r-band (i-band coverage is spotty)
+        """
+        coincidences = 0
+
+        if self.data_type in ["ztf_alert", "ztf_fp"]:
+            basefilter = "ZTF_g"
+            comparefilter = "ZTF_r"
+
+        elif self.data_type == "wise":
+            basefilter = list(output_per_filter.keys())[0]
+            comparefilter = list(output_per_filter.keys())[1]
+
+        baseoutput = output_per_filter[basefilter]
+        compareoutput = output_per_filter[comparefilter]
+
+        if (
+            baseoutput["nu_of_excess_regions"][0] == 0
+            or compareoutput["nu_of_excess_regions"][0] == 0
+        ):
+            return coincidences
+
+        remaining_regions = compareoutput["jd_excess_regions"]
+        comp_regions_checked = []
+        for region_base in baseoutput["jd_excess_regions"]:
+            for region_comp in remaining_regions:
+                if region_comp not in comp_regions_checked:
+                    latest_start = max(region_base[0], region_comp[0])
+                    earliest_end = min(region_base[1], region_comp[1])
+                    delta = earliest_end - latest_start
+
+                    if delta > 0:
+                        coincidences += 1
+                        comp_regions_checked.append(region_comp)
+
+        return coincidences
+
     def process(self, light_curve: LightCurve) -> UBson | UnitResult:
         """ """
 
@@ -272,6 +311,9 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
         if self.data_type in ["ztf_alert", "ztf_fp"]:
             self.ztfid = to_ztf_id(light_curve.stock_id)
             self.PlotColor = ["green", "red", "orange"]
+            for entry in self.filter:
+                assert entry in ["ZTF_g", "ZTF_r", "ZTF_i"]
+
         ################################
         ######## Bayesian blocks #######
         output_per_filter = {}
@@ -463,6 +505,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 ncp_prior = 1.32 + 0.577 * math.log10(len(df))
             elif self.data_type == "ztf_fp":
                 ncp_prior = 10 * math.log10(len(df))
+                # ncp_prior = 10  # * math.log10(len(df))
 
             """
             in case multiple measurements have the same
@@ -492,6 +535,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
                 if self.data_type == "wise":
                     mag_err = np.mean(all_value_per_block).std_dev
+
                 elif self.data_type == "ztf_fp":
                     mag_err = mean_squared_error(
                         unumpy.nominal_values(all_value_per_block),
@@ -672,9 +716,11 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
                         everything_except_excess_rms = mean_squared_error(
                             list(everything_except_excess_values)[0],
-                            [baseline] * len(list(everything_except_excess_values)[0]),
+                            [np.mean(list(everything_except_excess_values)[0])]
+                            * len(list(everything_except_excess_values)[0]),
                             squared=False,
                         )
+
             else:
                 everything_except_excess_rms = baseline_rms
 
@@ -691,8 +737,10 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             # strength: Delta flux/rms, significance: rms/baseline_sigma
             output["baseline_rms"].append(baseline_rms)
             output["significance"].append(everything_except_excess_rms / baseline_sigma)
+
             if self.flux == True:
                 output["max_mag"].append(max(df[df["Outlier"] == False]["mag"].values))
+
                 output["strength_sjoert"].append(
                     (max(df[df["Outlier"] == False]["mag"].values) - baseline)
                     / everything_except_excess_rms
@@ -875,7 +923,6 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                             output["significance_after_peak"].append(
                                 after_peak_excess_rms / after_peak_excess_sigma
                             )
-                            #      output['significance_after_peak'].append(after_peak_excess_rms/baseline_sigma)
                             output["strength_after_peak"].append(
                                 (
                                     baye_block["mag"].loc[global_peak_idx]
@@ -1144,6 +1191,12 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
             fig.supxlabel("MJD", fontsize=30)
 
+            # sig = output_per_filter["significance"][0]
+            # if sig != 0:
+            #     sjoert_sig = output["strength_sjoert"][0] / output["significance"][0]
+            # else:
+            #     sjoert_sig = 0
+
             if self.plot or self.debug:
                 output_per_filter["Plots"] = [
                     create_plot_record(
@@ -1163,26 +1216,54 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     if not os.path.exists(self.debug_dir):
                         os.makedirs(self.debug_dir)
 
+                    title = f"{self.ztfid}"
+
+                    # for key in self.filter:
+                    #     sig = output_per_filter[key]["significance"][0]
+                    #     if sig != 0:
+                    #         sjoert_sig = (
+                    #             output_per_filter[key]["strength_sjoert"][0] / sig
+                    #         )
+                    #         title += f"\n{sjoert_sig:.3f}"
+
+                    overlapping_regions_count = self.count_overlapping_regions(
+                        output_per_filter
+                    )
+
+                    if overlapping_regions_count == 1:
+                        title += (
+                            f"\n{overlapping_regions_count} overlapping region (g+r)"
+                        )
+                    else:
+                        title += (
+                            f"\n{overlapping_regions_count} overlapping regions (g+r)"
+                        )
+
+                    fig.suptitle(
+                        title,
+                        fontsize=30,
+                    )
+
                     fig.savefig(os.path.join(self.debug_dir, f"{object_id}.pdf"))
                     output_per_filter.pop("Plots")
                 plt.close()
 
             fig.tight_layout()
-
-        ##################### Further check if the bayesian excess regions of different filter coincide (Maybe move to T2) ##########################
-        #################### !!! Works only for 2 filters !!!! ##########################
+        """
+        Further check if the PEAK bayesian excess regions of different filter coincide. Works only for two filter
+        """
         coincide_peak_block = self.coincide_peak_block(output_per_filter)
-        # include if you want to see how many excess regions are coincide
-        #        if coincide_region >= 1:
-        #            output_per_filter['coincide_regions'] = 1
-        #        else:
-        #            output_per_filter['coincide_regions'] = -1
+
         if coincide_peak_block >= 1:
             output_per_filter["coincide_peak_block"] = 1
         else:
             output_per_filter["coincide_peak_block"] = -1
 
-        ###########################################################################################################################
+        # # Now we get the number of overlapping regions (regardless whether they contain the peak flux or not)
+        output_per_filter["overlapping_regions_count"] = self.count_overlapping_regions(
+            output_per_filter
+        )
+
         output_per_filter["start_excess"] = None
         output_per_filter["size_excess"] = 0
 
