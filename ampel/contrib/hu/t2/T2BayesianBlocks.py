@@ -34,10 +34,13 @@ from sklearn.metrics import mean_squared_error
 
 
 class T2BayesianBlocks(AbsLightCurveT2Unit):
-    """ """
+    """
+    T2 unit for running a bayesian block search algorithm to highlight excess regions.
+    Currently implemented for WISE infrared and ZTF optical lightcurves.
+    """
 
-    # Min number of detections remaining in the target range for subsequent analysis
-    min_det: int = 3
+    min_det_per_block: float = 1  # Minimum detections per block
+    # blocks with lower number of detections will be removed
 
     # Rejection sigma
     rej_sigma: float = 3  # A lower number will more aggressively reject data
@@ -66,8 +69,8 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
     PlotColor: Sequence[str] = ["red", "red", "blue"]
 
-    def baseline(self, baye_block, flux):
-        if flux:
+    def get_baseline(self, baye_block):
+        if self.flux:
 
             if self.data_type in ["ztf_alert", "ztf_fp"]:
                 baseline_df = baye_block.copy()
@@ -197,7 +200,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                         baye_block.loc[value[0], "level"] = "outlier"
         return baye_block
 
-    def description(self, excess_regions, measurements_nu):
+    def description(self, excess_regions: list, measurements_nu: dict):
         # 0: The excess region has one baye block with one measurement, 1: The excess region has one baye block with multiple measurements, 2: The excess region has multiple baye blocks
         description = []
         for nu, value in enumerate(excess_regions):
@@ -210,7 +213,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 description.append([2])
         return description
 
-    def coincide_peak_block(self, output_per_filter):
+    def coincide_peak_block(self, output_per_filter: dict) -> int:
         # It returns 1 if the PEAK mag bayesian regions of different filters coincide; -1 otherwise
 
         coincide_region = 0
@@ -319,7 +322,6 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
     def process(self, light_curve: LightCurve) -> UBson | UnitResult:
         """ """
-
         assert self.data_type in ["ztf_alert", "ztf_fp", "wise"]
 
         if self.data_type in ["ztf_alert", "ztf_fp"]:
@@ -585,6 +587,16 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 baye_block = pd.concat([baye_block, to_append], ignore_index=True)
 
             baye_block["level"] = None
+
+            """
+            Now we remove bayesian blocks with less detections
+            than min_det_per_block
+            """
+            for index, row in baye_block.iterrows():
+                if row["measurements_nu"] < self.min_det_per_block:
+                    baye_block.drop(index, inplace=True)
+            baye_block.reset_index(drop=True, inplace=True)
+
             baye_block = baye_block.astype(
                 {
                     "jd_start": "float64",
@@ -603,7 +615,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             #######################################
             ######### Find the baseline ###########
 
-            (baseline, baseline_sigma) = self.baseline(baye_block, self.flux)
+            (baseline, baseline_sigma) = self.get_baseline(baye_block)
 
             for sigma_discr in ["sigma_from_old_baseline", "sigma_from_baseline"]:
                 # Recalculate levels
