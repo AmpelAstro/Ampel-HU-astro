@@ -379,7 +379,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 value = unumpy.uarray(list(itertools.chain(*baseline_values)), list(itertools.chain(*baseline_error_values)))
                 baseline = np.mean(value).nominal_value
                 baseline_sigma = np.mean(value).std_dev
-#                baseline_rms = np.sqrt(sum((np.array(list(itertools.chain(*baseline_values)))-baseline)**2)/len(list(itertools.chain(*baseline_values)))  )
+#                baseline_rms = np.sqrt(sum((np.array(list(itertools.chain(*baseline_values)))-baseline)**2)/len(list(itertools.chain(*baseline_values)))  )                
                 baseline_rms = mean_squared_error(list(itertools.chain(*baseline_values)), [baseline]*len(list(itertools.chain(*baseline_values))), squared=False)  
                 baye_block[str(sigma_discr)] = abs((baseline-baye_block['mag'])/baseline_sigma) 
 
@@ -417,7 +417,8 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     if global_peak_idx in idx:
                         everything_except_excess_values.append(df[((df['jd'] < baye_block['jd_measurement_start'].loc[idx[0]]) & (df['Outlier'] == False)) | ((df['jd'] > baye_block['jd_measurement_end'].loc[idx[-1]]) & (df['Outlier'] == False))]['mag'].values)                        
 #                        everything_except_excess_rms =  np.sqrt(sum((baseline- list(everything_except_excess_values)[0] )**2)/len(list(everything_except_excess_values)[0]) ) 
-                        everything_except_excess_rms = mean_squared_error(list(everything_except_excess_values)[0], [baseline]*len(list(everything_except_excess_values)[0]), squared=False)     
+#                        everything_except_excess_rms = mean_squared_error(list(everything_except_excess_values)[0], [baseline]*len(list(everything_except_excess_values)[0]), squared=False)
+                        everything_except_excess_rms = mean_squared_error(list(everything_except_excess_values)[0], [np.mean(list(everything_except_excess_values)[0])]*len(list(everything_except_excess_values)[0]), squared=False)     
             else:
                 everything_except_excess_rms = baseline_rms
     
