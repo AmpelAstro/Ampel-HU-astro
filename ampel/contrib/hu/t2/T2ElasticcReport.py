@@ -104,7 +104,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
 
     # Setting for report to construct
     broker_name: str = 'AMPEL'
-    broker_version: str = 'v0.2'
+    broker_version: str = 'v0.3'
     classifier_name: str = 'ElasticcLive'
     classifier_version: str = 'XGBUnified+Parsnip05'
 
