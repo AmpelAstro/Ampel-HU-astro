@@ -79,6 +79,9 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     if row["measurements_nu"] < 5:
                         baseline_df.drop(index, inplace=True)
 
+                if len(baseline_df) == 0:
+                    baseline_df = baye_block.copy()
+
                 baseline = baseline_df["mag"][baseline_df["mag"].idxmin()]
                 baseline_sigma = baseline_df["mag.err"][baseline_df["mag"].idxmin()]
 
@@ -596,6 +599,10 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 if row["measurements_nu"] < self.min_det_per_block:
                     baye_block.drop(index, inplace=True)
             baye_block.reset_index(drop=True, inplace=True)
+
+            if len(baye_block) == 0:
+                self.filter.remove(passband)
+                continue
 
             baye_block = baye_block.astype(
                 {

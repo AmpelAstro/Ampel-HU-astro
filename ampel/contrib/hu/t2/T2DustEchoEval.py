@@ -458,10 +458,6 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                 df = pd.DataFrame(phot_tuple, columns=["jd", "mag", "mag.err"])
                 df = df.sort_values(by=["jd"], ignore_index=True)
 
-                print(excess_region)
-                print(excess_region["baseline_jd"])
-                print(fid)
-
                 if excess_region["baseline_jd"][fid - 1] != 0:
                     excess = df[
                         (df["jd"] > excess_region["baseline_jd"][fid - 1])
