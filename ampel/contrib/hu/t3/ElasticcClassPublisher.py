@@ -62,6 +62,7 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
 
     broker_name: str = 'AMPEL'
     broker_version: str = 'v0.1'
+    tom_url: str = "https://desc-tom.lbl.gov"
     desc_user: NamedSecret[str]
     desc_password: NamedSecret[str]
 
@@ -73,7 +74,7 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
     unit: str = "T2ElasticcReport"
 
     def post_init(self) -> None:
-        self.tomclient = ElasticcTomClient(self.desc_user.get(), self.desc_password.get(), self.logger)
+        self.tomclient = ElasticcTomClient(self.desc_user.get(), self.desc_password.get(), self.logger, self.tom_url)
 
     def search_journal_elasticc(
         self, tran_view: TransientView
