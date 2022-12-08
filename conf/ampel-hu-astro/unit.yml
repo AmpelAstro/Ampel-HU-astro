@@ -46,3 +46,4 @@
 - ampel.contrib.hu.t3.PlotLightcurveSample
 - ampel.contrib.hu.t3.ElasticcClassPublisher
 - ampel.contrib.hu.t3.VOEventPublisher
+- ampel.contrib.hu.t3.AstroColibriPublisher
