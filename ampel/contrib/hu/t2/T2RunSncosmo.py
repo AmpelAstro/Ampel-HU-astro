@@ -346,7 +346,13 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             return t2_output
 
         # Obtain photometric table
-        sncosmo_table = self.get_flux_table(datapoints, jdstart, jdend)
+        sncosmo_table = self.get_flux_table(datapoints)
+        sncosmo_table = sncosmo_table[
+                                    (sncosmo_table["time"]>=jdstart) &
+                                    (sncosmo_table["time"]<=jdend)
+                                    ]
+        print(sncosmo_table)
+
         self.logger.debug('Sncosmo table {}'.format(sncosmo_table))
 
         # Fitting section
