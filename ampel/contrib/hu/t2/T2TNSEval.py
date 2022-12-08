@@ -275,7 +275,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
 
         # cut on distance to closest solar system object
         # TODO: how to make this check: ('0.0' in list(phot["ssdistnr"])
-        ssdist = np.array([pp["body"]["ssdistnr"] for pp in pps])
+        ssdist = np.array([pp["body"]["ssdistnr"] for pp in pps if "ssdistnr" in pp['body']])
         ssdist[ssdist == None] = -999
 
         close_to_sso = np.logical_and(ssdist < self.ssdistnr_max, ssdist > 0)
