@@ -7,7 +7,7 @@
 # Last Modified Date:  12.12.2022
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
-from typing import Literal, Union
+from typing import Literal, Union, Dict
 from collections.abc import Sequence
 
 
@@ -134,7 +134,7 @@ class T2MultiXgbClassifier(AbsTiedStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRi
                         pass
                     else:
                         self.logger.info('Do not know how to handle z info', extra=t2_res)
-                        return {'model': self.model_prefix, 'xgbsuccess': False}
+                        return {'model': None, 'xgbsuccess': False}
                 t2data.update(zdata)
 
 
@@ -176,7 +176,7 @@ class T2MultiXgbClassifier(AbsTiedStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRi
 
 
         # Loop through and apply all models
-        t2out: dict[str, UBson] = {'model':'multiXgb', 'classifications':{} }
+        t2out: Dict[str, UBson] = {'model':'multiXgb', 'classifications':{} }
         for modelid, model in self._classifiers.items():
             # Run model
             # Can we find away round creating a numpy array?
