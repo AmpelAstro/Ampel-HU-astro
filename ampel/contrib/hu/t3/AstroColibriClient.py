@@ -7,6 +7,9 @@
 # Last Modified Date:  13.11.2022
 # Last Modified By:    jno <jnordin@physik.hu-berlin.de>
 
+# FIXME: restore mypy when this is actually ready
+# type: ignore
+
 from typing import Sequence, Dict, Any, Union
 
 import requests
