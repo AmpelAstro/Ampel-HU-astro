@@ -176,14 +176,14 @@ class T2MultiXgbClassifier(AbsTiedStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRi
 
 
         # Loop through and apply all models
-        t2out: Dict[str, UBson] = {'model':'multiXgb', 'classifications':{} }
+        t2out: Dict[str, UBson] = {'model':'multiXgb'}
+        classifications = t2out['classifications'] = {}
         for modelid, model in self._classifiers.items():
             # Run model
             # Can we find away round creating a numpy array?
-            prob = model.predict_proba( np.array([ [t2data[col]
-                                        if col in t2data.keys() else None
+            prob = model.predict_proba( np.array([ [t2data.get(col)
                                         for col in self.use_cols] ]) )
-            t2out['classifications'][modelid] = {
+            classifications[modelid] = {
                 'prob0': float( prob[0][0] ),
                 'is_0': (float(prob[0][0])>0.5)
             }
