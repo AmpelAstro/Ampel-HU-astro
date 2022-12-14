@@ -59,7 +59,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
     debug_dir: Optional[str]
 
     # in case of ZTF: Must be called 'ZTF_g', 'ZTF_r', 'ZTF_i'
-    filter: Sequence[str]
+    filters: Sequence[str]
 
     # Work with fluxes instead of magnitude
     flux: bool = False
@@ -67,7 +67,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
     plot_props: Optional[PlotProperties]
     # Color of filters for the plots
 
-    PlotColor: Sequence[str] = ["red", "red", "blue"]
+    PlotColor: Sequence[str] = ["red", "blue"]
 
     def get_baseline(self, baye_block):
         if self.flux:
@@ -221,7 +221,13 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
         coincide_region = 0
         # we select the first filter to later compare it to the others
-        base_filter = list(output_per_filter.keys())[0]
+        if len(self.filters_lc) < 2:
+            return coincide_region
+
+        if self.data_type in ["ztf_alert", "ztf_fp"]:
+            base_filter = "ZTF_g"
+        elif self.data_type == "wise":
+            base_filter = "Wise_W1"
 
         if output_per_filter[base_filter]["nu_of_excess_regions"][0] == 0:
             return coincide_region
@@ -234,7 +240,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             end_region = output_per_filter[base_filter]["jd_excess_regions"][idx][-1]
 
             # now we select the other filters
-            for compare_filter in list(output_per_filter.keys())[1 : len(self.filter)]:
+            for compare_filter in self.filters_lc:
 
                 # as the i-band is spotty in the case of ZTF, we skip it
                 if self.data_type in ["ztf_alert", "ztf_fp"]:
@@ -295,8 +301,10 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             comparefilter = "ZTF_r"
 
         elif self.data_type == "wise":
-            basefilter = list(output_per_filter.keys())[0]
-            comparefilter = list(output_per_filter.keys())[1]
+            if len(self.filters_lc) < 2:
+                return coincidences
+            basefilter = self.filters_lc[0]
+            comparefilter = self.filters_lc[1]
 
         baseoutput = output_per_filter[basefilter]
         compareoutput = output_per_filter[comparefilter]
@@ -334,17 +342,21 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 print(f"Processing {self.ztfid}")
                 print("---------------------------")
             self.PlotColor = ["green", "red", "orange"]
-            for entry in self.filter:
+
+            for entry in self.filters:
                 assert entry in ["ZTF_g", "ZTF_r", "ZTF_i"]
 
         ################################
         ######## Bayesian blocks #######
         output_per_filter = {}
+
+        self.filters_lc = self.filters
+
         if self.plot:
             fig = plt.figure()
-            ax = fig.add_subplot(len(self.filter) + 1, 1, 1)
+            ax = fig.add_subplot(len(self.filters_lc) + 1, 1, 1)
 
-        for fid, passband in enumerate(self.filter, 1):
+        for fid, passband in enumerate(self.filters_lc, 1):
             baye_block = pd.DataFrame(
                 columns=[
                     "jd_start",
@@ -477,6 +489,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                         )
 
             output_per_filter[passband] = []
+
             if phot_tuple is None or len(phot_tuple) <= 1:
                 output["nu_of_excess_regions"].append(0)
                 output["nu_of_excess_blocks"].append(0)
@@ -528,7 +541,6 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 ncp_prior = 1.32 + 0.577 * math.log10(len(df))
             elif self.data_type == "ztf_fp":
                 ncp_prior = 10 * math.log10(len(df))
-                # ncp_prior = 10  # * math.log10(len(df))
 
             """
             in case multiple measurements have the same
@@ -601,7 +613,31 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             baye_block.reset_index(drop=True, inplace=True)
 
             if len(baye_block) == 0:
-                self.filter.remove(passband)
+                output["nu_of_excess_regions"].append(0)
+                output["nu_of_excess_blocks"].append(0)
+                output["nu_of_baseline_blocks"].append(0)
+                output["jd_excess_regions"].append(0)
+                output["mag_edge_excess"].append(0)
+                output["max_mag_excess_region"].append(0)
+                output["max_jd_excess_region"].append(0)
+                output["max_sigma_excess_region"].append(0)
+                output["max_baye_block_timescale"].append(0)
+                output["baseline"].append(0)
+                output["baseline_sigma"].append(0)
+                output["baseline_rms"].append(0)
+                output["jd_baseline_regions"].append(0)
+                output["jd_outlier"] = None
+                output["mag_edge_baseline"].append(0)
+                output["sigma_from_baseline"].append(0)
+                output["sigma_from_baseline_excess"].append(0)
+                output["significance_of_variability_excess"][0].append(0)
+                output["significance_of_variability_excess"][1].append(0)
+                output["significance_of_fluctuation"].append(0)
+                output["max_mag"].append(0)
+                output["significance"].append(0)
+                output["strength_sjoert"].append(0)
+                output["description"].append(None)
+                output_per_filter[str(passband)] = dict(output)
                 continue
 
             baye_block = baye_block.astype(
@@ -732,7 +768,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     )
                 for idx in excess_regions_idx:
                     if global_peak_idx in idx:
-                    
+
                         everything_except_excess_values.append(
                             df[
                                 (
@@ -1132,10 +1168,10 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 plt.yticks(fontsize=20)
 
                 locals()[str("ax") + str(passband)] = fig.add_subplot(
-                    len(self.filter) + 1, 1, fid + 1, sharex=ax
+                    len(self.filters_lc) + 1, 1, fid + 1, sharex=ax
                 )
 
-                if self.debug:
+                if self.debug and self.data_type in ["ztf_alert", "ztf_fp"]:
                     alpha = 0.07
                 else:
                     alpha = 1
@@ -1229,19 +1265,12 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
             fig.supxlabel("MJD", fontsize=30)
 
-            # sig = output_per_filter["significance"][0]
-            # if sig != 0:
-            #     sjoert_sig = output["strength_sjoert"][0] / output["significance"][0]
-            # else:
-            #     sjoert_sig = 0
-
             if self.plot or self.debug:
                 output_per_filter["Plots"] = [
                     create_plot_record(
                         fig,
                         self.plot_props,
                         extra={"band": "All", "stock": light_curve.stock_id},  # type: ignore
-                        #     logger = self.logger
                     )
                 ]
 
@@ -1254,25 +1283,16 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     if not os.path.exists(self.debug_dir):
                         os.makedirs(self.debug_dir)
 
-                    title = f"{self.ztfid}"
-
-                    # for key in self.filter:
-                    #     sig = output_per_filter[key]["significance"][0]
-                    #     if sig != 0:
-                    #         sjoert_sig = (
-                    #             output_per_filter[key]["strength_sjoert"][0] / sig
-                    #         )
-                    #         title += f"\n{sjoert_sig:.3f}"
+                    title = f"{object_id}"
 
                     overlapping_regions_count = self.count_overlapping_regions(
                         output_per_filter
                     )
 
-                    if overlapping_regions_count == 1:
-                        title += (
-                            f"\n{overlapping_regions_count} overlapping region (g+r)"
-                        )
-                    else:
+                    if self.data_type in [
+                        "ztf_alert",
+                        "ztf_fp",
+                    ]:
                         title += (
                             f"\n{overlapping_regions_count} overlapping regions (g+r)"
                         )
@@ -1282,8 +1302,11 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                         fontsize=30,
                     )
 
-                    fig.savefig(os.path.join(self.debug_dir, f"{object_id}.pdf"))
+                    outfile = os.path.join(self.debug_dir, f"{object_id}.pdf")
+
+                    fig.savefig(outfile)
                     output_per_filter.pop("Plots")
+
                 plt.close()
 
             fig.tight_layout()
@@ -1305,7 +1328,13 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
         output_per_filter["start_excess"] = None
         output_per_filter["size_excess"] = 0
 
-        for keys in list(output_per_filter.keys())[0 : len(self.filter)]:
+        # print("----")
+        # print(output_per_filter)
+        # print(output_per_filter.keys())
+        # print(self.filters_lc)
+        # print("----")
+
+        for keys in [key for key in output_per_filter.keys() if key in self.filters]:
             if output_per_filter[keys]["nu_of_excess_regions"][0] != 0:
                 idxmax = np.argmax(output_per_filter[keys]["max_sigma_excess_region"])
                 output_per_filter["start_excess"] = output_per_filter[keys][
@@ -1319,7 +1348,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
         t2_output: dict[str, UBson] = output_per_filter
 
         if self.debug and self.data_type in ["ztf_alert", "ztf_fp"]:
-            for fil in self.filter:
+            for fil in self.filters_lc:
                 print(f"{fil}\n")
                 print(f"# excess regions: {t2_output[fil]['nu_of_excess_regions']}")
                 print(f"# excess blocks: {t2_output[fil]['nu_of_excess_blocks']}")
