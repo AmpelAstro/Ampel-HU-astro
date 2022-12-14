@@ -1,0 +1,105 @@
+name: bayesian-test
+
+env:
+  linux:
+    check:
+      OPENBLAS_NUM_THREADS: 1
+      OMP_NUM_THREADS: 1
+
+mongo:
+  prefix: bayesian-test
+  reset: True
+
+channel:
+- name: BAYESIAN_TEST
+  version: 0
+  access: [ZTF, ZTF_PUB, ZTF_PRIV]
+  policy: []
+
+task:
+- title: t0
+  unit: AlertConsumer
+  multiplier: 1
+  config:
+    # iter_max: 100
+    log_profile: debug
+    compiler_opts: ZiCompilerOptions
+    shaper: ZiDataPointShaper
+    supplier:
+      unit: ZTFFPbotForcedPhotometryAlertSupplier
+      config:
+        deserialize: csv
+        plot_suffix: pdf
+        plot_dir: /Users/simeon/ampel_bayesian/baseline/
+        excl_poor_conditions: true
+        transient_risetime: 80
+        pivot_zeropoint: 25
+        transient_falltime: 100
+        primary_grid_only: False
+        min_det_per_field_band: 10
+        zp_max_deviation_from_median: 0.5
+        reference_days_before_peak: 100
+
+        loader:
+          unit: DirAlertLoader
+          config:
+            folder: /Users/simeon/ampel_bayesian/ztf_testdata/
+            extension: "*.csv"
+            binary_mode: true
+
+    directives:
+
+    - channel: BAYESIAN_TEST
+      ingest:
+        mux:
+          unit: ZiMongoMuxer
+          combine:
+          - unit: ZiT1Combiner
+            state_t2:
+            - unit: T2BayesianBlocks
+              config: &bayes_conf
+                min_det: 6
+                rej_sigma: 4
+                plot: True
+                data_type: ztf_fp
+                debug: True
+                debug_dir: /Users/simeon/ampel_bayesian/debug_plots/
+                filter:
+                  - ZTF_g
+                  - ZTF_r
+                  - ZTF_i
+                flux: True
+                Npoints: False
+                plot_props:
+                  file_name: 
+                    format_str: '%s_%s.svg'
+                    arg_keys:
+                      - stock
+                      - band
+                  title:
+                    format_str: '%s_%s.svg'
+                    arg_keys: 
+                      - stock
+                      - band
+                  width: 18
+                  height: 23
+                  fig_include_title: False
+                  disk_save: /Users/simeon/ampel_bayesian/bayesian/
+            - unit: T2DustEchoEval
+              config:
+                flux: True
+                filter:
+                  - ZTF_g
+                  - ZTF_r
+                  - ZTF_i
+                directory: /Users/simeon/ampel_bayesian/bayesian/
+                t2_dependency:
+                  - unit: T2BayesianBlocks
+                    config: *bayes_conf
+          unit: ZiMongoMuxer
+
+- title: t2
+  unit: T2Worker
+  multiplier: 1
+  config:
+      log_profile: debug
