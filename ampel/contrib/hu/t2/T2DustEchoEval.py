@@ -36,6 +36,8 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
 
     directory: str
 
+    rej_sigma: float = 5.
+
     data_type: str = "wise"
 
     filter: Sequence[str]
@@ -97,8 +99,6 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
             ),  # the begining of baseline before the peak exces region
             "max_mag": ([]),
             "max_mag_jd": ([]),
-            #             'Deltamag': ([]),
-            #             'Deltajd': ([]),
             "significance": ([]),
             "strength_sjoert": ([]),
             "strength": ([]),
@@ -107,6 +107,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
         }
 
         t2_output = {"description": ([]), "values": ([])}
+
 
         if self.flux:
             intensity_low_limit = 0.0
@@ -134,6 +135,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                     for key in self.filter:
                         excess_region["max_mag"].append(t2_res[key]["baseline"])
                 else:
+
                     if t2_res["start_excess"] != None or t2_res["size_excess"] > 1.0:
 
                         if not t2_output["description"] and all(
@@ -166,74 +168,16 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                             t2_output["description"].append("Low significance")
 
                         if not t2_output["description"]:
+
                             #  Check the excess region
                             #  Recalculate the excess region
                             maybe_interesting = False
-                            for key in self.filter:
-                                if t2_res[key]["nu_of_excess_regions"][0] != 0:
-                                    #                                    difference_sigma = abs(max(np.array(t2_res[key]['max_sigma_excess_region']))- np.array(t2_res[key]['max_sigma_excess_region']) )
-                                    #                                    if any(t2_res[key]['significance_of_variability']) and any(np.array(t2_res[key]['significance_of_variability']) < 3.):
-                                    #                                        t2_output['description'].append('Two peaks')
-                                    #                                        excess_region['max_mag'].append(t2_res[key]['baseline'])
-                                    #                                    else:
+                            
+                            for key in self.filter:    
+                                if t2_res[key]['nu_of_excess_regions'][0] != 0:
+                                        if self.flux:
+                                            idx = np.argmax(t2_res[key]['max_mag_excess_region'])
 
-                                    if self.flux:
-                                        idx = np.argmax(
-                                            t2_res[key]["max_mag_excess_region"]
-                                        )
-                                    else:
-                                        idx = np.argmin(
-                                            t2_res[key]["max_mag_excess_region"]
-                                        )
-
-                                    peak = t2_res[key]["jd_excess_regions"][idx]
-                                    excess_region["max_mag"].append(
-                                        t2_res[key]["max_mag_excess_region"][idx]
-                                    )
-                                    excess_region["max_mag_jd"].append(
-                                        t2_res[key]["max_jd_excess_region"][idx]
-                                    )
-                                    ######################################################
-                                    # Check if we have a phase transition case (time scale > 3years and nu of baye blocks <=1
-                                    #                                        if (t2_res[key]['jd_excess_regions'][idx][-1]-t2_res[key]['jd_excess_regions'][idx][0] >= 1095. and t2_res[key]['nu_of_excess_blocks'][idx] <= 1) or t2_res[key]['max_baye_block_timescale'][0] >= 1095.:
-                                    if (
-                                        t2_res[key]["jd_excess_regions"][idx][-1]
-                                        - t2_res[key]["jd_excess_regions"][idx][0]
-                                        >= 1095.0
-                                        and t2_res[key]["nu_of_excess_blocks"][idx] <= 1
-                                    ):
-                                        t2_output["description"].append(
-                                            "Phase transition"
-                                        )
-                                    else:
-                                        # fist check if there is a baseline before increase
-                                        # Check the fluctuation inside the excess region
-                                        #########################################################################
-                                        # check if there is magnitude flactuanion before the excess region
-                                        difference = []
-                                        for baseline in np.array(
-                                            t2_res[key]["jd_baseline_regions"]
-                                        ):
-                                            difference.append(peak[0] - baseline[-1])
-                                        diff, position = min(
-                                            (
-                                                (b, nu)
-                                                for nu, b in enumerate(
-                                                    np.array(difference)
-                                                )
-                                                if b > 0
-                                            ),
-                                            default=(None, None),
-                                        )
-
-                                        # if diff is None or (diff is not None and len([value for value in difference if value > 0]) == 1):
-                                        if diff is None:
-                                            t2_output["description"].append(
-                                                "Only declination"
-                                            )
-                                            excess_region["baseline_jd"].append(0)
-                                            excess_region["start_baseline_jd"].append(0)
-                                            excess_region["baseline_mag"].append(0)
                                         else:
                                             if (
                                                 min(
@@ -256,139 +200,60 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                                                 )
                                                 maybe_interesting = True
                                             else:
-                                                baseline_jd = t2_res[key][
-                                                    "jd_baseline_regions"
-                                                ][position][-1]
-                                            baseline_mag = t2_res[key][
-                                                "mag_edge_baseline"
-                                            ][position][0]
-                                            t2_output["description"].append(
-                                                "Baseline before excess region"
-                                            )
-
-                                            excess_region["baseline_jd"].append(
-                                                baseline_jd
-                                            )
-                                            excess_region["start_baseline_jd"].append(
-                                                t2_res[key]["jd_baseline_regions"][
-                                                    position
-                                                ][0]
-                                            )
-                                            excess_region["baseline_mag"].append(
-                                                baseline_mag
-                                            )
-                                        #########################################################################
-                                        # check if the increse in intensity is scarp as expected for TDE and no multiple peaks in intensity before maximum are present
-                                        if any(
-                                            fluctuation < 3
-                                            for fluctuation in t2_res[key][
-                                                "significance_of_fluctuation"
-                                            ][0]
-                                        ):
-                                            t2_output["description"].append(
-                                                "Fluctuation before peak"
-                                            )
-                                        else:
-                                            # Check if there is magnitude fluctuations after the excess region
+                                                if min(peak[0]-value[-1]  for value in np.array(t2_res[key]['jd_baseline_regions']) if peak[0]-value[-1] > 0.) > 500:
+                                                    # Move the gap closer to excess region:
+                                                    baseline_jd = t2_res[key]['jd_excess_regions'][idx][0] - 182. 
+                                                    maybe_interesting = True
+                                                else:
+                                                    baseline_jd = t2_res[key]['jd_baseline_regions'][position][-1]
+                                                baseline_mag = t2_res[key]['mag_edge_baseline'][position][0]
+                                                t2_output['description'].append('Baseline before excess region')
+                                                
+                                                excess_region['baseline_jd'].append(baseline_jd)
+                                                excess_region['start_baseline_jd'].append(t2_res[key]['jd_baseline_regions'][position][0])
+                                                excess_region['baseline_mag'].append(baseline_mag)
+#########################################################################
+                                            #check if the increse in intensity is scarp as expected for TDE and no multiple peaks in intensity before maximum are present                            
+                                    #        if any(fluctuation < 3 for fluctuation in t2_res[key]['significance_of_fluctuation'][0]): 
+                                    #            t2_output['description'].append('Fluctuation before peak')
+                                    #        else:
+                                                # Check if there is magnitude fluctuations after the excess region
                                             difference = []
-                                            for baseline in t2_res[key][
-                                                "jd_baseline_regions"
-                                            ]:
-                                                difference.append(
-                                                    peak[-1] - baseline[0]
-                                                )
-                                            diff, position = min(
-                                                (
-                                                    (b, nu)
-                                                    for nu, b in enumerate(
-                                                        np.array(difference)
-                                                    )
-                                                    if b < 0
-                                                ),
-                                                default=(None, None),
-                                            )
-                                            if (
-                                                diff is not None
-                                                and t2_res[key]["description"][idx][0]
-                                                == 0
-                                            ):
-                                                # Outlier in the middle of the LC, Outlier in the last epoch will not be marked as Outlier
-                                                t2_output["description"].append(
-                                                    "Outlier"
-                                                )
-                                            elif (
-                                                diff is None
-                                                and t2_res[key]["description"][idx][0]
-                                                == 0
-                                            ):
-                                                maybe_interesting = True
-                                            #        t2_output['description'].append('Excess region with monotonic declination')
+                                            for baseline in t2_res[key]['jd_baseline_regions']:
+                                                    difference.append(peak[-1] - baseline[0])
+                                            diff, position = min(((b,nu) for nu, b in enumerate(np.array(difference)) if b < 0), default=(None,None  ))
+                                            if diff is not None and t2_res[key]['description'][idx][0] == 0:
+                                                    # Outlier in the middle of the LC, Outlier in the last epoch will not be marked as Outlier 
+                                                    t2_output['description'].append('Outlier')
+                                            elif diff is None and t2_res[key]['description'][idx][0] == 0:
+                                                    maybe_interesting = True 
+                                                    t2_output['description'].append('Excess region with monotonic declination')
 
-                                            if (
-                                                t2_res[key]["description"][idx][0] > 1
-                                                and len(
-                                                    t2_res[key][
-                                                        "significance_of_variability_excess"
-                                                    ][1]
-                                                )
-                                                >= 2.0
-                                                and t2_res[key][
-                                                    "significance_of_variability_excess"
-                                                ][1][0]
-                                                > 5.0
-                                                and t2_res[key][
-                                                    "significance_of_variability_excess"
-                                                ][1][1]
-                                                < t2_res[key][
-                                                    "significance_of_variability_excess"
-                                                ][1][0]
-                                            ):
-                                                # LC with a sharp drop in intensity after max, only applied when there are more that 2 baye blocks after max
-                                                t2_output["description"].append(
-                                                    "Sharp drop after peak"
-                                                )
+                                            #    if t2_res[key]['description'][idx][0] > 1 and len(t2_res[key]['significance_of_variability_excess'][1]) >= 2. and t2_res[key]['significance_of_variability_excess'][1][0] > 5. and t2_res[key]['significance_of_variability_excess'][1][1] < t2_res[key]['significance_of_variability_excess'][1][0]:
+                                            #        #LC with a sharp drop in intensity after max, only applied when there are more that 2 baye blocks after max 
+                                            #        t2_output['description'].append('Sharp drop after peak')
+                                            #    elif t2_res[key]['strength_after_peak'] and (t2_res[key]['strength_after_peak'][0] - t2_res[key]['significance_after_peak'][0] > 3.):
+                                            #        t2_output['description'].append('Sharp drop after peak')
+                                            #    else:
+                                            #        t2_output['description'].append('Excess region with monotonic declination') 
 
-                                            elif t2_res[key][
-                                                "strength_after_peak"
-                                            ] and (
-                                                t2_res[key]["strength_after_peak"][0]
-                                                - t2_res[key][
-                                                    "significance_after_peak"
-                                                ][0]
-                                                > 3.0
-                                            ):
-                                                t2_output["description"].append(
-                                                    "Sharp drop after peak"
-                                                )
-                                            else:
-                                                t2_output["description"].append(
-                                                    "Excess region with monotonic declination"
-                                                )
+                                            excess_jd = t2_res[key]['jd_excess_regions'][idx][-1]    
+                                            excess_mag = t2_res[key]['mag_edge_excess'][idx][-1]
+                                            excess_region['excess_jd'].append(excess_jd)
+                                            excess_region['excess_mag'].append(excess_mag) 
+#################################################################################
+                                else:  
+                                    t2_output['description'].append('Only baseline')
+                                    excess_region['max_mag'].append(t2_res[key]['baseline'])
 
-                                            excess_jd = t2_res[key][
-                                                "jd_excess_regions"
-                                            ][idx][-1]
-                                            excess_mag = t2_res[key]["mag_edge_excess"][
-                                                idx
-                                            ][-1]
-                                            excess_region["excess_jd"].append(excess_jd)
-                                            excess_region["excess_mag"].append(
-                                                excess_mag
-                                            )
-                                else:
-                                    t2_output["description"].append("Only baseline")
-                                    excess_region["max_mag"].append(
-                                        t2_res[key]["baseline"]
-                                    )
                     else:
                         t2_output["description"].append(
                             "Only baseline"
                         )  # no excess region
                         for key in self.filter:
                             excess_region["max_mag"].append(t2_res[key]["baseline"])
+                            
         ##################################################################################
-        #        if len(excess_region['excess_jd']) >= 2 and len(excess_region['baseline_jd']) >= 2 and not all(value == 0 for value in excess_region['baseline_jd']) and not (any('Outlier' in description for description in t2_output['description']) ) and not (any('Fluctuation after peak' in description for description in t2_output['description'])) and not (any('Only increase' in description for description in t2_output['description'])) and not (any('Sharp drop after peak' in description for description in t2_output['description'])):
-
         if (
             len(excess_region["excess_jd"]) >= 2
             and len(excess_region["baseline_jd"]) >= 2
@@ -406,6 +271,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
             )
         ):
             t2_output["values"].append(excess_region)
+
 
             for fid, passband in enumerate(self.filter, 1):
                 if self.flux:
@@ -471,12 +337,6 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                         & (df["jd"] <= excess_region["baseline_jd"][fid - 1])
                     ]
 
-                    ztfid = to_ztf_id(light_curve.stock_id)
-                    print("-----------")
-                    print(light_curve.stock_id)
-                    print(ztfid)
-                    print("-----------")
-
                     baseline = np.mean(
                         unumpy.uarray(
                             np.array(baseline_region["mag"].values),
@@ -489,11 +349,9 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                     excess_region["significance"].append(
                         t2_res[passband]["significance"][0]
                     )
-                    #                    excess_region['significance'].append(baseline_rms/baseline_sigma)
                     excess_region["strength_sjoert"].append(
                         t2_res[passband]["strength_sjoert"][0]
                     )
-                    #                    excess_region['strength_sjoert'].append(abs(t2_res[passband]['baseline'][0]-excess_region['max_mag'][fid-1][0])/baseline_rms)
                     excess_region["strength"].append(
                         abs(
                             t2_res[passband]["baseline"][0]
@@ -550,11 +408,9 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                     excess_region["significance"].append(
                         t2_res[passband]["significance"][0]
                     )
-                    #                    excess_region['significance'].append('nan')
                     excess_region["strength_sjoert"].append(
                         t2_res[passband]["strength_sjoert"][0]
                     )
-                    #                    excess_region['strength_sjoert'].append(abs(t2_res[passband]['baseline'][0]-excess_region['max_mag'][fid-1][0])/baseline_rms)
                     excess_region["strength"].append(
                         abs(
                             t2_res[passband]["baseline"][0]

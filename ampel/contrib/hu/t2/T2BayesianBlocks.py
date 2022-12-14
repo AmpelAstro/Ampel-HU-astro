@@ -732,6 +732,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     )
                 for idx in excess_regions_idx:
                     if global_peak_idx in idx:
+                    
                         everything_except_excess_values.append(
                             df[
                                 (
