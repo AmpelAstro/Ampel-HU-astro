@@ -133,7 +133,6 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                     )
                     for key in self.filters_lc
                 ):
-                    #                    print("No further investigation")
                     t2_output["description"].append("Only baseline")
                     for key in self.filters_lc:
                         excess_region["max_mag"].append(t2_res[key]["baseline"])
@@ -200,6 +199,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                                                 - 182.0
                                             )
                                             maybe_interesting = True
+
                                         else:
                                             if (
                                                 min(
@@ -244,7 +244,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                                                 baseline_mag
                                             )
                                         #########################################################################
-                                        # check if the increse in intensity is scarp as expected for TDE and no multiple peaks in intensity before maximum are present
+                                        # check if the increase in intensity is sharp as expected for TDE and no multiple peaks in intensity before maximum are present
                                         #        if any(fluctuation < 3 for fluctuation in t2_res[key]['significance_of_fluctuation'][0]):
                                         #            t2_output['description'].append('Fluctuation before peak')
                                         #        else:
@@ -278,14 +278,6 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                                             t2_output["description"].append(
                                                 "Excess region with monotonic declination"
                                             )
-
-                                        #    if t2_res[key]['description'][idx][0] > 1 and len(t2_res[key]['significance_of_variability_excess'][1]) >= 2. and t2_res[key]['significance_of_variability_excess'][1][0] > 5. and t2_res[key]['significance_of_variability_excess'][1][1] < t2_res[key]['significance_of_variability_excess'][1][0]:
-                                        #        #LC with a sharp drop in intensity after max, only applied when there are more that 2 baye blocks after max
-                                        #        t2_output['description'].append('Sharp drop after peak')
-                                        #    elif t2_res[key]['strength_after_peak'] and (t2_res[key]['strength_after_peak'][0] - t2_res[key]['significance_after_peak'][0] > 3.):
-                                        #        t2_output['description'].append('Sharp drop after peak')
-                                        #    else:
-                                        #        t2_output['description'].append('Excess region with monotonic declination')
 
                                         excess_jd = t2_res[key]["jd_excess_regions"][
                                             idx
@@ -508,7 +500,6 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
             t2_output["values"].append(excess_region)
 
         #################### Plotting part #######################
-        print(t2_output["status"])
         if t2_output["status"] != "No further investigation":
             fig, ax = plt.subplots(2, figsize=(18, 15))
 
