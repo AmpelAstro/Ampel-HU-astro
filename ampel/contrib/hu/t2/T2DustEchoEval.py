@@ -45,22 +45,12 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
 
     t2_dependency: Sequence[StateT2Dependency[Literal["T2BayesianBlocks"]]]
 
-    # def isMonotonic(self, A):
-    #     return all(A[i] <= A[i + 1] for i in range(len(A) - 1)) or all(
-    #         A[i] >= A[i + 1] for i in range(len(A) - 1)
-    #     )
-
-    # def isDecreasing(self, A):
-    #     return all(A[i] >= A[i + 1] for i in range(len(A) - 1))
-
-    # def isIncreasing(self, A):
-    #     return all(A[i] <= A[i + 1] for i in range(len(A) - 1))
-
     PlotColor: Sequence[str] = ["red", "blue"]
 
     # ==================== #
     # AMPEL T2 MANDATORY   #
     # ==================== #
+
     def process(
         self, light_curve: LightCurve, t2_views: Sequence[T2DocView]
     ) -> UBson | UnitResult:
