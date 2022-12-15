@@ -46,5 +46,6 @@
 - ampel.contrib.hu.t3.PlotLightcurveSample
 - ampel.contrib.hu.t3.ElasticcClassPublisher
 - ampel.contrib.hu.t3.VOEventPublisher
+- ampel.contrib.hu.t3.AstroColibriPublisher
 - ampel.contrib.hu.alert.load.WiseFileAlertLoader
 - ampel.contrib.hu.alert.NeoWisePhotometryAlertSupplier
