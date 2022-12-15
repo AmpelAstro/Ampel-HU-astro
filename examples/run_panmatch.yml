@@ -1,0 +1,276 @@
+name: run_panmatch2
+
+mongo:
+  prefix: panfield584
+
+channel:
+- name: base
+  access: [ZTF, ZTF_PUB, ZTF_PRIV]
+  policy: []
+
+task:
+- title: CatalogFilterT0
+  unit: AlertConsumer
+  config:
+    iter_max: 100000000
+    supplier:
+      unit: ZiAlertSupplier
+      config:
+        deserialize: null
+        loader:
+          unit: ZTFArchiveAlertLoader
+          config:
+            archive: https://ampel.zeuthen.desy.de/api/ztf/archive/v3
+            stream: FyJw7iMwN-fOIUrCMUj682XPT4vqgdchX73RjYc6xRA
+    shaper: ZiDataPointShaper
+    directives:
+    - channel: base
+      filter:
+        config:
+          catalog_match_radius: 10
+          min_z: 0.002
+          max_z: 0.2
+          max_tspan: 100.
+          max_archive_tspan: 100.
+          min_rb: 0.3
+          min_drb: 0.995
+          catalog_name: voidGalPan
+          min_ndet: 4
+          min_tspan: 8
+        on_stock_match: bypass
+        unit: RedshiftCatalogFilter
+      ingest:
+        mux:
+          unit: ZiMongoMuxer
+          insert:
+            point_t2:
+            - config: &catalog_match_config
+                catalogs:
+                  SDSS_spec:
+                    keys_to_append:
+                    - z
+                    - bptclass
+                    - subclass
+                    rs_arcsec: 10.
+                    use: extcats
+                    all: False
+                  LSPhotoZZou:
+                    keys_to_append:
+                    - photoz
+                    - ra
+                    - dec
+                    - e_photoz
+                    - specz
+                    - _6
+                    - logMassBest
+                    - logMassInf
+                    - logMassSup
+                    rs_arcsec: 10.
+                    use: extcats
+                    pre_filter: null
+                    post_filter: null
+                    all: False
+                  PS1_photoz:
+                    keys_to_append:
+                    - raMean
+                    - decMean
+                    - z_phot
+                    - z_photErr
+                    - z_phot0
+                    - _2
+                    rs_arcsec: 10.
+                    use: extcats
+                    pre_filter: null
+                    post_filter: null
+              ingest:
+                filter: PPSFilter
+                select: first
+                sort: jd
+              unit: T2CatalogMatch
+          combine:
+          - state_t2:
+            - unit: T2DigestRedshifts
+              config: &digest_config
+                max_redshift_category: 7
+                t2_dependency:
+                - config: *catalog_match_config
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2CatalogMatch
+            - unit: T2MatchBTS
+            - unit: T2RunSncosmo
+              config:
+                sncosmo_model_name: salt2
+                redshift_kind: T2DigestRedshifts
+                max_ampelz_group: 7
+                tabulator:
+                - unit: ZTFT2Tabulator
+                t2_dependency:
+                - config: *digest_config
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2DigestRedshifts
+                plot_props:
+                  file_name:
+                    format_str: "%s_%s_%s.svg"
+                    arg_keys:
+                      - stock
+                      - model
+                      - redshift_kind
+                  title:
+                    format_str: "%s %s %s"
+                    arg_keys:
+                      - stock
+                      - model
+                      - redshift_kind
+                  fig_text:
+                    format_str: "%s %s \nz-source %s \nchisq %.2f ndof %s"
+                    arg_keys:
+                      - stock
+                      - model
+                      - redshift_kind
+                      - chisq
+                      - ndof
+                  width: 10
+                  height: 6
+                  id_mapper: null
+                  disk_save: /home/jnordin/tmp/pan
+            - unit: T2RunParsnip
+              config:
+                parsnip_model: /home/jnordin/data/parsnip/parsnip_ps1_ztf.pt
+                parsnip_classifier: /home/jnordin/data/parsnip/ztf_classifier.pkl
+                redshift_kind: T2DigestRedshifts
+                max_ampelz_group: 7
+                tabulator:
+                - unit: ZTFT2Tabulator
+                t2_dependency:
+                - config: *digest_config
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2DigestRedshifts
+                plot_suffix: png
+                plot_dir: /home/jnordin/tmp/pan
+            unit: ZiT1Combiner
+
+- title: Run T2s
+  unit: T2Worker
+  config:
+    send_beacon: false
+    raise_exc: true
+
+- title: React
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3ReviewUnitExecutor
+        config:
+          supply:
+            unit: T3DefaultBufferSupplier
+            config:
+              select:
+                unit: T3StockSelector
+                config:
+                  channel: base
+              load:
+                unit: T3SimpleDataLoader
+                config:
+                  directives:
+                    - STOCK
+                    - T1
+                    - T2DOC
+                  channel: base
+          stage:
+            unit: T3SimpleStager
+            config:
+              execute:
+                - unit: TransientTablePublisher
+                  config:
+                    include_stock: true
+                    include_channels: true
+                    fmt: csv
+                    local_path: /home/jnordin/tmp/
+                    table_schema:
+                      T2DigestRedshifts:
+                        'Ampel z':
+                          - ampel_z
+                        'Ampel distance':
+                          - ampel_dist
+                      T2MatchBTS:
+                        'Type':
+                          - bts_type
+                        'IAU ID':
+                          - bts_IAUID
+                        'BTS z':
+                          - bts_redshift
+                      T2RunSncosmo:
+                        'SALT x1':
+                          - sncosmo_result
+                          - paramdict
+                          - x1
+                        'SALT x1 err':
+                          - sncosmo_result
+                          - errors
+                          - x1
+                        'SALT c':
+                          - sncosmo_result
+                          - paramdict
+                          - c
+                        'SALT c err':
+                          - sncosmo_result
+                          - errors
+                          - c
+                        'Peak B abs mag':
+                          - fit_metrics
+                          - restpeak_model_absmag_B
+                        'Pulls around peak':
+                          - fit_metrics
+                          - absmean_peak_pull
+                        'Det. around peak':
+                          - fit_metrics
+                          - nbr_peak_pulls
+                      T2RunParsnip:
+                        'Parsnip chi/dof':
+                          - prediction
+                          - chi2dof
+                        'Parsnip(SLSN)':
+                          - classification
+                          - SLSN
+                        'Parsnip(SNII)':
+                          - classification
+                          - SNII
+                        'Parsnip(SNIa)':
+                          - classification
+                          - SNIa
+                        'Parsnip(SNIbc)':
+                          - classification
+                          - SNIbc
+                        'Parsnip(TDE)':
+                          - classification
+                          - TDE
+                    transient_table_schema:
+                      T2CatalogMatch:
+                        'SDSS spec z':
+                          - SDSS_spec
+                          - z
+                        'LS_Zou photo-z':
+                          - LSPhotoZZou
+                          - photoz
+                        'LS_Zou dist':
+                          - LSPhotoZZou
+                          - dist2transient
+                        'PS1 photo-z (*1000)':
+                          - PS1_photoz
+                          - z_phot
+                        'PS1 photo-z alt (*1000)':
+                          - PS1_photoz
+                          - z_phot0
+                        'PS1 photo-z err (*10000)':
+                          - PS1_photoz
+                          - z_photErr
