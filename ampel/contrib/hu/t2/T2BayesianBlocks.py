@@ -229,7 +229,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
         elif self.data_type == "wise":
             base_filter = "Wise_W1"
 
-        if output_per_filter[base_filter]["nu_of_excess_regions"][0] == 0:
+        if output_per_filter[base_filter].get("nu_of_excess_regions") in [0, None]:
             return coincide_region
         else:
             if self.flux:
@@ -248,7 +248,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                         continue
 
                 if (
-                    int(output_per_filter[compare_filter]["nu_of_excess_regions"][0])
+                    int(output_per_filter[compare_filter].get("nu_of_excess_regions"))
                     > 0
                 ):
                     if self.flux:
@@ -310,8 +310,8 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
         compareoutput = output_per_filter[comparefilter]
 
         if (
-            baseoutput["nu_of_excess_regions"][0] == 0
-            or compareoutput["nu_of_excess_regions"][0] == 0
+            baseoutput.get("nu_of_excess_regions") == 0
+            or compareoutput["nu_of_excess_regions"] == 0
         ):
             return coincidences
 
@@ -371,34 +371,35 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     "mag_edge",
                 ]
             )
+            output = {}
 
-            output = {
-                "nu_of_excess_regions": ([]),
-                "nu_of_excess_blocks": ([]),
-                "nu_of_baseline_blocks": ([]),
-                "jd_excess_regions": ([]),
-                "mag_edge_excess": ([]),
-                "max_mag_excess_region": ([]),
-                "max_jd_excess_region": ([]),
-                "max_sigma_excess_region": ([]),
-                "max_baye_block_timescale": ([]),
-                "baseline": ([]),
-                "baseline_sigma": ([]),
-                "baseline_rms": ([]),
-                "jd_baseline_regions": ([]),
-                "jd_outlier": ([]),
-                "mag_edge_baseline": ([]),
-                "sigma_from_baseline": ([]),
-                "sigma_from_baseline_excess": ([]),
-                "significance_of_variability_excess": ([], []),
-                "significance_of_fluctuation": ([]),
-                "max_mag": ([]),
-                "significance": ([]),
-                "strength_sjoert": ([]),
-                "significance_after_peak": ([]),
-                "strength_after_peak": ([]),
-                "description": ([]),
-            }  # 0: The excess region has one baye block with one measurement, 1: The excess region has one baye block with multiple measurements, 2: The excess region has multiple baye blocks
+            # output = {
+            #     "nu_of_excess_regions": None,
+            #     "nu_of_excess_blocks": None,
+            #     "nu_of_baseline_blocks": None,
+            #     "jd_excess_regions": None,
+            #     "mag_edge_excess": ([]),
+            #     "max_mag_excess_region": ([]),
+            #     "max_jd_excess_region": ([]),
+            #     "max_sigma_excess_region": ([]),
+            #     "max_baye_block_timescale": ([]),
+            #     "baseline": ([]),
+            #     "baseline_sigma": ([]),
+            #     "baseline_rms": ([]),
+            #     "jd_baseline_regions": ([]),
+            #     "jd_outlier": ([]),
+            #     "mag_edge_baseline": ([]),
+            #     "sigma_from_baseline": ([]),
+            #     "sigma_from_baseline_excess": ([]),
+            #     "significance_of_variability_excess": ([], []),
+            #     "significance_of_fluctuation": ([]),
+            #     "max_mag": ([]),
+            #     "significance": ([]),
+            #     "strength_sjoert": ([]),
+            #     "significance_after_peak": ([]),
+            #     "strength_after_peak": ([]),
+            #     "description": ([]),
+            # }  # 0: The excess region has one baye block with one measurement, 1: The excess region has one baye block with multiple measurements, 2: The excess region has multiple baye blocks
 
             if self.data_type == "ztf_fp":
                 if self.flux:
@@ -491,31 +492,30 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             output_per_filter[passband] = []
 
             if phot_tuple is None or len(phot_tuple) <= 1:
-                output["nu_of_excess_regions"].append(0)
-                output["nu_of_excess_blocks"].append(0)
-                output["nu_of_baseline_blocks"].append(0)
-                output["jd_excess_regions"].append(0)
-                output["mag_edge_excess"].append(0)
-                output["max_mag_excess_region"].append(0)
-                output["max_jd_excess_region"].append(0)
-                output["max_sigma_excess_region"].append(0)
-                output["max_baye_block_timescale"].append(0)
-                output["baseline"].append(0)
-                output["baseline_sigma"].append(0)
-                output["baseline_rms"].append(0)
-                output["jd_baseline_regions"].append(0)
+                output["nu_of_excess_regions"] = None
+                output["nu_of_excess_blocks"] = None
+                output["nu_of_baseline_blocks"] = None
+                output["jd_excess_regions"] = []
+                output["mag_edge_excess"] = None
+                output["max_mag_excess_region"] = None
+                output["max_jd_excess_region"] = None
+                output["max_sigma_excess_region"] = None
+                output["max_baye_block_timescale"] = None
+                output["baseline"] = None
+                output["baseline_sigma"] = None
+                output["baseline_rms"] = None
+                output["jd_baseline_regions"] = None
                 output["jd_outlier"] = None
-                output["mag_edge_baseline"].append(0)
-                output["sigma_from_baseline"].append(0)
-                output["sigma_from_baseline_excess"].append(0)
-                output["significance_of_variability_excess"][0].append(0)
-                output["significance_of_variability_excess"][1].append(0)
-                output["significance_of_fluctuation"].append(0)
-                output["max_mag"].append(0)
-                output["significance"].append(0)
-                output["strength_sjoert"].append(0)
-                output["description"].append(None)
-                output_per_filter[str(passband)] = dict(output)
+                output["mag_edge_baseline"] = None
+                output["sigma_from_baseline"] = None
+                output["sigma_from_baseline_excess"] = None
+                output["significance_of_variability_excess"] = [None, None]
+                output["significance_of_fluctuation"] = None
+                output["max_mag"] = None
+                output["significance"] = None
+                output["strength_sjoert"] = None
+                output["description"] = None
+                output_per_filter[str(passband)] = output
                 continue
 
             if self.Npoints:
@@ -613,31 +613,30 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             baye_block.reset_index(drop=True, inplace=True)
 
             if len(baye_block) == 0:
-                output["nu_of_excess_regions"].append(0)
-                output["nu_of_excess_blocks"].append(0)
-                output["nu_of_baseline_blocks"].append(0)
-                output["jd_excess_regions"].append(0)
-                output["mag_edge_excess"].append(0)
-                output["max_mag_excess_region"].append(0)
-                output["max_jd_excess_region"].append(0)
-                output["max_sigma_excess_region"].append(0)
-                output["max_baye_block_timescale"].append(0)
-                output["baseline"].append(0)
-                output["baseline_sigma"].append(0)
-                output["baseline_rms"].append(0)
-                output["jd_baseline_regions"].append(0)
+                output["nu_of_excess_regions"] = None
+                output["nu_of_excess_blocks"] = None
+                output["nu_of_baseline_blocks"] = None
+                output["jd_excess_regions"] = []
+                output["mag_edge_excess"] = None
+                output["max_mag_excess_region"] = None
+                output["max_jd_excess_region"] = None
+                output["max_sigma_excess_region"] = None
+                output["max_baye_block_timescale"] = None
+                output["baseline"] = None
+                output["baseline_sigma"] = None
+                output["baseline_rms"] = None
+                output["jd_baseline_regions"] = None
                 output["jd_outlier"] = None
-                output["mag_edge_baseline"].append(0)
-                output["sigma_from_baseline"].append(0)
-                output["sigma_from_baseline_excess"].append(0)
-                output["significance_of_variability_excess"][0].append(0)
-                output["significance_of_variability_excess"][1].append(0)
-                output["significance_of_fluctuation"].append(0)
-                output["max_mag"].append(0)
-                output["significance"].append(0)
-                output["strength_sjoert"].append(0)
-                output["description"].append(None)
-                output_per_filter[str(passband)] = dict(output)
+                output["mag_edge_baseline"] = None
+                output["sigma_from_baseline"] = None
+                output["sigma_from_baseline_excess"] = None
+                output["significance_of_variability_excess"] = [None, None]
+                output["significance_of_fluctuation"] = None
+                output["max_mag"] = None
+                output["significance"] = None
+                output["strength_sjoert"] = None
+                output["description"] = None
+                output_per_filter[str(passband)] = output
                 continue
 
             baye_block = baye_block.astype(
@@ -802,88 +801,85 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 list(group)
                 for group in mit.consecutive_groups(baseline_region.index.tolist())
             ]
-            output["sigma_from_baseline"].append(
-                baye_block["sigma_from_baseline"].values.tolist()
-            )
-            output["baseline"].append(baseline)
-            output["baseline_sigma"].append(baseline_sigma)
+            output["sigma_from_baseline"] = baye_block[
+                "sigma_from_baseline"
+            ].values.tolist()
+
+            output["baseline"] = baseline
+            output["baseline_sigma"] = baseline_sigma
             # Add baseline_rms, calculate max magnitude, flux from df['mag']
             # strength: Delta flux/rms, significance: rms/baseline_sigma
-            output["baseline_rms"].append(baseline_rms)
-            output["significance"].append(everything_except_excess_rms / baseline_sigma)
+            output["baseline_rms"] = baseline_rms
+            output["significance"] = everything_except_excess_rms / baseline_sigma
 
             if self.flux == True:
-                output["max_mag"].append(max(df[df["Outlier"] == False]["mag"].values))
+                output["max_mag"] = max(df[df["Outlier"] == False]["mag"].values)
 
-                output["strength_sjoert"].append(
-                    (max(df[df["Outlier"] == False]["mag"].values) - baseline)
-                    / everything_except_excess_rms
-                )
+                output["strength_sjoert"] = (
+                    max(df[df["Outlier"] == False]["mag"].values) - baseline
+                ) / everything_except_excess_rms
+
             else:
-                output["max_mag"].append(min(df[df["Outlier"] == False]["mag"].values))
-                output["strength_sjoert"].append(
-                    (min(df[df["Outlier"] == False]["mag"].values) - baseline)
-                    / everything_except_excess_rms
-                )
+                output["max_mag"] = min(df[df["Outlier"] == False]["mag"].values)
+                output["strength_sjoert"] = (
+                    min(df[df["Outlier"] == False]["mag"].values) - baseline
+                ) / everything_except_excess_rms
 
             for idx in baseline_regions_idx:
                 if baye_block["level"][idx[-1]] == "outlier":
                     if len(idx) != 1:
-                        output["nu_of_baseline_blocks"].append(len(idx) - 1)
-                        output["jd_baseline_regions"].append(
-                            [
-                                baye_block["jd_measurement_start"][idx[0]],
-                                baye_block["jd_measurement_end"][idx[-1] - 1],
-                            ]
-                        )
-                        output["mag_edge_baseline"].append(
-                            [baye_block["mag_edge"][idx[-1] - 1]]
-                        )
+                        output["nu_of_baseline_blocks"] = len(idx) - 1
+                        output["jd_baseline_regions"] = [
+                            baye_block["jd_measurement_start"][idx[0]],
+                            baye_block["jd_measurement_end"][idx[-1] - 1],
+                        ]
+
+                        output["mag_edge_baseline"] = [
+                            baye_block["mag_edge"][idx[-1] - 1]
+                        ]
+
                 elif baye_block["level"][idx[0]] == "outlier":
                     if len(idx) != 1:
-                        output["nu_of_baseline_blocks"].append(len(idx) - 1)
-                        output["jd_baseline_regions"].append(
-                            [
-                                baye_block["jd_measurement_start"][idx[0] + 1],
-                                baye_block["jd_measurement_end"][idx[-1]],
-                            ]
-                        )
-                        output["mag_edge_baseline"].append(
-                            [baye_block["mag_edge"][idx[-1]]]
-                        )
-                else:
-                    output["nu_of_baseline_blocks"].append(len(idx))
-                    output["jd_baseline_regions"].append(
-                        [
-                            baye_block["jd_measurement_start"][idx[0]],
+                        output["nu_of_baseline_blocks"] = len(idx) - 1
+                        output["jd_baseline_regions"] = [
+                            baye_block["jd_measurement_start"][idx[0] + 1],
                             baye_block["jd_measurement_end"][idx[-1]],
                         ]
-                    )
-                    output["mag_edge_baseline"].append(
-                        [baye_block["mag_edge"][idx[-1]]]
-                    )
+
+                        output["mag_edge_baseline"] = [baye_block["mag_edge"][idx[-1]]]
+
+                else:
+                    output["nu_of_baseline_blocks"] = len(idx)
+                    output["jd_baseline_regions"] = [
+                        baye_block["jd_measurement_start"][idx[0]],
+                        baye_block["jd_measurement_end"][idx[-1]],
+                    ]
+
+                    output["mag_edge_baseline"] = [baye_block["mag_edge"][idx[-1]]]
 
             if not excess_region.empty:
-                output["nu_of_excess_regions"].append(len(excess_regions_idx))
+                output["nu_of_excess_regions"] = len(excess_regions_idx)
+                output["jd_excess_regions"] = []
                 significance_of_fluctuation_before_peak = []
                 significance_of_fluctuation_after_peak = []
                 for idx in excess_regions_idx:
-                    output["nu_of_excess_blocks"].append(len(idx))
+                    output["nu_of_excess_blocks"] = len(idx)
                     output["jd_excess_regions"].append(
                         [
                             baye_block["jd_measurement_start"][idx[0]],
                             baye_block["jd_measurement_end"][idx[-1]],
                         ]
                     )
-                    output["mag_edge_excess"].append([baye_block["mag_edge"][idx[-1]]])
-                    output["max_sigma_excess_region"].append(
-                        [max(baye_block["sigma_from_baseline"][idx[0] : idx[-1] + 1])]
-                    )
-                    output["sigma_from_baseline_excess"].append(
-                        baye_block["sigma_from_baseline"][
-                            idx[0] : idx[-1] + 1
-                        ].values.tolist()
-                    )
+
+                    output["mag_edge_excess"] = [baye_block["mag_edge"][idx[-1]]]
+                    output["max_sigma_excess_region"] = [
+                        max(baye_block["sigma_from_baseline"][idx[0] : idx[-1] + 1])
+                    ]
+
+                    output["sigma_from_baseline_excess"] = baye_block[
+                        "sigma_from_baseline"
+                    ][idx[0] : idx[-1] + 1].values.tolist()
+
                     each_excess_max_idx = baye_block["mag"].loc[idx].idxmax()
                     if global_peak_idx == each_excess_max_idx:
                         #      else: #Inside the excess region with the highest intensity
@@ -929,12 +925,14 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                                             )
                                         )
                                     )
-                        output["significance_of_fluctuation"].append(
-                            significance_of_fluctuation_before_peak
-                        )
-                        output["significance_of_fluctuation"].append(
-                            significance_of_fluctuation_after_peak
-                        )
+                        output[
+                            "significance_of_fluctuation"
+                        ] = significance_of_fluctuation_before_peak
+
+                        output[
+                            "significance_of_fluctuation"
+                        ] = significance_of_fluctuation_after_peak
+
                         # Calculate the significance of each bayesian block, inside the excess region of the highest intensity
                         if len([i for i in idx if (i > global_peak_idx)]) >= 2:
                             after_peak_excess_values = df[
@@ -994,39 +992,33 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                                 squared=True,
                             )
 
-                            output["significance_after_peak"].append(
+                            output["significance_after_peak"] = (
                                 after_peak_excess_rms / after_peak_excess_sigma
                             )
-                            output["strength_after_peak"].append(
-                                (
-                                    baye_block["mag"].loc[global_peak_idx]
-                                    - baye_block["mag"].loc[
-                                        [i for i in idx if (i > global_peak_idx)][0]
-                                    ]
-                                )
-                                / after_peak_excess_rms
-                            )
+
+                            output["strength_after_peak"] = (
+                                baye_block["mag"].loc[global_peak_idx]
+                                - baye_block["mag"].loc[
+                                    [i for i in idx if (i > global_peak_idx)][0]
+                                ]
+                            ) / after_peak_excess_rms
 
                         for baye_excess_idx in idx:
+                            output["significance_of_variability_excess"] = [None, None]
                             if baye_excess_idx < global_peak_idx:
-                                output["significance_of_variability_excess"][0].append(
-                                    (
-                                        baye_block["mag"].loc[global_peak_idx]
-                                        - baye_block["mag"].loc[baye_excess_idx]
-                                    )
-                                    / math.sqrt(
-                                        sum(np.array(baye_block["mag.err"].values) ** 2)
-                                    )
+                                output["significance_of_variability_excess"][0] = (
+                                    baye_block["mag"].loc[global_peak_idx]
+                                    - baye_block["mag"].loc[baye_excess_idx]
+                                ) / math.sqrt(
+                                    sum(np.array(baye_block["mag.err"].values) ** 2)
                                 )
+
                             elif baye_excess_idx > global_peak_idx:
-                                output["significance_of_variability_excess"][1].append(
-                                    (
-                                        baye_block["mag"].loc[global_peak_idx]
-                                        - baye_block["mag"].loc[baye_excess_idx]
-                                    )
-                                    / math.sqrt(
-                                        sum(np.array(baye_block["mag.err"].values) ** 2)
-                                    )
+                                output["significance_of_variability_excess"][1] = (
+                                    baye_block["mag"].loc[global_peak_idx]
+                                    - baye_block["mag"].loc[baye_excess_idx]
+                                ) / math.sqrt(
+                                    sum(np.array(baye_block["mag.err"].values) ** 2)
                                 )
 
                     if self.flux == True:
@@ -1043,60 +1035,54 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                                 baye_block["jd_measurement_end"][idx[-1]],
                             )
                         ].idxmin()
-                    output["max_mag_excess_region"].append([df["mag"][max_idx]])
-                    output["max_jd_excess_region"].append([df["jd"][max_idx]])
+                    output["max_mag_excess_region"] = [df["mag"][max_idx]]
+                    output["max_jd_excess_region"] = [df["jd"][max_idx]]
 
                 if self.flux == True:
-                    output["max_baye_block_timescale"].append(
-                        float(
-                            (
-                                excess_region["jd_measurement_end"]
-                                - excess_region["jd_measurement_start"]
-                            )[
-                                flatten(
-                                    excess_region[
-                                        excess_region["mag"]
-                                        == max(excess_region["mag"])
-                                    ].index.tolist()
-                                )
-                            ].to_string(
-                                index=False
+                    output["max_baye_block_timescale"] = float(
+                        (
+                            excess_region["jd_measurement_end"]
+                            - excess_region["jd_measurement_start"]
+                        )[
+                            flatten(
+                                excess_region[
+                                    excess_region["mag"] == max(excess_region["mag"])
+                                ].index.tolist()
                             )
+                        ].to_string(
+                            index=False
                         )
                     )
+
                 else:
-                    output["max_baye_block_timescale"].append(
-                        float(
-                            (
-                                excess_region["jd_measurement_end"]
-                                - excess_region["jd_measurement_start"]
-                            )[
-                                flatten(
-                                    excess_region[
-                                        excess_region["mag"]
-                                        == min(excess_region["mag"])
-                                    ].index.tolist()
-                                )
-                            ].to_string(
-                                index=False
+                    output["max_baye_block_timescale"] = float(
+                        (
+                            excess_region["jd_measurement_end"]
+                            - excess_region["jd_measurement_start"]
+                        )[
+                            flatten(
+                                excess_region[
+                                    excess_region["mag"] == min(excess_region["mag"])
+                                ].index.tolist()
                             )
+                        ].to_string(
+                            index=False
                         )
                     )
+
             else:
-                output["nu_of_excess_regions"].append(0)
-                output["nu_of_excess_blocks"].append(0)
-                output["jd_excess_regions"].append(0)
-                output["mag_edge_excess"].append(None)
-                output["max_mag_excess_region"].append(0)
-                output["max_jd_excess_region"].append(0)
-                output["max_sigma_excess_region"].append(0)
-                output["sigma_from_baseline_excess"].append(0)
-                output["significance_of_variability_excess"][0].append(0)
-                output["significance_of_variability_excess"][1].append(0)
-                output["significance_of_fluctuation"].append(0)
-                output["significance_of_fluctuation"].append(0)
-                output["max_baye_block_timescale"].append(0)
-                output["description"].append(None)
+                output["nu_of_excess_regions"] = 0
+                output["nu_of_excess_blocks"] = 0
+                output["jd_excess_regions"] = []
+                output["mag_edge_excess"] = None
+                output["max_mag_excess_region"] = None
+                output["max_jd_excess_region"] = None
+                output["max_sigma_excess_region"] = None
+                output["sigma_from_baseline_excess"] = None
+                output["significance_of_variability_excess"] = [None, None]
+                output["significance_of_fluctuation"] = None
+                output["max_baye_block_timescale"] = None
+                output["description"] = None
 
             output_per_filter[str(passband)] = dict(output)
 
@@ -1130,7 +1116,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 )
 
                 for block in output["jd_excess_regions"]:
-                    if block != 0:
+                    if block:
                         ax.axvline(
                             x=(block[0] - 40) - 2400000.5,
                             label="T2 guess",
@@ -1328,14 +1314,8 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
         output_per_filter["start_excess"] = None
         output_per_filter["size_excess"] = 0
 
-        # print("----")
-        # print(output_per_filter)
-        # print(output_per_filter.keys())
-        # print(self.filters_lc)
-        # print("----")
-
         for keys in [key for key in output_per_filter.keys() if key in self.filters]:
-            if output_per_filter[keys]["nu_of_excess_regions"][0] != 0:
+            if output_per_filter[keys].get("nu_of_excess_regions") not in [0, None]:
                 idxmax = np.argmax(output_per_filter[keys]["max_sigma_excess_region"])
                 output_per_filter["start_excess"] = output_per_filter[keys][
                     "jd_excess_regions"
@@ -1344,9 +1324,6 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     output_per_filter[keys]["jd_excess_regions"][idxmax][-1]
                     - output_per_filter[keys]["jd_excess_regions"][idxmax][0]
                 )
-
-        # print(output_per_filter)
-        # quit()
 
         t2_output: dict[str, UBson] = output_per_filter
 
