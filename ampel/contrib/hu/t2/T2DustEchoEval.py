@@ -7,15 +7,8 @@
 # Last Modified Date: 15.12.2022
 # Last Modified By  : Simeon
 
+import os
 from typing import Dict, Sequence, Tuple, List, Literal
-from ampel.view.LightCurve import LightCurve
-from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
-from ampel.model.StateT2Dependency import StateT2Dependency
-from ampel.view.T2DocView import T2DocView
-from ampel.struct.UnitResult import UnitResult
-from ampel.ztf.util.ZTFIdMapper import to_ztf_id
-from ampel.types import UBson
-from ampel.enum.DocumentCode import DocumentCode
 
 from scipy.signal import argrelextrema
 from scipy.signal import find_peaks
@@ -26,7 +19,15 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import uncertainties.umath as umath
 import uncertainties.unumpy as unumpy
-import os
+
+from ampel.view.LightCurve import LightCurve
+from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
+from ampel.model.StateT2Dependency import StateT2Dependency
+from ampel.view.T2DocView import T2DocView
+from ampel.struct.UnitResult import UnitResult
+from ampel.ztf.util.ZTFIdMapper import to_ztf_id
+from ampel.types import UBson
+from ampel.enum.DocumentCode import DocumentCode
 
 
 class T2DustEchoEval(AbsTiedLightCurveT2Unit):
@@ -44,16 +45,16 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
 
     t2_dependency: Sequence[StateT2Dependency[Literal["T2BayesianBlocks"]]]
 
-    def isMonotonic(self, A):
-        return all(A[i] <= A[i + 1] for i in range(len(A) - 1)) or all(
-            A[i] >= A[i + 1] for i in range(len(A) - 1)
-        )
+    # def isMonotonic(self, A):
+    #     return all(A[i] <= A[i + 1] for i in range(len(A) - 1)) or all(
+    #         A[i] >= A[i + 1] for i in range(len(A) - 1)
+    #     )
 
-    def isDecreasing(self, A):
-        return all(A[i] >= A[i + 1] for i in range(len(A) - 1))
+    # def isDecreasing(self, A):
+    #     return all(A[i] >= A[i + 1] for i in range(len(A) - 1))
 
-    def isIncreasing(self, A):
-        return all(A[i] <= A[i + 1] for i in range(len(A) - 1))
+    # def isIncreasing(self, A):
+    #     return all(A[i] <= A[i + 1] for i in range(len(A) - 1))
 
     PlotColor: Sequence[str] = ["red", "blue"]
 
@@ -82,9 +83,9 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
             return UnitResult(code=DocumentCode.T2_MISSING_INFO)
 
         excess_region = {
-            "baseline_jd": [],
-            "start_baseline_jd": [],
-            "baseline_mag": [],
+            "baseline_jd": [],  # the jd of the last datapoint of the baseline before peak excess region
+            "start_baseline_jd": [],  # the begining of the baseline before the peak excess region
+            "baseline_mag": [],  # the mag of the last datapoint of the baseline before peak excess region
             "excess_jd": [],
             "excess_mag": [],
             "max_mag": [],
@@ -96,29 +97,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
             "e_fade": [],
         }
 
-        # excess_region = {
-        #     "excess_jd": ([]),
-        #     "excess_mag": ([]),
-        #     "baseline_jd": (
-        #         []
-        #     ),  # the jd of the last datapoint of the baseline before peak excess region
-        #     "baseline_mag": (
-        #         []
-        #     ),  # the mag of the last datapoint of the baseline before peak excess region
-        #     "start_baseline_jd": (
-        #         []
-        #     ),  # the begining of baseline before the peak exces region
-        #     "max_mag": ([]),
-        #     "max_mag_jd": ([]),
-        #     "significance": ([]),
-        #     "strength_sjoert": ([]),
-        #     "strength": ([]),
-        #     "e_rise": ([]),
-        #     "e_fade": ([]),
-        # }
-
         t2_output = {"baseline_jd": []}
-        # t2_output = {"description": ([]), "values": ([])}
 
         if self.flux:
             intensity_low_limit = 0.0
@@ -207,7 +186,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                                     )
                                     ######################################################
                                     # Check if we have a stage transition case (time scale > 3years and nu of baye blocks <=1
-                                    #                                        if (t2_res[key]['jd_excess_regions'][idx][-1]-t2_res[key]['jd_excess_regions'][idx][0] >= 1095. and t2_res[key]['nu_of_excess_blocks'][idx] <= 1) or t2_res[key]['max_baye_block_timescale'][0] >= 1095.:
+
                                     if (
                                         t2_res[key]["jd_excess_regions"][idx][-1]
                                         - t2_res[key]["jd_excess_regions"][idx][0]
@@ -290,9 +269,6 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                                                 baseline_mag
                                             )
                                         #########################################################################
-                                        #        if any(fluctuation < 3 for fluctuation in t2_res[key]['significance_of_fluctuation'][0]):
-                                        #            t2_output['description'].append('Fluctuation before peak')
-                                        #        else:
                                         # Check if there is magnitude fluctuations after the excess region
                                         difference = []
                                         for baseline in t2_res[key][
@@ -712,7 +688,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                 "Max sigma from baseline",
                 fontsize=21,
             )
-            #            ax[1].hlines(position[0][-1]-0.22, position[0][0], position[0][0]+0.4, color='red')
+
             ax[1].text(
                 position[0][0], position[0][-1] - 0.26, "Max magnitude", fontsize=21
             )

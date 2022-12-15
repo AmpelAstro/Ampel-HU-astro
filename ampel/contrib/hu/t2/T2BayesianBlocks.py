@@ -1359,5 +1359,4 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 f"coincident regions between g and r: {t2_output['coincide_peak_block']}"
             )
 
-        print(t2_output)
         return t2_output
