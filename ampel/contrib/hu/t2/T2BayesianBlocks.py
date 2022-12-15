@@ -848,7 +848,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                         )
 
                         output["mag_edge_baseline"].append(
-                            [baye_block["mag_edge"][idx[-1] - 1]]
+                            baye_block["mag_edge"][idx[-1] - 1]
                         )
 
                 elif baye_block["level"][idx[0]] == "outlier":
@@ -862,17 +862,19 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                         )
 
                         output["mag_edge_baseline"].append(
-                            [baye_block["mag_edge"][idx[-1]]]
+                            baye_block["mag_edge"][idx[-1]]
                         )
 
                 else:
                     output["nu_of_baseline_blocks"] = len(idx)
-                    output["jd_baseline_regions"] = [
-                        baye_block["jd_measurement_start"][idx[0]],
-                        baye_block["jd_measurement_end"][idx[-1]],
-                    ]
+                    output["jd_baseline_regions"].append(
+                        [
+                            baye_block["jd_measurement_start"][idx[0]],
+                            baye_block["jd_measurement_end"][idx[-1]],
+                        ]
+                    )
 
-                    output["mag_edge_baseline"] = [baye_block["mag_edge"][idx[-1]]]
+                    output["mag_edge_baseline"].append(baye_block["mag_edge"][idx[-1]])
 
             if not excess_region.empty:
                 output["nu_of_excess_regions"] = len(excess_regions_idx)
@@ -1357,4 +1359,5 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 f"coincident regions between g and r: {t2_output['coincide_peak_block']}"
             )
 
+        print(t2_output)
         return t2_output

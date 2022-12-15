@@ -81,7 +81,20 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
             self.logger.error("Missing tied t2 views")
             return UnitResult(code=DocumentCode.T2_MISSING_INFO)
 
-        excess_region = {}
+        excess_region = {
+            "baseline_jd": [],
+            "start_baseline_jd": [],
+            "baseline_mag": [],
+            "excess_jd": [],
+            "excess_mag": [],
+            "max_mag": [],
+            "max_mag_jd": [],
+            "significance": [],
+            "strength_sjoert": [],
+            "strength": [],
+            "e_rise": [],
+            "e_fade": [],
+        }
 
         # excess_region = {
         #     "excess_jd": ([]),
@@ -139,11 +152,14 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                 else:
 
                     if t2_res["start_excess"] != None or t2_res["size_excess"] > 1.0:
-                        print(t2_res[key])
-                        if not t2_output.get("description") and all(
-                            flatten(min(t2_res[key]["max_mag_excess_region"]))
+
+                        if t2_res["coincide_peak_block"] == -1:
+                            t2_output["description"] = "No coincide excess regions"
+
+                        elif not t2_output.get("description") and all(
+                            min(t2_res[key]["max_mag_excess_region"])
                             < intensity_low_limit
-                            or flatten(min(t2_res[key]["max_mag_excess_region"]))
+                            or min(t2_res[key]["max_mag_excess_region"])
                             > intensity_high_limit
                             for key in self.filters_lc
                         ):
@@ -156,22 +172,19 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                         ):
                             t2_output["description"] = "Very low sigma"
 
-                        elif t2_res["coincide_peak_block"] == -1:
-                            t2_output["description"] = "No coincide excess regions"
-
                         elif any(
                             t2_res[key]["strength_sjoert"] < t2_res[key]["significance"]
                             for key in self.filters_lc
                         ):
                             t2_output["description"] = "Low significance"
 
-                        if not t2_output["description"]:
+                        if not t2_output.get("description"):
                             #  Check the excess region
                             #  Recalculate the excess region
                             maybe_interesting = False
 
                             for key in self.filters_lc:
-                                if t2_res[key]["nu_of_excess_regions"][0] not in [
+                                if t2_res[key]["nu_of_excess_regions"] not in [
                                     0,
                                     None,
                                 ]:
@@ -185,13 +198,13 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                                         )
 
                                     peak = t2_res[key]["jd_excess_regions"][idx]
-                                    excess_region["max_mag"] = t2_res[key][
-                                        "max_mag_excess_region"
-                                    ][idx]
+                                    excess_region["max_mag"].append(
+                                        t2_res[key]["max_mag_excess_region"][idx]
+                                    )
 
-                                    excess_region["max_mag_jd"] = t2_res[key][
-                                        "max_jd_excess_region"
-                                    ][idx]
+                                    excess_region["max_mag_jd"].append(
+                                        t2_res[key]["max_jd_excess_region"][idx]
+                                    )
                                     ######################################################
                                     # Check if we have a stage transition case (time scale > 3years and nu of baye blocks <=1
                                     #                                        if (t2_res[key]['jd_excess_regions'][idx][-1]-t2_res[key]['jd_excess_regions'][idx][0] >= 1095. and t2_res[key]['nu_of_excess_blocks'][idx] <= 1) or t2_res[key]['max_baye_block_timescale'][0] >= 1095.:
@@ -199,7 +212,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                                         t2_res[key]["jd_excess_regions"][idx][-1]
                                         - t2_res[key]["jd_excess_regions"][idx][0]
                                         >= 1095.0
-                                        and t2_res[key]["nu_of_excess_blocks"][idx] <= 1
+                                        and t2_res[key]["nu_of_excess_blocks"] <= 1
                                     ):
                                         t2_output["description"] = "Stage transition"
 
@@ -230,9 +243,9 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                                                 "description"
                                             ] = "Only declination"
 
-                                            excess_region["baseline_jd"].append(None)
-                                            excess_region["start_baseline_jd"] = None
-                                            excess_region["baseline_mag"] = None
+                                            excess_region["baseline_jd"].append(0)
+                                            excess_region["start_baseline_jd"].append(0)
+                                            excess_region["baseline_mag"].append(0)
                                         else:
                                             if (
                                                 min(
@@ -250,7 +263,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                                                 baseline_jd = (
                                                     t2_res[key]["jd_excess_regions"][
                                                         idx
-                                                    ]
+                                                    ][0]
                                                     - 182.0
                                                 )
                                                 maybe_interesting = True
@@ -258,9 +271,10 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                                                 baseline_jd = t2_res[key][
                                                     "jd_baseline_regions"
                                                 ][position][-1]
+
                                             baseline_mag = t2_res[key][
                                                 "mag_edge_baseline"
-                                            ][position][0]
+                                            ][position]
                                             t2_output[
                                                 "description"
                                             ] = "Baseline before excess region"
@@ -272,7 +286,9 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                                                 key
                                             ]["jd_baseline_regions"][position]
 
-                                            excess_region["baseline_mag"] = baseline_mag
+                                            excess_region["baseline_mag"].append(
+                                                baseline_mag
+                                            )
                                         #########################################################################
                                         #        if any(fluctuation < 3 for fluctuation in t2_res[key]['significance_of_fluctuation'][0]):
                                         #            t2_output['description'].append('Fluctuation before peak')
@@ -295,41 +311,39 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                                         )
                                         if (
                                             diff is not None
-                                            and t2_res[key]["description"][idx][0] == 0
+                                            and t2_res[key]["description"][idx] == 0
                                         ):
                                             # Outlier in the middle of the LC, Outlier in the last epoch will not be marked as Outlier
-                                            t2_output["description"].append("Outlier")
+                                            t2_output["description"] = "Outlier"
                                         elif (
                                             diff is None
-                                            and t2_res[key]["description"][idx][0] == 0
+                                            and t2_res[key]["description"][idx] == 0
                                         ):
                                             maybe_interesting = True
-                                            t2_output["description"].append(
-                                                "Excess region with one data point in the end of LC"
-                                            )
-                                        elif t2_res[key]["description"][idx][0] != 0:
-                                            t2_output["description"].append(
-                                                "Excess region exists"
-                                            )
+                                            t2_output[
+                                                "description"
+                                            ] = "Excess region with one data point in the end of LC"
+
+                                        elif t2_res[key]["description"][idx] != 0:
+                                            t2_output[
+                                                "description"
+                                            ] = "Excess region exists"
 
                                         excess_jd = t2_res[key]["jd_excess_regions"][
                                             idx
                                         ][-1]
-                                        excess_mag = t2_res[key]["mag_edge_excess"][
-                                            idx
-                                        ][-1]
+                                        excess_mag = t2_res[key]["mag_edge_excess"][idx]
                                         excess_region["excess_jd"].append(excess_jd)
                                         excess_region["excess_mag"].append(excess_mag)
                                 #################################################################################
                                 else:
-                                    t2_output["description"].append("Only baseline")
+                                    t2_output["description"] = "Only baseline"
                                     excess_region["max_mag"].append(
                                         t2_res[key]["baseline"]
                                     )
                     else:
-                        t2_output["description"].append(
-                            "Only baseline"
-                        )  # no excess region
+                        t2_output["description"] = "Only baseline"  # no excess region
+
                         for key in self.filters_lc:
                             excess_region["max_mag"].append(t2_res[key]["baseline"])
 
@@ -344,7 +358,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                 )
             )
         ):
-            t2_output["values"].append(excess_region)
+            t2_output["values"] = excess_region
 
             for fid, passband in enumerate(self.filters_lc, 1):
                 if self.flux:
@@ -401,7 +415,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                         & (df["jd"] <= excess_region["excess_jd"][fid - 1])
                     ]
                     excess_after_max = excess[
-                        excess["jd"] >= excess_region["max_mag_jd"][fid - 1][0]
+                        excess["jd"] >= excess_region["max_mag_jd"][fid - 1]
                     ]
                     baseline_region = df[
                         (df["jd"] >= excess_region["start_baseline_jd"][fid - 1])
@@ -415,18 +429,18 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                         )
                     ).nominal_value
 
-                    baseline_rms = t2_res[passband]["baseline_rms"][0]
-                    baseline_sigma = t2_res[passband]["baseline_sigma"][0]
+                    baseline_rms = t2_res[passband]["baseline_rms"]
+                    baseline_sigma = t2_res[passband]["baseline_sigma"]
                     excess_region["significance"].append(
-                        t2_res[passband]["significance"][0]
+                        t2_res[passband]["significance"]
                     )
                     excess_region["strength_sjoert"].append(
-                        t2_res[passband]["strength_sjoert"][0]
+                        t2_res[passband]["strength_sjoert"]
                     )
                     excess_region["strength"].append(
                         abs(
-                            t2_res[passband]["baseline"][0]
-                            - excess_region["max_mag"][fid - 1][0]
+                            t2_res[passband]["baseline"]
+                            - excess_region["max_mag"][fid - 1]
                         )
                         / baseline_sigma
                     )
@@ -434,10 +448,10 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                     if self.flux:
                         excess_region["e_rise"].append(
                             (
-                                excess_region["max_mag_jd"][fid - 1][0]
+                                excess_region["max_mag_jd"][fid - 1]
                                 - excess_region["baseline_jd"][fid - 1]
                             )
-                            / np.log(excess_region["max_mag"][fid - 1][0] / baseline)
+                            / np.log(excess_region["max_mag"][fid - 1] / baseline)
                         )
                         if excess["mag"][excess["jd"].idxmax()] == max(excess["mag"]):
                             excess_region["e_fade"].append(0)
@@ -474,18 +488,18 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                                 )
                             )
                 else:
-                    baseline_rms = t2_res[passband]["baseline_rms"][0]
-                    baseline_sigma = t2_res[passband]["baseline_sigma"][0]
+                    baseline_rms = t2_res[passband]["baseline_rms"]
+                    baseline_sigma = t2_res[passband]["baseline_sigma"]
                     excess_region["significance"].append(
-                        t2_res[passband]["significance"][0]
+                        t2_res[passband]["significance"]
                     )
                     excess_region["strength_sjoert"].append(
-                        t2_res[passband]["strength_sjoert"][0]
+                        t2_res[passband]["strength_sjoert"]
                     )
                     excess_region["strength"].append(
                         abs(
-                            t2_res[passband]["baseline"][0]
-                            - excess_region["max_mag"][fid - 1][0]
+                            t2_res[passband]["baseline"]
+                            - excess_region["max_mag"][fid - 1]
                         )
                         / baseline_sigma
                     )
@@ -647,13 +661,13 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                     color=self.PlotColor[fid - 1],
                 )
                 ax[0].axhline(
-                    y=t2_res[key]["baseline"][0] - t2_res[key]["baseline_sigma"][0],
+                    y=t2_res[key]["baseline"] - t2_res[key]["baseline_sigma"],
                     label="Baseline sigma " + str(key),
                     ls="--",
                     color=self.PlotColor[fid - 1],
                 )
                 ax[0].axhline(
-                    y=t2_res[key]["baseline"][0] + t2_res[key]["baseline_sigma"][0],
+                    y=t2_res[key]["baseline"] + t2_res[key]["baseline_sigma"],
                     label="Baseline sigma " + str(key),
                     ls="--",
                     color=self.PlotColor[fid - 1],
@@ -739,19 +753,19 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                 ax[1].text(
                     position[fid - 1][0] + 0.4,
                     position[0][-1] - 0.18,
-                    format(max(flatten(t2_res[key]["sigma_from_baseline"][0])), ".2f"),
+                    format(max(flatten(t2_res[key]["sigma_from_baseline"])), ".2f"),
                     fontsize=21,
                 )
                 ax[1].text(
                     position[fid - 1][0] + 0.4,
                     position[0][-1] - 0.26,
-                    format(t2_res[key]["max_mag_excess_region"][idx][0], ".2f"),
+                    format(t2_res[key]["max_mag_excess_region"][idx], ".2f"),
                     fontsize=21,
                 )
                 ax[1].text(
                     position[fid - 1][0] + 0.4,
                     position[0][-1] - 0.34,
-                    format(t2_res[key]["baseline"][0], ".2f"),
+                    format(t2_res[key]["baseline"], ".2f"),
                     fontsize=21,
                 )
                 ax[1].text(
@@ -800,4 +814,5 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
             plt.close()
 
         t2_output: dict[str, UBson] = t2_output
+
         return t2_output
