@@ -1345,6 +1345,9 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     - output_per_filter[keys]["jd_excess_regions"][idxmax][0]
                 )
 
+        # print(output_per_filter)
+        # quit()
+
         t2_output: dict[str, UBson] = output_per_filter
 
         if self.debug and self.data_type in ["ztf_alert", "ztf_fp"]:
