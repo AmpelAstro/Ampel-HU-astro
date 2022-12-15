@@ -203,17 +203,18 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                         baye_block.loc[value[0], "level"] = "outlier"
         return baye_block
 
-    def description(self, excess_regions: list, measurements_nu: dict):
+    def description(self, excess_regions: list, measurements_nu: dict) -> list:
         # 0: The excess region has one baye block with one measurement, 1: The excess region has one baye block with multiple measurements, 2: The excess region has multiple baye blocks
         description = []
         for nu, value in enumerate(excess_regions):
             if len(value) == 1:
                 if measurements_nu[value[0]] == 1.0:
-                    description.append([0])
+                    description.append(0)
                 else:
-                    description.append([1])
+                    description.append(1)
             else:
-                description.append([2])
+                description.append(2)
+
         return description
 
     def coincide_peak_block(self, output_per_filter: dict) -> int:
@@ -371,7 +372,17 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     "mag_edge",
                 ]
             )
-            output = {}
+            output = {
+                "mag_edge_excess": [],
+                "max_mag_excess_region": [],
+                "max_jd_excess_region": [],
+                "max_sigma_excess_region": [],
+                "significance_after_peak": [],
+                "strength_after_peak": [],
+                "jd_baseline_regions": [],
+                "mag_edge_baseline": [],
+                "significance_of_variability_excess": [[], []],
+            }
 
             # output = {
             #     "nu_of_excess_regions": None,
@@ -630,7 +641,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 output["mag_edge_baseline"] = None
                 output["sigma_from_baseline"] = None
                 output["sigma_from_baseline_excess"] = None
-                output["significance_of_variability_excess"] = [None, None]
+                output["significance_of_variability_excess"] = [[], []]
                 output["significance_of_fluctuation"] = None
                 output["max_mag"] = None
                 output["significance"] = None
@@ -641,16 +652,16 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
             baye_block = baye_block.astype(
                 {
-                    "jd_start": "float64",
-                    "jd_end": "float64",
-                    "jd_measurement_start": "float64",
-                    "jd_measurement_end": "float64",
-                    "mag": "float64",
-                    "mag.err": "float64",
-                    "measurements_nu": "float64",
-                    "sigma_from_old_baseline": "float64",
-                    "sigma_from_baseline": "float64",
-                    "mag_edge": "float64",
+                    "jd_start": "float",
+                    "jd_end": "float",
+                    "jd_measurement_start": "float",
+                    "jd_measurement_end": "float",
+                    "mag": "float",
+                    "mag.err": "float",
+                    "measurements_nu": "float",
+                    "sigma_from_old_baseline": "float",
+                    "sigma_from_baseline": "float",
+                    "mag_edge": "float",
                 }
             )
 
@@ -829,24 +840,30 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 if baye_block["level"][idx[-1]] == "outlier":
                     if len(idx) != 1:
                         output["nu_of_baseline_blocks"] = len(idx) - 1
-                        output["jd_baseline_regions"] = [
-                            baye_block["jd_measurement_start"][idx[0]],
-                            baye_block["jd_measurement_end"][idx[-1] - 1],
-                        ]
+                        output["jd_baseline_regions"].append(
+                            [
+                                baye_block["jd_measurement_start"][idx[0]],
+                                baye_block["jd_measurement_end"][idx[-1] - 1],
+                            ]
+                        )
 
-                        output["mag_edge_baseline"] = [
-                            baye_block["mag_edge"][idx[-1] - 1]
-                        ]
+                        output["mag_edge_baseline"].append(
+                            [baye_block["mag_edge"][idx[-1] - 1]]
+                        )
 
                 elif baye_block["level"][idx[0]] == "outlier":
                     if len(idx) != 1:
                         output["nu_of_baseline_blocks"] = len(idx) - 1
-                        output["jd_baseline_regions"] = [
-                            baye_block["jd_measurement_start"][idx[0] + 1],
-                            baye_block["jd_measurement_end"][idx[-1]],
-                        ]
+                        output["jd_baseline_regions"].append(
+                            [
+                                baye_block["jd_measurement_start"][idx[0] + 1],
+                                baye_block["jd_measurement_end"][idx[-1]],
+                            ]
+                        )
 
-                        output["mag_edge_baseline"] = [baye_block["mag_edge"][idx[-1]]]
+                        output["mag_edge_baseline"].append(
+                            [baye_block["mag_edge"][idx[-1]]]
+                        )
 
                 else:
                     output["nu_of_baseline_blocks"] = len(idx)
@@ -871,10 +888,10 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                         ]
                     )
 
-                    output["mag_edge_excess"] = [baye_block["mag_edge"][idx[-1]]]
-                    output["max_sigma_excess_region"] = [
+                    output["mag_edge_excess"].append(baye_block["mag_edge"][idx[-1]])
+                    output["max_sigma_excess_region"].append(
                         max(baye_block["sigma_from_baseline"][idx[0] : idx[-1] + 1])
-                    ]
+                    )
 
                     output["sigma_from_baseline_excess"] = baye_block[
                         "sigma_from_baseline"
@@ -882,7 +899,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
                     each_excess_max_idx = baye_block["mag"].loc[idx].idxmax()
                     if global_peak_idx == each_excess_max_idx:
-                        #      else: #Inside the excess region with the highest intensity
+                        # Inside the excess region with the highest intensity
                         # Calculate the local peaks inside the excess region of the highest intensity
                         local_peaks, _ = np.array(
                             find_peaks(
@@ -992,33 +1009,36 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                                 squared=True,
                             )
 
-                            output["significance_after_peak"] = (
+                            output["significance_after_peak"].append(
                                 after_peak_excess_rms / after_peak_excess_sigma
                             )
 
-                            output["strength_after_peak"] = (
-                                baye_block["mag"].loc[global_peak_idx]
-                                - baye_block["mag"].loc[
-                                    [i for i in idx if (i > global_peak_idx)][0]
-                                ]
-                            ) / after_peak_excess_rms
-
-                        for baye_excess_idx in idx:
-                            output["significance_of_variability_excess"] = [None, None]
-                            if baye_excess_idx < global_peak_idx:
-                                output["significance_of_variability_excess"][0] = (
+                            output["strength_after_peak"].append(
+                                (
                                     baye_block["mag"].loc[global_peak_idx]
-                                    - baye_block["mag"].loc[baye_excess_idx]
-                                ) / math.sqrt(
-                                    sum(np.array(baye_block["mag.err"].values) ** 2)
+                                    - baye_block["mag"].loc[
+                                        [i for i in idx if (i > global_peak_idx)][0]
+                                    ]
+                                )
+                                / after_peak_excess_rms
+                            )
+
+                        for baye_excess_idx in [i for i in idx if i != global_peak_idx]:
+                            sig = (
+                                baye_block["mag"].loc[global_peak_idx]
+                                - baye_block["mag"].loc[baye_excess_idx]
+                            ) / math.sqrt(
+                                sum(np.array(baye_block["mag.err"].values) ** 2)
+                            )
+
+                            if baye_excess_idx < global_peak_idx:
+                                output["significance_of_variability_excess"][0].append(
+                                    sig
                                 )
 
                             elif baye_excess_idx > global_peak_idx:
-                                output["significance_of_variability_excess"][1] = (
-                                    baye_block["mag"].loc[global_peak_idx]
-                                    - baye_block["mag"].loc[baye_excess_idx]
-                                ) / math.sqrt(
-                                    sum(np.array(baye_block["mag.err"].values) ** 2)
+                                output["significance_of_variability_excess"][1].append(
+                                    sig
                                 )
 
                     if self.flux == True:
@@ -1035,8 +1055,8 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                                 baye_block["jd_measurement_end"][idx[-1]],
                             )
                         ].idxmin()
-                    output["max_mag_excess_region"] = [df["mag"][max_idx]]
-                    output["max_jd_excess_region"] = [df["jd"][max_idx]]
+                    output["max_mag_excess_region"].append(df["mag"][max_idx])
+                    output["max_jd_excess_region"].append(df["jd"][max_idx])
 
                 if self.flux == True:
                     output["max_baye_block_timescale"] = float(
