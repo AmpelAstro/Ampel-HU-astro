@@ -7,30 +7,27 @@
 # Last Modified Date: 16.11.2022
 # Last Modified By  : Simeon
 
-import os
+import os, math, itertools
 from typing import Dict, List, Optional, Sequence, Any
+
 import numpy as np
 import matplotlib.pyplot as plt
 import more_itertools as mit
-
-from ampel.types import UBson
-from ampel.struct.UnitResult import UnitResult
-from ampel.view.LightCurve import LightCurve
 import matplotlib.pyplot as plt
 import pandas as pd
 from astropy.stats import bayesian_blocks
+import uncertainties.unumpy as unumpy
+from nltk import flatten
+from scipy.signal import find_peaks
+from sklearn.metrics import mean_squared_error
 
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
-
 from ampel.model.PlotProperties import PlotProperties
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 from ampel.plot.create import create_plot_record
-import uncertainties.unumpy as unumpy
-from nltk import flatten
-import itertools
-import math
-from scipy.signal import find_peaks
-from sklearn.metrics import mean_squared_error
+from ampel.types import UBson
+from ampel.struct.UnitResult import UnitResult
+from ampel.view.LightCurve import LightCurve
 
 
 class T2BayesianBlocks(AbsLightCurveT2Unit):
