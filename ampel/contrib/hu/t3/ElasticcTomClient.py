@@ -45,13 +45,14 @@ class ElasticcTomClient:
     (is the session best started in a post_init()?)
 
     """
-    def __init__(self, desc_username: str, desc_password: str, logger):
+    def __init__(self, desc_username: str, desc_password: str, logger, tom_url: str = "https://desc-tom.lbl.gov"):
         self.logger = logger
 
         # Debug url
 #        self.tom_url = "https://desc-tom-rknop-dev.lbl.gov"
         # Production
-        self.tom_url = "https://desc-tom.lbl.gov"
+        # self.tom_url = "https://desc-tom.lbl.gov"
+        self.tom_url = tom_url
 
         # Setup django connection. From Rob Knop:
         # There's a bit of a dance to log in since django

@@ -60,7 +60,7 @@ task:
 - title: ingest
   unit: AlertConsumer
   config:
-    iter_max: 10000
+    iter_max: 50000
     compiler_opts: LSSTCompilerOptions
     supplier:
       unit: LSSTAlertSupplier
@@ -69,138 +69,195 @@ task:
         loader:
           unit: KafkaAlertLoader
           config:
-            bootstrap: kafka-kafka-bootstrap:9092
-            group_name: ampel-live
-            topics: [uw-ztf-public.elasticc-test-end-june]
-            timeout: 10
-    shaper: {unit: LSSTDataPointShaper}
+            bootstrap: public.alerts.ztf.uw.edu
+            group_name: ampel-v0.8.3-elasticc
+            topics:
+              - "elasticc-2022fall"
+            timeout: 60
+    shaper:
+      unit: LSSTDataPointShaper
     include_alert_extra_with_keys:
       alert_ts: kafka.timestamp.create
     directives:
-    
     - channel: ElasticcLong
       filter:
+        unit: ReallySimpleLSSTFilter
         config:
           min_ndet: 6
           min_tspan: 0
           max_tspan: 10000
         on_stock_match: bypass
-        unit: ReallySimpleLSSTFilter
       ingest:
-          mux:
-            unit: LSSTMongoMuxer
-            insert:
-              point_t2:
+        mux:
+          unit: LSSTMongoMuxer
+          insert: &insert
+            point_t2:
               - unit: T2ElasticcRedshiftSampler
                 ingest:
                   filter: LSSTObjFilter
                   select: last
                   sort: diaObjectId
-              - unit: T2GetDiaObject
-                config:
-                  params:
-                  - diaObjectId
-                  - simVersion
-                ingest:
-                  filter: LSSTObjFilter
-                  select: last
-                  sort: diaObjectId
-            combine:
+          combine:
             - unit: LSSTT1Combiner
               state_t2:
-              - unit: T2TabulatorRiseDecline
-                config:
-                  tabulator:
-                    - unit: LSSTT2Tabulator
-                      config:
-                        zp: 31.4
-              - unit: T2XgbClassifier
-                config:
-                  model_folder: .
-                  t2_dependency:
-                  - unit: T2ElasticcRedshiftSampler
-                  - unit: T2TabulatorRiseDecline
-                    config:
-                      tabulator:
-                        - unit: LSSTT2Tabulator
-                          config:
-                            zp: 31.4
-              - unit: T2RunParsnip
-                config:
-                  max_ampelz_group: 7
-                  redshift_kind: T2ElasticcRedshiftSampler
-                  parsnip_model: elasticc-30pct-sn+dwarfs-mw.h5
-                  parsnip_classifier: elasticc-30pct-sn+dwarfs-mw-aug10.pkl
-                  abort_map:
-                    T2XgbClassifier:
-                    - model: xgboost_elasticc1v2_
-                      is_0: false
-                  t2_dependency:
-                    - unit: T2ElasticcRedshiftSampler
-                    - unit: T2XgbClassifier
-                      config:
-                        model_folder: .
-                        t2_dependency:
-                        - unit: T2ElasticcRedshiftSampler
-                        - unit: T2TabulatorRiseDecline
-                          config:
-                            tabulator:
-                              - unit: LSSTT2Tabulator
-                                config:
-                                  zp: 31.4
-                  tabulator:
-                    - unit: LSSTT2Tabulator
-                      config:
-                        zp: 31.4
-
+                - &T2TabulatorRiseDecline
+                  unit: T2TabulatorRiseDecline
+                  config: &tabulator
+                    tabulator:
+                      - unit: LSSTT2Tabulator
+                        config:
+                          zp: 31.4
+                - &xgb_v6_simmod_tree12
+                  unit: T2XgbClassifier
+                  config: &T2XgbClassifier
+                    model_folder: .
+                    model_prefix: xgb_v6_simmod_tree12_
+                    det_ranges: [[1,1000]]
+                    use_cols:
+                    - ndet
+                    - jd_det
+                    - jd_last
+                    - t_predetect
+                    - mag_det
+                    - band_det_id
+                    - mag_last
+                    - band_last_id
+                    - t_lc
+                    - bool_pure
+                    - jd_peak_lsstz
+                    - bool_rise
+                    - bool_fall
+                    - bool_peaked
+                    - bool_fastrise
+                    - bool_fastfall
+                    - bool_hasgaps
+                    - det_bands
+                    - last_bands
+                    - jd_peak_lsstr
+                    - rise_slope_lsstz
+                    - rise_slopesig_lsstz
+                    - fall_slope_lsstz
+                    - fall_slopesig_lsstz
+                    - jd_peak
+                    - t_rise
+                    - t_fall
+                    - peak_bands
+                    - jd_peak_lssty
+                    - lsstz-lssty_last
+                    - lsstz-lssty_peak
+                    - fall_slope_lssty
+                    - fall_slopesig_lssty
+                    - jd_peak_lssti
+                    - fall_slope_lssti
+                    - fall_slopesig_lssti
+                    - jd_peak_lsstu
+                    - fall_slope_lsstr
+                    - fall_slopesig_lsstr
+                    - jd_peak_lsstg
+                    - rise_slope_lsstg
+                    - rise_slopesig_lsstg
+                    - rise_slope_lsstu
+                    - rise_slopesig_lsstu
+                    - rise_slope_lssti
+                    - rise_slopesig_lssti
+                    - lsstu-lsstg_last
+                    - fall_slope_lsstu
+                    - fall_slopesig_lsstu
+                    - lssti-lsstz_last
+                    - rise_slope_lssty
+                    - rise_slopesig_lssty
+                    - fall_slope_lsstg
+                    - fall_slopesig_lsstg
+                    - lsstg-lsstr_last
+                    - lsstr-lssti_last
+                    - lsstu-lsstg_peak
+                    - rise_slope_lsstr
+                    - rise_slopesig_lsstr
+                    - lsstg-lsstr_peak
+                    - lsstz-lssty_det
+                    - lssti-lsstz_peak
+                    - lsstr-lssti_peak
+                    - lssti-lsstz_det
+                    - lsstg-lsstr_det
+                    - lsstr-lssti_det
+                    - lsstu-lsstg_det
+                    - z
+                    - z_err
+                    - host_sep
+                    t2_dependency:
+                      - unit: T2ElasticcRedshiftSampler
+                      - unit: T2TabulatorRiseDecline
+                        config: *tabulator
+                - &xgb_v6_simmod_tree2122
+                  unit: T2XgbClassifier
+                  config:
+                    <<: *T2XgbClassifier
+                    model_prefix: xgb_v6_simmod_tree2122_
+                - &xgb_v6_simmod_tree121113
+                  unit: T2XgbClassifier
+                  config:
+                    <<: *T2XgbClassifier
+                    model_prefix: xgb_v6_simmod_tree121113_
+                - &T2RunParsnip
+                  unit: T2RunParsnip
+                  config:
+                    max_ampelz_group: 7
+                    redshift_kind: T2ElasticcRedshiftSampler
+                    parsnip_model: model1-30pct-sn+2ulens+dwarfs-mw.h5
+                    parsnip_classifier: model1-30pct-sn+2ulens+dwarfs-mw-aug10.pkl
+                    abort_map:
+                      T2XgbClassifier:
+                        - model: xgboost_elasticc1v2_
+                          is_0: false
+                    t2_dependency:
+                      - unit: T2ElasticcRedshiftSampler
+                    <<: *tabulator
+                - unit: T2ElasticcReport
+                  config:
+                    use_priors: true
+                    multiple_classifiers: true
+                    t2_dependency:
+                    - *xgb_v6_simmod_tree12
+                    - *xgb_v6_simmod_tree2122
+                    - *xgb_v6_simmod_tree121113
+                    - *T2RunParsnip
     - channel: ElasticcShort
       filter:
+        unit: ReallySimpleLSSTFilter
         config:
           min_ndet: 0
           max_ndet: 5
           min_tspan: 0
           max_tspan: 10000
         on_stock_match: bypass
-        unit: ReallySimpleLSSTFilter
       ingest:
-          mux:
-            unit: LSSTMongoMuxer
-            insert:
-              point_t2:
-              - unit: T2ElasticcRedshiftSampler
-                ingest:
-                  filter: LSSTObjFilter
-                  select: last
-                  sort: diaObjectId
-              - unit: T2GetDiaObject
-                config:
-                  params:
-                  - diaObjectId
-                  - simVersion
-                ingest:
-                  filter: LSSTObjFilter
-                  select: last
-                  sort: diaObjectId
-            combine:
+        mux:
+          unit: LSSTMongoMuxer
+          # insert: *insert
+          insert:
+            point_t2:
+            - unit: T2ElasticcRedshiftSampler
+              ingest:
+                filter: LSSTObjFilter
+                select: last
+                sort: diaObjectId
+          combine:
             - unit: LSSTT1Combiner
               state_t2:
-              - unit: T2TabulatorRiseDecline
-                config:
-                  tabulator:
-                    - unit: LSSTT2Tabulator
-                      config:
-                        zp: 31.4
-              - unit: T2XgbClassifier
-                config:
-                  model_folder: .
-                  t2_dependency:
-                  - unit: T2ElasticcRedshiftSampler
-                  - unit: T2TabulatorRiseDecline
-                    config:
-                      tabulator:
-                        - unit: LSSTT2Tabulator
-                          config:
-                            zp: 31.4
+                - *T2TabulatorRiseDecline
+                - *xgb_v6_simmod_tree12
+                - *xgb_v6_simmod_tree2122
+                - *xgb_v6_simmod_tree121113
+                - unit: T2ElasticcReport
+                  config:
+                    use_priors: true
+                    multiple_classifiers: true
+                    t2_dependency:
+                    - *xgb_v6_simmod_tree12
+                    - *xgb_v6_simmod_tree2122
+                    - *xgb_v6_simmod_tree121113
+  override:
+    raise_exc: true
 
 - title: t2
   multiplier: 16

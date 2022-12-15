@@ -51,26 +51,46 @@ class T2XgbClassifier(AbsTiedStateT2Unit):
     _classifiers: list[xgb.XGBClassifier]
 
     # Columns (in order) used for training
-    # Which columsn to use for training
-    use_cols: list[str] = ['bool_rise', 'bool_fall', 'bool_peaked', 'bool_pure',
-       'bool_fastrise', 'bool_fastfall', 'bool_hasgaps', 'mag_det',
-       'mag_last', 'det_bands', 'peak_bands', 'last_bands', 't_predetect',
-       't_lc', 't_rise', 't_fall', 'rise_slope_lsstu',
-       'rise_slopesig_lsstu', 'fall_slope_lsstu', 'fall_slopesig_lsstu',
-       'rise_slope_lsstg', 'rise_slopesig_lsstg', 'fall_slope_lsstg',
-       'fall_slopesig_lsstg', 'rise_slope_lsstr', 'rise_slopesig_lsstr',
-       'fall_slope_lsstr', 'fall_slopesig_lsstr', 'rise_slope_lssti',
-       'rise_slopesig_lssti', 'fall_slope_lssti', 'fall_slopesig_lssti',
-       'rise_slope_lsstz', 'rise_slopesig_lsstz', 'fall_slope_lsstz',
-       'fall_slopesig_lsstz', 'rise_slope_lssty', 'rise_slopesig_lssty',
-       'fall_slope_lssty', 'fall_slopesig_lssty', 'lsstu-lsstg_det',
-       'lsstg-lsstr_det', 'lsstr-lssti_det', 'lssti-lsstz_det',
-       'lsstz-lssty_det', 'lsstu-lsstg_peak', 'lsstg-lsstr_peak',
-       'lsstr-lssti_peak', 'lssti-lsstz_peak', 'lsstz-lssty_peak',
-       'lsstu-lsstg_last', 'lsstg-lsstr_last', 'lsstr-lssti_last',
-       'lssti-lsstz_last', 'lsstz-lssty_last', 'host_sep', 'z', 'z_err',
-       'band_det_id', 'band_last_id']
-
+    # Which columsn to use for training. But these seem not to align with
+    # parquet file!!!!
+#    use_cols: list[str] = ['bool_rise', 'bool_fall', 'bool_peaked', 'bool_pure',
+#       'bool_fastrise', 'bool_fastfall', 'bool_hasgaps', 'mag_det',
+#       'mag_last', 'det_bands', 'peak_bands', 'last_bands', 't_predetect',
+#       't_lc', 't_rise', 't_fall', 'rise_slope_lsstu',
+#       'rise_slopesig_lsstu', 'fall_slope_lsstu', 'fall_slopesig_lsstu',
+#       'rise_slope_lsstg', 'rise_slopesig_lsstg', 'fall_slope_lsstg',
+#       'fall_slopesig_lsstg', 'rise_slope_lsstr', 'rise_slopesig_lsstr',
+#       'fall_slope_lsstr', 'fall_slopesig_lsstr', 'rise_slope_lssti',
+#       'rise_slopesig_lssti', 'fall_slope_lssti', 'fall_slopesig_lssti',
+#       'rise_slope_lsstz', 'rise_slopesig_lsstz', 'fall_slope_lsstz',
+#       'fall_slopesig_lsstz', 'rise_slope_lssty', 'rise_slopesig_lssty',
+#       'fall_slope_lssty', 'fall_slopesig_lssty', 'lsstu-lsstg_det',
+#       'lsstg-lsstr_det', 'lsstr-lssti_det', 'lssti-lsstz_det',
+#       'lsstz-lssty_det', 'lsstu-lsstg_peak', 'lsstg-lsstr_peak',
+#       'lsstr-lssti_peak', 'lssti-lsstz_peak', 'lsstz-lssty_peak',
+#       'lsstu-lsstg_last', 'lsstg-lsstr_last', 'lsstr-lssti_last',
+#       'lssti-lsstz_last', 'lsstz-lssty_last', 'host_sep', 'z', 'z_err',
+#       'band_det_id', 'band_last_id']
+    use_cols: list[str] = ['ndet', 'jd_det', 'jd_last', 't_predetect', 'mag_det',
+        'band_det_id', 'mag_last', 'band_last_id', 't_lc', 'bool_pure',
+        'jd_peak_lsstz', 'bool_rise', 'bool_fall', 'bool_peaked', 'bool_fastrise',
+        'bool_fastfall', 'bool_hasgaps', 'det_bands', 'last_bands',
+        'jd_peak_lsstr', 'rise_slope_lsstz', 'rise_slopesig_lsstz',
+        'fall_slope_lsstz', 'fall_slopesig_lsstz', 'jd_peak', 't_rise', 't_fall',
+        'peak_bands', 'jd_peak_lssty', 'lsstz-lssty_last', 'lsstz-lssty_peak',
+        'fall_slope_lssty', 'fall_slopesig_lssty', 'jd_peak_lssti',
+        'fall_slope_lssti', 'fall_slopesig_lssti', 'jd_peak_lsstu',
+        'fall_slope_lsstr', 'fall_slopesig_lsstr', 'jd_peak_lsstg',
+        'rise_slope_lsstg', 'rise_slopesig_lsstg', 'rise_slope_lsstu',
+        'rise_slopesig_lsstu', 'rise_slope_lssti', 'rise_slopesig_lssti',
+        'lsstu-lsstg_last', 'fall_slope_lsstu', 'fall_slopesig_lsstu',
+        'lssti-lsstz_last', 'rise_slope_lssty', 'rise_slopesig_lssty',
+        'fall_slope_lsstg', 'fall_slopesig_lsstg', 'lsstg-lsstr_last',
+        'lsstr-lssti_last', 'lsstu-lsstg_peak', 'rise_slope_lsstr',
+        'rise_slopesig_lsstr', 'lsstg-lsstr_peak', 'lsstz-lssty_det',
+        'lssti-lsstz_peak', 'lsstr-lssti_peak', 'lssti-lsstz_det',
+        'lsstg-lsstr_det', 'lsstr-lssti_det', 'lsstu-lsstg_det',
+        'z', 'z_err', 'host_sep']
 
     # Which units should this be changed to
     t2_dependency: Sequence[StateT2Dependency[Literal["T2TabulatorRiseDecline", "T2ElasticcRedshiftSampler"]]]

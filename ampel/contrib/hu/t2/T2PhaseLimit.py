@@ -8,6 +8,7 @@
 # Last Modified By  : mf@physik.hu-berlin.de
 
 from typing import Dict, List, Optional, Sequence, Any, Union, Iterable
+import os
 from astropy.coordinates import SkyCoord
 import numpy as np
 from ampel.types import UBson
@@ -15,6 +16,7 @@ from ampel.struct.UnitResult import UnitResult
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
 from ampel.view.T2DocView import T2DocView
+import gc
 import matplotlib.pyplot as plt
 
 
@@ -40,6 +42,7 @@ class T2PhaseLimit(AbsStateT2Unit, AbsTabulatedT2Unit):
 
 	# Rejection sigma.
 	rej_sigma : float = 5.  # A lower number will more aggressively reject data
+	min_sigma: float = 0.  # Lower limit for including photometry when calculating time-range
 
 	# Spurious light in references typically manifests as negative flux.
 	# Will require the fraction of obs with negative to be lower than this fraction, in each filter.
@@ -49,11 +52,12 @@ class T2PhaseLimit(AbsStateT2Unit, AbsTabulatedT2Unit):
 	max_flux : float
 
 	# Plot
-	plot : bool = False
+	plot_suffix: Optional[str]
+	plot_dir: Optional[str]
 
 	def _magtoflux(self, mag: float) -> float:
 		return 10 ** (-((mag) - 25) / 2.5)
-	
+
 	def __init__(self, *args, **kwargs):
 		if not "max_flux" in kwargs:
 			if not "max_mag" in kwargs:
@@ -94,8 +98,14 @@ class T2PhaseLimit(AbsStateT2Unit, AbsTabulatedT2Unit):
 		# 		{'attribute' : 'magpsf', 'operator' : '>', 'value' : 0} ]
 		# 	 )
 		flux_table = self.get_flux_table(datapoints)
-		fflux_table = flux_table[(flux_table["flux"]>self.max_flux) & (flux_table["flux"]<1e10)]
-		
+
+		#
+		fflux_table = flux_table[
+							(flux_table["flux"]<self.max_flux) &
+							(flux_table["flux"]<1e10) &
+							( np.abs(flux_table["flux"]/flux_table["fluxerr"]) > self.min_sigma)
+							]
+
 		# Enough data to even start evaluation?
 		if len(fflux_table) < self.min_det :
 			return {'t_start' : None, 't_end' : None,
@@ -167,7 +177,7 @@ class T2PhaseLimit(AbsStateT2Unit, AbsTabulatedT2Unit):
 			t2eval = 'fail:neg_flux'
 		elif any(band.endswith('r') for band in neg_frac_bands):
 			t2eval = 'fail:neg_flux'
-		elif t_masked_duration > 2*self.half_time:
+		elif t_masked_duration > 4*self.half_time:
 			t2eval = 'fail:duration'
 		elif n_remaining < self.min_det:
 			t2eval = 'fail:detections'
@@ -177,7 +187,13 @@ class T2PhaseLimit(AbsStateT2Unit, AbsTabulatedT2Unit):
 			t2eval = 'OK'
 
 		# Do plot?
-		if self.plot:
+		if self.plot_suffix and self.plot_dir:
+
+
+            # How to construct name?
+			tname = compound.get('stock')
+            # Need plotting tools to define id mapper
+            #tname = ZTFIdMapper.to_ext_id(light_curve.stock_id)
 
 			fig = plt.figure(figsize=(6,5) )
 
@@ -194,12 +210,18 @@ class T2PhaseLimit(AbsStateT2Unit, AbsTabulatedT2Unit):
 			if t_peak is not None:
 				plt.axvline( x=t_peak, label = 't(peak)' )
 			plt.axvline( x=t_median, label= 't(median)' )
-			stock_id = '-'.join(str(self.get_stock_id(datapoints)))
-			plt.title( f'{stock_id} {t2eval}')
 
+			plt.title( f'{tname} {t2eval}')
 			plt.legend(loc='best')
-			plt.savefig( f'./t2phase/{stock_id}.svg')
-			plt.close()
+
+			plt.tight_layout()
+			plt.savefig(os.path.join(self.plot_dir, 't2phaselimit_%s.%s'%(tname, self.plot_suffix)))
+
+			plt.close('fig')
+			plt.close('all')
+			del(fig)
+			gc.collect()
+
 
 
 		return {'t_start' : t_start, 't_end' : t_end,
