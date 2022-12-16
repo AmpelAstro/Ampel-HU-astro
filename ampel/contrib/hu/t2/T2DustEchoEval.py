@@ -87,7 +87,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
             "e_fade": [],
         }
 
-        t2_output = {"baseline_jd": []}
+        t2_output = {}
 
         if self.flux:
             intensity_low_limit = 0.0
