@@ -45,8 +45,6 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
 
     t2_dependency: Sequence[StateT2Dependency[Literal["T2BayesianBlocks"]]]
 
-    PlotColor: list[str] = ["red", "blue"]
-
     # ==================== #
     # AMPEL T2 MANDATORY   #
     # ==================== #
@@ -59,10 +57,20 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
 
         if self.data_type in ["ztf_alert", "ztf_fp"]:
             self.ztfid: Optional[str] = to_ztf_id(light_curve.stock_id)
-            self.PlotColor = ["green", "red", "orange"]
 
         else:
             self.ztfid = None
+
+        self.plot_color: dict[str, str] = {
+            "Wise_W1": "red",
+            "Wise_W2": "blue",
+            "ZTF_g": "green",
+            "ZTF_r": "red",
+            "ZTF_i": "orange",
+            "ztfg": "green",
+            "ztfr": "red",
+            "ztfi": "orange",
+        }
 
         if not light_curve.photopoints:
             self.logger.error("LightCurve has no photopoint")
@@ -590,7 +598,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                     yerr=datapoints["mag.err"],
                     label=passband,
                     fmt="s",
-                    color=self.PlotColor[fid - 1],
+                    color=self.plot_color[key],
                     ecolor="lightgray",
                     markeredgecolor="black",
                     elinewidth=3,
@@ -608,35 +616,35 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                 ax[0].axvline(
                     x=(t2_res[key]["jd_excess_regions"][idx][0] - 40) - 2400000.5,
                     label="T2 guess " + str(key),
-                    color=self.PlotColor[fid - 1],
+                    color=self.plot_color[key],
                 )
                 ax[0].axvline(
                     x=(t2_res[key]["jd_excess_regions"][idx][-1] + 40) - 2400000.5,
-                    color=self.PlotColor[fid - 1],
+                    color=self.plot_color[key],
                 )
                 ax[0].axvspan(
                     (t2_res[key]["jd_excess_regions"][idx][0] - 40) - 2400000.5,
                     (t2_res[key]["jd_excess_regions"][idx][-1] + 40) - 2400000.5,
                     alpha=0.05,
-                    color=self.PlotColor[fid - 1],
+                    color=self.plot_color[key],
                 )
                 ax[0].axhline(
                     y=t2_res[key]["baseline"],
                     label="Baseline " + str(key),
                     ls="-",
-                    color=self.PlotColor[fid - 1],
+                    color=self.plot_color[key],
                 )
                 ax[0].axhline(
                     y=t2_res[key]["baseline"] - t2_res[key]["baseline_sigma"],
                     label="Baseline sigma " + str(key),
                     ls="--",
-                    color=self.PlotColor[fid - 1],
+                    color=self.plot_color[key],
                 )
                 ax[0].axhline(
                     y=t2_res[key]["baseline"] + t2_res[key]["baseline_sigma"],
                     label="Baseline sigma " + str(key),
                     ls="--",
-                    color=self.PlotColor[fid - 1],
+                    color=self.plot_color[key],
                 )
 
             if self.flux:
@@ -707,7 +715,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                     pos[fid - 1][0] + 0.4,
                     pos[fid - 1][-1] - 0.2,
                     str(key) + "\n\n",
-                    color=self.PlotColor[fid - 1],
+                    color=self.plot_color[key],
                     fontsize=25,
                 )
                 ax[1].text(
