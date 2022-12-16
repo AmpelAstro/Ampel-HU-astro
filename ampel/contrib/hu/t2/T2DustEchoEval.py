@@ -8,7 +8,7 @@
 # Last Modified By  : Simeon
 
 import os
-from typing import Dict, Sequence, Tuple, List, Literal, Optional, Union
+from typing import Dict, Sequence, Tuple, List, Literal
 
 from scipy.signal import argrelextrema  # type: ignore
 from scipy.signal import find_peaks  # type: ignore
@@ -55,11 +55,11 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
 
         assert self.data_type in ["ztf_alert", "ztf_fp", "wise"]
 
-        if self.data_type in ["ztf_alert", "ztf_fp"]:
-            self.ztfid: Optional[str] = to_ztf_id(light_curve.stock_id)
+        self.ztfid: None | str = None
 
-        else:
-            self.ztfid = None
+        if self.data_type in ["ztf_alert", "ztf_fp"]:
+            if isinstance(light_curve.stock_id, int):
+                self.ztfid = to_ztf_id(light_curve.stock_id)
 
         self.plot_colors: dict[str, str] = {
             "Wise_W1": "red",
@@ -98,7 +98,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
             "e_fade": [],
         }
 
-        t2_output: dict[str, Union[dict, str]] = {}
+        t2_output: dict[str, dict | str] = {}
 
         if self.flux:
             intensity_low_limit = 0.0
