@@ -8,17 +8,13 @@
 # Last Modified By  : Simeon
 
 import os
-from typing import Dict, Sequence, Tuple, List, Literal
-
-from scipy.signal import argrelextrema  # type: ignore
-from scipy.signal import find_peaks  # type: ignore
 import numpy as np
-from nltk import flatten  # type: ignore
-import scipy  # type: ignore
 import pandas as pd  # type: ignore
 import matplotlib.pyplot as plt  # type: ignore
-import uncertainties.umath as umath  # type: ignore
 import uncertainties.unumpy as unumpy  # type: ignore
+
+from nltk import flatten  # type: ignore
+from typing import Sequence, Literal
 
 from ampel.view.LightCurve import LightCurve
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
@@ -131,7 +127,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                         excess_region["max_mag"] = t2_res[key]["baseline"]
                 else:
 
-                    if t2_res["start_excess"] != None or t2_res["size_excess"] > 1.0:
+                    if t2_res["start_excess"] is not None or t2_res["size_excess"] > 1.0:
 
                         if t2_res["coincide_peak_block"] == -1:
                             t2_output["description"] = "No coincide excess regions"
@@ -164,10 +160,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                             maybe_interesting = False
 
                             for key in self.filters_lc:
-                                if t2_res[key]["nu_of_excess_regions"] not in [
-                                    0,
-                                    None,
-                                ]:
+                                if t2_res[key]["nu_of_excess_regions"] not in (0, None):
                                     if self.flux:
                                         idx = np.argmax(
                                             t2_res[key]["max_mag_excess_region"]
@@ -219,10 +212,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
 
                                         # if diff is None or (diff is not None and len([value for value in difference if value > 0]) == 1):
                                         if diff is None:
-                                            t2_output[
-                                                "description"
-                                            ] = "Only declination"
-
+                                            t2_output["description"] = "Only declination"
                                             excess_region["baseline_jd"].append(0)
                                             excess_region["start_baseline_jd"].append(0)
                                             excess_region["baseline_mag"].append(0)
@@ -465,6 +455,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                                 )
                             )
                 else:
+                    # fix: baseline_rms never used
                     baseline_rms = t2_res[passband]["baseline_rms"]
                     baseline_sigma = t2_res[passband]["baseline_sigma"]
                     excess_region["significance"].append(
@@ -580,7 +571,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                         df.loc[
                             (df["jd"] >= block[0]) & (df["jd"] <= block[1]), "Outlier"
                         ] = True
-                    outlier_datapoints = df[df["Outlier"] == True]
+                    outlier_datapoints = df[df["Outlier"] is True]
                     ax[0].errorbar(
                         outlier_datapoints["jd"] - 2400000.5,
                         outlier_datapoints["mag"],
@@ -594,7 +585,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                         capsize=0,
                     )
 
-                datapoints = df[df["Outlier"] == False]
+                datapoints = df[df["Outlier"] is False]
                 ax[0].errorbar(
                     datapoints["jd"] - 2400000.5,
                     datapoints["mag"],
@@ -609,7 +600,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                 )
 
             for fid, key in enumerate(self.filters_lc, 1):
-                if has_data[fid] == False:
+                if has_data[fid] is False:
                     continue
                 if self.flux:
                     idx = np.argmax(t2_res[key]["max_mag_excess_region"])
@@ -703,7 +694,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
 
             for fid, key in enumerate(self.filters_lc, 1):
 
-                if has_data[fid] == False:
+                if has_data[fid] is False:
                     continue
 
                 if self.flux:
