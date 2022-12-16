@@ -8,17 +8,17 @@
 # Last Modified By  : Simeon
 
 import os
-from typing import Dict, Sequence, Tuple, List, Literal
+from typing import Dict, Sequence, Tuple, List, Literal, Optional, Union
 
-from scipy.signal import argrelextrema
-from scipy.signal import find_peaks
+from scipy.signal import argrelextrema  # type: ignore
+from scipy.signal import find_peaks  # type: ignore
 import numpy as np
-from nltk import flatten
-import scipy
-import pandas as pd
-import matplotlib.pyplot as plt
-import uncertainties.umath as umath
-import uncertainties.unumpy as unumpy
+from nltk import flatten  # type: ignore
+import scipy  # type: ignore
+import pandas as pd  # type: ignore
+import matplotlib.pyplot as plt  # type: ignore
+import uncertainties.umath as umath  # type: ignore
+import uncertainties.unumpy as unumpy  # type: ignore
 
 from ampel.view.LightCurve import LightCurve
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
@@ -41,11 +41,11 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
 
     data_type: str = "wise"
 
-    filters: Sequence[str]
+    filters: list[str]
 
     t2_dependency: Sequence[StateT2Dependency[Literal["T2BayesianBlocks"]]]
 
-    PlotColor: Sequence[str] = ["red", "blue"]
+    PlotColor: list[str] = ["red", "blue"]
 
     # ==================== #
     # AMPEL T2 MANDATORY   #
@@ -58,7 +58,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
         assert self.data_type in ["ztf_alert", "ztf_fp", "wise"]
 
         if self.data_type in ["ztf_alert", "ztf_fp"]:
-            self.ztfid = to_ztf_id(light_curve.stock_id)
+            self.ztfid: Optional[str] = to_ztf_id(light_curve.stock_id)
             self.PlotColor = ["green", "red", "orange"]
 
         else:
@@ -72,7 +72,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
             self.logger.error("Missing tied t2 views")
             return UnitResult(code=DocumentCode.T2_MISSING_INFO)
 
-        excess_region = {
+        excess_region: dict = {
             "baseline_jd": [],  # the jd of the last datapoint of the baseline before peak excess region
             "start_baseline_jd": [],  # the begining of the baseline before the peak excess region
             "baseline_mag": [],  # the mag of the last datapoint of the baseline before peak excess region
@@ -87,7 +87,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
             "e_fade": [],
         }
 
-        t2_output = {}
+        t2_output: dict[str, Union[dict, str]] = {}
 
         if self.flux:
             intensity_low_limit = 0.0
@@ -668,33 +668,27 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
             ax[1].axes.xaxis.set_visible(False)
             ax[1].axes.yaxis.set_visible(False)
 
-            position = ([0.1, 0.8], [0.25, 0.8], [0.4, 0.8])
+            pos = ([0.1, 0.8], [0.25, 0.8], [0.4, 0.8])
             ax[1].text(
                 0.1, 0.8, "Final class: " + str(t2_output["status"]), fontsize=25
             )
             ax[1].text(
-                position[0][0],
-                position[0][-1] - 0.18,
+                pos[0][0],
+                pos[0][-1] - 0.18,
                 "Max sigma from baseline",
                 fontsize=21,
             )
 
+            ax[1].text(pos[0][0], pos[0][-1] - 0.26, "Max magnitude", fontsize=21)
+            ax[1].text(pos[0][0], pos[0][-1] - 0.34, "Baseline", fontsize=21)
             ax[1].text(
-                position[0][0], position[0][-1] - 0.26, "Max magnitude", fontsize=21
-            )
-            ax[1].text(position[0][0], position[0][-1] - 0.34, "Baseline", fontsize=21)
-            ax[1].text(
-                position[0][0],
-                position[0][-1] - 0.42,
+                pos[0][0],
+                pos[0][-1] - 0.42,
                 "Time scale of excess region",
                 fontsize=21,
             )
-            ax[1].text(
-                position[0][0], position[0][-1] - 0.50, "e-folding rise", fontsize=21
-            )
-            ax[1].text(
-                position[0][0], position[0][-1] - 0.58, "e-folding fade", fontsize=21
-            )
+            ax[1].text(pos[0][0], pos[0][-1] - 0.50, "e-folding rise", fontsize=21)
+            ax[1].text(pos[0][0], pos[0][-1] - 0.58, "e-folding fade", fontsize=21)
 
             for fid, key in enumerate(self.filters_lc, 1):
 
@@ -710,59 +704,59 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                     - t2_res[key]["jd_excess_regions"][idx][0]
                 )
                 ax[1].text(
-                    position[fid - 1][0] + 0.4,
-                    position[fid - 1][-1] - 0.2,
+                    pos[fid - 1][0] + 0.4,
+                    pos[fid - 1][-1] - 0.2,
                     str(key) + "\n\n",
                     color=self.PlotColor[fid - 1],
                     fontsize=25,
                 )
                 ax[1].text(
-                    position[fid - 1][0] + 0.4,
-                    position[0][-1] - 0.18,
+                    pos[fid - 1][0] + 0.4,
+                    pos[0][-1] - 0.18,
                     format(max(flatten(t2_res[key]["sigma_from_baseline"])), ".2f"),
                     fontsize=21,
                 )
                 ax[1].text(
-                    position[fid - 1][0] + 0.4,
-                    position[0][-1] - 0.26,
+                    pos[fid - 1][0] + 0.4,
+                    pos[0][-1] - 0.26,
                     format(t2_res[key]["max_mag_excess_region"][idx], ".2f"),
                     fontsize=21,
                 )
                 ax[1].text(
-                    position[fid - 1][0] + 0.4,
-                    position[0][-1] - 0.34,
+                    pos[fid - 1][0] + 0.4,
+                    pos[0][-1] - 0.34,
                     format(t2_res[key]["baseline"], ".2f"),
                     fontsize=21,
                 )
                 ax[1].text(
-                    position[fid - 1][0] + 0.4,
-                    position[0][-1] - 0.42,
+                    pos[fid - 1][0] + 0.4,
+                    pos[0][-1] - 0.42,
                     format(timescale, ".2f"),
                     fontsize=21,
                 )
                 if excess_region["e_rise"][fid - 1] != "nan":
                     ax[1].text(
-                        position[fid - 1][0] + 0.4,
-                        position[0][-1] - 0.50,
+                        pos[fid - 1][0] + 0.4,
+                        pos[0][-1] - 0.50,
                         format(excess_region["e_rise"][fid - 1], ".2f"),
                         fontsize=21,
                     )
                     ax[1].text(
-                        position[fid - 1][0] + 0.4,
-                        position[0][-1] - 0.58,
+                        pos[fid - 1][0] + 0.4,
+                        pos[0][-1] - 0.58,
                         format(excess_region["e_fade"][fid - 1], ".2f"),
                         fontsize=21,
                     )
                 else:
                     ax[1].text(
-                        position[fid - 1][0] + 0.4,
-                        position[0][-1] - 0.50,
+                        pos[fid - 1][0] + 0.4,
+                        pos[0][-1] - 0.50,
                         "NaN",
                         fontsize=21,
                     )
                     ax[1].text(
-                        position[fid - 1][0] + 0.4,
-                        position[0][-1] - 0.58,
+                        pos[fid - 1][0] + 0.4,
+                        pos[0][-1] - 0.58,
                         "NaN",
                         fontsize=21,
                     )
@@ -778,7 +772,5 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                 bbox_inches="tight",
             )
             plt.close()
-
-        t2_output: dict[str, UBson] = t2_output
 
         return t2_output
