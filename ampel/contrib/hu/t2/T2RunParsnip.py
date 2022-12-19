@@ -15,6 +15,9 @@ import numpy as np
 from astropy.table import Table
 import matplotlib.pyplot as plt
 import timeout_decorator
+import packaging
+import scipy
+import warnings
 
 from ampel.types import UBson
 from ampel.struct.UnitResult import UnitResult
@@ -27,6 +30,9 @@ from ampel.enum.DocumentCode import DocumentCode
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper
 
+# do not warning about scipy.stats.mode(keepdims=None)
+if packaging.version.parse(scipy.__version__) < packaging.version.parse('1.11'):
+    warnings.filterwarnings("ignore", category=FutureWarning, module="parsnip.light_curve", lineno=31)
 
 import parsnip
 import lcdata
