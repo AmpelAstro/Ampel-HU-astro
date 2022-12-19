@@ -4,14 +4,14 @@
 # License:             BSD-3-Clause
 # Author:              jvs
 # Date:                Unspecified
-# Last Modified Date:  02.01.2022
+# Last Modified Date:  19.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from setuptools import find_namespace_packages, setup
 
 setup(
     name="ampel-hu-astro",
-    version="0.8.0-alpha.0",
+    version="0.8.3-alpha.8",
     packages=find_namespace_packages(),
     package_data={
         "": ["*.json", "py.typed"],  # include any package containing *.json files
