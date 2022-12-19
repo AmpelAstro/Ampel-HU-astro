@@ -19,7 +19,7 @@ from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
 from ampel.view.TransientView import TransientView
 from ampel.struct.UnitResult import UnitResult
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 from ampel.view.SnapView import SnapView
 from ampel.util.mappings import get_by_path
 

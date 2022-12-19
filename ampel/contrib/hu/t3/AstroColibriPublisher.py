@@ -20,7 +20,7 @@ from astropy.time import Time
 
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.view.TransientView import TransientView
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit

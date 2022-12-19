@@ -21,7 +21,7 @@ from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.view.TransientView import TransientView
 from ampel.view.T2DocView import T2DocView
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 from ampel.util.mappings import get_by_path
 
 import voeventparse as vp

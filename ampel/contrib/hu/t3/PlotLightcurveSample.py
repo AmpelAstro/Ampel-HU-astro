@@ -16,7 +16,7 @@ import seaborn as sns
 import numpy as np
 
 from ampel.types import UBson, T3Send
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 from ampel.struct.UnitResult import UnitResult
 
 from ampel.view.TransientView import TransientView

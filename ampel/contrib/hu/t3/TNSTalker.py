@@ -17,7 +17,7 @@ from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit, T3Send
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.contrib.hu.t3.ampel_tns import TNSClient, TNS_BASE_URL_REAL, TNS_BASE_URL_SANDBOX
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 from ampel.view.TransientView import TransientView
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 from ampel.contrib.hu.t3.tns.TNSToken import TNSToken
