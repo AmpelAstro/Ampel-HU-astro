@@ -19,6 +19,7 @@ from ampel.secret.NamedSecret import NamedSecret
 from ampel.view.TransientView import TransientView
 from ampel.view.T2DocView import T2DocView
 from ampel.view.T3Store import T3Store
+from ampel.log import LogFlag
 
 from ampel.contrib.hu.t3.ElasticcTomClient import ElasticcTomClient
 
@@ -146,7 +147,7 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
                 if t2views := tran_view.get_t2_views(unit=self.unit, link=t1_link, code=DocumentCode.OK):
                     t2view = next(t2views, None)
                     if t2view is None:
-                        self.logger.info('No T2Doc found', extra={'unit':self.unit})
+                        self.logger.debug('No T2Doc found', extra={'unit':self.unit})
                         continue   # No T2 ticket found
                     # Only reason there could be multiple views here is if we
                     # are running different configs... if so this unit wont work
@@ -162,6 +163,9 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
 
         """
 
+        submitted = 0
+        failed = 0
+
         for chunk in chunks(self._get_reports(gen), self.batch_size):
             tran_views, t1_links, class_reports = zip(*chunk)
 
@@ -170,6 +174,11 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
 
             # use the ElasticcTomClient
             desc_response = self.tomclient.tom_post(class_reports)
+
+            if desc_response['success']:
+                submitted += len(class_reports)
+            else:
+                failed += len(class_reports)
 
             # Check output:
             # if as expected store to journal that transfer is complete.
@@ -207,3 +216,5 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
                     self.logger.info('desc post failed', extra={
                         "descResponse":desc_response,
                         "descReport": class_report, })
+
+        self.logger.log(LogFlag.SHOUT, "reported", extra={"submitted": submitted, "failed": failed})
