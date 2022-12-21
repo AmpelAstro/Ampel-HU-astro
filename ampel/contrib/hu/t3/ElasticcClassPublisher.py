@@ -71,6 +71,8 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
     dry_run: bool = False
     #: submit reports in batches
     batch_size: int = 1000
+    #: raise an exception on submission failure
+    raise_exc: bool = True
 
     unit: str = "T2ElasticcReport"
 
@@ -192,9 +194,12 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
                 submitted += len(class_reports)
             else:
                 failed += len(class_reports)
+                body = desc_response.pop('response_body')
                 self.logger.error('desc post failed', extra={
                         "descResponse":desc_response,
                         "descReport": class_reports[0], })
+                if self.raise_exc:
+                    raise RuntimeError(f"Post failed: {body}")
 
             # Check output:
             # if as expected store to journal that transfer is complete.
