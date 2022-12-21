@@ -16,6 +16,7 @@ import xgboost as xgb
 import os
 
 from ampel.types import UBson
+from ampel.enum.DocumentCode import DocumentCode
 from ampel.struct.UnitResult import UnitResult
 from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
@@ -23,7 +24,7 @@ from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.content.T1Document import T1Document
 from ampel.content.DataPoint import DataPoint
 from ampel.view.T2DocView import T2DocView
-from ampel.contrib.hu.t2.T2TabulatorRiseDecline import T2TabulatorRiseDeclineBase
+from ampel.contrib.hu.t2.T2TabulatorRiseDecline import T2TabulatorRiseDeclineBase, FitFailed
 
 class T2MultiXgbClassifier(AbsTiedStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRiseDeclineBase):
     """
@@ -148,7 +149,10 @@ class T2MultiXgbClassifier(AbsTiedStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRi
                 flux_table = self.cut_flux_table(flux_table)
 
             # Calculate features
-            features = self.compute_stats(flux_table)
+            try:
+                features = self.compute_stats(flux_table)
+            except FitFailed:
+                return UnitResult(code=DocumentCode.ERROR)
             t2data.update( features )
 
 
