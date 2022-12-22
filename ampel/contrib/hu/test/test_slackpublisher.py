@@ -1,5 +1,5 @@
 from ampel.view.T2DocView import T2DocView, TYPE_STATE_T2
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 import pytest
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.contrib.hu.t3.SlackSummaryPublisher import SlackSummaryPublisher

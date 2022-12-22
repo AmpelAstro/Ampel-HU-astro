@@ -16,7 +16,7 @@ from typing import Any
 from collections.abc import Generator
 
 from ampel.types import ChannelId, UBson, T3Send
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.util.json import AmpelEncoder, load
 from ampel.view.TransientView import TransientView

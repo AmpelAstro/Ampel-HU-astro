@@ -19,7 +19,7 @@ from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.abstract.AbsBufferComplement import AbsBufferComplement
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 
 
 class BaseCatalogRecordComplementer(AbsBufferComplement, abstract=True):

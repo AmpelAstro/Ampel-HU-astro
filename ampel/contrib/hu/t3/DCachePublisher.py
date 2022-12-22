@@ -20,7 +20,7 @@ from aiohttp.client_exceptions import (
 )
 
 from ampel.types import UBson
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.util.json import AmpelEncoder

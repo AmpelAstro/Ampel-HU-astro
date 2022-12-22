@@ -17,6 +17,8 @@
 - ampel.contrib.hu.t2.T2RunSncosmo
 - ampel.contrib.hu.t2.T2CatalogMatchLocal
 - ampel.contrib.hu.t2.T2DigestRedshifts
+- ampel.contrib.hu.t2.T2BayesianBlocks
+- ampel.contrib.hu.t2.T2DustEchoEval
 - ampel.contrib.hu.t2.T2RunPossis
 - ampel.contrib.hu.t2.T2RunTDE
 - ampel.contrib.hu.t2.T2RunParsnip
@@ -48,3 +50,5 @@
 - ampel.contrib.hu.t3.ElasticcClassPublisher
 - ampel.contrib.hu.t3.VOEventPublisher
 - ampel.contrib.hu.t3.AstroColibriPublisher
+- ampel.contrib.hu.alert.load.WiseFileAlertLoader
+- ampel.contrib.hu.alert.NeoWisePhotometryAlertSupplier

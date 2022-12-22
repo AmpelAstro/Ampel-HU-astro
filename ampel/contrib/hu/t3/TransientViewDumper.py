@@ -19,7 +19,7 @@ from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.util.json import AmpelEncoder
 from ampel.view.SnapView import SnapView
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 from ampel.struct.UnitResult import UnitResult
 
 

@@ -18,7 +18,7 @@ from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit, T3Send
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.view.TransientView import TransientView
 from ampel.view.T2DocView import T2DocView
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 from ampel.log import LogFlag
 
 from ampel.contrib.hu.t3.ElasticcTomClient import ElasticcTomClient
@@ -167,7 +167,11 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
                     # are running different configs... if so this unit wont work
                     # and needs to be redesigned!
                     if (t2_view_extra := next(t2views, None)) is not None and t2_view_extra.config != t2view.config:
-                        raise RuntimeError(f'ElasticcClassPublisher cannot parse multiple configs. Got configs={t2view.config},{t2_view_extra.config} for stock:{t2view.stock},link:{t2view.link},unit:{t2view.unit}')
+                        raise RuntimeError(   
+                            'ElasticcClassPublisher cannot parse multiple configs. ' 
+                            f'Got configs={t2view.config},{t2_view_extra.config} for '
+                            f'stock:{t2view.stock},link:{t2view.link},unit:{t2view.unit}' # type: ignore[str-bytes-safe]
+                        )
                     if not isinstance((body := t2view.get_payload()), dict):
                         continue
                     yield tran_view, t1_link, body["report"]

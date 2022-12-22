@@ -20,7 +20,7 @@ from slack_sdk import WebClient
 from slack_sdk.errors import SlackClientError
 
 from ampel.types import T3Send
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 from ampel.log.utils import log_exception
 from ampel.secret.NamedSecret import NamedSecret
