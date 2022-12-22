@@ -166,8 +166,8 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
                     # Only reason there could be multiple views here is if we
                     # are running different configs... if so this unit wont work
                     # and needs to be redesigned!
-                    if next(t2views, None) is not None:
-                        raise RuntimeError('ElasticcClassPublisher cannot parse multiple configs.')
+                    if (t2_view_extra := next(t2views, None)) is not None and t2_view_extra.config != t2view.config:
+                        raise RuntimeError(f'ElasticcClassPublisher cannot parse multiple configs. Got configs={t2view.config},{t2_view_extra.config} for stock:{t2view.stock},link:{t2view.link},unit:{t2view.unit}')
                     if not isinstance((body := t2view.get_payload()), dict):
                         continue
                     yield tran_view, t1_link, body["report"]
