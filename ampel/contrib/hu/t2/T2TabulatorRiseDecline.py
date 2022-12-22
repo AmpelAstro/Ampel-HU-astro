@@ -64,6 +64,9 @@ def getBandBits(bands: Sequence):
     return index
 
 
+class FitFailed(RuntimeError):
+    ...
+
 class T2TabulatorRiseDeclineBase(AmpelBaseModel):
     """
     Derive a number of simple metrics describing the rise, peak and decline of a lc.
@@ -158,13 +161,19 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
 
             # Examine rise
             if len(riset)>1:
-                fit, cov=curve_fit(linearFunc,riset['time']-tscale,riset['flux'],
-                                    sigma=riset['fluxerr'],absolute_sigma=True)
+                try:
+                    fit, cov=curve_fit(linearFunc,riset['time']-tscale,riset['flux'],
+                                        sigma=riset['fluxerr'],absolute_sigma=True)
+                except RuntimeError as exc:
+                    raise FitFailed from exc
                 banddata['rise_slope_'+band] = fit[1]
                 banddata['rise_slopesig_'+band] = fit[1] / np.sqrt(cov[1][1])
             if len(fallt)>1:
-                fit, cov=curve_fit(linearFunc,fallt['time']-tscale,fallt['flux'],
-                                    sigma=fallt['fluxerr'],absolute_sigma=True)
+                try:
+                    fit, cov=curve_fit(linearFunc,fallt['time']-tscale,fallt['flux'],
+                                        sigma=fallt['fluxerr'],absolute_sigma=True)
+                except RuntimeError as exc:
+                    raise FitFailed from exc
                 banddata['fall_slope_'+band] = fit[1]
                 banddata['fall_slopesig_'+band] = fit[1] / np.sqrt(cov[1][1])
 

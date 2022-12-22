@@ -88,8 +88,8 @@ class ElasticcTomClient:
                                 json=classification, headers=self.csrfheader)
 
         if response.ok:
-            self.logger.debug('ElasticcTomClient submit fail', extra={"payload": classification})
+            self.logger.debug('ElasticcTomClient submit done', extra={"payload": classification})
             return {'success':True, **response.json()}
 
         self.logger.info('ElasticcTomClient submit fail', extra={"payload": classification})
-        return {'success':False, 'response':response.status_code}
+        return {'success':False, 'response':response.status_code, 'response_body': response.text}

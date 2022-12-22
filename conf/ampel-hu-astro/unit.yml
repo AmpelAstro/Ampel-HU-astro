@@ -32,6 +32,7 @@
 - ampel.contrib.hu.t2.T2ElasticcRedshiftSampler
 - ampel.contrib.hu.t2.T2TabulatorRiseDecline
 - ampel.contrib.hu.t2.T2XgbClassifier
+- ampel.contrib.hu.t2.T2MultiXgbClassifier
 - ampel.contrib.hu.t2.T2ElasticcReport
 - ampel.contrib.hu.t2.T2FastDecliner
 - ampel.contrib.hu.t3.TransientInfoPrinter

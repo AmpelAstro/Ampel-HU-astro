@@ -1,0 +1,150 @@
+# New elasticc version created Nov 22 2022
+# - Updated links to models
+# - Updated order of columns used for the xgb model.
+# - Downloads and parses a fixed list of alerts published at desc.
+# Further updated Dec 12
+# - Replace TabulatorRiseDecline and 3 copies of XgbClassifier with one
+#   unit. Maybe faster and less db documents?
+
+parameters:
+- name: classifier_url
+  value: https://box.hu-berlin.de/f/d1cec88c0bec4123b208/?dl=1
+- name: model_url
+  value: https://box.hu-berlin.de/f/78d7594841da4653a743/?dl=1
+- name: xgb_v6_simmod_tree12
+  value: https://box.hu-berlin.de/f/63c3848162a44d67aa24/?dl=1
+- name: xgb_v6_simmod_tree2122
+  value: https://box.hu-berlin.de/f/485c4dbf84c74ad1b2d8/?dl=1
+- name: xgb_v6_simmod_tree121113
+  value: https://box.hu-berlin.de/f/877b110e1e4f44e9b1e7/?dl=1
+- name: alertsample
+  value: https://portal.nersc.gov/cfs/lsst/DESC_TD_PUBLIC/ELASTICC/5000alerts.tar.gz
+name: elasticc-nov
+mongo:
+  prefix: Elasticc5000_vDec_Argo_Dir_v4
+channel:
+- name: Elasticc
+  access: []
+  policy: []
+  version: 1
+task:
+- title: ingest
+  unit: AlertConsumer
+  config:
+    iter_max: 100000000
+    compiler_opts: LSSTCompilerOptions
+    supplier:
+      config:
+        deserialize: null
+        loader:
+          config:
+            folder: 5000alertsdir/NITE60562
+            extension: "*avro.gz"
+          unit: ElasticcDirAlertLoader
+      unit: LSSTAlertSupplier
+    shaper: {unit: LSSTDataPointShaper}
+    directives:
+    - channel: Elasticc
+      filter:
+        config:
+          min_ndet: 0
+          min_tspan: 0
+          max_tspan: 10000
+        on_stock_match: bypass
+        unit: ReallySimpleLSSTFilter
+      ingest:
+          mux:
+            unit: LSSTMongoMuxer
+            insert:
+              point_t2:
+              - unit: T2ElasticcRedshiftSampler
+                ingest:
+                  filter: LSSTObjFilter
+                  select: last
+                  sort: diaObjectId
+              - unit: T2GetDiaObject
+                config:
+                  params:
+                  - diaObjectId
+                  - simVersion
+                ingest:
+                  filter: LSSTObjFilter
+                  select: last
+                  sort: diaObjectId
+            combine:
+            - unit: LSSTT1Combiner
+              state_t2:
+              - &xgb_config
+                unit: T2MultiXgbClassifier
+                config:
+                  model_folder: .
+                  model_dict:
+                    xgb_v6_simmod_tree12_: xgb_v6_simmod_tree12_ndet1_1000.json
+                    xgb_v6_simmod_tree2122_:  xgb_v6_simmod_tree2122_ndet1_1000.json
+                    xgb_v6_simmod_tree121113_: xgb_v6_simmod_tree121113_ndet1_1000.json
+                  tabulator:
+                    - unit: LSSTT2Tabulator
+                      config:
+                        zp: 31.4
+                  t2_dependency:
+                  - unit: T2ElasticcRedshiftSampler
+              - &T2RunParsnip
+                unit: T2RunParsnip
+                config:
+                  max_ampelz_group: 7
+                  redshift_kind: T2ElasticcRedshiftSampler
+                  parsnip_model: model1-30pct-sn+2ulens+dwarfs-mw.h5
+                  parsnip_classifier: model1-30pct-sn+2ulens+dwarfs-mw-aug10.pkl
+                  t2_dependency:
+                    - unit: T2ElasticcRedshiftSampler
+                  tabulator:
+                    - unit: LSSTT2Tabulator
+                      config:
+                        zp: 31.4
+              - unit: T2ElasticcReport
+                config:
+                  multiple_classifiers: true
+                  use_priors: true
+                  t2_dependency:
+                    - <<: *xgb_config
+                    - <<: *T2RunParsnip
+  inputs:
+    artifacts:
+      - name: alertsample
+        path: 5000alertsdir
+        http:
+          url: "{{ job.parameters.alertsample }}"
+
+
+- title: t2
+  multiplier: 4
+  unit: T2Worker
+  config:
+    doc_limit: 50000
+    run_dependent_t2s: false
+    wait_for_durable_write: false
+    updates_buffer_size: 500
+    garbage_collect: false
+    max_try: 10
+  inputs:
+    artifacts:
+      - name: classifier
+        path: model1-30pct-sn+2ulens+dwarfs-mw-aug10.pkl
+        http:
+          url: "{{ job.parameters.classifier_url }}"
+      - name: model
+        path: model1-30pct-sn+2ulens+dwarfs-mw.h5
+        http:
+          url: "{{ job.parameters.model_url }}"
+      - name: xgb_v6_simmod_tree12
+        path: xgb_v6_simmod_tree12_ndet1_1000.json
+        http:
+          url: "{{ job.parameters.xgb_v6_simmod_tree12 }}"
+      - name: xgb_v6_simmod_tree2122
+        path: xgb_v6_simmod_tree2122_ndet1_1000.json
+        http:
+          url: "{{ job.parameters.xgb_v6_simmod_tree2122 }}"
+      - name: xgb_v6_simmod_tree121113
+        path: xgb_v6_simmod_tree121113_ndet1_1000.json
+        http:
+          url: "{{ job.parameters.xgb_v6_simmod_tree121113 }}"

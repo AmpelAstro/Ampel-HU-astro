@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              jnordin@physik.hu-berlin.de
 # Date:                25.08.2022
-# Last Modified Date:  25.08.2022
+# Last Modified Date:  13.12.2022
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
 from typing import Literal, Union
@@ -104,7 +104,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
 
     # Setting for report to construct
     broker_name: str = 'AMPEL'
-    broker_version: str = 'v0.3'
+    broker_version: str = 'v0.4'
     classifier_name: str = 'ElasticcLive'
     classifier_version: str = 'XGBUnified+Parsnip05'
 
@@ -116,7 +116,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
 
 
     # Which units should this be changed to
-    t2_dependency: Sequence[StateT2Dependency[Literal["T2RunParsnip", "T2XgbClassifier"]]]
+    t2_dependency: Sequence[StateT2Dependency[Literal["T2RunParsnip", "T2MultiXgbClassifier"]]]
 
     def submit(self, report: dict) -> str:
         """
@@ -268,7 +268,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
         # Parse t2views - should not be more than one.
         for t2_view in t2_views:
             self.logger.debug('Parsing t2 results from {}'.format(t2_view.unit))
-            # So far only knows how to parse phases from T2TabulatorRiseDecline
+            # Xgb results either from multiple instances of T2XgbClassifier...
             if t2_view.unit == 'T2XgbClassifier':
                 t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
                 if 'prob0' in t2_res.keys():
@@ -281,7 +281,15 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
                 else:
                     # Direct evaluation available even though XGB did not run
                     direct_eval = t2_res.get('direct_eval', None)
-
+            # ... or all from T2MultiXgbClassifier
+            elif t2_view.unit == 'T2MultiXgbClassifier':
+                t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
+                if t2_res['model']=='multiXgb':
+                    is1 = t2_res['classifications'][self.tree_1v2]['prob0']
+                    is21 = t2_res['classifications'][self.tree_21v22]['prob0']
+                    is1113 = t2_res['classifications'][self.tree_1113v12]['prob0']
+                elif t2_res['model']=='directEval':
+                    direct_eval = t2_res.get('direct_eval', None)
             elif t2_view.unit == 'T2RunParsnip':
                 t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
 

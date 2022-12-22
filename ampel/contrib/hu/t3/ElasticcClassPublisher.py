@@ -19,6 +19,7 @@ from ampel.secret.NamedSecret import NamedSecret
 from ampel.view.TransientView import TransientView
 from ampel.view.T2DocView import T2DocView
 from ampel.struct.T3Store import T3Store
+from ampel.log import LogFlag
 
 from ampel.contrib.hu.t3.ElasticcTomClient import ElasticcTomClient
 
@@ -70,6 +71,8 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
     dry_run: bool = False
     #: submit reports in batches
     batch_size: int = 1000
+    #: raise an exception on submission failure
+    raise_exc: bool = True
 
     unit: str = "T2ElasticcReport"
 
@@ -134,33 +137,53 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
 
     def _get_reports(self, gen: Generator[TransientView, T3Send, None]) -> Generator[tuple[TransientView,int,dict],None,None]:
 
+        stats = {
+            "stocks": 0,
+            "views": 0,
+            "pending": 0,
+            "submitted": 0,
+        }
+
         for tran_view in gen:
             # Check journal for state/alertId combos and whether already
             # submitted (for this t2classifiers list).
             state_alert = self.search_journal_elasticc(tran_view)
 
+            stats["stocks"] += 1
+
             for t1_link, submitted in state_alert.items():
+                stats["views"] += 1
                 if submitted:
                     self.logger.debug('submitted', extra={'t1':t1_link})
+                    stats["submitted"] += 1
                     continue
                 if t2views := tran_view.get_t2_views(unit=self.unit, link=t1_link, code=DocumentCode.OK):
                     t2view = next(t2views, None)
                     if t2view is None:
-                        self.logger.info('No T2Doc found', extra={'unit':self.unit})
+                        self.logger.debug('No T2Doc found', extra={'unit':self.unit})
+                        stats["pending"] += 1
                         continue   # No T2 ticket found
                     # Only reason there could be multiple views here is if we
                     # are running different configs... if so this unit wont work
                     # and needs to be redesigned!
-                    if next(t2views, None) is not None:
-                        raise RuntimeError('ElasticcClassPublisher cannot parse multiple configs.')
+                    if (t2_view_extra := next(t2views, None)) is not None and t2_view_extra.config != t2view.config:
+                        raise RuntimeError(   
+                            'ElasticcClassPublisher cannot parse multiple configs. ' 
+                            f'Got configs={t2view.config},{t2_view_extra.config} for '
+                            f'stock:{t2view.stock},link:{t2view.link},unit:{t2view.unit}' # type: ignore[str-bytes-safe]
+                        )
                     if not isinstance((body := t2view.get_payload()), dict):
                         continue
                     yield tran_view, t1_link, body["report"]
+        self.logger.log(LogFlag.SHOUT, "filtered states", extra=stats)
 
     def process(self, gen: Generator[TransientView, T3Send, None], t3s: T3Store) -> None:
         """
 
         """
+
+        submitted = 0
+        failed = 0
 
         for chunk in chunks(self._get_reports(gen), self.batch_size):
             tran_views, t1_links, class_reports = zip(*chunk)
@@ -170,6 +193,17 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
 
             # use the ElasticcTomClient
             desc_response = self.tomclient.tom_post(class_reports)
+
+            if desc_response['success']:
+                submitted += len(class_reports)
+            else:
+                failed += len(class_reports)
+                body = desc_response.pop('response_body')
+                self.logger.error('desc post failed', extra={
+                        "descResponse":desc_response,
+                        "descReport": class_reports[0], })
+                if self.raise_exc:
+                    raise RuntimeError(f"Post failed: {body}")
 
             # Check output:
             # if as expected store to journal that transfer is complete.
@@ -204,6 +238,6 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
                                     ),
                                     )
                                 ))
-                    self.logger.info('desc post failed', extra={
-                        "descResponse":desc_response,
-                        "descReport": class_report, })
+
+
+        self.logger.log(LogFlag.SHOUT, "reported", extra={"submitted": submitted, "failed": failed})
