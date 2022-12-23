@@ -182,8 +182,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
     def outliers(self, excess_regions, df, baye_block, measurements_nu):
         for nu, value in enumerate(excess_regions):
             if len(value) == 1:
-                # if measurements_nu[value[0]] == 1.0:
-                if measurements_nu[value[0]] < 5:
+                if measurements_nu[value[0]] == 1.0:
                     if (
                         baye_block["Npoints"][value[0]] == 1
                         and baye_block["sigma_from_baseline"][value[0]] > 5.0
