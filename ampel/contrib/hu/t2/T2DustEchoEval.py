@@ -571,7 +571,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                         df.loc[
                             (df["jd"] >= block[0]) & (df["jd"] <= block[1]), "Outlier"
                         ] = True
-                    outlier_datapoints = df[df["Outlier"] is True]
+                    outlier_datapoints = df[df["Outlier"]]
                     ax[0].errorbar(
                         outlier_datapoints["jd"] - 2400000.5,
                         outlier_datapoints["mag"],
@@ -585,7 +585,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                         capsize=0,
                     )
 
-                datapoints = df[df["Outlier"] is False]
+                datapoints = df[~df["Outlier"]]
                 ax[0].errorbar(
                     datapoints["jd"] - 2400000.5,
                     datapoints["mag"],
