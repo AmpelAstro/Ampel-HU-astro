@@ -252,9 +252,10 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                                             excess_region["baseline_jd"].append(
                                                 baseline_jd
                                             )
-                                            excess_region["start_baseline_jd"] = t2_res[
+                                            start_baseline_jd = t2_res[
                                                 key
                                             ]["jd_baseline_regions"][position]
+                                            excess_region["start_baseline_jd"].append(start_baseline_jd[0])
 
                                             excess_region["baseline_mag"].append(
                                                 baseline_mag
