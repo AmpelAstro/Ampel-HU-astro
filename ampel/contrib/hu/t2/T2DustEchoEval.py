@@ -610,7 +610,6 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
 
                 ax[0].axvline(
                     x=(t2_res[key]["jd_excess_regions"][idx][0] - 40) - 2400000.5,
-                    label="T2 guess " + key,
                     color=self.plot_colors[key],
                 )
                 ax[0].axvline(
@@ -620,6 +619,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                 ax[0].axvspan(
                     (t2_res[key]["jd_excess_regions"][idx][0] - 40) - 2400000.5,
                     (t2_res[key]["jd_excess_regions"][idx][-1] + 40) - 2400000.5,
+                    label="T2 guess " + key,
                     alpha=0.05,
                     color=self.plot_colors[key],
                 )
