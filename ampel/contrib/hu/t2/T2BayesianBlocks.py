@@ -7,26 +7,24 @@
 # Last Modified Date: 16.11.2022
 # Last Modified By  : Simeon
 
-# mypy: ignore_errors = True
 import os, math, itertools
 from typing import Dict, List, Optional, Sequence, Any
 
 import numpy as np
-import matplotlib.pyplot as plt
 import more_itertools as mit
-import matplotlib.pyplot as plt
-import pandas as pd
-from astropy.stats import bayesian_blocks
-import uncertainties.unumpy as unumpy
-from nltk import flatten
-from scipy.signal import find_peaks
-from sklearn.metrics import mean_squared_error
+import matplotlib.pyplot as plt  # type: ignore
+import pandas as pd  # type: ignore
+from astropy.stats import bayesian_blocks  # type: ignore
+import uncertainties.unumpy as unumpy  # type: ignore
+from nltk import flatten  # type: ignore
+from scipy.signal import find_peaks  # type: ignore
+from sklearn.metrics import mean_squared_error  # type: ignore
 
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 from ampel.model.PlotProperties import PlotProperties
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 from ampel.plot.create import create_plot_record
-from ampel.types import UBson
+from ampel.types import UBson, StockId
 from ampel.struct.UnitResult import UnitResult
 from ampel.view.LightCurve import LightCurve
 
@@ -182,8 +180,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
     def outliers(self, excess_regions, df, baye_block, measurements_nu):
         for nu, value in enumerate(excess_regions):
             if len(value) == 1:
-                # if measurements_nu[value[0]] == 1.0:
-                if measurements_nu[value[0]] < 5:
+                if measurements_nu[value[0]] == 1.0:
                     if (
                         baye_block["Npoints"][value[0]] == 1
                         and baye_block["sigma_from_baseline"][value[0]] > 5.0
@@ -335,7 +332,8 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
         assert self.data_type in ["ztf_alert", "ztf_fp", "wise"]
 
         if self.data_type in ["ztf_alert", "ztf_fp"]:
-            self.ztfid = to_ztf_id(light_curve.stock_id)
+            if isinstance(light_curve.stock_id, int):
+                self.ztfid = to_ztf_id(light_curve.stock_id)
             if self.debug:
                 print("---------------------------")
                 print(f"Processing {self.ztfid}")
@@ -347,7 +345,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
         ################################
         ######## Bayesian blocks #######
-        output_per_filter = {}
+        output_per_filter: Dict[str, Any] = {}
 
         self.filters_lc = self.filters
 
@@ -370,7 +368,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     "mag_edge",
                 ]
             )
-            output = {
+            output: Dict[str, Any] = {
                 "mag_edge_excess": [],
                 "max_mag_excess_region": [],
                 "max_jd_excess_region": [],
@@ -1272,24 +1270,25 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             fig.supxlabel("MJD", fontsize=30)
 
             if self.plot or self.debug:
-                output_per_filter["Plots"] = [
-                    create_plot_record(
-                        fig,
-                        self.plot_props,
-                        extra={"band": "All", "stock": light_curve.stock_id},  # type: ignore
-                    )
-                ]
+                if isinstance(self.plot_props, PlotProperties):
+                    output_per_filter["Plots"] = [
+                        create_plot_record(
+                            fig,
+                            self.plot_props,
+                            extra={"band": "All", "stock": light_curve.stock_id},  # type: ignore
+                        )
+                    ]
 
-                if self.debug and self.debug_dir != None:
+                if self.debug and isinstance(self.debug_dir, str):
                     if self.data_type in ["ztf_alert", "ztf_fp"]:
-                        object_id = self.ztfid
+                        object_id: StockId | Sequence[StockId] = self.ztfid
                     else:
                         object_id = light_curve.stock_id
 
                     if not os.path.exists(self.debug_dir):
                         os.makedirs(self.debug_dir)
 
-                    title = f"{object_id}"
+                    title = str(object_id)
 
                     overlapping_regions_count = self.count_overlapping_regions(
                         output_per_filter
@@ -1308,7 +1307,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                         fontsize=30,
                     )
 
-                    outfile = os.path.join(self.debug_dir, f"{object_id}.pdf")
+                    outfile = os.path.join(self.debug_dir, str(object_id) + ".pdf")
 
                     fig.savefig(outfile)
                     output_per_filter.pop("Plots")
@@ -1350,11 +1349,11 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
         if self.debug and self.data_type in ["ztf_alert", "ztf_fp"]:
             for fil in self.filters_lc:
                 print(f"{fil}\n")
-                print(f"# excess regions: {t2_output[fil]['nu_of_excess_regions']}")
-                print(f"# excess blocks: {t2_output[fil]['nu_of_excess_blocks']}")
+                print(f"# excess regions: {output_per_filter[fil]['nu_of_excess_regions']}")
+                print(f"# excess blocks: {output_per_filter[fil]['nu_of_excess_blocks']}")
                 print("--------")
             print(
-                f"coincident regions between g and r: {t2_output['coincide_peak_block']}"
+                f"coincident regions between g and r: {str(output_per_filter['coincide_peak_block'])}"
             )
 
         return t2_output
