@@ -94,7 +94,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
             "e_fade": [],
         }
 
-        t2_output: dict[str | list] = {"description": [], "values": []}
+        t2_output: dict[str, list] = {"description": [], "values": []}
 
         if self.flux:
             intensity_low_limit = 0.0
