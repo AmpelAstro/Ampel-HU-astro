@@ -7,12 +7,10 @@
 # Last Modified Date: 16.11.2022
 # Last Modified By  : Simeon
 
-# mypy: ignore_errors = True
 import os, math, itertools
 from typing import Dict, List, Optional, Sequence, Any
 
 import numpy as np
-import matplotlib.pyplot as plt
 import more_itertools as mit
 import matplotlib.pyplot as plt
 import pandas as pd
