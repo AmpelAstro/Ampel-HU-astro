@@ -4,8 +4,8 @@
 # License           : BSD-3-Clause
 # Author            : Eleni
 # Date              : 01.09.2021
-# Last Modified Date: 15.12.2022
-# Last Modified By  : Simeon
+# Last Modified Date: 02.01.2022
+# Last Modified By  : Jannis <jannis.necker@desy.de>
 
 import os
 import numpy as np
@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt  # type: ignore
 import uncertainties.unumpy as unumpy  # type: ignore
 
 from nltk import flatten  # type: ignore
-from typing import Sequence, Literal
+from typing import Sequence, Literal, Any
 
 from ampel.view.LightCurve import LightCurve
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
@@ -94,7 +94,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
             "e_fade": [],
         }
 
-        t2_output: dict[str, list] = {"description": [], "values": []}
+        t2_output: dict[str, Any] = {"description": [], "values": []}
 
         if self.flux:
             intensity_low_limit = 0.0
