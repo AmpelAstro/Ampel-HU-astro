@@ -94,7 +94,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
             "e_fade": [],
         }
 
-        t2_output: dict[str, dict | str] = {}
+        t2_output: dict[str, dict | str] = {"description": [], "values": []}
 
         if self.flux:
             intensity_low_limit = 0.0
@@ -212,7 +212,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
 
                                         # if diff is None or (diff is not None and len([value for value in difference if value > 0]) == 1):
                                         if diff is None:
-                                            t2_output["description"] = "Only declination"
+                                            t2_output["description"].append("Only declination")
                                             excess_region["baseline_jd"].append(0)
                                             excess_region["start_baseline_jd"].append(0)
                                             excess_region["baseline_mag"].append(0)
@@ -247,7 +247,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                                             ][position]
                                             t2_output[
                                                 "description"
-                                            ] = "Baseline before excess region"
+                                            ].append("Baseline before excess region")
 
                                             excess_region["baseline_jd"].append(
                                                 baseline_jd
@@ -310,7 +310,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                                         t2_res[key]["baseline"]
                                     )
                     else:
-                        t2_output["description"] = "Only baseline"  # no excess region
+                        t2_output["description"].append("Only baseline")  # no excess region
 
                         for key in self.filters_lc:
                             excess_region["max_mag"].append(t2_res[key]["baseline"])
