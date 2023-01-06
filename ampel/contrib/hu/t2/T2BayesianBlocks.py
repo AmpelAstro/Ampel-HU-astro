@@ -238,6 +238,12 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             # now we select the other filters
             for compare_filter in self.filters_lc:
 
+                if output_per_filter[compare_filter].get("nu_of_excess_regions") in [
+                    0,
+                    None,
+                ]:
+                    return coincide_region
+
                 # as the i-band is spotty in the case of ZTF, we skip it
                 if self.data_type in ["ztf_alert", "ztf_fp"]:
                     if compare_filter == "ZTF_i":
@@ -379,34 +385,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 "mag_edge_baseline": [],
                 "significance_of_variability_excess": [[], []],
             }
-
-            # output = {
-            #     "nu_of_excess_regions": None,
-            #     "nu_of_excess_blocks": None,
-            #     "nu_of_baseline_blocks": None,
-            #     "jd_excess_regions": None,
-            #     "mag_edge_excess": ([]),
-            #     "max_mag_excess_region": ([]),
-            #     "max_jd_excess_region": ([]),
-            #     "max_sigma_excess_region": ([]),
-            #     "max_baye_block_timescale": ([]),
-            #     "baseline": ([]),
-            #     "baseline_sigma": ([]),
-            #     "baseline_rms": ([]),
-            #     "jd_baseline_regions": ([]),
-            #     "jd_outlier": ([]),
-            #     "mag_edge_baseline": ([]),
-            #     "sigma_from_baseline": ([]),
-            #     "sigma_from_baseline_excess": ([]),
-            #     "significance_of_variability_excess": ([], []),
-            #     "significance_of_fluctuation": ([]),
-            #     "max_mag": ([]),
-            #     "significance": ([]),
-            #     "strength_sjoert": ([]),
-            #     "significance_after_peak": ([]),
-            #     "strength_after_peak": ([]),
-            #     "description": ([]),
-            # }  # 0: The excess region has one baye block with one measurement, 1: The excess region has one baye block with multiple measurements, 2: The excess region has multiple baye blocks
+            # 0: The excess region has one baye block with one measurement, 1: The excess region has one baye block with multiple measurements, 2: The excess region has multiple baye blocks
 
             if self.data_type == "ztf_fp":
                 if self.flux:
@@ -1349,8 +1328,12 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
         if self.debug and self.data_type in ["ztf_alert", "ztf_fp"]:
             for fil in self.filters_lc:
                 print(f"{fil}\n")
-                print(f"# excess regions: {output_per_filter[fil]['nu_of_excess_regions']}")
-                print(f"# excess blocks: {output_per_filter[fil]['nu_of_excess_blocks']}")
+                print(
+                    f"# excess regions: {output_per_filter[fil]['nu_of_excess_regions']}"
+                )
+                print(
+                    f"# excess blocks: {output_per_filter[fil]['nu_of_excess_blocks']}"
+                )
                 print("--------")
             print(
                 f"coincident regions between g and r: {str(output_per_filter['coincide_peak_block'])}"
