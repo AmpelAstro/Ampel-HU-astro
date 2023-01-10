@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : Eleni
 # Date              : 01.09.2021
-# Last Modified Date: 02.01.2022
+# Last Modified Date: 10.01.2023
 # Last Modified By  : Jannis <jannis.necker@desy.de>
 
 import os
@@ -118,7 +118,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                 if all(
                     (
                         t2_res[key]["nu_of_excess_regions"] == 0
-                        and t2_res[key]["nu_of_baseline_blocks"] <= 1
+                        and t2_res[key]["nu_of_baseline_regions"] <= 1
                     )
                     for key in self.filters_lc
                 ):
@@ -185,7 +185,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                                         t2_res[key]["jd_excess_regions"][idx][-1]
                                         - t2_res[key]["jd_excess_regions"][idx][0]
                                         >= 1095.0
-                                        and t2_res[key]["nu_of_excess_blocks"] <= 1
+                                        and t2_res[key]["nu_of_excess_blocks"][idx] <= 1
                                     ):
                                         t2_output["description"].append("Stage transition")
 
@@ -328,7 +328,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
         ):
             t2_output["values"] = excess_region
 
-            for fid, passband in enumerate(self.filters_lc, 1):
+            for fid, key in enumerate(self.filters_lc, 1):
                 if self.flux:
                     if self.data_type in ["ztf_alert", "ztf_fp"]:
                         phot_tuple = light_curve.get_ntuples(
@@ -337,7 +337,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                                 {
                                     "attribute": "filter",
                                     "operator": "==",
-                                    "value": passband,
+                                    "value": key,
                                 },
                             ],
                         )
@@ -351,7 +351,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                                 {
                                     "attribute": "filter",
                                     "operator": "==",
-                                    "value": passband,
+                                    "value": key,
                                 },
                                 {
                                     "attribute": "flux_ul",
@@ -368,7 +368,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                             {
                                 "attribute": "filter",
                                 "operator": "==",
-                                "value": passband,
+                                "value": key,
                             },
                             {"attribute": "mag_ul", "operator": "==", "value": "False"},
                         ],
@@ -397,17 +397,17 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                         )
                     ).nominal_value
 
-                    baseline_rms = t2_res[passband]["baseline_rms"]
-                    baseline_sigma = t2_res[passband]["baseline_sigma"]
+                    baseline_rms = t2_res[key]["baseline_rms"]
+                    baseline_sigma = t2_res[key]["baseline_sigma"]
                     excess_region["significance"].append(
-                        t2_res[passband]["significance"]
+                        t2_res[key]["significance"]
                     )
                     excess_region["strength_sjoert"].append(
-                        t2_res[passband]["strength_sjoert"]
+                        t2_res[key]["strength_sjoert"]
                     )
                     excess_region["strength"].append(
                         abs(
-                            t2_res[passband]["baseline"]
+                            t2_res[key]["baseline"]
                             - excess_region["max_mag"][fid - 1]
                         )
                         / baseline_sigma
@@ -457,17 +457,17 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                             )
                 else:
                     # fix: baseline_rms never used
-                    baseline_rms = t2_res[passband]["baseline_rms"]
-                    baseline_sigma = t2_res[passband]["baseline_sigma"]
+                    baseline_rms = t2_res[key]["baseline_rms"]
+                    baseline_sigma = t2_res[key]["baseline_sigma"]
                     excess_region["significance"].append(
-                        t2_res[passband]["significance"]
+                        t2_res[key]["significance"]
                     )
                     excess_region["strength_sjoert"].append(
-                        t2_res[passband]["strength_sjoert"]
+                        t2_res[key]["strength_sjoert"]
                     )
                     excess_region["strength"].append(
                         abs(
-                            t2_res[passband]["baseline"]
+                            t2_res[key]["baseline"]
                             - excess_region["max_mag"][fid - 1]
                         )
                         / baseline_sigma
@@ -513,7 +513,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
             fig, ax = plt.subplots(2, figsize=(18, 15))
 
             has_data = {}
-            for fid, passband in enumerate(self.filters_lc, 1):
+            for fid, key in enumerate(self.filters_lc, 1):
                 if self.flux:
                     if self.data_type in ["ztf_alert", "ztf_fp"]:
                         phot_tuple = light_curve.get_ntuples(
@@ -522,7 +522,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                                 {
                                     "attribute": "filter",
                                     "operator": "==",
-                                    "value": passband,
+                                    "value": key,
                                 },
                             ],
                         )
@@ -540,7 +540,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                                 {
                                     "attribute": "filter",
                                     "operator": "==",
-                                    "value": passband,
+                                    "value": key,
                                 },
                                 {
                                     "attribute": "flux_ul",
@@ -557,7 +557,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                             {
                                 "attribute": "filter",
                                 "operator": "==",
-                                "value": passband,
+                                "value": key,
                             },
                             {"attribute": "mag_ul", "operator": "==", "value": "False"},
                         ],
@@ -567,8 +567,8 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                 df = pd.DataFrame(phot_tuple, columns=["jd", "mag", "mag.err"])
                 df["Outlier"] = False
 
-                if t2_res[passband]["jd_outlier"]:
-                    for block in t2_res[passband]["jd_outlier"]:
+                if t2_res[key]["jd_outlier"]:
+                    for block in t2_res[key]["jd_outlier"]:
                         df.loc[
                             (df["jd"] >= block[0]) & (df["jd"] <= block[1]), "Outlier"
                         ] = True
@@ -591,7 +591,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                     datapoints["jd"] - 2400000.5,
                     datapoints["mag"],
                     yerr=datapoints["mag.err"],
-                    label=passband,
+                    label=key,
                     fmt="s",
                     color=self.plot_colors[key],
                     ecolor="lightgray",
