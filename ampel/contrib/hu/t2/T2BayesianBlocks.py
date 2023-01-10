@@ -4,8 +4,8 @@
 # License           : BSD-3-Clause
 # Author            : Eleni
 # Date              : 28.04.2021
-# Last Modified Date: 16.11.2022
-# Last Modified By  : Simeon
+# Last Modified Date: 10.01.2023
+# Last Modified By  : Eleni
 
 import os, math, itertools
 from typing import Dict, List, Optional, Sequence, Any
@@ -65,9 +65,8 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
     PlotColor: Sequence[str] = ["red", "blue"]
 
-    def get_baseline(self, baye_block):
+    def get_baseline(self, df, baye_block):
         if self.flux:
-
             if self.data_type in ["ztf_alert", "ztf_fp"]:
                 baseline_df = baye_block.copy()
                 baseline_df.sort_values(by="mag", inplace=True)
@@ -80,13 +79,16 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
                 baseline = baseline_df["mag"][baseline_df["mag"].idxmin()]
                 baseline_sigma = baseline_df["mag.err"][baseline_df["mag"].idxmin()]
+                baye_block.loc[baye_block["mag"].idxmin(), "level"] = "baseline"
 
             elif self.data_type == "wise":
-                baseline = baye_block["mag"][baye_block["mag"].idxmin()]
-                baseline_sigma = baye_block["mag.err"][baye_block["mag"].idxmin()]
-
+               # baseline = baye_block["mag"][baye_block["mag"].idxmin()]
+               # baseline_sigma = baye_block["mag.err"][baye_block["mag"].idxmin()]
+                baye_block.loc[baye_block["mag"].idxmin(), "level"] = "baseline"
+                (baseline, baseline_sigma, baseline_rms) = self.calculate_baseline(df, baye_block)
+                
                 if baye_block["measurements_nu"][baye_block["mag"].idxmin()] == 1:
-                    baye_block.loc[baye_block["mag"].idxmin(), "level"] = "baseline"
+                 #   baye_block.loc[baye_block["mag"].idxmin(), "level"] = "baseline"
                     baye_block.loc[
                         baye_block.index[
                             baye_block["mag"]
@@ -94,20 +96,22 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                         ].tolist()[0],
                         "level",
                     ] = "baseline"
-                    value = unumpy.uarray(
-                        np.array(baye_block[baye_block["level"] == "baseline"]["mag"]),
-                        np.array(
-                            baye_block[baye_block["level"] == "baseline"]["mag.err"]
-                        ),
-                    )
-                    baseline = np.mean(value).nominal_value
-                    baseline_sigma = np.mean(value).std_dev
+                    (baseline, baseline_sigma, baseline_rms) = self.calculate_baseline(df, baye_block)
+             #       value = unumpy.uarray(
+             #           np.array(baye_block[baye_block["level"] == "baseline"]["mag"]),
+             #           np.array(
+             #               baye_block[baye_block["level"] == "baseline"]["mag.err"]
+             #           ),
+             #       )
+             #       baseline = np.mean(value).nominal_value
+             #       baseline_sigma = np.mean(value).std_dev
         else:
             baseline = baye_block["mag"][baye_block["mag"].idxmax()]
             baseline_sigma = baye_block["mag.err"][baye_block["mag"].idxmax()]
+            baye_block["level"][baye_block["mag"].idxmax()] = "baseline"
 
             if baye_block["measurements_nu"][baye_block["mag"].idxmax()] == 1:
-                baye_block["level"][baye_block["mag"].idxmax()] = "baseline"
+         #       baye_block["level"][baye_block["mag"].idxmax()] = "baseline"
                 baye_block["level"][
                     baye_block.index[
                         baye_block["mag"]
@@ -124,10 +128,47 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
         if np.isnan(baseline_sigma):
             baseline_sigma = baye_block.sort_values(by="mag.err", ascending=False)[
                 "mag.err"
-            ].iloc[0]
+            ].iloc[0] 
         return (baseline, baseline_sigma)
 
-    def baye_block_levels(self, baye_block, baseline, baseline_sigma):
+    def calculate_baseline(self, df, baye_block):
+        baseline_region = baye_block[baye_block["level"] == "baseline"]
+        baseline_values = []
+        baseline_error_values = []
+        for i in baseline_region.index:
+            baseline_values.append(
+                df[
+                    df["jd"].between(
+                        baseline_region["jd_measurement_start"][i],
+                        baseline_region["jd_measurement_end"][i],
+                        inclusive="both",
+                    )
+                ]["mag"].values
+            )
+            baseline_error_values.append(
+                df[
+                    df["jd"].between(
+                        baseline_region["jd_measurement_start"][i],
+                        baseline_region["jd_measurement_end"][i],
+                        inclusive="both",
+                    )
+                ]["mag.err"].values
+            )
+
+        value = unumpy.uarray(
+            list(itertools.chain(*baseline_values)),
+            list(itertools.chain(*baseline_error_values)),
+        ) 
+        baseline = np.mean(value).nominal_value
+        baseline_sigma = np.mean(value).std_dev
+        baseline_rms = mean_squared_error(
+            list(itertools.chain(*baseline_values)),
+            [baseline] * len(list(itertools.chain(*baseline_values))),
+            squared=False,
+        )
+        return (baseline, baseline_sigma, baseline_rms)
+
+    def baye_block_levels(self, df, baye_block, baseline, baseline_sigma):
         for nu, mag in enumerate(baye_block["mag"]):
             idx = baye_block.index.tolist()[nu]
             if np.isnan(baye_block["mag.err"][idx]):
@@ -147,7 +188,34 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     baye_block.loc[idx, "level"] = "baseline"
                 else:
                     baye_block.loc[idx, "level"] = "excess"
-        return baye_block
+        (baseline, baseline_sigma, baseline_rms) = self.calculate_baseline(df, baye_block)
+        return (baye_block, baseline, baseline_sigma, besline_rms)
+
+    def baye_block_levels_with_changing_baseline(self, df, baye_block, baseline, baseline_sigma):
+        for nu, mag in enumerate(baye_block.sort_values(by="mag")['mag']):  
+          #  idx = baye_block.index.tolist()[nu]
+            idx = baye_block.index[baye_block['mag'] == mag].tolist()[0] 
+            if np.isnan(baye_block["mag.err"][idx]):
+                if abs((baseline - mag) / baseline_sigma) < self.rej_sigma:
+                    baye_block.loc[idx, "level"] = "baseline"
+                else:
+                    baye_block.loc[idx, "level"] = "excess"
+            elif baye_block["level"][idx] != "baseline":
+                if (
+                    baseline + (self.rej_sigma * baseline_sigma)
+                    >= mag
+                    >= baseline - (self.rej_sigma * baseline_sigma)
+                ) or (
+                    baseline + (self.rej_sigma * baseline_sigma)
+                    >= mag - baye_block["mag.err"][idx]
+                ):
+                    baye_block.loc[idx, "level"] = "baseline"
+                else:
+                    baye_block.loc[idx, "level"] = "excess"
+            if "baseline" in baye_block['level'].values: 
+                (baseline, baseline_sigma, baseline_rms) = self.calculate_baseline(df, baye_block)  
+        return (baye_block, baseline, baseline_sigma, baseline_rms)
+
 
     def idx_of_excess_regions(self, excess_region):
         length = 1
@@ -237,6 +305,11 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
             # now we select the other filters
             for compare_filter in self.filters_lc:
+                if output_per_filter[compare_filter].get("nu_of_excess_regions") in [
+                        0,
+                        None,
+                        ]:
+                    return coincide_region
 
                 if output_per_filter[compare_filter].get("nu_of_excess_regions") in [
                     0,
@@ -379,13 +452,18 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 "max_mag_excess_region": [],
                 "max_jd_excess_region": [],
                 "max_sigma_excess_region": [],
+                "nu_of_excess_blocks": [],
+              #  "nu_of_baseline_blocks": [],
                 "significance_after_peak": [],
                 "strength_after_peak": [],
                 "jd_baseline_regions": [],
                 "mag_edge_baseline": [],
                 "significance_of_variability_excess": [[], []],
             }
+<<<<<<< HEAD
             # 0: The excess region has one baye block with one measurement, 1: The excess region has one baye block with multiple measurements, 2: The excess region has multiple baye blocks
+=======
+>>>>>>> Changes on baseline calculation for WISE data
 
             if self.data_type == "ztf_fp":
                 if self.flux:
@@ -480,7 +558,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             if phot_tuple is None or len(phot_tuple) <= 1:
                 output["nu_of_excess_regions"] = None
                 output["nu_of_excess_blocks"] = None
-                output["nu_of_baseline_blocks"] = None
+                output["nu_of_baseline_regions"] = None
                 output["jd_excess_regions"] = []
                 output["mag_edge_excess"] = None
                 output["max_mag_excess_region"] = None
@@ -523,6 +601,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             df = df.sort_values(by=["jd"], ignore_index=True)
             df["Outlier"] = False
 
+ 
             if self.data_type == "wise":
                 ncp_prior = 1.32 + 0.577 * math.log10(len(df))
             elif self.data_type == "ztf_fp":
@@ -542,7 +621,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 df["mag"].values[unique_jd_idx],
                 sigma=df["mag.err"].values[unique_jd_idx],
                 ncp_prior=ncp_prior,
-                fitness="measures",
+                fitness="measures",  
             )
 
             for i in range(1, len(edges)):
@@ -556,7 +635,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
                 if self.data_type == "wise":
                     mag_err = np.mean(all_value_per_block).std_dev
-
+   
                 elif self.data_type == "ztf_fp":
                     mag_err = mean_squared_error(
                         unumpy.nominal_values(all_value_per_block),
@@ -571,8 +650,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                         "jd_end": edges[i],
                         "jd_measurement_start": min(baye_block_all["jd"]),
                         "jd_measurement_end": max(baye_block_all["jd"]),
-                        "mag": np.mean(all_value_per_block).nominal_value,
-                        "mag.err": np.mean(all_value_per_block).std_dev,
+                        "mag": np.mean(all_value_per_block).nominal_value, 
                         "mag.err": mag_err,
                         "measurements_nu": len(baye_block_all),
                         "mag_edge": baye_block_all["mag"][
@@ -601,7 +679,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             if len(baye_block) == 0:
                 output["nu_of_excess_regions"] = None
                 output["nu_of_excess_blocks"] = None
-                output["nu_of_baseline_blocks"] = None
+                output["nu_of_baseline_regions"] = None
                 output["jd_excess_regions"] = []
                 output["mag_edge_excess"] = None
                 output["max_mag_excess_region"] = None
@@ -639,68 +717,84 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     "mag_edge": "float",
                 }
             )
-
             #######################################
             ######### Find the baseline ###########
-
-            (baseline, baseline_sigma) = self.get_baseline(baye_block)
-
             for sigma_discr in ["sigma_from_old_baseline", "sigma_from_baseline"]:
+                (baseline_init, baseline_init_sigma) = self.get_baseline(df, baye_block) 
                 # Recalculate levels
-                baye_block[baye_block["level"] != "baseline"] = self.baye_block_levels(
-                    baye_block[baye_block["level"] != "baseline"],
-                    baseline,
-                    baseline_sigma,
-                )
+            #    baye_block[baye_block["level"] != "baseline"] = self.baye_block_levels(
+            #        baye_block[baye_block["level"] != "baseline"],
+            #        baseline,
+            #        baseline_sigma,
+            #    )
+                if sigma_discr == "sigma_from_old_baseline":    
+                    (baseline, baseline_sigma) = self.get_baseline(df, baye_block)
+                    baseline = baseline_init
+                    baseline_sigma = baseline_init_sigma 
+                else: 
+                    if self.data_type == "wise":
+                        (baye_block, baseline, baseline_sigma, baseline_rms) = self.baye_block_levels_with_changing_baseline(
+                                df,
+                                baye_block,
+                                baseline_init,
+                                baseline_init_sigma,
+                            )                    
+                    elif self.data_type == "ztf_fp":
+                        (baye_block, baseline, baseline_sigma, baseline_rms) = self.baye_block_levels(
+                                df,
+                                baye_block,
+                                baseline_init,
+                                baseline_init_sigma,
+                            )
+              
+                ########################################
                 ####### Calculate rms of the baseline
-                value = unumpy.uarray(
-                    np.array(baye_block[baye_block["level"] == "baseline"]["mag"]),
-                    np.array(baye_block[baye_block["level"] == "baseline"]["mag.err"]),
-                )
-                baseline_region = baye_block[baye_block["level"] == "baseline"]
-                baseline_values = []
-                baseline_error_values = []
-                for i in baseline_region.index:
-                    baseline_values.append(
-                        df[
-                            df["jd"].between(
-                                baseline_region["jd_measurement_start"][i],
-                                baseline_region["jd_measurement_end"][i],
-                                inclusive="both",
-                            )
-                        ]["mag"].values
-                    )
-                    baseline_error_values.append(
-                        df[
-                            df["jd"].between(
-                                baseline_region["jd_measurement_start"][i],
-                                baseline_region["jd_measurement_end"][i],
-                                inclusive="both",
-                            )
-                        ]["mag.err"].values
-                    )
+           #     value = unumpy.uarray(
+           #         np.array(baye_block[baye_block["level"] == "baseline"]["mag"]),
+           #         np.array(baye_block[baye_block["level"] == "baseline"]["mag.err"]),
+           #     )
+           #     baseline_region = baye_block[baye_block["level"] == "baseline"]
+           #     baseline_values = []
+           #     baseline_error_values = []
+           #     for i in baseline_region.index:
+           #         baseline_values.append(
+           #             df[
+           #                 df["jd"].between(
+           #                     baseline_region["jd_measurement_start"][i],
+           #                     baseline_region["jd_measurement_end"][i],
+           #                     inclusive="both",
+           #                 )
+           #             ]["mag"].values
+           #         )
+           #         baseline_error_values.append(
+           #             df[
+           #                 df["jd"].between(
+           #                     baseline_region["jd_measurement_start"][i],
+           #                     baseline_region["jd_measurement_end"][i],
+           #                     inclusive="both",
+           #                 )
+           #             ]["mag.err"].values
+           #         )
 
-                value = unumpy.uarray(
-                    list(itertools.chain(*baseline_values)),
-                    list(itertools.chain(*baseline_error_values)),
-                )
-                baseline = np.mean(value).nominal_value
-                baseline_sigma = np.mean(value).std_dev
-                baseline_rms = mean_squared_error(
-                    list(itertools.chain(*baseline_values)),
-                    [baseline] * len(list(itertools.chain(*baseline_values))),
-                    squared=False,
-                )
-                baye_block[str(sigma_discr)] = abs(
-                    (baseline - baye_block["mag"]) / baseline_sigma
-                )
+           #     value = unumpy.uarray(
+           #         list(itertools.chain(*baseline_values)),
+           #         list(itertools.chain(*baseline_error_values)),
+           #     )
+           #     baseline = np.mean(value).nominal_value
+           #     baseline_sigma = np.mean(value).std_dev
+           #     baseline_rms = mean_squared_error(
+           #         list(itertools.chain(*baseline_values)),
+           #         [baseline] * len(list(itertools.chain(*baseline_values))),
+           #         squared=False,
+           #     ) 
+                baye_block[str(sigma_discr)] = (baye_block["mag"]-baseline) / baseline_sigma
+            
 
             #######################################
             ########## Excess region  #############
             excess_region = baye_block[baye_block["level"] == "excess"]
             if not excess_region.empty:
                 # Find the excess regions (baye block that are accumulated to a region)
-
                 excess_regions_idx = [
                     list(group)
                     for group in mit.consecutive_groups(excess_region.index.tolist())
@@ -811,37 +905,35 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     min(df[df["Outlier"] == False]["mag"].values) - baseline
                 ) / everything_except_excess_rms
 
-            for idx in baseline_regions_idx:
+            for idx in baseline_regions_idx: 
                 if baye_block["level"][idx[-1]] == "outlier":
                     if len(idx) != 1:
-                        output["nu_of_baseline_blocks"] = len(idx) - 1
+                        output["nu_of_baseline_regions"] = len(baseline_regions_idx) - 1
                         output["jd_baseline_regions"].append(
                             [
                                 baye_block["jd_measurement_start"][idx[0]],
                                 baye_block["jd_measurement_end"][idx[-1] - 1],
                             ]
                         )
-
                         output["mag_edge_baseline"].append(
                             baye_block["mag_edge"][idx[-1] - 1]
                         )
 
                 elif baye_block["level"][idx[0]] == "outlier":
                     if len(idx) != 1:
-                        output["nu_of_baseline_blocks"] = len(idx) - 1
+                        output["nu_of_baseline_regions"] = len(baseline_regions_idx) - 1
                         output["jd_baseline_regions"].append(
                             [
                                 baye_block["jd_measurement_start"][idx[0] + 1],
                                 baye_block["jd_measurement_end"][idx[-1]],
                             ]
                         )
-
                         output["mag_edge_baseline"].append(
                             baye_block["mag_edge"][idx[-1]]
                         )
 
                 else:
-                    output["nu_of_baseline_blocks"] = len(idx)
+                    output["nu_of_baseline_regions"] = len(baseline_regions_idx)
                     output["jd_baseline_regions"].append(
                         [
                             baye_block["jd_measurement_start"][idx[0]],
@@ -857,7 +949,11 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 significance_of_fluctuation_before_peak = []
                 significance_of_fluctuation_after_peak = []
                 for idx in excess_regions_idx:
-                    output["nu_of_excess_blocks"] = len(idx)
+                    output["nu_of_excess_blocks"].append(
+                            len(idx) 
+                    )
+                  #  output["nu_of_excess_blocks"] = len(idx)
+                   
                     output["jd_excess_regions"].append(
                         [
                             baye_block["jd_measurement_start"][idx[0]],
@@ -1069,7 +1165,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
             else:
                 output["nu_of_excess_regions"] = 0
-                output["nu_of_excess_blocks"] = 0
+                output["nu_of_excess_blocks"] = None
                 output["jd_excess_regions"] = []
                 output["mag_edge_excess"] = None
                 output["max_mag_excess_region"] = None
@@ -1242,7 +1338,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 ax.invert_yaxis()
 
             if self.flux == True:
-                fig.supylabel("Difference flux", fontsize=30)
+                fig.supylabel("Flux Density", fontsize=30)
             else:
                 fig.supylabel("Difference magnitude", fontsize=30)
 
