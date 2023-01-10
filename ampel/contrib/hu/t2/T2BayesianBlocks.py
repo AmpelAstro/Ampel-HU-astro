@@ -460,11 +460,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 "mag_edge_baseline": [],
                 "significance_of_variability_excess": [[], []],
             }
-<<<<<<< HEAD
-            # 0: The excess region has one baye block with one measurement, 1: The excess region has one baye block with multiple measurements, 2: The excess region has multiple baye blocks
-=======
->>>>>>> Changes on baseline calculation for WISE data
-
+      
             if self.data_type == "ztf_fp":
                 if self.flux:
                     phot_tuple = light_curve.get_ntuples(
