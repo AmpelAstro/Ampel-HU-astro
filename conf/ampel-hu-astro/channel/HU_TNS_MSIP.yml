@@ -1,4 +1,5 @@
 channel: HU_TNS_MSIP
+source: null
 contact: ampel@desy.de
 active: false
 auto_complete: live

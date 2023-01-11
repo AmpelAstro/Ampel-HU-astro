@@ -1,4 +1,5 @@
 channel: HU_RANDOM
+source: null
 contact: ampel@desy.de
 active: true
 auto_complete: false

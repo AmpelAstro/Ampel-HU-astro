@@ -1,4 +1,5 @@
 channel: HU_GP_16
+source: null
 contact: ampel@desy.de
 active: false
 auto_complete: live
