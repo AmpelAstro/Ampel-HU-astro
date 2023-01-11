@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ampel-hu-astro"
-version = "0.8.3a11"
+version = "0.8.3a12"
 license = "BSD-3-Clause"
 readme = "README.md"
 description = "Astronomy units for the Ampel system from HU-Berlin"
