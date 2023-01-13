@@ -57,11 +57,12 @@ class NeoWisePhotometryAlertSupplier(BaseAlertSupplier):
         """
         d = self._deserialize(next(self.alert_loader))  # type: ignore
 
-        if "timewise_lightcurve" in d[1].keys():
-            df = pd.DataFrame.from_dict(d[1]["timewise_lightcurve"])
-        else:
-            df = pd.DataFrame.from_dict(d[1])
+        # assure that a timewise lightcurve is in the data
+        while "timewise_lightcurve" not in d[1]:
+            d = self._deserialize(next(self.alert_loader))
+
         transient_name = d[0]
+        df = pd.DataFrame.from_dict(d[1]["timewise_lightcurve"])
 
         # Some units assume jd, and conversion not yet completed
         df["jd"] = df["mean_mjd"] + 2400000.5
