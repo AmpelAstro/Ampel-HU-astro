@@ -258,7 +258,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                                 df["jd"].between(
                                     baye_block["jd_measurement_start"][value[0]],
                                     baye_block["jd_measurement_end"][value[0]],
-                                    inclusive=True,
+                                    inclusive="both",
                                 )
                             ].tolist()[0],
                             "Outlier",
