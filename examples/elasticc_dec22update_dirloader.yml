@@ -6,6 +6,8 @@
 # - Replace TabulatorRiseDecline and 3 copies of XgbClassifier with one
 #   unit. Maybe faster and less db documents?
 
+
+name: elasticc-nov
 parameters:
 - name: classifier_url
   value: https://box.hu-berlin.de/f/d1cec88c0bec4123b208/?dl=1
@@ -19,21 +21,27 @@ parameters:
   value: https://box.hu-berlin.de/f/877b110e1e4f44e9b1e7/?dl=1
 - name: alertsample
   value: https://portal.nersc.gov/cfs/lsst/DESC_TD_PUBLIC/ELASTICC/5000alerts.tar.gz
-name: elasticc-nov
+
 mongo:
   prefix: Elasticc5000_vDec_Argo_Dir_v4
+
 channel:
 - name: Elasticc
   access: []
   policy: []
   version: 1
+
 task:
+
 - title: ingest
+
   unit: AlertConsumer
   config:
     iter_max: 100000000
     compiler_opts: LSSTCompilerOptions
+
     supplier:
+      unit: LSSTAlertSupplier
       config:
         deserialize: null
         loader:
@@ -41,17 +49,20 @@ task:
             folder: 5000alertsdir/NITE60562
             extension: "*avro.gz"
           unit: ElasticcDirAlertLoader
-      unit: LSSTAlertSupplier
+
     shaper: {unit: LSSTDataPointShaper}
+
     directives:
     - channel: Elasticc
+
       filter:
+        unit: ReallySimpleLSSTFilter
+        on_stock_match: bypass
         config:
           min_ndet: 0
           min_tspan: 0
           max_tspan: 10000
-        on_stock_match: bypass
-        unit: ReallySimpleLSSTFilter
+
       ingest:
           mux:
             unit: LSSTMongoMuxer
@@ -74,6 +85,7 @@ task:
             combine:
             - unit: LSSTT1Combiner
               state_t2:
+
               - &xgb_config
                 unit: T2MultiXgbClassifier
                 config:
@@ -88,6 +100,7 @@ task:
                         zp: 31.4
                   t2_dependency:
                   - unit: T2ElasticcRedshiftSampler
+
               - &T2RunParsnip
                 unit: T2RunParsnip
                 config:
@@ -101,6 +114,7 @@ task:
                     - unit: LSSTT2Tabulator
                       config:
                         zp: 31.4
+
               - unit: T2ElasticcReport
                 config:
                   multiple_classifiers: true
