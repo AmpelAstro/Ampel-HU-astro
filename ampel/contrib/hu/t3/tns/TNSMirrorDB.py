@@ -24,7 +24,7 @@ class TNSMirrorDB:
         }
         try:
             meta.update_one({}, {"$set": entry}, upsert=True)
-            self.collection.ensure_index([("pos", GEOSPHERE)])
+            self.collection.create_index([("pos", GEOSPHERE)])
         except OperationFailure:
             ...
         if logger:
