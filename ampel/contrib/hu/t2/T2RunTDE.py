@@ -105,7 +105,7 @@ class TDESource(sncosmo.Source):
         return self._Planck(self, nu, T) * nu / (self.sigma_SB * T**4 / np.pi)
 
     @staticmethod
-    def _get_cc(self, nu: np.ndarray, T: Union[float, np.float64] = None) -> np.ndarray:
+    def _get_cc(self: "TDESource", nu: np.ndarray, T: Union[float, np.float64, None] = None) -> np.ndarray:
         """
         Calculate a k-correction for each wavelength
         """
