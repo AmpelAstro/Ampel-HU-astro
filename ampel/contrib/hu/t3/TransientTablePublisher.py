@@ -171,8 +171,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
             self.logger.info('Exported', extra={'path': full_path})
 
         # Export to slack if requested
-        if self.slack_channel is not None and self.slack_token is not None:
-            self._slack_export(df)
+        self._slack_export(df)
 
         # Could potentially return a document to T3 collection detailing
         # what was done, as well as the table itself.
@@ -195,6 +194,8 @@ class TransientTablePublisher(AbsPhotoT3Unit):
         """
         Export content of Pandas dataframe to slack.
         """
+        if self.slack_channel is None or self.slack_token is None:
+            return
 
         # Slack summary
         buffer = io.StringIO(self.file_name)

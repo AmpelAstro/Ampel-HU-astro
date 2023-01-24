@@ -40,7 +40,7 @@ def test_tnsclient(test_client):
     )
 
 
-def test_tnsclient_backoff(test_client):
+def test_tnsclient_backoff(test_client: TNSClient):
     import logging
 
     logging.basicConfig()
@@ -53,9 +53,9 @@ def test_tnsclient_backoff(test_client):
 
 @pytest.mark.asyncio
 async def test_tnsclient_backoff_async(tns_token):
-    from ampel.contrib.hu.t3.tns import TNSClient
+    from ampel.contrib.hu.t3.tns import TNSClient as TNSMirrorClient
 
-    client = TNSClient(
+    client = TNSMirrorClient(
         tns_token, timeout=120, maxParallelRequests=1, logger=AmpelLogger.get_logger()
     )
     ra, dec, matchradius = 244.000917, 22.268031, 5.0

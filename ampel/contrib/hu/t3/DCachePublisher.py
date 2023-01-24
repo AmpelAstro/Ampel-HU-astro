@@ -9,6 +9,7 @@
 
 
 import asyncio, datetime, gzip, io, os, ssl, sys, time, traceback, backoff, pytz
+from contextlib import nullcontext
 from functools import partial
 from typing import Any
 from collections.abc import Generator
@@ -121,12 +122,11 @@ class DCachePublisher(AbsT3ReviewUnit):
 
     def _on_backoff(self, details):
         exc_typ, exc, _ = sys.exc_info()
-        if exc is not None:
-            exc = traceback.format_exception_only(exc_typ, exc)[-1].rstrip("\n")
+        err = traceback.format_exception_only(exc_typ, exc)[-1].rstrip("\n") if exc else None
         self.logger.warn(
             "backoff",
             extra={
-                "exc": exc,
+                "exc": err,
                 "target_args": details["args"],
                 "wait": details["wait"],
                 "tries": details["tries"],
@@ -136,12 +136,11 @@ class DCachePublisher(AbsT3ReviewUnit):
 
     def _on_giveup(self, details):
         exc_typ, exc, _ = sys.exc_info()
-        if exc is not None:
-            exc = traceback.format_exception_only(exc_typ, exc)[-1].rstrip("\n")
+        err = traceback.format_exception_only(exc_typ, exc)[-1].rstrip("\n") if exc else None
         self.logger.warn(
             "gave up",
             extra={
-                "exc": exc,
+                "exc": err,
                 "target_args": details["args"],
                 "tries": details["tries"],
             },
@@ -181,34 +180,31 @@ class DCachePublisher(AbsT3ReviewUnit):
                 headers={"Authorization": f"BEARER {self.authz.get()}"},
                 raise_for_status=True,
             ) as session:
-                if self.dry_run:
-                    session = None
-                else:
-                    # ClientSession.request is a normal function returning an
-                    # async context manager. While this is kind of equivalent
-                    # to a coroutine, it can't be decorated with backoff. Wrap
-                    # it so it can be.
-                    # Note that it is important to not actually enter the
-                    # context manager here, as this would close the response
-                    # on exit, causing read() to raise ClientConnectionError.
-                    async def async_request(*args, **kwargs):
-                        return await session.request(*args, **kwargs)
+                # ClientSession.request is a normal function returning an
+                # async context manager. While this is kind of equivalent
+                # to a coroutine, it can't be decorated with backoff. Wrap
+                # it so it can be.
+                # Note that it is important to not actually enter the
+                # context manager here, as this would close the response
+                # on exit, causing read() to raise ClientConnectionError.
+                async def async_request(*args, **kwargs):
+                    return await session.request(*args, **kwargs)
 
-                    # robustify Session.request() against transitory failures
-                    request = backoff.on_exception(
-                        backoff.expo,
-                        (
-                            asyncio.TimeoutError,
-                            ClientResponseError,
-                            ClientConnectorError,
-                            ClientConnectionError,
-                            ServerDisconnectedError,
-                        ),
-                        logger=None,
-                        giveup=self.is_permanent_error,
-                        on_giveup=self._on_giveup,
-                        on_backoff=self._on_backoff,
-                    )(async_request)
+                # robustify Session.request() against transitory failures
+                request = backoff.on_exception(
+                    backoff.expo,
+                    (
+                        asyncio.TimeoutError,
+                        ClientResponseError,
+                        ClientConnectorError,
+                        ClientConnectionError,
+                        ServerDisconnectedError,
+                    ),
+                    logger=None,
+                    giveup=self.is_permanent_error,
+                    on_giveup=self._on_giveup,
+                    on_backoff=self._on_backoff,
+                )(async_request)
 
                 tasks = [task(request) for task in unbound_tasks]
                 return await asyncio.gather(*tasks)

@@ -102,6 +102,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.mypy]
 namespace_packages = true
 show_error_codes = true
+check_untyped_defs = true
 
 [[tool.mypy.overrides]]
 module = [

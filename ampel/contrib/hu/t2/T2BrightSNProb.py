@@ -8,7 +8,7 @@
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 import numpy as np
-from typing import Union
+from typing import Union, TypedDict
 from ampel.types import UBson
 from ampel.struct.UnitResult import UnitResult
 from ampel.view.LightCurve import LightCurve
@@ -16,6 +16,10 @@ from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 from ampel.contrib.hu.t2.T2RiseDeclineStat import T2RiseDeclineBase
 import ampel.contrib.hu.t2.xgb_trees as xgb_trees
 
+class XgbTreeParam(TypedDict):
+    max_duration: float
+    max_predetect: float
+    min_detmag: float
 
 class T2BrightSNProb(AbsLightCurveT2Unit, T2RiseDeclineBase):
     """
@@ -41,7 +45,7 @@ class T2BrightSNProb(AbsLightCurveT2Unit, T2RiseDeclineBase):
             "neargaia_med",
             "maggaia_med",
         ]
-        self.xgb_tree_param = {
+        self.xgb_tree_param: dict[int, XgbTreeParam] = {
             2: {"max_duration": 3.5, "max_predetect": 3.5, "min_detmag": 16},
             3: {"max_duration": 6.5, "max_predetect": 3.5, "min_detmag": 16},
             4: {"max_duration": 6.5, "max_predetect": 3.5, "min_detmag": 16},

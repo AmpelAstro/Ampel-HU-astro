@@ -107,11 +107,11 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
     def post_init(self):
 
         # Select extcat
+        assert self.resource
         self.extcat_path = self.resource["extcats"]
 
         # dict for catalog query objects
         self.catq_objects = {}
-        self.debug = self.logger.verbose > 1
 
     def init_extcats_query(self, catalog, **kwargs) -> "CatalogQuery":
         """
@@ -150,20 +150,18 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
         except KeyError:
             return UnitResult(code=DocumentCode.T2_MISSING_INFO)
 
-        if self.debug:
-            self.logger.debug(
-                "Transient position (ra, dec): {transient_ra:.4f}, {transient_dec:.4f} deg"
-            )
+        self.logger.debug(
+            "Transient position (ra, dec): {transient_ra:.4f}, {transient_dec:.4f} deg"
+        )
 
         # initialize the catalog quer(ies). Use instance variable to aviod duplicates
         out_dict: dict[str, Any] = {}
         for catalog, cat_opts in self.catalogs.items():
 
             src = None
-            if self.debug:
-                self.logger.debug(
-                    f"Loading catalog {catalog} using options: {str(cat_opts)}"
-                )
+            self.logger.debug(
+                f"Loading catalog {catalog} using options: {str(cat_opts)}"
+            )
             # find out how ra/dec are called in the catalog
             catq_kwargs = cat_opts.catq_kwargs
             if catq_kwargs is None:
@@ -303,11 +301,10 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
                     out_dict[catalog] = out_dict[catalog][0]
 
             else:
-                if self.debug:
-                    self.logger.debug(
-                        f"no match found in catalog {catalog} within "
-                        f"{cat_opts.rs_arcsec:.2f} arcsec from transient"
-                    )
+                self.logger.debug(
+                    f"no match found in catalog {catalog} within "
+                    f"{cat_opts.rs_arcsec:.2f} arcsec from transient"
+                )
                 out_dict[catalog] = False
 
         # return the info as dictionary

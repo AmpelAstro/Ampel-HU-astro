@@ -92,11 +92,11 @@ def convert(inp,outfmt='pandas',verbose=False,**kwargs):
     header = inp[0:index]
     inp = inp[index+1:]
     list = header.split(',')
-    col_dict = {}
+    col_dict: dict[str,int] = {}
     new_s = ''
     for l in list:
         if l in col_dict.keys():
-            n = col_dict.get(l)
+            n = col_dict[l]
             col_dict[l] = n+1
             new_s += (l+'_'+str(n)+',')
         else:

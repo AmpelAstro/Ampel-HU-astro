@@ -35,8 +35,8 @@ def strip_auth_from_url(url):
 
 
 def strip_path_from_url(url):
-    scheme, netloc, path, params, query, fragment = urlparse(url)
-    return urlunparse(ParseResult(scheme, netloc, "/", None, None, None))
+    scheme, netloc, *_ = urlparse(url)
+    return urlunparse(ParseResult(scheme, netloc, "/", "", "", ""))
 
 
 class TransientViewDumper(AbsT3ReviewUnit):

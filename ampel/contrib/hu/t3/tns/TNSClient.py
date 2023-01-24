@@ -92,18 +92,16 @@ class TNSClient:
 
     def _on_backoff(self, details):
         exc_typ, exc, _ = sys.exc_info()
-        if exc is not None:
-            exc = traceback.format_exception_only(exc_typ, exc)[-1].rstrip("\n")
+        err = traceback.format_exception_only(exc_typ, exc)[-1].rstrip("\n") if exc else None
         self.logger.warn(
             "backoff",
-            extra={"exc": exc, "wait": details["wait"], "tries": details["tries"]},
+            extra={"exc": err, "wait": details["wait"], "tries": details["tries"]},
         )
 
     def _on_giveup(self, details):
         exc_typ, exc, _ = sys.exc_info()
-        if exc is not None:
-            exc = traceback.format_exception_only(exc_typ, exc)[-1].rstrip("\n")
-        self.logger.warn("gave up", extra={"exc": exc, "tries": details["tries"]})
+        err = traceback.format_exception_only(exc_typ, exc)[-1].rstrip("\n") if exc else None
+        self.logger.warn("gave up", extra={"exc": err, "tries": details["tries"]})
 
     @staticmethod
     def is_permanent_error(exc):
@@ -142,5 +140,5 @@ class TNSClient:
 
     async def get(self, session, semaphore, objname):
         return await self.tns_post(
-            session, semaphore, "get/object", self.apiKey, {"objname": objname}
+            session, semaphore, "get/object", self.token, {"objname": objname}
         )
