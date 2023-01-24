@@ -366,13 +366,13 @@ class T2RiseDeclineStat(AbsLightCurveT2Unit, T2RiseDeclineBase):
         import matplotlib.pyplot as plt
 
         # Lightcurve
-        for filtid in self.default_filter_ids:
+        for name, filtid in self.filters.items():
             filter_det = dets[dets["filter"] == filtid]
             plt.plot(
                 filter_det["jd"],
                 filter_det["magpsf"],
                 "o",
-                label="Filt %s" % (self.default_filter_names[filtid]),
+                label=f"Filt {name}",
             )
 
         plt.plot(ulims["jd"], ulims["diffmaglim"], "o", label="ulims")

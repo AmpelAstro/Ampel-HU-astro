@@ -100,7 +100,7 @@ class PlotLightcurveSample(AbsPhotoT3Unit):
                 if not t2doc['status']>=0:
                     continue
                 if config is not None:
-                    if not t2doct['config']==config:
+                    if not t2doc['config']==config:
                         continue
                 try:
                     t2results.append( t2doc['body'][-1]['result'] )

@@ -10,7 +10,7 @@
 import datetime
 import io
 from collections.abc import Mapping
-from typing import cast
+from typing import Any, cast
 from collections.abc import Iterable, Generator
 
 import numpy as np
@@ -328,7 +328,7 @@ def calculate_excitement(n_transients, date, thresholds, n_alerts=np.nan):
     return message
 
 
-def flat_dict(d, prefix=""):
+def flat_dict(d: Mapping[Any, Any], prefix: str="") -> dict[str, Any]:
     """
     Loop through dictionary d
     Append any key, val pairs to the return list ret
@@ -339,7 +339,7 @@ def flat_dict(d, prefix=""):
     if not isinstance(d, Mapping):
         return d
 
-    ret = {}
+    ret: dict[str,Any] = {}
 
     for key, val in d.items():
         if isinstance(val, Mapping):

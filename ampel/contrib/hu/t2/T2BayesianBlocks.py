@@ -11,6 +11,7 @@ import os, math, itertools
 from typing import Dict, List, Optional, Sequence, Any
 
 import numpy as np
+from numpy.typing import ArrayLike
 import more_itertools as mit
 import matplotlib.pyplot as plt  # type: ignore
 import pandas as pd  # type: ignore
@@ -226,9 +227,9 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 )
         return (baye_block, baseline, baseline_sigma, baseline_rms)
 
-    def idx_of_excess_regions(self, excess_region):
+    def idx_of_excess_regions(self, excess_region) -> list[ArrayLike]:
         length = 1
-        excess_regions = []
+        excess_regions: list[ArrayLike] = []
         for nu in range(1, len(excess_region) + 1):
             if (
                 nu == len(excess_region)
