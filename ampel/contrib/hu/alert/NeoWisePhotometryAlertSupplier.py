@@ -78,8 +78,19 @@ class NeoWisePhotometryAlertSupplier(BaseAlertSupplier):
         df["W2_flux_density_ul"].replace(1.0, "True", inplace=True)
 
         if "timewise_metadata" in d[1].keys():
-            df[list(d[1]["timewise_metadata"].keys())] = pd.DataFrame(
-                list([d[1]["timewise_metadata"].values()]), index=df.index
+
+            # calculate reduced chi2
+            timewise_metadata = d[1]["timewise_metadata"]
+            for b in ["W1", "W2"]:
+                timewise_metadata[f"{b}_red_chi2"] = (
+                    timewise_metadata[f"{b}_chi2_to_med_flux_density"] /
+                    (timewise_metadata[f"{b}_N_datapoints_flux_density"] - 1)
+                    if timewise_metadata[f"{b}_N_datapoints_flux_density"] > 1
+                    else np.nan
+                )
+
+            df[list(timewise_metadata.keys())] = pd.DataFrame(
+                list([timewise_metadata.values()]), index=df.index
             )
             selected_columns_W1 = [
                 "mean_mjd",
@@ -90,7 +101,7 @@ class NeoWisePhotometryAlertSupplier(BaseAlertSupplier):
                 "W1_flux_density_rms",
                 "W1_flux_density_ul",
                 "jd",
-            ] + [col for col in list(d[1]["timewise_metadata"]) if "W1" in col]
+            ] + [col for col in list(timewise_metadata) if "W1" in col]
             selected_columns_W2 = [
                 "mean_mjd",
                 "W2_mean_mag",
@@ -100,7 +111,7 @@ class NeoWisePhotometryAlertSupplier(BaseAlertSupplier):
                 "W2_flux_density_rms",
                 "W2_flux_density_ul",
                 "jd",
-            ] + [col for col in list(d[1]["timewise_metadata"]) if "W2" in col]
+            ] + [col for col in list(timewise_metadata) if "W2" in col]
         else:
             selected_columns_W1 = [
                 "mean_mjd",
