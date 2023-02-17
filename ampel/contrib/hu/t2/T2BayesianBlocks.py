@@ -23,7 +23,7 @@ from sklearn.metrics import mean_squared_error  # type: ignore
 
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 from ampel.model.PlotProperties import PlotProperties
-from ampel.ztf.util.ZTFIdMapper import to_ztf_id
+from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper, ZTFNoisifiedIdMapper
 from ampel.plot.create import create_plot_record
 from ampel.types import UBson, StockId
 from ampel.struct.UnitResult import UnitResult
@@ -68,7 +68,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
     def get_baseline(self, df, baye_block):
         if self.flux:
-            if self.data_type in ["ztf_alert", "ztf_fp"]:
+            if self.data_type in ["ztf_alert", "ztf_fp", "ztf_fp_noisy"]:
                 baseline_df = baye_block.copy()
                 baseline_df.sort_values(by="mag", inplace=True)
                 for index, row in baseline_df.iterrows():
@@ -298,7 +298,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
         if len(self.filters_lc) < 2:
             return coincide_region
 
-        if self.data_type in ["ztf_alert", "ztf_fp"]:
+        if self.data_type in ["ztf_alert", "ztf_fp", "ztf_fp_noisy"]:
             base_filter = "ZTF_g"
             # as the i-band is spotty in the case of ZTF, we skip it
             compare_filters = [
@@ -375,7 +375,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
         """
         coincidences = 0
 
-        if self.data_type in ["ztf_alert", "ztf_fp"]:
+        if self.data_type in ["ztf_alert", "ztf_fp", "ztf_fp_noisy"]:
             basefilter = "ZTF_g"
             comparefilter = "ZTF_r"
 
@@ -412,11 +412,18 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
     def process(self, light_curve: LightCurve) -> UBson | UnitResult:
         """ """
-        assert self.data_type in ["ztf_alert", "ztf_fp", "wise"]
+        assert self.data_type in ["ztf_alert", "ztf_fp", "wise", "ztf_fp_noisy"]
 
-        if self.data_type in ["ztf_alert", "ztf_fp"]:
+        if self.data_type in ["ztf_alert", "ztf_fp", "ztf_fp_noisy"]:
             if isinstance(light_curve.stock_id, int):
-                self.ztfid = to_ztf_id(light_curve.stock_id)
+                if self.data_type in [
+                    "ztf_alert",
+                    "ztf_fp",
+                ]:
+                    self.ztfid = ZTFIdMapper.to_ext_id(light_curve.stock_id)
+                else:
+                    self.ztfid = ZTFNoisifiedIdMapper.to_ext_id(light_curve.stock_id)
+
             if self.debug:
                 print("---------------------------")
                 print(f"Processing {self.ztfid}")
@@ -465,7 +472,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 "significance_of_variability_excess": [[], []],
             }
 
-            if self.data_type == "ztf_fp":
+            if self.data_type in ["ztf_fp", "ztf_fp_noisy"]:
                 if self.flux:
                     phot_tuple = light_curve.get_ntuples(
                         ["jd", "flux_Jy", "flux_err_Jy"],
@@ -590,7 +597,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 df = pd.DataFrame(phot_tuple, columns=["jd", "mag", "mag.err"])
 
             # Now we use a rolling window as extreme outlier rejection for ZTF data
-            if self.data_type in ["ztf_alert", "ztf_fp"]:
+            if self.data_type in ["ztf_alert", "ztf_fp", "ztf_fp_noisy"]:
                 df["median"] = df["mag"].rolling(10).median()
                 df["std"] = df["mag"].rolling(10).std()
                 df = df[
@@ -603,7 +610,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
             if self.data_type == "wise":
                 ncp_prior = 1.32 + 0.577 * math.log10(len(df))
-            elif self.data_type == "ztf_fp":
+            elif self.data_type in ["ztf_fp", "ztf_fp_noisy"]:
                 ncp_prior = 10 * math.log10(len(df))
 
             """
@@ -635,7 +642,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 if self.data_type == "wise":
                     mag_err = np.mean(all_value_per_block).std_dev
 
-                elif self.data_type == "ztf_fp":
+                elif self.data_type in ["ztf_fp", "ztf_fp_noisy"]:
                     mag_err = mean_squared_error(
                         unumpy.nominal_values(all_value_per_block),
                         [np.mean(all_value_per_block).nominal_value]
@@ -743,7 +750,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                             baseline_init,
                             baseline_init_sigma,
                         )
-                    elif self.data_type == "ztf_fp":
+                    elif self.data_type in ["ztf_fp", "ztf_fp_noisy"]:
                         (
                             baye_block,
                             baseline,
@@ -857,7 +864,6 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     )
                 for idx in excess_regions_idx:
                     if global_peak_idx in idx:
-
                         everything_except_excess_values.append(
                             df[
                                 (
@@ -1257,7 +1263,11 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     len(self.filters_lc) + 1, 1, fid + 1, sharex=ax
                 )
 
-                if self.debug and self.data_type in ["ztf_alert", "ztf_fp"]:
+                if self.debug and self.data_type in [
+                    "ztf_alert",
+                    "ztf_fp",
+                    "ztf_fp_noisy",
+                ]:
                     alpha = 0.07
                 else:
                     alpha = 1
@@ -1295,15 +1305,15 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     linewidth = 1.5
                     if baye_block["level"][nu] == "excess":
                         color_block = self.PlotColor[fid - 1]
-                        if self.data_type == "ztf_fp":
+                        if self.data_type in ["ztf_fp", "ztf_fp_noisy"]:
                             linestyle = "dashdot"
                     elif baye_block["level"][nu] == "baseline":
                         color_block = self.PlotColor[fid - 1]
-                        if self.data_type == "ztf_fp":
+                        if self.data_type in ["ztf_fp", "ztf_fp_noisy"]:
                             linewidth = 3
                     else:
                         color_block = "lightgray"
-                        if self.data_type == "ztf_fp":
+                        if self.data_type in ["ztf_fp", "ztf_fp_noisy"]:
                             linestyle = "dashdot"
 
                     locals()[str("ax") + str(passband)] = plt.hlines(
@@ -1362,7 +1372,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     ]
 
                 if self.debug and isinstance(self.debug_dir, str):
-                    if self.data_type in ["ztf_alert", "ztf_fp"]:
+                    if self.data_type in ["ztf_alert", "ztf_fp", "ztf_fp_noisy"]:
                         object_id: StockId | Sequence[StockId] = self.ztfid
                     else:
                         object_id = light_curve.stock_id
@@ -1376,10 +1386,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                         output_per_filter
                     )
 
-                    if self.data_type in [
-                        "ztf_alert",
-                        "ztf_fp",
-                    ]:
+                    if self.data_type in ["ztf_alert", "ztf_fp", "ztf_fp_noisy"]:
                         title += (
                             f"\n{overlapping_regions_count} overlapping regions (g+r)"
                         )
@@ -1428,7 +1435,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
         t2_output: dict[str, UBson] = output_per_filter
 
-        if self.debug and self.data_type in ["ztf_alert", "ztf_fp"]:
+        if self.debug and self.data_type in ["ztf_alert", "ztf_fp", "ztf_fp_noisy"]:
             for fil in self.filters_lc:
                 print(f"{fil}\n")
                 print(
