@@ -112,6 +112,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
     # Plot parameters
     plot_db: bool = False
     plot_props: None | PlotProperties = None
+    noisified: bool = False
 
     # Which units should this be changed to
     t2_dependency: Sequence[
@@ -449,6 +450,11 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             # Construct name
             stock_id = "-".join([str(v) for v in self.get_stock_id(datapoints)])
             tname = "-".join([str(v) for v in self.get_stock_name(datapoints)])
+
+            if self.noisified:
+                from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper, ZTFNoisifiedIdMapper
+
+                tname = ZTFNoisifiedIdMapper().to_ext_id(stock_id)
 
             # Add some info
             plot_fig_text = "{} {} {} \nchisq {:.2f}\nndof {}".format(
