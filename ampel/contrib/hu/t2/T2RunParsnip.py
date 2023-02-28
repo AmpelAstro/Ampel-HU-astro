@@ -15,9 +15,6 @@ import numpy as np
 from astropy.table import Table
 import matplotlib.pyplot as plt
 import timeout_decorator
-import packaging
-import scipy
-import warnings
 
 from ampel.types import UBson
 from ampel.struct.UnitResult import UnitResult
@@ -29,16 +26,14 @@ from ampel.view.T2DocView import T2DocView
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper
-
-# do not warning about scipy.stats.mode(keepdims=None)
-if packaging.version.parse(scipy.__version__) < packaging.version.parse('1.11'):
-    warnings.filterwarnings("ignore", category=FutureWarning, module="parsnip.light_curve", lineno=31)
+from ampel.plot.create import create_plot_record
+from ampel.model.PlotProperties import PlotProperties
 
 import parsnip
 import lcdata
 
 # The following three only used if correcting for MW dust
-from sfdmap import SFDMap  # type: ignore[import]
+from sfdmap2.sfdmap import SFDMap  # type: ignore[import]
 import sncosmo             # type: ignore[import]
 import extinction          # type: ignore[import]
 
@@ -135,7 +130,8 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
     # Save / plot parameters
     plot_suffix: Optional[str]
     plot_dir: Optional[str]
-
+    # For saving to DB
+    plot_props: None | PlotProperties = None
 
     # Which units should this be changed to
     t2_dependency: Sequence[StateT2Dependency[Literal[
@@ -302,10 +298,8 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         """
         Carry out the parsnip classification.
         """
-        if self.classifier is not None:
-            return self.classifier.classify(predictions)
-        else:
-            raise RuntimeError("No classifier configured")
+
+        return self.classifier.classify(predictions)
 
     @backoff.on_exception(
         backoff.constant,
@@ -478,7 +472,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             return t2_output
 
         # Plot
-        if self.plot_suffix and self.plot_dir:
+        if (self.plot_suffix and self.plot_dir) or self.plot_props:
 
             # How to construct name?
             tname = compound.get('stock')
@@ -493,7 +487,42 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
 
             parsnip.plot_light_curve(lc_dataset.light_curves[0], self.model, ax=ax)
             plt.tight_layout()
-            plt.savefig(os.path.join(self.plot_dir, 't2parsnip_%s.%s'%(tname, self.plot_suffix)))
+            
+            if (self.plot_suffix and self.plot_dir):
+                plt.savefig(os.path.join(self.plot_dir, 't2parsnip_%s.%s'%(tname, self.plot_suffix)))
+            if self.plot_props:
+
+                plot_extra = {
+                    'model': t2_output["model"],
+                    'classifier': t2_output["classifier"],
+                    'config': compound.get('config'),
+                    'link': compound.get('link'),
+                    'redshift_kind': self.redshift_kind,
+                    'z_at_minchi': t2_output["z_at_minchi"],
+                    'chisq': t2_output["prediction"]['model_chisq'],
+                    'ndof': t2_output["prediction"]['model_dof'],
+                    'stock': tname,
+                    'bestfit': max(t2_output["classification"], key=lambda k: t2_output["classification"].get(k))
+                }
+
+
+                # Create plot array
+                plots = [
+                    create_plot_record(fig,
+                                        self.plot_props, plot_extra, logger=self.logger)
+                ]
+                t2_output['plots'] = plots
+                
+                # Temporary test 
+                import base64
+                from ampel.util.compression import decompress
+                dbplot = plots[0]['svg']
+                print('foo1')
+                dbplot_decompress = decompress( dbplot )
+                print('foo2')
+                b64 = base64.b64encode(dbplot_decompress)
+                print('foo3')
+	    	
 
             plt.close('fig')
             plt.close('all')
