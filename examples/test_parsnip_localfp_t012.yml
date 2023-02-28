@@ -1,0 +1,302 @@
+name: run_panmatch_fp
+mongo:
+  prefix: dumpme
+  reset: true
+channel:
+- name: base
+  access: [ZTF, ZTF_PUB, ZTF_PRIV]
+  policy: []
+  version: 1
+task:
+- title: FPT0
+  unit: AlertConsumer
+  config:
+    iter_max: 100000000
+    supplier:
+      unit: ZTFFPbotForcedPhotometryAlertSupplier
+      config:
+        deserialize: csv
+        loader:
+          unit: DirAlertLoader
+          config:
+            folder: /home/jnordin/data/ztf_fpbot/ZTF20abatzio_lensed
+            extension: "*.csv"
+    shaper: ZiDataPointShaper
+    compiler_opts: ZiCompilerOptions
+    directives:
+    - channel: base
+      ingest:
+        mux:
+          unit: ZiMongoMuxer
+          insert:
+            point_t2:
+            - config: &catalog_match_config
+                catalogs:
+                  GLADEv23:
+                    keys_to_append:
+                    - z
+                    - dist
+                    - dist_err
+                    - flag1
+                    - flag2
+                    - flag3
+                    rs_arcsec: 10
+                    use: extcats
+                  NEDz_extcats:
+                    keys_to_append:
+                    - ObjType
+                    - Velocity
+                    - z
+                    rs_arcsec: 30.0
+                    use: extcats
+                  SDSS_spec:
+                    keys_to_append:
+                    - z
+                    - bptclass
+                    - subclass
+                    rs_arcsec: 10.
+                    use: extcats
+                    all: False
+                  voidGalPan:
+                    use: extcats
+                    rs_arcsec: 30
+                    keys_to_append:
+                    - z
+                    - voidid1
+                    - voidid2
+                    - voidid3
+                  LSPhotoZZou:
+                    keys_to_append:
+                    - photoz
+                    - ra
+                    - dec
+                    - e_photoz
+                    - specz
+                    - _6
+                    - logMassBest
+                    - logMassInf
+                    - logMassSup
+                    rs_arcsec: 10.
+                    use: extcats
+                    pre_filter: null
+                    post_filter: null
+                    all: False
+                  PS1_photoz:
+                    keys_to_append:
+                    - raMean
+                    - decMean
+                    - z_phot
+                    - z_photErr
+                    - z_phot0
+                    - _2
+                    rs_arcsec: 10.
+                    use: extcats
+                    pre_filter: null
+                    post_filter: null
+              ingest:
+                filter: PPSFilter
+                select: first
+                sort: jd
+              unit: T2CatalogMatch
+            - config: &catalog_local_config
+                closest_match: false
+                catalogs:
+                  voidGalaxiesFull:
+                    keys_to_append:
+                    - ra
+                    - dec
+                    - cz
+                    - dist
+                    - rabsmag
+                    - col_gr
+                    - dist_scaled
+                    - sep_scaled
+                    rs_arcsec: 10.
+                    use: extcats
+                  publicVoidPan:
+                    keys_to_append:
+                    - ra
+                    - dec
+                    - maxsphere_x
+                    - maxsphere_y
+                    - maxsphere_z
+                    - maxsphere_r
+                    - voidcenter_x
+                    - voidcenter_y
+                    - voidcenter_z
+                    - voidcenter_r
+                    - numgals
+                    rs_arcsec: 36000.
+                    use: extcats
+                  voidAllPan:
+                    keys_to_append:
+                    - radius
+                    - distance
+                    - voidid
+                    - ra
+                    - dec
+                    rs_arcsec: 3600.
+                    use: extcats
+              ingest:
+                filter: PPSFilter
+                select: first
+                sort: jd
+              unit: T2CatalogMatchLocal
+          combine:
+          - state_t2:
+            - unit: T2BayesianBlocks
+              config: &bayes_conf
+                min_det_per_block: 3
+                rej_sigma: 4
+                plot: True
+                data_type: ztf_fp
+                debug: True
+                debug_dir: /home/jnordin/tmp/studysn
+                filters:
+                  - ZTF_g
+                  - ZTF_r
+                  - ZTF_i
+                flux: True
+                Npoints: False
+                plot_props:
+                  file_name:
+                    format_str: '%s_%s.png'
+                    arg_keys:
+                      - stock
+                      - band
+                  title:
+                    format_str: '%s_%s.png'
+                    arg_keys:
+                      - stock
+                      - band
+                  width: 18
+                  height: 23
+                  fig_include_title: False
+                  disk_save: /home/jnordin/tmp/studysn/
+            - unit: T2DigestRedshifts
+              config: &digest_config
+                max_redshift_category: 7
+                t2_dependency:
+                - config: *catalog_match_config
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2CatalogMatch
+            - unit: T2MatchBTS
+            - unit: T2PhaseLimit
+              config: &phase_config
+                half_time: 100
+                max_flux: 1000
+                min_sigma: 3
+                plot_suffix: png
+                plot_dir: /home/jnordin/tmp/studysn
+                tabulator:
+                - unit: ZTFT2Tabulator
+            - unit: T2RunSncosmo
+              config:
+                sncosmo_model_name: salt2
+                redshift_kind: T2DigestRedshifts
+                max_ampelz_group: 7
+                phaseselect_kind: T2PhaseLimit
+                tabulator:
+                - unit: ZTFT2Tabulator
+                  config:
+                    reject_outlier_sigma: 1000.
+                    flux_max: 3000.
+                plot_props:
+                  tags:
+                    - SALT
+                    - SNCOSMO
+                  file_name:
+                    format_str: "%s_%s_%s.svg"
+                    arg_keys:
+                      - stock
+                      - model
+                      - redshift_kind
+                  title:
+                    format_str: "%s %s %s"
+                    arg_keys:
+                      - stock
+                      - model
+                      - redshift_kind
+                  fig_text:
+                    format_str: "%s %s \nz-source %s \nchisq %.2f ndof %s"
+                    arg_keys:
+                      - stock
+                      - model
+                      - redshift_kind
+                      - chisq
+                      - ndof
+                  width: 10
+                  height: 6
+                  id_mapper: null
+                  disk_save: /home/jnordin/tmp/studysn
+                t2_dependency:
+                - config: *digest_config
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2DigestRedshifts
+                - config: *phase_config
+                  unit: T2PhaseLimit
+            - unit: T2RunParsnip
+              config:
+                parsnip_model: /home/jnordin/data/parsnip/parsnip_ps1_ztf.pt
+                parsnip_classifier: /home/jnordin/data/parsnip/ztf_classifier.pkl
+                redshift_kind: T2DigestRedshifts
+                max_ampelz_group: 7
+                training_zeropoint: 25.
+                tabulator:
+                - unit: ZTFT2Tabulator
+                  config:
+                    reject_outlier_sigma: 1000.
+                    flux_max: 3000.
+                plot_suffix: png
+                plot_dir: /home/jnordin/tmp/studysn
+                plot_props:
+                  tags:
+                    - PARSNIP
+                  file_name:
+                    format_str: "%s.svg"
+                    arg_keys:
+                      - stock
+                  title:
+                    format_str: "%s %s %s"
+                    arg_keys:
+                      - stock
+                      - link
+                      - redshift_kind
+                  fig_text:
+                    format_str: "%s %s \nz-source %s \nchisq %.2f ndof %s"
+                    arg_keys:
+                      - stock
+                      - model
+                      - redshift_kind
+                      - chisq
+                      - ndof
+                  width: 10
+                  height: 6
+                  id_mapper: ZTFIdMapper
+                  disk_save: /home/jnordin/tmp/studysn
+                  detached: false
+                t2_dependency:
+                - config: *digest_config
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2DigestRedshifts
+                - config: *phase_config
+                  unit: T2PhaseLimit
+
+            unit: ZiT1Combiner
+
+- title: Run T2s
+  unit: T2Worker
+  config:
+    send_beacon: false
+    raise_exc: true
+
+

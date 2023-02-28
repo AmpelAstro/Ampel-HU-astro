@@ -1,0 +1,73 @@
+name: run_panmatch_fp
+mongo:
+  prefix: dumpme
+channel:
+- name: base
+  access: [ZTF, ZTF_PUB, ZTF_PRIV]
+  policy: []
+  version: 1
+task:
+
+- title: Run T2s
+  unit: T2Worker
+  config:
+    send_beacon: false
+    raise_exc: true
+
+- title: React
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3ReviewUnitExecutor
+        config:
+          supply:
+            unit: T3DefaultBufferSupplier
+            config:
+              select:
+                unit: T3StockSelector
+                config:
+                  channel: base
+              load:
+                unit: T3SimpleDataLoader
+                config:
+                  directives:
+                    - STOCK
+                    - T1
+                    - T2DOC
+                  channel: base
+          stage:
+            unit: T3SimpleStager
+            config:
+              execute:
+                - unit: DevSkyportalWebhookPublisher
+                  config:
+                    debug: true
+                    t2_publish:
+                      T2RunParsnip:
+                        publish_plots: true
+                        results_mapping:
+                          Parsnip_S2N:
+                            - prediction
+                            - total_s2n
+                          Parsnip_dof:
+                            - prediction
+                            - model_dof
+                          P(SLSN):
+                            - classification
+                            - SLSN
+                          P(SNII):
+                            - classification
+                            - SNII
+                          P(SNIa):
+                            - classification
+                            - SNIa
+                          P(SNIbc):
+                            - classification
+                            - SNIbc
+                          P(TDE):
+                            - classification
+                            - TDE
+
+
+

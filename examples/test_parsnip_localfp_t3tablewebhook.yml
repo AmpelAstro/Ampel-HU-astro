@@ -1,0 +1,188 @@
+name: run_panmatch_fp
+mongo:
+  prefix: dumpme
+channel:
+- name: base
+  access: [ZTF, ZTF_PUB, ZTF_PRIV]
+  policy: []
+  version: 1
+task:
+
+- title: Run T2s
+  unit: T2Worker
+  config:
+    send_beacon: false
+    raise_exc: true
+
+- title: React
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3ReviewUnitExecutor
+        config:
+          supply:
+            unit: T3DefaultBufferSupplier
+            config:
+              select:
+                unit: T3StockSelector
+                config:
+                  channel: base
+              load:
+                unit: T3SimpleDataLoader
+                config:
+                  directives:
+                    - STOCK
+                    - T1
+                    - T2DOC
+                  channel: base
+          stage:
+            unit: T3SimpleStager
+            config:
+              execute:
+                - unit: TransientTablePublisher
+                  config:
+                    include_stock: true
+                    include_channels: true
+                    fmt: csv
+                    local_path: .
+                    table_schema:
+                      T2DigestRedshifts:
+                        'Ampel z':
+                          - ampel_z
+                        'Ampel distance':
+                          - ampel_dist
+                      T2MatchBTS:
+                        'Type':
+                          - bts_type
+                        'IAU ID':
+                          - bts_IAUID
+                        'BTS z':
+                          - bts_redshift
+                      T2RunParsnip:
+                        'Parsnip_S2N':
+                          - prediction
+                          - total_s2n
+                        'Parsnip_dof':
+                          - prediction
+                          - model_dof
+                        'Parsnip(SLSN)':
+                          - classification
+                          - SLSN
+                        'Parsnip(SNII)':
+                          - classification
+                          - SNII
+                        'Parsnip(SNIa)':
+                          - classification
+                          - SNIa
+                        'Parsnip(SNIbc)':
+                          - classification
+                          - SNIbc
+                        'Parsnip(TDE)':
+                          - classification
+                          - TDE
+                      T2RunSncosmo:
+                        'SALT X1':
+                          - sncosmo_result
+                          - paramdict
+                          - x1
+                        'SALT C':
+                          - sncosmo_result
+                          - paramdict
+                          - c
+                        'SALT Chisq':
+                          - sncosmo_result
+                          - chisq
+                        'SALT ndof':
+                          - sncosmo_result
+                          - ndof
+                        'SALT B absmag':
+                          - fit_metrics
+                          - restpeak_model_absmag_B
+                        'SALT B mean abs peak pull':
+                          - fit_metrics
+                          - absmean_peak_pull
+                    transient_table_schema:
+                      T2CatalogMatch:
+                        'SDSS spec z':
+                          - SDSS_spec
+                          - z
+                        'LS_Zou photo-z':
+                          - LSPhotoZZou
+                          - photoz
+                        'LS_Zou dist':
+                          - LSPhotoZZou
+                          - dist2transient
+                        'PS1 photo-z (*1000)':
+                          - PS1_photoz
+                          - z_phot
+                        'PS1 photo-z alt (*1000)':
+                          - PS1_photoz
+                          - z_phot0
+                        'PS1 photo-z err (*10000)':
+                          - PS1_photoz
+                          - z_photErr
+                      T2CatalogMatchLocal:
+                        'voidGal RA':
+                          - voidGalaxiesFull
+                          - "0"
+                          - ra
+                        'voidGal Dec':
+                          - voidGalaxiesFull
+                          - "0"
+                          - dec
+                        'voidGal z':
+                          - voidGalaxiesFull
+                          - "0"
+                          - cz
+                        'voidGal Rabs':
+                          - voidGalaxiesFull
+                          - "0"
+                          - rabsmag
+                        'voidGal g-R':
+                          - voidGalaxiesFull
+                          - "0"
+                          - col_gr
+                        'voidGal Sep(scaled)':
+                          - voidGalaxiesFull
+                          - "0"
+                          - sep_scaled
+                        'voidGal Nextdist(scaled)':
+                          - voidGalaxiesFull
+                          - "0"
+                          - dist_scaled
+                        'voidGal SNdist':
+                          - voidGalaxiesFull
+                          - "0"
+                          - dist2transient
+                - unit: DevSkyportalWebhookPublisher
+                  config:
+                    debug: true
+                    t2_publish:
+                      T2RunParsnip:
+                        publish_plots: true
+                        results_mapping:
+                          Parsnip_S2N:
+                            - prediction
+                            - total_s2n
+                          Parsnip_dof:
+                            - prediction
+                            - model_dof
+                          P(SLSN):
+                            - classification
+                            - SLSN
+                          P(SNII):
+                            - classification
+                            - SNII
+                          P(SNIa):
+                            - classification
+                            - SNIa
+                          P(SNIbc):
+                            - classification
+                            - SNIbc
+                          P(TDE):
+                            - classification
+                            - TDE
+
+
+
