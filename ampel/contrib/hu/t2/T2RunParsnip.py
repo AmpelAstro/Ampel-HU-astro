@@ -512,17 +512,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                                         self.plot_props, plot_extra, logger=self.logger)
                 ]
                 t2_output['plots'] = plots
-                
-                # Temporary test 
-                import base64
-                from ampel.util.compression import decompress
-                dbplot = plots[0]['svg']
-                print('foo1')
-                dbplot_decompress = decompress( dbplot )
-                print('foo2')
-                b64 = base64.b64encode(dbplot_decompress)
-                print('foo3')
-	    	
+                	    	
 
             plt.close('fig')
             plt.close('all')
