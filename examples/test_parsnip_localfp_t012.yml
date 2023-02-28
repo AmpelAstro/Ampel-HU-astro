@@ -9,6 +9,12 @@ channel:
   version: 1
 task:
 - title: FPT0
+  inputs:
+    artifacts:
+      - name: forcedphotometry
+        path: ZTF20abatzio_lensed/ZTF20abatzio_SNT_5.0.csv
+        http:
+          url: https://cdn.discordapp.com/attachments/817033889188282378/1080085733731205220/ZTF20abatzio_SNT_5.0.csv
   unit: AlertConsumer
   config:
     iter_max: 100000000
@@ -19,8 +25,8 @@ task:
         loader:
           unit: DirAlertLoader
           config:
-            folder: /home/jnordin/data/ztf_fpbot/ZTF20abatzio_lensed
-            extension: "*.csv"
+            folder: ZTF20abatzio_lensed
+            extension: "csv"
     shaper: ZiDataPointShaper
     compiler_opts: ZiCompilerOptions
     directives:
@@ -151,7 +157,7 @@ task:
                 plot: True
                 data_type: ztf_fp
                 debug: True
-                debug_dir: /home/jnordin/tmp/studysn
+                debug_dir: studysn/
                 filters:
                   - ZTF_g
                   - ZTF_r
@@ -172,7 +178,7 @@ task:
                   width: 18
                   height: 23
                   fig_include_title: False
-                  disk_save: /home/jnordin/tmp/studysn/
+                  disk_save: studysn/
             - unit: T2DigestRedshifts
               config: &digest_config
                 max_redshift_category: 7
@@ -190,7 +196,7 @@ task:
                 max_flux: 1000
                 min_sigma: 3
                 plot_suffix: png
-                plot_dir: /home/jnordin/tmp/studysn
+                plot_dir: studysn/
                 tabulator:
                 - unit: ZTFT2Tabulator
             - unit: T2RunSncosmo
@@ -231,7 +237,7 @@ task:
                   width: 10
                   height: 6
                   id_mapper: null
-                  disk_save: /home/jnordin/tmp/studysn
+                  disk_save: studysn/
                 t2_dependency:
                 - config: *digest_config
                   link_override:
@@ -243,8 +249,8 @@ task:
                   unit: T2PhaseLimit
             - unit: T2RunParsnip
               config:
-                parsnip_model: /home/jnordin/data/parsnip/parsnip_ps1_ztf.pt
-                parsnip_classifier: /home/jnordin/data/parsnip/ztf_classifier.pkl
+                parsnip_model: parsnip_ps1_ztf.pt
+                parsnip_classifier: ztf_classifier.pkl
                 redshift_kind: T2DigestRedshifts
                 max_ampelz_group: 7
                 training_zeropoint: 25.
@@ -254,7 +260,7 @@ task:
                     reject_outlier_sigma: 1000.
                     flux_max: 3000.
                 plot_suffix: png
-                plot_dir: /home/jnordin/tmp/studysn
+                plot_dir: studysn/
                 plot_props:
                   tags:
                     - PARSNIP
@@ -279,7 +285,7 @@ task:
                   width: 10
                   height: 6
                   id_mapper: ZTFIdMapper
-                  disk_save: /home/jnordin/tmp/studysn
+                  disk_save: studysn/
                   detached: false
                 t2_dependency:
                 - config: *digest_config
@@ -298,5 +304,14 @@ task:
   config:
     send_beacon: false
     raise_exc: true
-
-
+  inputs:
+    artifacts:
+      - name: parnsip_model
+        path: parsnip_ps1_ztf.pt
+        http:
+          url: https://box.hu-berlin.de/f/a4c3fcf104444cc0821a/?dl=1
+      - name: parsnip_classifier
+        path: ztf_classifier.pkl
+        http:
+          url: https://box.hu-berlin.de/f/40b4d6410c3740488d31/?dl=1
+          
