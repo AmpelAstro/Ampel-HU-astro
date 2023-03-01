@@ -36,6 +36,7 @@ def t3_transient_views() -> list[TransientView]:
                     meta=[{"code": DocumentCode.OK, "tier": 2}],
                     t2_type=TYPE_STATE_T2,
                     unit="T2LightCurveSummary",
+                    confid=None,
                     body=[{"len": 10}],
                 ),
                 T2DocView(
@@ -46,6 +47,7 @@ def t3_transient_views() -> list[TransientView]:
                     meta=[{"code": DocumentCode.OK, "tier": 2}],
                     t2_type=TYPE_STATE_T2,
                     unit="T2SNCosmo",
+                    confid=None,
                     body=[
                         {
                             "model": "salt2",
