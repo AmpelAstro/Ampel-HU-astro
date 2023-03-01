@@ -8,28 +8,29 @@
 # Last Modified By:    simeon.reusch@desy.de
 
 
-from typing import Literal
+import copy
+import errno
 from collections.abc import Sequence
-import errno, backoff, copy
+from typing import Literal
 
-
+import backoff
 import numpy as np
 import sncosmo  # type: ignore[import]
-from sncosmo.fitting import DataQualityError
-from astropy.table import Table
-from sfdmap2.sfdmap import SFDMap  # type: ignore[import]
-
-from ampel.types import UBson
-from ampel.struct.UnitResult import UnitResult
-from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
-from ampel.content.T1Document import T1Document
+from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.content.DataPoint import DataPoint
-from ampel.view.T2DocView import T2DocView
-from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper
+from ampel.content.T1Document import T1Document
+from ampel.model.PlotProperties import PlotProperties
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.plot.create import create_plot_record
-from ampel.model.PlotProperties import PlotProperties
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
+from ampel.view.T2DocView import T2DocView
+from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper
+from ampel.ztf.util.ZTFNoisifiedIdMapper import ZTFNoisifiedIdMapper
+from astropy.table import Table
+from sfdmap2.sfdmap import SFDMap  # type: ignore[import]
+from sncosmo.fitting import DataQualityError
 
 
 class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
@@ -452,8 +453,6 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             tname = "-".join([str(v) for v in self.get_stock_name(datapoints)])
 
             if self.noisified:
-                from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper, ZTFNoisifiedIdMapper
-
                 tname = ZTFNoisifiedIdMapper().to_ext_id(stock_id)
 
             # Add some info

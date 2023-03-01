@@ -7,27 +7,29 @@
 # Last Modified Date: 10.01.2023
 # Last Modified By  : Eleni
 
-import os, math, itertools
-from typing import Dict, List, Optional, Sequence, Any
+import itertools
+import math
+import os
+from typing import Any, Dict, List, Optional, Sequence
 
-import numpy as np
-from numpy.typing import ArrayLike
-import more_itertools as mit
 import matplotlib.pyplot as plt  # type: ignore
+import more_itertools as mit
+import numpy as np
 import pandas as pd  # type: ignore
-from astropy.stats import bayesian_blocks  # type: ignore
 import uncertainties.unumpy as unumpy  # type: ignore
-from nltk import flatten  # type: ignore
-from scipy.signal import find_peaks  # type: ignore
-from sklearn.metrics import mean_squared_error  # type: ignore
-
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 from ampel.model.PlotProperties import PlotProperties
-from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper, ZTFNoisifiedIdMapper
 from ampel.plot.create import create_plot_record
-from ampel.types import UBson, StockId
 from ampel.struct.UnitResult import UnitResult
+from ampel.types import StockId, UBson
 from ampel.view.LightCurve import LightCurve
+from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper
+from ampel.ztf.util.ZTFNoisifiedIdMapper import ZTFNoisifiedIdMapper
+from astropy.stats import bayesian_blocks  # type: ignore
+from nltk import flatten  # type: ignore
+from numpy.typing import ArrayLike
+from scipy.signal import find_peaks  # type: ignore
+from sklearn.metrics import mean_squared_error  # type: ignore
 
 
 class T2BayesianBlocks(AbsLightCurveT2Unit):
