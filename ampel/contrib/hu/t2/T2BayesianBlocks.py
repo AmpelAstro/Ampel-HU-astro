@@ -371,6 +371,37 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                         coincide_region += 1
         return coincide_region
 
+    @staticmethod
+    def fill_with_empty(self, output: dict) -> dict:
+        """
+        If unit fails, return empty output dict (with all the keys)
+        """
+        output["nu_of_excess_regions"] = None
+        output["nu_of_excess_blocks"] = None
+        output["nu_of_baseline_regions"] = None
+        output["jd_excess_regions"] = []
+        output["mag_edge_excess"] = None
+        output["max_mag_excess_region"] = None
+        output["max_jd_excess_region"] = None
+        output["max_sigma_excess_region"] = None
+        output["max_baye_block_timescale"] = None
+        output["baseline"] = None
+        output["baseline_sigma"] = None
+        output["baseline_rms"] = None
+        output["jd_baseline_regions"] = None
+        output["jd_outlier"] = None
+        output["mag_edge_baseline"] = None
+        output["sigma_from_baseline"] = None
+        output["sigma_from_baseline_excess"] = None
+        output["significance_of_variability_excess"] = [None, None]
+        output["significance_of_fluctuation"] = None
+        output["max_mag"] = None
+        output["significance"] = None
+        output["strength_sjoert"] = None
+        output["description"] = None
+
+        return output
+
     def count_overlapping_regions(self, output_per_filter: dict) -> int:
         """
         Returns the number of overlapping regions. Note: In case of ZTF data, we only consider the g- and r-band (i-band coverage is spotty)
@@ -466,7 +497,6 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 "max_jd_excess_region": [],
                 "max_sigma_excess_region": [],
                 "nu_of_excess_blocks": [],
-                #  "nu_of_baseline_blocks": [],
                 "significance_after_peak": [],
                 "strength_after_peak": [],
                 "jd_baseline_regions": [],
@@ -565,29 +595,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             output_per_filter[passband] = []
 
             if phot_tuple is None or len(phot_tuple) <= 1:
-                output["nu_of_excess_regions"] = None
-                output["nu_of_excess_blocks"] = None
-                output["nu_of_baseline_regions"] = None
-                output["jd_excess_regions"] = []
-                output["mag_edge_excess"] = None
-                output["max_mag_excess_region"] = None
-                output["max_jd_excess_region"] = None
-                output["max_sigma_excess_region"] = None
-                output["max_baye_block_timescale"] = None
-                output["baseline"] = None
-                output["baseline_sigma"] = None
-                output["baseline_rms"] = None
-                output["jd_baseline_regions"] = None
-                output["jd_outlier"] = None
-                output["mag_edge_baseline"] = None
-                output["sigma_from_baseline"] = None
-                output["sigma_from_baseline_excess"] = None
-                output["significance_of_variability_excess"] = [None, None]
-                output["significance_of_fluctuation"] = None
-                output["max_mag"] = None
-                output["significance"] = None
-                output["strength_sjoert"] = None
-                output["description"] = None
+                output = self.fill_with_empty(output)
                 output_per_filter[str(passband)] = output
                 continue
 
@@ -609,6 +617,11 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
             df = df.sort_values(by=["jd"], ignore_index=True)
             df["Outlier"] = False
+
+            if len(df) == 0:
+                output = self.fill_with_empty(output)
+                output_per_filter[str(passband)] = output
+                continue
 
             if self.data_type == "wise":
                 ncp_prior = 1.32 + 0.577 * math.log10(len(df))
@@ -685,29 +698,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             baye_block.reset_index(drop=True, inplace=True)
 
             if len(baye_block) == 0:
-                output["nu_of_excess_regions"] = None
-                output["nu_of_excess_blocks"] = None
-                output["nu_of_baseline_regions"] = None
-                output["jd_excess_regions"] = []
-                output["mag_edge_excess"] = None
-                output["max_mag_excess_region"] = None
-                output["max_jd_excess_region"] = None
-                output["max_sigma_excess_region"] = None
-                output["max_baye_block_timescale"] = None
-                output["baseline"] = None
-                output["baseline_sigma"] = None
-                output["baseline_rms"] = None
-                output["jd_baseline_regions"] = None
-                output["jd_outlier"] = None
-                output["mag_edge_baseline"] = None
-                output["sigma_from_baseline"] = None
-                output["sigma_from_baseline_excess"] = None
-                output["significance_of_variability_excess"] = [[], []]
-                output["significance_of_fluctuation"] = None
-                output["max_mag"] = None
-                output["significance"] = None
-                output["strength_sjoert"] = None
-                output["description"] = None
+                output = self.fill_with_empty(output)
                 output_per_filter[str(passband)] = output
                 continue
 
@@ -729,12 +720,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             ######### Find the baseline ###########
             for sigma_discr in ["sigma_from_old_baseline", "sigma_from_baseline"]:
                 (baseline_init, baseline_init_sigma) = self.get_baseline(df, baye_block)
-                # Recalculate levels
-                #    baye_block[baye_block["level"] != "baseline"] = self.baye_block_levels(
-                #        baye_block[baye_block["level"] != "baseline"],
-                #        baseline,
-                #        baseline_sigma,
-                #    )
+
                 if sigma_discr == "sigma_from_old_baseline":
                     (baseline, baseline_sigma) = self.get_baseline(df, baye_block)
                     baseline = baseline_init
@@ -765,46 +751,6 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                             baseline_init_sigma,
                         )
 
-                ########################################
-                ####### Calculate rms of the baseline
-                #     value = unumpy.uarray(
-                #         np.array(baye_block[baye_block["level"] == "baseline"]["mag"]),
-                #         np.array(baye_block[baye_block["level"] == "baseline"]["mag.err"]),
-                #     )
-                #     baseline_region = baye_block[baye_block["level"] == "baseline"]
-                #     baseline_values = []
-                #     baseline_error_values = []
-                #     for i in baseline_region.index:
-                #         baseline_values.append(
-                #             df[
-                #                 df["jd"].between(
-                #                     baseline_region["jd_measurement_start"][i],
-                #                     baseline_region["jd_measurement_end"][i],
-                #                     inclusive="both",
-                #                 )
-                #             ]["mag"].values
-                #         )
-                #         baseline_error_values.append(
-                #             df[
-                #                 df["jd"].between(
-                #                     baseline_region["jd_measurement_start"][i],
-                #                     baseline_region["jd_measurement_end"][i],
-                #                     inclusive="both",
-                #                 )
-                #             ]["mag.err"].values
-                #         )
-
-                #     value = unumpy.uarray(
-                #         list(itertools.chain(*baseline_values)),
-                #         list(itertools.chain(*baseline_error_values)),
-                #     )
-                #     baseline = np.mean(value).nominal_value
-                #     baseline_sigma = np.mean(value).std_dev
-                #     baseline_rms = mean_squared_error(
-                #         list(itertools.chain(*baseline_values)),
-                #         [baseline] * len(list(itertools.chain(*baseline_values))),
-                #         squared=False,
-                #     )
                 baye_block[str(sigma_discr)] = (
                     baye_block["mag"] - baseline
                 ) / baseline_sigma
