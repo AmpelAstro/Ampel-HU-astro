@@ -372,7 +372,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
         return coincide_region
 
     @staticmethod
-    def fill_with_empty(self, output: dict) -> dict:
+    def fill_with_empty(output: dict) -> dict:
         """
         If unit fails, return empty output dict (with all the keys)
         """
