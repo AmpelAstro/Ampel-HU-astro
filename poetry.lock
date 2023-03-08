@@ -189,14 +189,14 @@ slack = ["slack-sdk (>=3.18.1,<4.0.0)"]
 
 [[package]]
 name = "ampel-interface"
-version = "0.8.5"
+version = "0.8.7"
 description = "Base classes for the Ampel analysis platform"
 category = "main"
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "ampel_interface-0.8.5-py3-none-any.whl", hash = "sha256:5967e16cdc064afd0ecbf57c2c848eab4189b4d5bb277c4837c1c97ce75f05cd"},
-    {file = "ampel_interface-0.8.5.tar.gz", hash = "sha256:3f79b6fa53643bbc95622a59f333720f9fbbe1107d098dff1a8845041101a079"},
+    {file = "ampel_interface-0.8.7-py3-none-any.whl", hash = "sha256:2747bd0b52838dde502038b99cecbbeb48e0e3c7c1f113369576ee0818ca7a54"},
+    {file = "ampel_interface-0.8.7.tar.gz", hash = "sha256:a54dfb5e8baa966be84573fdef34b2e4a6b94bc78e86b785deb16183da00f5e6"},
 ]
 
 [package.dependencies]
@@ -5234,4 +5234,4 @@ ztf = ["ampel-ztf"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.12"
-content-hash = "ba0f35c9fca989902e226dafe3d8d696baaf79879b9b546b171637a24b9c40c0"
+content-hash = "f91f597ecce9e55fa8299409572961da06c63db835bc636386ff4034fa80b3d4"

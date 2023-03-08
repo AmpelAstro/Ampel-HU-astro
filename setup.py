@@ -29,7 +29,7 @@ setup(
     },
 	python_requires = '>=3.10,<3.11',
     install_requires=[
-        'ampel-interface>=0.8.5,<0.9',
+        'ampel-interface>=0.8.7,<0.9',
         'ampel-core>=0.8.4,<0.9',
         'ampel-plot>=0.8.3.post2,<0.9',
         'ampel-photometry>=0.8.3a0,<0.9',
