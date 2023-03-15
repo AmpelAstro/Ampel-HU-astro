@@ -361,6 +361,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         t2_output['jdstart'] = jdstart
         t2_output['jdend'] = jdend
         if t2_output['jdstart'] is None:
+            t2_output['aborted'] = True
             return t2_output
 
         # Obtain photometric table
@@ -370,6 +371,9 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                                     (sncosmo_table["time"]<=jdend)
                                     ]
         self.logger.debug('Sncosmo table {}'.format(sncosmo_table))
+        if len(sncosmo_table)==0:
+            t2_output['aborted'] = True
+            return t2_output
 
         # Adjust zeropoint - does this matter? and should we have changed it?
         run_zeropoints = set( sncosmo_table['zp'] )
