@@ -115,10 +115,15 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
     plot_props: None | PlotProperties = None
     noisified: bool = False
 
-    # Which units should this be changed to
-    t2_dependency: Sequence[
-        StateT2Dependency[Literal["T2DigestRedshifts", "T2MatchBTS", "T2PhaseLimit"]]
-    ]
+    # Units from which time limits to use or redshifts can be picked. 
+    t2_dependency: Sequence[StateT2Dependency[Literal[
+        "T2ElasticcRedshiftSampler",
+        "T2DigestRedshifts",
+        "T2MatchBTS",
+        "T2PhaseLimit",
+        "T2XgbClassifier"]]]
+
+
 
     def post_init(self) -> None:
         """
@@ -168,6 +173,8 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             max_time=300,
         )(self.process)
 
+    # Should be rearranged to provide a list of redshifts a la T2RunParsnip with signature as this 
+#    def _get_redshift(self, t2_views) -> tuple[Optional[list[float]], Optional[str], Optional[list[float]]]:
     def _get_redshift(self, t2_views) -> tuple[None | float, None | str]:
         """
         Can potentially also be replaced with some sort of T2DigestRershift tabulator?
@@ -176,47 +183,63 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         """
 
         # Examine T2s for eventual information
-        z: None | float = None
-        z_source: None | str = None
+        z: Optional[list[float]] = None
+        z_source: Optional[str] = None
+        z_weights: Optional[list[float]] = None
 
-        if self.redshift_kind in ["T2MatchBTS", "T2DigestRedshifts"]:
+
+        if self.redshift_kind in ['T2MatchBTS', 'T2DigestRedshifts', 'T2ElasticcRedshiftSampler']:
             for t2_view in t2_views:
                 if not t2_view.unit == self.redshift_kind:
                     continue
-                self.logger.debug("Parsing t2 results from {}".format(t2_view.unit))
-                t2_res = (
-                    res[-1] if isinstance(res := t2_view.get_payload(), list) else res
-                )
+                self.logger.debug('Parsing t2 results from {}'.format(t2_view.unit))
+                t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
                 # Parse this
-                if self.redshift_kind == "T2MatchBTS":
-                    if (
-                        "bts_redshift" in t2_res.keys()
-                        and not t2_res["bts_redshift"] == "-"
-                    ):
-                        z = float(t2_res["bts_redshift"])
+                if self.redshift_kind == 'T2MatchBTS':
+                    if 'bts_redshift' in t2_res.keys() and not t2_res['bts_redshift'] == '-':
+                        z = [float(t2_res['bts_redshift'])]
                         z_source = "BTS"
-                elif self.redshift_kind == "T2DigestRedshifts":
-                    if (
-                        "ampel_z" in t2_res.keys()
-                        and t2_res["ampel_z"] is not None
-                        and t2_res["group_z_nbr"] <= self.max_ampelz_group
-                    ):
-                        z = float(t2_res["ampel_z"])
-                        z_source = "AMPELz_group" + str(t2_res["group_z_nbr"])
+                elif self.redshift_kind == 'T2DigestRedshifts':
+                    if ('ampel_z' in t2_res.keys() and t2_res['ampel_z'] is not None
+                            and t2_res['group_z_nbr'] <= self.max_ampelz_group):
+                        z = [float(t2_res['ampel_z'])]
+                        z_source = "AMPELz_group" + str(t2_res['group_z_nbr'])
+                elif self.redshift_kind == 'T2ElasticcRedshiftSampler':
+                    z = t2_res['z_samples']
+                    z_source = t2_res['z_source']
+                    z_weights = t2_res['z_weights']
         else:
             # Check if there is a fixed z set for this run, otherwise keep as free parameter
-            if self.backup_z:
-                z = self.backup_z
+            if self.fixed_z is not None:
+                if isinstance(self.fixed_z, float):
+                    z = [self.fixed_z]
+                else:
+                    z = list(self.fixed_z)
                 z_source = "Fixed"
             else:
                 z = None
                 z_source = "Fitted"
 
         if (z is not None) and (z_source is not None) and self.scale_z:
-            z *= self.scale_z
+            z = [onez*self.scale_z for onez in z]
             z_source += " + scaled {}".format(self.scale_z)
 
+        # TODO: return the list instead of this
+        # return z, z_source, z_weights
+        # We now simply pick the middle number
+        if isinstance(z_weights, list):
+            z = z[ z_weights.index( max(z_weights) ) ]
+            print('INPUT')
+            print(z, z_weights)
+            print('SNCOSMOS z', z)
+        elif isinstance(z, list):
+            if len(z) % 2 != 0:
+                z = z[int(len(z) / 2)]
+            else:
+                z = (((z[int(len(z) / 2)]) + (z[int(len(z) / 2) - 1])) / 2)
+                
         return z, z_source
+
 
     def _get_phaselimit(self, t2_views) -> tuple[None | float, None | float]:
         """
@@ -373,11 +396,13 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         sncosmo_table = sncosmo_table[
             (sncosmo_table["time"] >= jdstart) & (sncosmo_table["time"] <= jdend)
         ]
-        print(sncosmo_table)
 
         self.logger.debug("Sncosmo table {}".format(sncosmo_table))
 
         # Fitting section
+        # To handle multiple redshifts, fitting section below should be put into function.
+        # Do we keep the best fit, or all fits (as in t2parsnip)
+                
         self.sncosmo_model.parameters = self.default_param_vals  # Reset
 
         # Define fit parameter and ranges
