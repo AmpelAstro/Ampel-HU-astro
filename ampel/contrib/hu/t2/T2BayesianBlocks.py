@@ -795,9 +795,10 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 #         [baseline] * len(list(itertools.chain(*baseline_values))),
                 #         squared=False,
                 #     )
+                # TODO: fix sigma
                 baye_block[str(sigma_discr)] = (
                     baye_block["mag"] - baseline
-                ) / baseline_sigma
+                ) / np.sqrt(baseline_sigma ** 2 + baye_block["mag.err"] ** 2)
 
             #######################################
             ########## Excess region  #############
