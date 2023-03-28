@@ -231,17 +231,17 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         # return z, z_source, z_weights
         # We now simply pick the middle number
         if isinstance(z_weights, list):
-            z = z[ z_weights.index( max(z_weights) ) ]
+            z = z[ z_weights.index( max(z_weights) ) ]  # type: ignore
             print('INPUT')
             print(z, z_weights)
             print('SNCOSMOS z', z)
         elif isinstance(z, list):
             if len(z) % 2 != 0:
-                z = z[int(len(z) / 2)]
+                z = z[int(len(z) / 2)]  # type: ignore
             else:
-                z = (((z[int(len(z) / 2)]) + (z[int(len(z) / 2) - 1])) / 2)
+                z = (((z[int(len(z) / 2)]) + (z[int(len(z) / 2) - 1])) / 2)  # type: ignore
                 
-        return z, z_source
+        return z, z_source  # type: ignore
 
 
     def _get_phaselimit(self, t2_views) -> tuple[None | float, None | float]:
