@@ -38,7 +38,7 @@ import parsnip
 import lcdata
 
 # The following three only used if correcting for MW dust
-from sfdmap import SFDMap  # type: ignore[import]
+from sfdmap2.sfdmap import SFDMap  # type: ignore[import]
 import sncosmo             # type: ignore[import]
 import extinction          # type: ignore[import]
 
