@@ -212,17 +212,16 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 else:
                     baye_block.loc[idx, "level"] = "excess"
             elif baye_block["level"][idx] != "baseline":
-                if (
-                    baseline + (self.rej_sigma * baseline_sigma)
-                    >= mag
-                    >= baseline - (self.rej_sigma * baseline_sigma)
-                ) or (
-                    baseline + (self.rej_sigma * baseline_sigma)
-                    >= mag - baye_block["mag.err"][idx]
-                ):
+                diff = abs(baseline - mag)
+                diff_e = np.sqrt(baseline_sigma ** 2 + baye_block["mag.err"][idx] ** 2)
+                diff_significance = diff / diff_e
+
+                if diff_significance <= self.rej_sigma:
                     baye_block.loc[idx, "level"] = "baseline"
+
                 else:
                     baye_block.loc[idx, "level"] = "excess"
+
             if "baseline" in baye_block["level"].values:
                 (baseline, baseline_sigma, baseline_rms) = self.calculate_baseline(
                     df, baye_block
@@ -753,7 +752,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
                 baye_block[str(sigma_discr)] = (
                     baye_block["mag"] - baseline
-                ) / baseline_sigma
+                ) / np.sqrt(baseline_sigma ** 2 + baye_block["mag.err"] ** 2)
 
             #######################################
             ########## Excess region  #############
