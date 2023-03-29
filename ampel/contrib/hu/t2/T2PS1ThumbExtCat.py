@@ -16,7 +16,7 @@ from ampel.util.collections import ampel_iter
 from ampel.content.DataPoint import DataPoint
 from ampel.plot.create import create_plot_record
 from ampel.struct.UnitResult import UnitResult
-from ampel.model.PlotProperties import PlotProperties
+from ampel.model.PlotProperties import PlotProperties, FormatModel
 from ampel.model.UnitModel import UnitModel
 from ampel.view.T2DocView import T2DocView
 from ampel.enum.DocumentCode import DocumentCode
@@ -38,14 +38,14 @@ class T2PS1ThumbExtCat(AbsTiedPointT2Unit):
 	band: str | Sequence[str] = "g"
 	plot_props: PlotProperties = PlotProperties(
 		tags = ["THUMBPRINT", "PANSTARRS"],
-		file_name = {
-			"format_str": "%s_%s_%s_ps1_thumb.svg",
-			"arg_keys": ["stock", "band", "catalog"]
-		},
-		title = {
-			"format_str": "%s %s (%s band) ",
-			"arg_keys": ["stock", "catalog", "band"]
-		},
+		file_name = FormatModel(
+			format_str = "%s_%s_%s_ps1_thumb.svg",
+			arg_keys = ["stock", "band", "catalog"]
+		),
+		title = FormatModel(
+			format_str = "%s %s (%s band) ",
+			arg_keys = ["stock", "catalog", "band"]
+		),
 		id_mapper = "ZTFIdMapper"
 	)
 
