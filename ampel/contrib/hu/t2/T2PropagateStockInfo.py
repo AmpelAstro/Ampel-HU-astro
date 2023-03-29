@@ -21,7 +21,7 @@ def get_recursively(search_dict, field):
     for key, value in search_dict.items():
 
         if key == field:
-            fields_found.append(key+'_found_'+value)
+            fields_found.append(key+'_found_'+str(value) )
 
         elif isinstance(value, dict):
             results = get_recursively(value, field)
@@ -41,7 +41,10 @@ def get_recursively(search_dict, field):
 class T2PropagateStockInfo(AbsStockT2Unit):
     """
     Collects a set of info from the transient stock collection and propagates.
-    Potentially useful as chained T2
+    Potentially useful as chained T2.
+    
+    All entries are converted to strings.
+
     """
 
     # Paths to properties to search for
@@ -53,7 +56,6 @@ class T2PropagateStockInfo(AbsStockT2Unit):
 
 
     def process(self, stock_doc):
-        print(stock_doc)
         outd = {}
         for label, pathlist in self.prop_paths.items():
             paths = get_recursively(stock_doc, pathlist[-1])

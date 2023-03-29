@@ -10,7 +10,7 @@
 
 import numpy as np
 import sncosmo # type: ignore[import]
-from sfdmap import SFDMap  # type: ignore[import]
+from sfdmap2.sfdmap import SFDMap  # type: ignore[import]
 from typing import Union
 import copy
 from astropy.time import Time
@@ -156,15 +156,17 @@ class T2RunPossis(T2RunSncosmo):
                     continue
                 self.logger.debug('Parsing t2 results from {}'.format(t2_view.unit))
                 t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
-                if not 'explosion_time' in t2_res.keys():
+                if not 'trigger_time' in t2_res.keys():
                     self.logger.info('No explosion time',extra={'t2res':t2_res})
                     return UnitResult(code=DocumentCode.T2_MISSING_INFO)
 
-                if isinstance(t2_res['explosion_time'], float):
-                    self.explosion_time_jd = t2_res['explosion_time']
-                elif isinstance(t2_res['explosion_time'], str):
-                    # Datetime format
-                    self.explosion_time_jd = Time(t2_res['explosion_time'], scale="utc").jd
+                # Assuming trigger time is already saved as jd, but possible converted to string
+                #if isinstance(t2_res['explosion_time'], float):
+                #    self.explosion_time_jd = t2_res['explosion_time']
+                #elif isinstance(t2_res['explosion_time'], str):
+                #    # Datetime format
+                #    self.explosion_time_jd = Time(t2_res['explosion_time'], scale="utc").jd
+                self.explosion_time_jd = float( t2_res['trigger_time'] )
                 # Reset model
                 self.logger.debug('reset explosion time', extra={'explosion_time': self.explosion_time_jd})
                 self.sncosmo_model.set(t0=self.explosion_time_jd)
