@@ -16,7 +16,7 @@ from ampel.util.collections import ampel_iter
 from ampel.content.DataPoint import DataPoint
 from ampel.plot.create import create_plot_record
 from ampel.struct.UnitResult import UnitResult
-from ampel.model.PlotProperties import PlotProperties
+from ampel.model.PlotProperties import PlotProperties, FormatModel
 
 
 class T2PanStarrThumbPrint(AbsPointT2Unit):
@@ -31,14 +31,14 @@ class T2PanStarrThumbPrint(AbsPointT2Unit):
 	band: str | Sequence[str] = "g"
 	plot_props: PlotProperties = PlotProperties(
 		tags = ["THUMBPRINT", "PANSTARRS"],
-		file_name = {
-			"format_str": "%s_%s_ps1_thumb.svg",
-			"arg_keys": ["stock", "band"]
-		},
-		title = {
-			"format_str": "%s (%s band) ",
-			"arg_keys": ["stock", "band"]
-		},
+		file_name = FormatModel(
+			format_str = "%s_%s_ps1_thumb.svg",
+			arg_keys = ["stock", "band"]
+		),
+		title = FormatModel(
+			format_str = "%s (%s band) ",
+			arg_keys = ["stock", "band"]
+		),
 		id_mapper = "ZTFIdMapper"
 	)
 

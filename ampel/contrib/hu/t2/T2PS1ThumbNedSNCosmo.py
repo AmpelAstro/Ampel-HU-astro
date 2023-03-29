@@ -16,7 +16,7 @@ from ampel.util.collections import ampel_iter
 from ampel.plot.create import create_plot_record
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.struct.UnitResult import UnitResult
-from ampel.model.PlotProperties import PlotProperties
+from ampel.model.PlotProperties import PlotProperties, FormatModel
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.view.T2DocView import T2DocView
 from ampel.view.LightCurve import LightCurve
@@ -44,14 +44,14 @@ class T2PS1ThumbNedSNCosmo(AbsTiedLightCurveT2Unit):
 
 	plot_props: PlotProperties = PlotProperties(
 		tags = ["THUMBPRINT", "PANSTARRS"],
-		file_name = {
-			"format_str": "%s_%s_%s_ps1_%s_%i_thumb.svg",
-			"arg_keys": ["stock", "obj_name", "band", "cmap", "index_pos"]
-		},
-		title = {
-			"format_str": "%s - %s\nz=%s (%s band, pos %i) ",
-			"arg_keys": ["stock", "obj_name", "z", "band", "index_pos"]
-		},
+		file_name = FormatModel(
+			format_str = "%s_%s_%s_ps1_%s_%i_thumb.svg",
+			arg_keys = ["stock", "obj_name", "band", "cmap", "index_pos"]
+		),
+		title = FormatModel(
+			format_str = "%s - %s\nz=%s (%s band, pos %i) ",
+			arg_keys = ["stock", "obj_name", "z", "band", "index_pos"]
+		),
 		id_mapper = "ZTFIdMapper"
 	)
 

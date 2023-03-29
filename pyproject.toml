@@ -33,7 +33,7 @@ include = [
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.12"
-ampel-plot = {version = "^0.8.3", source = "pypi"}
+ampel-plot = {version = "^0.8.3-3", source = "pypi"}
 ampel-ztf = {version = "^0.8.4", source = "pypi", extras = ["kafka"], optional = true}
 ampel-photometry = {version = "^0.8.3", source = "pypi"}
 ampel-interface = {version = "^0.8.7", source = "pypi"}
@@ -69,8 +69,8 @@ scikit-learn = "^1.1.3"
 corner = "^2.2.1"
 
 [tool.poetry.dev-dependencies]
-mypy = "^1.0"
-pytest = "^7.2.1"
+mypy = "^1.1.1"
+pytest = "^7.2.2"
 pytest-cov = "^4.0.0"
 pytest-mock = "^3.10.0"
 types-requests = "^2.25.9"
