@@ -126,6 +126,7 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
 		# Package resource needed
 		resource = {
 		    'map_name': self.map_name,
+		    'map_dir': self.map_dir,
 		    'hash': map_hash,
 		    'token': token	
 		    }

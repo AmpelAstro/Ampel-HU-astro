@@ -16,7 +16,10 @@ import healpy as hp
 from datetime import datetime
 import numpy as np
 from hashlib import blake2b
+from base64 import b64decode, b64encode
 from collections import defaultdict
+from astropy.time import Time
+
 
 class AmpelHealpix():
     '''
@@ -38,7 +41,7 @@ class AmpelHealpix():
         self._get_map()    
         # Attribues
         self.credible_levels: None | list = None
-        self.trigger_time: None | datetime = None
+        self.trigger_time: None | float = None
         self.nside: None | int = None
    
    
@@ -58,7 +61,7 @@ class AmpelHealpix():
         return 0
         
 
-    def process_map(self):         
+    def process_map(self)->str:         
         '''
         Load map and determine prob values.
         '''
@@ -75,11 +78,10 @@ class AmpelHealpix():
         credible_levels[idx] = sorted_credible_levels
         
         self.credible_levels = credible_levels
-        self.trigger_time = trigger_time
+        self.trigger_time = Time(trigger_time).jd
         self.nside = nside
 
-        return blake2b(sorted_credible_levels, digest_size=7).digest()
-
+        return b64encode( blake2b(sorted_credible_levels, digest_size=7).digest() ).decode('utf-8')
 
     def get_pixelmask(self, pvalue_limit):
         '''
@@ -95,7 +97,7 @@ class AmpelHealpix():
         return mask.nonzero()[0].tolist()
         
         
-    def get_cumprob(self, ra: float, dec: float):
+    def get_cumprob(self, ra: float, dec: float)->float:
         '''
         Obtain probability for a specific coordinate based on loaded map.
         ra, dec in degrees.

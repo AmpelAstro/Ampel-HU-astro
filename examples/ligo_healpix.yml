@@ -23,15 +23,16 @@ task:
           target:
             unit: HealpixTokenGenerator
             config:
-              pvalue_limit: 0.9 
+              pvalue_limit: 0.8 
               map_name: "S191222n.fits.gz" 
               map_url: "https://gracedb.ligo.org/api/superevents/S191222n/files/LALInference.fits.gz"
               map_dir: '/home/jnordin/tmp'
               archive_token:
                 label: ztf/archive/token
 - title: ProcessAlerts
-  unit: AlertConsumer
+  unit: HealpixTokenConsumer
   config:
+    map_name: "S191222n.fits.gz"
     iter_max: 1000000
     supplier:
       unit: ZiAlertSupplier
@@ -73,54 +74,167 @@ task:
         unit: DecentFilter
       ingest:
         mux:
-          unit: ZiMongoMuxer
+          combine:
+          - state_t2:
+            - config: &digest_redshift_config
+                max_redshift_category: 6
+                t2_dependency:
+                - config: &catalog_match_config
+                    catalogs:
+                      GLADEv23:
+                        keys_to_append:
+                        - z
+                        - dist
+                        - dist_err
+                        - flag1
+                        - flag2
+                        - flag3
+                        rs_arcsec: 10
+                        use: extcats
+                      NEDz:
+                        keys_to_append:
+                        - ObjType
+                        - Velocity
+                        - z
+                        rs_arcsec: 10.0
+                        use: catsHTM
+                      NEDz_extcats:
+                        keys_to_append:
+                        - ObjType
+                        - Velocity
+                        - z
+                        post_filter:
+                          z:
+                            $gte: 0.002
+                            $lte: 0.03
+                        pre_filter: null
+                        rs_arcsec: 60.0
+                        use: extcats
+                      SDSS_spec:
+                        keys_to_append:
+                        - z
+                        - bptclass
+                        - subclass
+                        rs_arcsec: 10.0
+                        use: extcats
+                      LSPhotoZZou:
+                        all: true
+                        keys_to_append:
+                        - photoz
+                        - ra
+                        - dec
+                        - e_photoz
+                        - specz
+                        - _6
+                        - logMassBest
+                        - logMassInf
+                        - logMassSup
+                        rs_arcsec: 30.0
+                        use: extcats
+                      twoMPZ:
+                        all: true
+                        keys_to_append:
+                        - zPhoto
+                        - ra
+                        - dec
+                        - zSpec
+                        rs_arcsec: 30.0
+                        use: extcats
+                      wiseScosPhotoz:
+                        all: true
+                        keys_to_append:
+                        - zPhoto_Corr
+                        - ra
+                        - dec
+                        - wiseID
+                        - w1mCorr
+                        - w2mCorr
+                        rs_arcsec: 30.0
+                        use: extcats
+                      PS1_photoz:
+                        keys_to_append:
+                        - raMean
+                        - decMean
+                        - z_phot
+                        - z_photErr
+                        - z_phot0
+                        - _2
+                        rs_arcsec: 10.
+                        use: extcats
+                        pre_filter: null
+                        post_filter: null
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2CatalogMatch
+              unit: T2DigestRedshifts
+            - config:
+                explosion_time_jd: StockTriggerTime
+                max_ampelz_group: 7
+                redshift_kind: T2DigestRedshifts
+                t2_dependency:
+                - config: *digest_redshift_config
+                  unit: T2DigestRedshifts
+                - unit: T2PropagateStockInfo
+                tabulator:
+                  - unit: ZTFT2Tabulator
+                plot_props:
+                  file_name:
+                    format_str: "%s_%s_%s.svg"
+                    arg_keys:
+                      - stock
+                      - model
+                      - redshift_kind
+                  title:
+                    format_str: "%s %s %s"
+                    arg_keys:
+                      - stock
+                      - model
+                      - redshift_kind
+                  fig_text:
+                    format_str: "%s %s \nz-source %s \nchisq %.2f ndof %s"
+                    arg_keys:
+                      - stock
+                      - model
+                      - redshift_kind
+                      - chisq
+                      - ndof
+                  width: 10
+                  height: 6
+                  id_mapper: null
+                  disk_save: /home/jnordin/tmp/
+              unit: T2RunPossis
+            unit: ZiT1Combiner
           insert:
             point_t2:
-            - config: &catalog_match_config
-                catalogs:
-                  SDSS_spec:
-                    keys_to_append:
-                    - z
-                    - bptclass
-                    - subclass
-                    rs_arcsec: 10.
-                    use: extcats
-                    all: False
-                  LSPhotoZZou:
-                    keys_to_append:
-                    - photoz
-                    - ra
-                    - dec
-                    - e_photoz
-                    - specz
-                    - _6
-                    - logMassBest
-                    - logMassInf
-                    - logMassSup
-                    rs_arcsec: 10.
-                    use: extcats
-                    pre_filter: null
-                    post_filter: null
-                    all: False
-                  PS1_photoz:
-                    keys_to_append:
-                    - raMean
-                    - decMean
-                    - z_phot
-                    - z_photErr
-                    - z_phot0
-                    - _2
-                    rs_arcsec: 10.
-                    use: extcats
-                    pre_filter: null
-                    post_filter: null
+            - config: *catalog_match_config
               ingest:
                 filter: PPSFilter
                 select: first
                 sort: jd
               unit: T2CatalogMatch
+          unit: ZiArchiveMuxer
+          config:
+            future_days: 50
+            history_days: 50
+        stock_t2:
+        - unit: T2PropagateStockInfo
+          config:
+            prop_paths:
+              trigger_time:
+              - journal
+              - healpix
+              - trigger_time
+              prob_contour:
+              - journal
+              - healpix
+              - cumprob
+              healpix_map:
+              - journal
+              - healpix
+              - map_name
               
-          unit: ZiMongoMuxer
 
 - title: Run T2s
   unit: T2Worker

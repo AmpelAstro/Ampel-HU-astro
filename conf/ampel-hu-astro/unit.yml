@@ -5,6 +5,7 @@
 - ampel.contrib.hu.t0.RandFilter
 - ampel.contrib.hu.t0.RcfFilter
 - ampel.contrib.hu.t0.RedshiftCatalogFilter
+- ampel.contrib.hu.t0.HealpixTokenConsumer
 - ampel.contrib.hu.t2.T2PanStarrThumbPrint
 - ampel.contrib.hu.t2.T2PhaseLimit
 - ampel.contrib.hu.t2.T2PS1ThumbExtCat
@@ -35,6 +36,7 @@
 - ampel.contrib.hu.t2.T2MultiXgbClassifier
 - ampel.contrib.hu.t2.T2ElasticcReport
 - ampel.contrib.hu.t2.T2FastDecliner
+- ampel.contrib.hu.t2.T2HealpixProb
 - ampel.contrib.hu.t3.TransientInfoPrinter
 - ampel.contrib.hu.t3.TransientViewDumper
 - ampel.contrib.hu.t3.ChannelSummaryPublisher
