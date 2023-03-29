@@ -23,10 +23,12 @@ task:
           target:
             unit: HealpixTokenGenerator
             config:
-              pvalue_limit: 0.8 
+              pvalue_limit: 0.9 
               map_name: "S191222n.fits.gz" 
               map_url: "https://gracedb.ligo.org/api/superevents/S191222n/files/LALInference.fits.gz"
               map_dir: '/home/jnordin/tmp'
+              date_str: "2022-10-28"
+              delta_time: 1.
               archive_token:
                 label: ztf/archive/token
 - title: ProcessAlerts
@@ -169,7 +171,7 @@ task:
                     sort: jd
                   unit: T2CatalogMatch
               unit: T2DigestRedshifts
-            - config:
+            - config: &possis_config
                 explosion_time_jd: StockTriggerTime
                 max_ampelz_group: 7
                 redshift_kind: T2DigestRedshifts
@@ -205,6 +207,15 @@ task:
                   id_mapper: null
                   disk_save: /home/jnordin/tmp/
               unit: T2RunPossis
+            - config:
+                max_redshift: 0.2
+                t2_dependency:
+                - config: *digest_redshift_config
+                  unit: T2DigestRedshifts
+                - unit: T2PropagateStockInfo
+                - unit: T2RunPossis
+                  config: *possis_config
+              unit: T2KilonovaEval
             unit: ZiT1Combiner
           insert:
             point_t2:
@@ -241,4 +252,62 @@ task:
   config:
     send_beacon: false
     raise_exc: true
+
+
+- title: React
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3ReviewUnitExecutor
+        config:
+          supply:
+            unit: T3DefaultBufferSupplier
+            config:
+              select:
+                unit: T3StockSelector
+                config:
+                  channel: ligo
+              load:
+                unit: T3SimpleDataLoader
+                config:
+                  directives:
+                    - STOCK
+                    - T1
+                    - T2DOC
+                  channel: ligo
+          stage:
+            unit: T3SimpleStager
+            config:
+              execute:
+                - unit: TransientTablePublisher
+                  config:
+                    include_stock: true
+                    include_channels: true
+                    fmt: csv
+                    local_path: /home/jnordin/tmp/
+                    table_schema:
+                      T2KilonovaEval:
+                        'Ampel z':
+                          - ampel_z
+                        'Ampel z (precision)':
+                          - ampel_z_precision
+                        'Ampel distance':
+                          - ampel_dist
+                        'Kilonovaness':
+                          - kilonovaness
+                        'Peak absmag (Possis)':
+                          - possis_abspeak
+                        'Fit chisq (Possis)':
+                          - possis_chisq
+                        'Fit ndof (Possis)':
+                          - possis_ndof
+                    transient_table_schema:
+                      T2PropagateStockInfo:
+                        'Trigger time':
+                          - trigger_time
+                        'Prob. contour':
+                          - prob_contour
+                        'Healpix map':
+                          - healpix_map
 
