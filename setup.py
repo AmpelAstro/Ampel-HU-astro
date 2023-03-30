@@ -33,7 +33,7 @@ setup(
         'ampel-core>=0.8.6,<0.9',
         'ampel-plot>=0.8.3.post3,<0.9',
         'ampel-photometry>=0.8.3a0,<0.9',
-        'ampel-alerts>=0.8.3a0,<0.9',
+        'ampel-alerts>=0.8.4,<0.9',
         'ampel-ztf>=0.8.5,<0.9',
         "sncosmo",
         "iminuit",
