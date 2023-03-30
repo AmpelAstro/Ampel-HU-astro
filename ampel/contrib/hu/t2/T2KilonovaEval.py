@@ -103,7 +103,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         """
         info = {'pass':0}
         
-        if not t2res['ampel_z']:
+        if not t2res.get('ampel_z'):
             # No match
             return info
             
