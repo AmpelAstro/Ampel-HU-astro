@@ -101,11 +101,15 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         """
         Check whether Ampel Z data (from T2DigestRedshifts) fulfill criteria.
         """
-        info = {'pass':0}
+        info = {'pass':0, 'rejects': []}
         
         if not t2res.get('ampel_z'):
             # No match
+            criterium_name = "no ampelz match"
+            info["rejects"].append(criterium_name)
+            info["pass"] -= 10 # TODO maybe find a better way to punish this
             return info
+        info["pass"] += 1
             
         info['ampel_z'] = t2res['ampel_z']
         info['ampel_z_precision'] = t2res['group_z_precision']
@@ -113,8 +117,14 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         # Add score
         if (self.min_redshift < info["ampel_z"] < self.max_redshift):
             info['pass'] += 1
+        else:
+            criterium_name = "min_redshift"
+            info['rejects'].append(criterium_name)
         if (self.min_dist < info["ampel_dist"] < self.max_dist):
             info['pass'] += 1
+        else:
+            criterium_name = "min_dist"
+            info['rejects'].append(criterium_name)
 
         # Calculate physical distance
         info['dst_kpc'] = (
@@ -123,6 +133,9 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                 )
         if info['dst_kpc'] < self.max_kpc_dist:
             info['pass'] += 1
+        else:
+            criterium_name = "dst_kpc"
+            info['rejects'].append(criterium_name)
         
         # Return collected info
         return info
@@ -131,9 +144,13 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         """
         Check whether a fit to T2RunPossis models look good.
         """
-        info = {'pass':0, 'model':t2res['model_name']}
+        info = {'pass':0, 'model':t2res['model_name'], 'rejects': []}
         if not t2res['z'] or not t2res['sncosmo_result']['success']:
-            return info	
+            criterium_name = "no possis fits"
+            info['rejects'].append(criterium_name)
+            info["pass"] -= 10 # TODO maybe find a better way to punish this
+            return info	# doesnt make sense to continue analysis if no values available
+        info["pass"]
         
         info['possis_abspeak'] = t2res['fit_metrics']['restpeak_model_absmag_B']
         info['possis_obspeak'] = t2res['fit_metrics']['obspeak_model_B']
@@ -141,10 +158,17 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         info['possis_ndof'] = t2res['sncosmo_result']['ndof']
         
         if info['possis_ndof']<0:
+            criterium_name = "possis_ndof"
+            info['rejects'].append(criterium_name)
+            info["pass"] -= 10 # TODO maybe find a better way to punish this
             return info
+        info["pass"] += 1
         
         if (self.min_absmag < info["possis_abspeak"] < self.max_absmag):
             info['pass'] += 1
+        else:
+            criterium_name = "min_absmag"
+            info['rejects'].append(criterium_name)
         
         return info
 
@@ -156,26 +180,53 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         """
 
         # apply cut on history: consider photophoints which are sharp enough
-        pps = lc.get_photopoints(filters=self.lc_filters)
+        pps = lc.get_photopoints(filters=self.lc_filters) # pps: photopoints from lightcurve w filters
+
         assert pps is not None
-        info: dict[str, Any] = {}
+        info: dict[str, Any] = {'pass': 0, "rejects": []}
+        
 
         # cut on number of detection
-        if len(pps) < self.min_ndet:
-            self.logger.info(
-                'Rejected', extra={'det': len(pps)}
-            )
-            return None
-        info["detections"] = len(pps)
+        # if len(pps) < self.min_ndet:
+        #     self.logger.info(
+        #         'Rejected', extra={'det': len(pps)}
+        #     )
+        #     return None
+        # info["detections"] = len(pps)
+
+        # pass on number of detections
+        if len(pps) >= self.min_ndet:
+            info['pass'] += 1
+        elif len(pps) == 0:
+            criterium_name = "no pps"
+            info["rejects"].append(criterium_name)
+            info["pass"] -= 10 # TODO maybe find a better way to punish this
+            return info
+        else:
+            criterium_name = "pps"
+            info['rejects'].append(criterium_name)
+        info['detections'] = len(pps)
 
         # cut on age
+        # jds = [pp["body"]["jd"] for pp in pps]
+        # most_recent_detection, first_detection = max(jds), min(jds)
+        # age = most_recent_detection - first_detection
+        # if age > self.max_age or age < self.min_age:
+        #     self.logger.info('Rejected', extra={'age': age})
+        #     return None
+        # info["age"] = age
+
+        # pass on age
         jds = [pp["body"]["jd"] for pp in pps]
         most_recent_detection, first_detection = max(jds), min(jds)
         age = most_recent_detection - first_detection
-        if age > self.max_age or age < self.min_age:
-            self.logger.info('Rejected', extra={'age': age})
-            return None
+        if age <= self.max_age and age >= self.min_age:
+            info['pass'] += 1
+        else:
+            criterium_name = "age"
+            info['rejects'].append(criterium_name)
         info["age"] = age
+
 
         # cut on number of detection after last SIGNIFICANT UL
         ulims = lc.get_upperlimits(
@@ -184,13 +235,14 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                 "operator": ">=",
                 "value": self.maglim_min,
             }
-        )
+        ) # upper limits of lightcurve w filter: diffmaglim higher than maglim_min
 
         if ulims and len(ulims) > 0:
             last_ulim_jd = sorted([x["body"]["jd"] for x in ulims])[-1]
             pps_after_ndet = lc.get_photopoints(
                 filters=self.lc_filters + [{"attribute": "jd", "operator": ">=", "value": last_ulim_jd}]
             )
+            info["pass"] += 1
             # Check if there are enough positive detection after the last significant UL
             if (
                 pps_after_ndet is not None and
@@ -200,7 +252,13 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                     "not enough consecutive detections after last significant UL.",
                     extra={"NDet": len(pps), "lastUlimJD": last_ulim_jd},
                 )
-                return None
+
+                criterium_name = "min_ndet_postul"
+                info['rejects'].append(criterium_name)
+                #return None
+            else:
+                info["pass"] += 1
+
             # Check that there is a recent ul
             if (most_recent_detection - last_ulim_jd) > self.maglim_maxago:
                 self.logger.info(
@@ -210,11 +268,17 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                         "lastUlimJD": last_ulim_jd,
                     },
                 )
-                return None
+                criterium_name = "maglim_maxago"
+                info['rejects'].append(criterium_name)
+                #return None
+            else:
+                info["pass"] += 1
             info["last_UL"] = most_recent_detection - last_ulim_jd
         else:
             self.logger.info("no UL")
-            return None
+            criterium_name = "no_UL"
+            info['rejects'].append(criterium_name)
+            #return None
 
         # cut on number of filters
         used_filters = set([pp["body"]["fid"] for pp in pps])
@@ -222,13 +286,19 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             self.logger.info(
                 "Rejected", extra={'nbr_filt': len(used_filters)}
             )
-            return None
+            info["rejects"].append("min_n_filters")
+            #return None
+        else:
+            info["pass"] += 1
         # cut on which filters used
         if used_filters.isdisjoint(self.det_filterids):
             self.logger.info(
                 "Rejected (wrong filter det)", extra={'det_filters': used_filters}
             )
-            return None
+            criterium_name = "wrong_filter"
+            info['rejects'].append(criterium_name)
+            #return None
+        info["pass"] += 1
 
         # cut on range of peak magnitude
         mags = [pp["body"]["magpsf"] for pp in pps]
@@ -237,7 +307,11 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             self.logger.info(
                 "Rejected", extra={'peak_mag': peak_mag}
             )
-            return None
+            criterium_name = "peak_mag"
+            info['rejects'].append(criterium_name)
+            #return None
+        else:
+            info["pass"] += 1
         info["peak_mag"] = peak_mag
 
         # For rapidly declining sources the latest magnitude is probably more relevant
@@ -266,7 +340,11 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             self.logger.info(
                 "Rejected (galactic plane)", extra={'gal_lat_b': b}
             )
-            return None
+            criterium_name = "min_gal_lat"
+            info['rejects'].append(criterium_name)
+            #return None
+        else:
+            info["pass"] += 1
         info["ra"] = ra
         info["dec"] = dec
 
@@ -282,7 +360,11 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                 "Rejected (close to solar system object)",
                 extra={"ssdistnr": ssdist.tolist()},
             )
-            return None
+            criterium_name = "close_to_sso"
+            info['rejects'].append(criterium_name)
+            #return None
+        else:
+            info["pass"] += 1
 
         # check PS1 sg for the full alert history
         # Note that we for this check do *not* use the lightcurve filter criteria
@@ -298,7 +380,11 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                     "Rejected (PS1 SG cut)",
                     extra={"distpsnr1": distpsnr1, "sgscore1": sgscore1},
                 )
-                return None
+                criterium_name = "is_ps1_star"
+                info['rejects'].append(criterium_name)
+                #return None
+            else:
+                info["pass"] += 1 # TODO: think about whether optional checks should be rewarded more
         else:
             self.logger.info("No PS1 check as no data found.")
 
@@ -309,11 +395,18 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                 "Rejected (RB)",
                 extra={"median_rd": np.median(rbs)},
             )
-            return None
+            criterium_name = "rb_minmed"
+            info['rejects'].append(criterium_name)
+            #return None
         elif (len(rbs) == 0) and self.rb_minmed > 0:
             self.logger.info("Rejected (No rb info)")
-            return None
+            criterium_name = "no rb info"
+            info['rejects'].append(criterium_name)
+            #return None
+        else: 
+            info["pass"] += 1
         info["rb"] = np.median(rbs)
+        
 
         # drb might not exist
         drbs = [pp["body"]["drb"] for pp in pps if "drb" in pp["body"]]
@@ -322,10 +415,16 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                 "Rejected (dRB)",
                 extra={"median_drd": np.median(drbs)},
             )
-            return None
+            criterium_name = "drb"
+            info['rejects'].append(criterium_name)
+            #return None
         elif (len(drbs) == 0) and self.drb_minmed > 0:
             self.logger.info("Rejected (No drb info)")
-            return None
+            criterium_name = "no drb"
+            info['rejects'].append(criterium_name)
+            #return None
+        else:
+            info["pass"] += 1
 
         info["drb"] = np.median(drbs)
 
@@ -358,6 +457,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
 
         kilonovaness: int = 0
         info = {'possis':[]}
+        rejects = []
         
         # Check t2 ouputs
         for t2_view in t2_views:
@@ -366,12 +466,16 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             # Redshift
             if t2_view.unit == 'T2DigestRedshifts':
                 zinfo = self.inspect_ampelz(t2_res)
+                if len(zinfo["rejects"]) > 0:
+                    rejects.extend(zinfo["rejects"])
                 info.update(zinfo)
                 kilonovaness += zinfo['pass']
             # Fit to kilonova model
             if t2_view.unit == 'T2RunPossis':
                 pinfo = self.inspect_possis(t2_res)
-                info['possis'].append(pinfo)   # Could be multiple possis fits
+                info['possis'].extend(pinfo)   # Could be multiple possis fits
+                if len(pinfo["rejects"]) > 0:
+                    rejects.extend(pinfo["rejects"])
                 kilonovaness += pinfo['pass']
                 if 'possis_abspeak' in info.keys():
                     if info['possis_chisq']>zinfo['possis_chisq']:
@@ -382,7 +486,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             # Propagate map info
             if t2_view.unit == 'T2PropagateStockInfo':
                 info.update( t2_res )   # Could there be multiple maps associated? E.g. after updates? TODO
-        
+
 
 
         # Check whether the lightcurve passes selection criteria
@@ -390,6 +494,9 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         lc_info = self.inspect_lc(light_curve)
         if lc_info:
            info.update(lc_info)
+           kilonovaness += lc_info['pass']
+           if len(lc_info["rejects"]) > 0:
+            rejects.extend(lc_info["rejects"])
 
 
         # iii. Check absolute magnitude - again (but directly from lightcurve)
@@ -398,10 +505,18 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             info["absmag"] = obsmag - sndist.distmod.value
             if (self.min_absmag < info['absmag'] < self.max_absmag):
                 kilonovaness += 1
+            else:
+                criterium_name = "absmag from lc"
+                rejects.append(criterium_name)
 
         # Categorize
-        if kilonovaness > 3:
+        rank_decimal = kilonovaness/(kilonovaness + len(rejects))
+        if (kilonovaness < 1):
+            rank_decimal = 0
+        if rank_decimal > .9: #TODO arbitrary rn
             info['is_gold'] = True
         info['kilonovaness'] = kilonovaness
+        info["kilonovaness_dec"] = rank_decimal
+        info["rejects"] = rejects
 
         return info

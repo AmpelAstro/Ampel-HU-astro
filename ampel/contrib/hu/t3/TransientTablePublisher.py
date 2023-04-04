@@ -165,7 +165,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
         if self.local_path is not None:
             full_path = os.path.join(self.local_path, self.file_name)
             if self.fmt == 'csv':
-                df.to_csv(full_path)
+                df.to_csv(full_path, sep=";")
             elif self.fmt == 'latex':
                 df.to_latex(full_path)
             self.logger.info('Exported', extra={'path': full_path})
@@ -200,7 +200,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
         # Slack summary
         buffer = io.StringIO(self.file_name)
         if self.fmt == 'csv':
-            df.to_csv(buffer)
+            df.to_csv(buffer, sep=";")
         elif self.fmt == 'latex':
             df.to_latex(buffer)
 
