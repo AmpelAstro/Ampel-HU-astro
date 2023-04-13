@@ -20,6 +20,8 @@ from ampel.view.T2DocView import T2DocView
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
 from ampel.model.StateT2Dependency import StateT2Dependency
 
+#from nuztf.nuztf import cat_match
+
 class T2KilonovaEval(AbsTiedLightCurveT2Unit):
     """
     Evaluate whether a transient fulfills criteria for being a potential
@@ -62,7 +64,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
     max_absmag: float = -12  #  
     min_ndet: int = 1
     min_ndet_postul: int = 0  # and if it has this minimum nr of detection after the last significant (max_maglim) UL.
-    min_age: float = 0
+    min_age: float = 0.01 # require 2 detections separated by 15 minutes
     max_age: float = 3.
     # Min age of detection history
     # range of peak magnitudes for submission
@@ -431,6 +433,13 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         # Transient passed pure LC criteria
         self.logger.info("Passed T2infantCatalogEval", extra=info)
         return info
+    
+    def catalog_match(self, info: dict):
+        raw = {}
+        raw["candidate"] = info
+
+
+
 
 
     # MANDATORY
