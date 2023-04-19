@@ -133,8 +133,13 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
 	
 		r = Resource(name=self.map_name, value=resource)
 		t3s.add_resource(r)
-		# Also add just the token for direct use by ZTFArchiveAlertLoader
 		r = Resource(name=self.map_name+'_token', value=token)
+		t3s.add_resource(r)
+		r = Resource(name='healpix_map_dir', value=self.map_dir)
+		t3s.add_resource(r)
+		r = Resource(name='healpix_map_hash', value=map_hash)
+		t3s.add_resource(r)
+		r = Resource(name='healpix_map_name', value=self.map_name)
 		t3s.add_resource(r)
 		
 
