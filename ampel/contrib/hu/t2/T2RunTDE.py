@@ -27,6 +27,9 @@ from ampel.view.LightCurve import LightCurve
 
 # from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.view.T2DocView import T2DocView
+from astropy import constants as c
+from astropy import units as u
+from astropy.units import Quantity
 from sfdmap import SFDMap  # type: ignore[import]
 
 # from urllib.request import urlopen
@@ -67,15 +70,15 @@ class TDESource(sncosmo.Source):
         :wave: np.ndarray, array containing wavelength in AA
         :T: np.ndarray, array containing temperatures in K
         """
-        wave = wave * u.AA
-        wave = wave.to(u.m)
+        wave_aa: Quantity = wave * u.AA
+        wave_m: Quantity = wave_aa.to(u.m)
 
-        prefactor = 2 * c.h * c.c**2 / wave**5
+        prefactor = 2 * c.h * c.c**2 / wave_m**5
 
         prefactor = np.tile(prefactor, (len(T), 1)).transpose()
 
         exponential_term = (
-            c.h.value * c.c.value * 1 / np.outer(wave.to(u.m).value, T) / c.k_B.value
+            c.h.value * c.c.value * 1 / np.outer(wave_m.value, T) / c.k_B.value
         )
 
         bb = prefactor * 1 / (np.exp(exponential_term) - 1) / u.sr
