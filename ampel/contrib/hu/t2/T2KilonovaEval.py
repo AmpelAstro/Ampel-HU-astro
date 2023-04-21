@@ -4,8 +4,8 @@
 # License:             BSD-3-Clause
 # Author:              jnordin@physik.hu-berlin.de
 # Date:                29.03.2023
-# Last Modified Date:  29.03.2023
-# Last Modified By:    jnordin@physik.hu-berlin.de
+# Last Modified Date:  21.04.2023
+# Last Modified By:    ernstand@physik.hu-berlin.de
 
 import numpy as np
 from typing import Any, Literal, Union
@@ -45,7 +45,8 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
     t2_dependency: Sequence[StateT2Dependency[Literal[
     	"T2DigestRedshifts", 
     	"T2RunPossis", 
-    	"T2PropagateStockInfo"
+    	"T2PropagateStockInfo",
+        "T2CatalogMatch"
     	]]]
 
 
@@ -99,6 +100,24 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         {"attribute": "magfromlim", "operator": ">", "value": 0},
     ]
 
+
+    # Catalogs 
+    # catalogs =["GLADEv23",
+    #             "NEDz",
+    #             "NEDz_extcats",
+    #             "SDSS_spec",
+    #             "LSPhotoZZou",
+    #             "twoMPZ",
+    #             "wiseScosPhotoz",
+    #             "PS1_photoz",
+    #             "CRTS_DR1",
+    #             "milliquas",
+    #             "GAIADR2",
+    #             "SDSSDR10",
+    #             "wise_color",
+    #             "TNS"
+    #             ]
+
     def inspect_ampelz(self, t2res: dict[str, Any]) -> None | dict[str, Any]:
         """
         Check whether Ampel Z data (from T2DigestRedshifts) fulfill criteria.
@@ -120,12 +139,12 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         if (self.min_redshift < info["ampel_z"] < self.max_redshift):
             info['pass'] += 1
         else:
-            criterium_name = "min_redshift"
+            criterium_name = "redshift"
             info['rejects'].append(criterium_name)
         if (self.min_dist < info["ampel_dist"] < self.max_dist):
             info['pass'] += 1
         else:
-            criterium_name = "min_dist"
+            criterium_name = "ampel_dist"
             info['rejects'].append(criterium_name)
 
         # Calculate physical distance
@@ -152,7 +171,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             info['rejects'].append(criterium_name)
             info["pass"] -= 10 # TODO maybe find a better way to punish this
             return info	# doesnt make sense to continue analysis if no values available
-        info["pass"]
+        #info["pass"]
         
         info['possis_abspeak'] = t2res['fit_metrics']['restpeak_model_absmag_B']
         info['possis_obspeak'] = t2res['fit_metrics']['obspeak_model_B']
@@ -169,7 +188,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         if (self.min_absmag < info["possis_abspeak"] < self.max_absmag):
             info['pass'] += 1
         else:
-            criterium_name = "min_absmag"
+            criterium_name = "absmag"
             info['rejects'].append(criterium_name)
         
         return info
@@ -434,10 +453,28 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         self.logger.info("Passed T2infantCatalogEval", extra=info)
         return info
     
-    def catalog_match(self, info: dict):
-        raw = {}
-        raw["candidate"] = info
 
+    def inspect_catmatch(self, t2res: dict[str, Any]) -> None | dict[str, Any]:
+        """
+        Check wether any catalog has a match for the transit.
+        """
+        catalogKeys = t2res.keys()
+        # print(catalogKeys)
+
+        info = {'pass':0, 'rejects': []}
+
+        for cat in catalogKeys:
+            if (t2res[cat] is not None):
+                info["pass"] -= 5
+                info["rejects"].append(cat)
+                info[cat] = t2res[cat]
+                
+            else:
+                pass
+                #info["pass"] -= 5
+
+        #print(t2res.keys())
+        return info
 
 
 
@@ -465,6 +502,10 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         """
 
         kilonovaness: int = 0
+        z_kilonovaness: int = 0
+        lc_kilonovaness: int = 0
+        possis_kilonovaness: int = 0
+        cat_kilonovaness: int = 0
         info = {'possis':[]}
         rejects = []
         
@@ -472,6 +513,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         for t2_view in t2_views:
             self.logger.info('Parsing t2 results from {}'.format(t2_view.unit))
             t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
+
             # Redshift
             if t2_view.unit == 'T2DigestRedshifts':
                 zinfo = self.inspect_ampelz(t2_res)
@@ -479,6 +521,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                     rejects.extend(zinfo["rejects"])
                 info.update(zinfo)
                 kilonovaness += zinfo['pass']
+                z_kilonovaness = zinfo["pass"]
             # Fit to kilonova model
             if t2_view.unit == 'T2RunPossis':
                 pinfo = self.inspect_possis(t2_res)
@@ -486,12 +529,23 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                 if len(pinfo["rejects"]) > 0:
                     rejects.extend(pinfo["rejects"])
                 kilonovaness += pinfo['pass']
+                possis_kilonovaness = pinfo["pass"]
                 if 'possis_abspeak' in info.keys():
                     if info['possis_chisq']>zinfo['possis_chisq']:
                         info.update( pinfo )
                 else:
                     info.update( pinfo )
-                
+
+            if t2_view.unit == "T2CatalogMatch":
+                #print(info("Catalog match {}".format(t2_res.keys)))
+                cinfo = self.inspect_catmatch(t2_res)
+                if len(cinfo["rejects"]) > 0:
+                    rejects.extend(cinfo["rejects"])
+                info.update(cinfo)
+                kilonovaness += cinfo['pass']
+                cat_kilonovaness = cinfo["pass"]
+                #print("T2CatalogMatch in kilonovaeval")
+
             # Propagate map info
             if t2_view.unit == 'T2PropagateStockInfo':
                 info.update( t2_res )   # Could there be multiple maps associated? E.g. after updates? TODO
@@ -504,6 +558,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         if lc_info:
            info.update(lc_info)
            kilonovaness += lc_info['pass']
+           lc_kilonovaness = lc_info["pass"]
            if len(lc_info["rejects"]) > 0:
             rejects.extend(lc_info["rejects"])
 
@@ -514,18 +569,25 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             info["absmag"] = obsmag - sndist.distmod.value
             if (self.min_absmag < info['absmag'] < self.max_absmag):
                 kilonovaness += 1
+                lc_kilonovaness += 1
             else:
                 criterium_name = "absmag from lc"
                 rejects.append(criterium_name)
 
         # Categorize
-        rank_decimal = kilonovaness/(kilonovaness + len(rejects))
         if (kilonovaness < 1):
             rank_decimal = 0
+        else:
+            rank_decimal = kilonovaness/(kilonovaness + len(rejects))
+        
         if rank_decimal > .9: #TODO arbitrary rn
             info['is_gold'] = True
         info['kilonovaness'] = kilonovaness
         info["kilonovaness_dec"] = rank_decimal
+        info["z_kilonovaness"] = z_kilonovaness
+        info["lc_kilonovaness"] = lc_kilonovaness
+        info["possis_kilonovaness"] = possis_kilonovaness
+        info["cat_kilonovaness"] = cat_kilonovaness
         info["rejects"] = rejects
 
         return info
