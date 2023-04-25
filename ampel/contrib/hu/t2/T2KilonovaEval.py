@@ -130,7 +130,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             info["rejects"].append(criterium_name)
             info["pass"] -= 10 # TODO maybe find a better way to punish this
             return info
-        info["pass"] += 1
+        #info["pass"] += 1
             
         info['ampel_z'] = t2res['ampel_z']
         info['ampel_z_precision'] = t2res['group_z_precision']
@@ -345,7 +345,11 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         )
         if latest_pps:
             if not len(latest_pps) == 1:
-                raise ValueError("Have assumed a unique last photopoint")
+                criterium_name = "unique latest_pps"
+                info["rejects"].append(criterium_name)
+                info["pass"] -= 5
+                return info
+                #raise ValueError("Have assumed a unique last photopoint")
             info["latest_mag"] = latest_pps[0]["body"]["magpsf"]
 
         # TODO: cut based on the mag rise per day (see submitRapid)
@@ -354,7 +358,11 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         if pos := lc.get_pos(ret="mean", filters=self.lc_filters):
             ra, dec = pos
         else:
-            raise ValueError("Light curve contains no points")
+            criterium_name = "lc no points"
+            info["rejects"].append(criterium_name)
+            info["pass"] -= 5
+            return info
+            #raise ValueError("Light curve contains no points")
         coordinates = SkyCoord(ra, dec, unit="deg")
         b = coordinates.galactic.b.deg
         if abs(b) < self.min_gal_lat:
@@ -403,9 +411,10 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                 )
                 criterium_name = "is_ps1_star"
                 info['rejects'].append(criterium_name)
+                info["pass"] -= 5
                 #return None
             else:
-                info["pass"] += 1 # TODO: think about whether optional checks should be rewarded more
+                info["pass"] += 0 # TODO: think about whether optional checks should be rewarded more
         else:
             self.logger.info("No PS1 check as no data found.")
 
@@ -414,7 +423,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         if np.median(rbs) < self.rb_minmed:
             self.logger.info(
                 "Rejected (RB)",
-                extra={"median_rd": np.median(rbs)},
+                extra={"median_rb": np.median(rbs)},
             )
             criterium_name = "rb_minmed"
             info['rejects'].append(criterium_name)
@@ -436,12 +445,12 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                 "Rejected (dRB)",
                 extra={"median_drd": np.median(drbs)},
             )
-            criterium_name = "drb"
+            criterium_name = "drb_minmed"
             info['rejects'].append(criterium_name)
             #return None
         elif (len(drbs) == 0) and self.drb_minmed > 0:
             self.logger.info("Rejected (No drb info)")
-            criterium_name = "no drb"
+            criterium_name = "no drb info"
             info['rejects'].append(criterium_name)
             #return None
         else:
