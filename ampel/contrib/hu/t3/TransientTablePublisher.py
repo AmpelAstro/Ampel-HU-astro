@@ -184,9 +184,9 @@ class TransientTablePublisher(AbsPhotoT3Unit):
         if (skymap_name[-1] != "z"): # if non trivial rev version (hacky)
             skymap_dir_name += "_rev_" + skymap_name[skymap_name.find(",") + 1:] # find "," and add rev version after that
 
-        print(skymap_dir_name)
+        print("TMP FILES MOVED TO " + skymap_dir_name)
 
-        skymap_directory = os.path.join(self.local_path + skymap_dir_name)
+        skymap_directory = os.path.join(self.local_path + "/../" + skymap_dir_name)
         print(skymap_directory)
         os.makedirs(skymap_directory, exist_ok=True)
         for file in files_local_path:

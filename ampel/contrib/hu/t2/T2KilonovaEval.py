@@ -126,7 +126,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         
         if not t2res.get('ampel_z'):
             # No match
-            criterium_name = "no ampelz match"
+            criterium_name = "no_ampelz_match"
             info["rejects"].append(criterium_name)
             info["pass"] -= 10 # TODO maybe find a better way to punish this
             return info
@@ -167,7 +167,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         """
         info = {'pass':0, 'model':t2res['model_name'], 'rejects': []}
         if not t2res['z'] or not t2res['sncosmo_result']['success']:
-            criterium_name = "no possis fits"
+            criterium_name = "no_possis_fits"
             info['rejects'].append(criterium_name)
             info["pass"] -= 10 # TODO maybe find a better way to punish this
             return info	# doesnt make sense to continue analysis if no values available
@@ -219,7 +219,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         if len(pps) >= self.min_ndet:
             info['pass'] += 1
         elif len(pps) == 0:
-            criterium_name = "no pps"
+            criterium_name = "no_pps"
             info["rejects"].append(criterium_name)
             info["pass"] -= 10 # TODO maybe find a better way to punish this
             return info
@@ -345,7 +345,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         )
         if latest_pps:
             if not len(latest_pps) == 1:
-                criterium_name = "unique latest_pps"
+                criterium_name = "unique_latest_pps"
                 info["rejects"].append(criterium_name)
                 info["pass"] -= 5
                 return info
@@ -358,7 +358,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         if pos := lc.get_pos(ret="mean", filters=self.lc_filters):
             ra, dec = pos
         else:
-            criterium_name = "lc no points"
+            criterium_name = "lc_no_points"
             info["rejects"].append(criterium_name)
             info["pass"] -= 5
             return info
@@ -430,7 +430,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             #return None
         elif (len(rbs) == 0) and self.rb_minmed > 0:
             self.logger.info("Rejected (No rb info)")
-            criterium_name = "no rb info"
+            criterium_name = "no_rb_info"
             info['rejects'].append(criterium_name)
             #return None
         else: 
@@ -450,7 +450,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             #return None
         elif (len(drbs) == 0) and self.drb_minmed > 0:
             self.logger.info("Rejected (No drb info)")
-            criterium_name = "no drb info"
+            criterium_name = "no_drb_info"
             info['rejects'].append(criterium_name)
             #return None
         else:
@@ -474,7 +474,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
 
         for cat in catalogKeys:
             if (t2res[cat] is not None):
-                info["pass"] -= 5
+                #info["pass"] -= 5
                 info["rejects"].append(cat)
                 info[cat] = t2res[cat]
                 
@@ -580,7 +580,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                 kilonovaness += 1
                 lc_kilonovaness += 1
             else:
-                criterium_name = "absmag from lc"
+                criterium_name = "absmag_from_lc"
                 rejects.append(criterium_name)
 
         # Categorize
