@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File:                ampel/contrib/hu/t3/TransientInfoDumper.py
-# License:             BSD-3-Clause
-# Author:              Jakob van Santen <jakob.van.santen@desy.de>
-# Date:                15.08.2018
-# Last Modified Date:  15.08.2018
-# Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
-
+# File              : ampel/contrib/hu/t3/TransientInfoDumper.py
+# License           : BSD-3-Clause
+# Author            : Jakob van Santen <jakob.van.santen@desy.de>
+# Date              : 15.08.2018
+# Last Modified Date: 26.04.2023
+# Last Modified By  : Simeon Reusch <simeon.reusch@desy.de>
 import uuid
 from collections.abc import Generator
 from gzip import GzipFile
@@ -45,15 +44,25 @@ class TransientViewDumper(AbsT3ReviewUnit):
     """"""
 
     version = 0.1
-    resources = ("desycloud",)
+    require = ("desycloud",)
 
+    # If this is passed, files are always saved locally
     outputfile: None | str = None
+
     desycloud_auth: NamedSecret[dict] = NamedSecret(label="desycloud")
+    desycloud_folder: str = "dumps"
+    desycloud_filename: str = str(uuid.uuid1())
 
     def post_init(self) -> None:
         if not self.outputfile:
-            self.outfile = GzipFile(fileobj=BytesIO(), mode="w")
-            self.path = "/AMPEL/dumps/" + str(uuid.uuid1()) + ".json.gz"
+            self.outfile = GzipFile(
+                filename=self.desycloud_filename + ".json", fileobj=BytesIO(), mode="w"
+            )
+            self.path = (
+                f"/AMPEL/{self.desycloud_folder}/"
+                + self.desycloud_filename
+                + ".json.gz"
+            )
             self.session = requests.Session()
             assert self.resource
             self.webdav_base = self.resource["desycloud"]
@@ -84,6 +93,7 @@ class TransientViewDumper(AbsT3ReviewUnit):
             mb = len(self.outfile.fileobj.getvalue()) / 2.0**20
             self.logger.info("{:.1f} MB of gzipped JSONy goodness".format(mb))
             auth = HTTPBasicAuth(**self.desycloud_auth.get())
+
             self.session.put(
                 self.webdav_base + self.path,
                 data=self.outfile.fileobj.getvalue(),
