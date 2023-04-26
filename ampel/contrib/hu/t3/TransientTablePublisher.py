@@ -225,14 +225,15 @@ class TransientTablePublisher(AbsPhotoT3Unit):
 
         print("TMP FILES MOVED TO " + skymap_dir_name)
 
-        skymap_directory = os.path.join(self.local_path + "/../" + skymap_dir_name)
-        print(skymap_directory)
-        os.makedirs(skymap_directory, exist_ok=True)
-        for file in files_local_path:
-            tmp_file_path = os.path.join(self.local_path, file)
-            if not (os.path.isfile(tmp_file_path)):
-                continue
-            os.replace(tmp_file_path, os.path.join(skymap_directory, file))
+        if self.local_path is not None:
+            skymap_directory = os.path.join(self.local_path + "/../" + skymap_dir_name)
+            print(skymap_directory)
+            os.makedirs(skymap_directory, exist_ok=True)
+            for file in files_local_path:
+                tmp_file_path = os.path.join(self.local_path, file)
+                if not (os.path.isfile(tmp_file_path)):
+                    continue
+                os.replace(tmp_file_path, os.path.join(skymap_directory, file))
 
         return None
 
