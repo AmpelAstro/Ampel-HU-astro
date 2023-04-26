@@ -7,27 +7,29 @@
 # Last Modified Date:  15.08.2018
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
-import uuid, requests
-from requests.auth import HTTPBasicAuth
+import uuid
+from collections.abc import Generator
 from gzip import GzipFile
 from io import BytesIO
-from collections.abc import Generator
 from urllib.parse import ParseResult, urlparse, urlunparse
 from xml.etree import ElementTree
-from ampel.types import UBson, T3Send
+
+import requests
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 from ampel.secret.NamedSecret import NamedSecret
-from ampel.util.json import AmpelEncoder
-from ampel.view.SnapView import SnapView
 from ampel.struct.T3Store import T3Store
 from ampel.struct.UnitResult import UnitResult
+from ampel.types import T3Send, UBson
+from ampel.util.json import AmpelEncoder
+from ampel.view.SnapView import SnapView
+from requests.auth import HTTPBasicAuth
 
 
 def strip_auth_from_url(url):
     try:
         auth = requests.utils.get_auth_from_url(url)
         scheme, netloc, path, params, query, fragment = urlparse(url)
-        netloc = netloc[(netloc.index("@") + 1):]
+        netloc = netloc[(netloc.index("@") + 1) :]
         url = urlunparse(ParseResult(scheme, netloc, path, params, query, fragment))
         return url, auth
     except KeyError:
@@ -56,17 +58,17 @@ class TransientViewDumper(AbsT3ReviewUnit):
             assert self.resource
             self.webdav_base = self.resource["desycloud"]
             self.ocs_base = (
-                strip_path_from_url(self.resource["desycloud"]) +
-                "/ocs/v1.php/apps/files_sharing/api/v1"
+                strip_path_from_url(self.resource["desycloud"])
+                + "/ocs/v1.php/apps/files_sharing/api/v1"
             )
         else:
             self.outfile = GzipFile(self.outputfile + ".json.gz", mode="w")
         # don't bother preserving immutable types
         self.encoder = AmpelEncoder(lossy=True)
 
-
-    def process(self, transients: Generator[SnapView, T3Send, None], t3s: T3Store) -> UBson | UnitResult:
-
+    def process(
+        self, transients: Generator[SnapView, T3Send, None], t3s: T3Store
+    ) -> UBson | UnitResult:
         count = 0
         for count, tran_view in enumerate(transients, 1):
             self.outfile.write(self.encoder.encode(tran_view).encode("utf-8"))
@@ -79,7 +81,7 @@ class TransientViewDumper(AbsT3ReviewUnit):
             self.logger.info(self.outputfile + ".json.gz")
         else:
             assert isinstance(self.outfile.fileobj, BytesIO)
-            mb = len(self.outfile.fileobj.getvalue()) / 2.0 ** 20
+            mb = len(self.outfile.fileobj.getvalue()) / 2.0**20
             self.logger.info("{:.1f} MB of gzipped JSONy goodness".format(mb))
             auth = HTTPBasicAuth(**self.desycloud_auth.get())
             self.session.put(
