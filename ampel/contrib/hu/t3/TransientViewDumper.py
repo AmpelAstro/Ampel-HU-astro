@@ -57,7 +57,9 @@ class TransientViewDumper(AbsT3ReviewUnit):
         if not self.outputfile:
             self.buffer = BytesIO()
             self.outfile = GzipFile(
-                filename=self.desycloud_filename + ".json", fileobj=self.buffer, mode="w"
+                filename=self.desycloud_filename + ".json",
+                fileobj=self.buffer,
+                mode="w",
             )
             self.path = (
                 f"/AMPEL/{self.desycloud_folder}/"
@@ -88,8 +90,8 @@ class TransientViewDumper(AbsT3ReviewUnit):
         if self.outputfile:
             self.logger.info(self.outputfile + ".json.gz")
         else:
-            assert isinstance(self.outfile.fileobj, BytesIO)
-            mb = len(self.outfile.fileobj.getvalue()) / 2.0**20
+            assert isinstance(self.buffer, BytesIO)
+            mb = len(self.buffer.getvalue()) / 2.0**20
             self.logger.info("{:.1f} MB of gzipped JSONy goodness".format(mb))
             auth = HTTPBasicAuth(**self.desycloud_auth.get())
 
