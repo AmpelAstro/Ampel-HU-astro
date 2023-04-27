@@ -55,8 +55,9 @@ class TransientViewDumper(AbsT3ReviewUnit):
 
     def post_init(self) -> None:
         if not self.outputfile:
+            self.buffer = BytesIO()
             self.outfile = GzipFile(
-                filename=self.desycloud_filename + ".json", fileobj=BytesIO(), mode="w"
+                filename=self.desycloud_filename + ".json", fileobj=self.buffer, mode="w"
             )
             self.path = (
                 f"/AMPEL/{self.desycloud_folder}/"
@@ -82,11 +83,9 @@ class TransientViewDumper(AbsT3ReviewUnit):
         for count, tran_view in enumerate(transients, 1):
             self.outfile.write(self.encoder.encode(tran_view).encode("utf-8"))
             self.outfile.write(b"\n")
-
-        self.outfile.flush()
+        self.outfile.close()
         self.logger.info("Total number of transient printed: %i" % count)
         if self.outputfile:
-            self.outfile.close()
             self.logger.info(self.outputfile + ".json.gz")
         else:
             assert isinstance(self.outfile.fileobj, BytesIO)
@@ -96,7 +95,7 @@ class TransientViewDumper(AbsT3ReviewUnit):
 
             self.session.put(
                 self.webdav_base + self.path,
-                data=self.outfile.fileobj.getvalue(),
+                data=self.buffer.getvalue(),
                 auth=auth,
             ).raise_for_status()
             response = self.session.post(
@@ -105,7 +104,6 @@ class TransientViewDumper(AbsT3ReviewUnit):
                 auth=auth,
                 headers={"OCS-APIRequest": "true"},  # i'm not a CSRF attack, i swear
             )
-            self.outfile.close()
             if response.ok and (
                 element := ElementTree.fromstring(response.text).find("data/url")
             ):
