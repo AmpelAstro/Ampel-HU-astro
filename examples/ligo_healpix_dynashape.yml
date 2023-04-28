@@ -1,0 +1,363 @@
+name: ligo-healpix
+
+mongo:
+  prefix: dumpme
+  reset: true
+
+channel:
+- name: ligo
+  access: [ZTF, ZTF_PUB, ZTF_PRIV]
+  policy: []
+
+
+
+task:
+
+- title: HealpixToAlertToken
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3PlainUnitExecutor
+        config:
+          target:
+            unit: HealpixTokenGenerator
+            config:
+              pvalue_limit: 0.88 
+              map_name: "S191222n.fits.gz" 
+              map_url: "https://gracedb.ligo.org/api/superevents/S191222n/files/LALInference.fits.gz"
+              map_dir: '/home/jnordin/tmp'
+              date_str: "2019-12-30"
+              delta_time: 0.82
+              archive_token:
+                label: ztf/archive/token
+- title: ProcessAlerts
+  unit: DynamicShaperAlertConsumer
+  config:
+    shaper_map:
+      map_name: healpix_map_name
+      healpix_info: "S191222n.fits.gz"
+    iter_max: 1000000
+    supplier:
+      unit: ZiAlertSupplier
+      config:
+        deserialize: null
+        loader:
+          unit: ZTFArchiveAlertLoader
+          config:
+            resource_name: "S191222n.fits.gz_token"
+    shaper: ZiGWDataPointShaper
+    directives:
+    - channel: ligo
+      filter:
+        config:
+          gaia_excessnoise_sig_max: 999
+          gaia_plx_signif: 3
+          gaia_pm_signif: 3
+          gaia_rs: 20
+          gaia_veto_gmag_max: 20
+          gaia_veto_gmag_min: 9
+          min_ndet: 1
+          min_tspan: -99
+          max_tspan: 99
+          min_archive_tspan: -99
+          max_archive_tspan: 100
+          min_drb: 0.995
+          min_gal_lat: 14
+          min_rb: 0.3
+          min_sso_dist: 20
+          ps1_confusion_rad: 3
+          ps1_confusion_sg_tol: 0.1
+          ps1_sgveto_rad: 1
+          ps1_sgveto_th: 0.8
+          max_fwhm: 5.5
+          max_elong: 2
+          max_magdiff: 1
+          max_nbad: 2
+        on_stock_match: bypass
+        unit: DecentFilter
+      ingest:
+        mux:
+          combine:
+          - state_t2:
+            - config: &healpixprob_config
+                map_name: "S191222n.fits.gz"
+                tabulator:
+                  - unit: ZTFT2Tabulator
+              unit: T2HealpixProb
+            - config: &digest_redshift_config
+                max_redshift_category: 6
+                t2_dependency:
+                - config: &catalog_match_config
+                    catalogs:
+                      GLADEv23:
+                        keys_to_append:
+                        - z
+                        - dist
+                        - dist_err
+                        - flag1
+                        - flag2
+                        - flag3
+                        rs_arcsec: 10
+                        use: extcats
+                      NEDz:
+                        keys_to_append:
+                        - ObjType
+                        - Velocity
+                        - z
+                        rs_arcsec: 10.0
+                        use: catsHTM
+                      NEDz_extcats:
+                        keys_to_append:
+                        - ObjType
+                        - Velocity
+                        - z
+                        post_filter:
+                          z:
+                            $gte: 0.002
+                            $lte: 0.03
+                        pre_filter: null
+                        rs_arcsec: 20.0
+                        use: extcats
+                      SDSS_spec:
+                        keys_to_append:
+                        - z
+                        - bptclass
+                        - subclass
+                        rs_arcsec: 10.0
+                        use: extcats
+                      LSPhotoZZou:
+                        all: true
+                        keys_to_append:
+                        - photoz
+                        - ra
+                        - dec
+                        - e_photoz
+                        - specz
+                        - _6
+                        - logMassBest
+                        - logMassInf
+                        - logMassSup
+                        rs_arcsec: 30.0
+                        use: extcats
+                      twoMPZ:
+                        all: true
+                        keys_to_append:
+                        - zPhoto
+                        - ra
+                        - dec
+                        - zSpec
+                        rs_arcsec: 30.0
+                        use: extcats
+                      wiseScosPhotoz:
+                        all: true
+                        keys_to_append:
+                        - zPhoto_Corr
+                        - ra
+                        - dec
+                        - wiseID
+                        - w1mCorr
+                        - w2mCorr
+                        rs_arcsec: 30.0
+                        use: extcats
+                      PS1_photoz:
+                        keys_to_append:
+                        - raMean
+                        - decMean
+                        - z_phot
+                        - z_photErr
+                        - z_phot0
+                        - _2
+                        rs_arcsec: 10.
+                        use: extcats
+                        pre_filter: null
+                        post_filter: null
+                      CRTS_DR1:
+                        keys_to_append:
+                        - CSID
+                        - VarType
+                        rs_arcsec: 5.0
+                        use: extcats
+                        pre_filter: null
+                        post_filter: null
+                      milliquas:
+                        keys_to_append:
+                        - name
+                        - broad_type
+                        - redshift
+                        - qso_prob
+                        rs_arcsec: 1.5
+                        use: extcats
+                        pre_filter: null
+                        post_filter: null
+                      GAIADR2:
+                        keys_to_append:
+                        - Plx
+                        - ErrPlx
+                        rs_arcsec: 5.0
+                        use: catsHTM
+                        pre_filter: null
+                        post_filter: null
+                      SDSSDR10:
+                        keys_to_append:
+                        - type
+                        rs_arcsec: 1.5
+                        use: catsHTM
+                        pre_filter: null
+                        post_filter: null
+                      wise_color:
+                        keys_to_append:
+                        - W1mW2
+                        rs_arcsec: 6.0
+                        use: extcats
+                        pre_filter: null
+                        post_filter: null
+                      TNS:
+                        keys_to_append:
+                        - objname
+                        - name
+                        - redshift
+                        - type
+                        - discoverydate
+                        - source_group
+                        rs_arcsec: 3.0
+                        use: extcats
+                        pre_filter: null
+                        post_filter: null
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2CatalogMatch
+              unit: T2DigestRedshifts
+            - config: &possis_config
+                explosion_time_jd: HealpixTriggerTime
+                max_ampelz_group: 7
+                redshift_kind: T2DigestRedshifts
+                t2_dependency:
+                - config: *digest_redshift_config
+                  unit: T2DigestRedshifts
+                - config: *healpixprob_config
+                  unit: T2HealpixProb
+                tabulator:
+                  - unit: ZTFT2Tabulator
+                plot_props:
+                  file_name:
+                    format_str: "%s_%s_%s.svg"
+                    arg_keys:
+                      - stock
+                      - model
+                      - redshift_kind
+                  title:
+                    format_str: "%s %s %s"
+                    arg_keys:
+                      - stock
+                      - model
+                      - redshift_kind
+                  fig_text:
+                    format_str: "%s %s \nz-source %s \nchisq %.2f ndof %s"
+                    arg_keys:
+                      - stock
+                      - model
+                      - redshift_kind
+                      - chisq
+                      - ndof
+                  width: 10
+                  height: 6
+                  id_mapper: null
+                  disk_save: /home/jnordin/tmp
+              unit: T2RunPossis
+            - config:
+                max_redshift: 0.2
+                t2_dependency:
+                - config: *digest_redshift_config
+                  unit: T2DigestRedshifts
+                - config: *healpixprob_config
+                  unit: T2HealpixProb
+                - unit: T2RunPossis
+                  config: *possis_config
+                - unit: T2CatalogMatch
+                  config: *catalog_match_config
+              unit: T2KilonovaEval
+            unit: ZiT1Combiner
+          insert:
+            point_t2:
+            - config: *catalog_match_config
+              ingest:
+                filter: PPSFilter
+                select: first
+                sort: jd
+              unit: T2CatalogMatch
+          unit: ZiArchiveMuxer
+          config:
+            future_days: 50
+            history_days: 50
+              
+
+- title: Run T2s
+  unit: T2Worker
+  config:
+    send_beacon: false
+    raise_exc: true
+
+
+- title: React
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3ReviewUnitExecutor
+        config:
+          supply:
+            unit: T3DefaultBufferSupplier
+            config:
+              select:
+                unit: T3StockSelector
+                config:
+                  channel: ligo
+              load:
+                unit: T3SimpleDataLoader
+                config:
+                  directives:
+                    - STOCK
+                    - T1
+                    - T2DOC
+                  channel: ligo
+          stage:
+            unit: T3SimpleStager
+            config:
+              execute:
+                - unit: TransientTablePublisher
+                  config:
+                    include_stock: true
+                    include_channels: true
+                    fmt: csv
+                    local_path: /home/jnordin/tmp
+                    table_schema:
+                      T2KilonovaEval:
+                        'Ampel z':
+                          - ampel_z
+                        'Ampel z (precision)':
+                          - ampel_z_precision
+                        'Ampel distance':
+                          - ampel_dist
+                        'Kilonovaness':
+                          - kilonovaness
+                        'Peak absmag (Possis)':
+                          - possis_abspeak
+                        'Fit chisq (Possis)':
+                          - possis_chisq
+                        'Fit ndof (Possis)':
+                          - possis_ndof
+                      T2HealpixProb:
+                        'Trigger time':
+                          - trigger_time
+                        'Cum. Prob':
+                          - cumprob
+                        'Healpix map':
+                          - map_name
+                    transient_table_schema:
+                      T2Dummy:
+                        DummyTitle:
+                          - DummyField
+
