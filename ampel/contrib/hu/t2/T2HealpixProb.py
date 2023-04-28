@@ -65,11 +65,8 @@ class T2HealpixProb(AbsStateT2Unit, AbsTabulatedT2Unit):
     def load_map(self, map_info):
 
         # Load and process map
-        print('loading', map_info['map_name'], map_info['map_dir'])
         self.healpix_map = AmpelHealpix(map_name=map_info.get('map_name'), map_url=map_info.get('map_url'), save_dir = map_info.get('map_dir'))
         self.map_hash = self.healpix_map.process_map()
-        print('expected', map_info['hash'])
-        print('loaded', self.map_hash)
         if not self.map_hash==map_info['hash']:
             raise ValueError("Healpix hash changed - modified map?")
         
@@ -93,7 +90,6 @@ class T2HealpixProb(AbsStateT2Unit, AbsTabulatedT2Unit):
         # 1. Look for the healpix dp
         # Alternatively, one could look for this in tags
         healdps = [dp for dp in datapoints if self.map_name == dp['body'].get('map_name') ]
-        print(healdps[0]['body'])
         if not len(healdps)==1:
             raise ValueError("Zero or multiple Healpix maps connected to state.")         
         # 2. Load map if not already loaded, if so check that hash is still the same.
@@ -102,14 +98,12 @@ class T2HealpixProb(AbsStateT2Unit, AbsTabulatedT2Unit):
                 raise ValueError("Hash changed w.r.t. loaded map")         
         else:
             self.load_map(healdps[0]['body'])
-        print(self.map_hash)
 	    
 	# 3. Otherwise, find the position of the max lum dp.
         pos = self.get_positions(datapoints)   # (jd, ra, dec)
 	
 	# 4. Use this to return the prob. 
-        out_dict: dict[str, Any] = {'map_name': self.map_name, 'map_hash': self.map_hash}
+        out_dict: dict[str, Any] = {'map_name': self.map_name, 'map_hash': self.map_hash, 'trigger_time': self.healpix_map.trigger_time}
         out_dict['cumprob'] = self.healpix_map.get_cumprob(mean([dp[1] for dp in pos]), mean([dp[2] for dp in pos]))
-        print(out_dict)
 
         return out_dict

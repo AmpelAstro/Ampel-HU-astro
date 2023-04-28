@@ -46,6 +46,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
     	"T2DigestRedshifts", 
     	"T2RunPossis", 
     	"T2PropagateStockInfo",
+    	"T2HealpixProb",
         "T2CatalogMatch"
     	]]]
 
@@ -556,7 +557,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                 #print("T2CatalogMatch in kilonovaeval")
 
             # Propagate map info
-            if t2_view.unit == 'T2PropagateStockInfo':
+            if t2_view.unit in ['T2PropagateStockInfo', 'T2HealpixProb']:
                 info.update( t2_res )   # Could there be multiple maps associated? E.g. after updates? TODO
 
 

@@ -60,14 +60,15 @@ class T2RunPossis(T2RunSncosmo):
 
     # Fix time to specific explosion timestamp
     # StockTriggerTime assumes the value is updated during runtime
-    explosion_time_jd: None | float | Literal['StockTriggerTime']
+    explosion_time_jd: None | float | Literal['StockTriggerTime'] | Literal['HealpixTriggerTime']
 
     # Which units should this be changed to
     t2_dependency: Sequence[StateT2Dependency[Literal[ # type: ignore[assignment]
                 "T2DigestRedshifts",
                 "T2MatchBTS",
                 "T2PhaseLimit",
-                "T2PropagateStockInfo"
+                "T2PropagateStockInfo",
+                "T2HealpixProb",
             ]]]
 
     def post_init(self)-> None:
@@ -149,23 +150,16 @@ class T2RunPossis(T2RunSncosmo):
         If requested, retrieve redshift and explosion time from t2_views.
         """
 
-
-        if self.explosion_time_jd=='StockTriggerTime':
+        # Check if model explosion time should be fixed from t2
+        if isinstance(self.explosion_time_jd, str):
             for t2_view in t2_views:
-                if not t2_view.unit == "T2PropagateStockInfo":
+                if not t2_view.unit in ["T2PropagateStockInfo", "T2HealpixMap"]:
                     continue
                 self.logger.debug('Parsing t2 results from {}'.format(t2_view.unit))
                 t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
                 if not 'trigger_time' in t2_res.keys():
                     self.logger.info('No explosion time',extra={'t2res':t2_res})
                     return UnitResult(code=DocumentCode.T2_MISSING_INFO)
-
-                # Assuming trigger time is already saved as jd, but possible converted to string
-                #if isinstance(t2_res['explosion_time'], float):
-                #    self.explosion_time_jd = t2_res['explosion_time']
-                #elif isinstance(t2_res['explosion_time'], str):
-                #    # Datetime format
-                #    self.explosion_time_jd = Time(t2_res['explosion_time'], scale="utc").jd
                 self.explosion_time_jd = float( t2_res['trigger_time'] )
                 # Reset model
                 self.logger.debug('reset explosion time', extra={'explosion_time': self.explosion_time_jd})
