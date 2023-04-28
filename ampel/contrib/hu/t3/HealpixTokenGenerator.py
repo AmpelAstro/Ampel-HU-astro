@@ -128,7 +128,8 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
 		    'map_name': self.map_name,
 		    'map_dir': self.map_dir,
 		    'hash': map_hash,
-		    'token': token	
+		    'token': token,
+		    'jd': ah.trigger_time,	
 		    }
 	
 		r = Resource(name=self.map_name, value=resource)

@@ -57,3 +57,6 @@
 - ampel.contrib.hu.alert.load.WiseFileAlertLoader
 - ampel.contrib.hu.alert.NeoWisePhotometryAlertSupplier
 - ampel.contrib.hu.alert.ResourceDependentConsumer
+- ampel.contrib.hu.alert.DynamicShaperAlertConsumer
+- ampel.contrib.hu.ingest.ZiGWDataPointShaper
+
