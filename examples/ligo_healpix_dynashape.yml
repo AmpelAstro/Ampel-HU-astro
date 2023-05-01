@@ -2,7 +2,7 @@ name: ligo-healpix
 
 mongo:
   prefix: dumpme
-  reset: true
+  reset: false
 
 channel:
 - name: ligo
@@ -23,12 +23,12 @@ task:
           target:
             unit: HealpixTokenGenerator
             config:
-              pvalue_limit: 0.88 
+              pvalue_limit: 0.9 
               map_name: "S191222n.fits.gz" 
               map_url: "https://gracedb.ligo.org/api/superevents/S191222n/files/LALInference.fits.gz"
               map_dir: '/home/jnordin/tmp'
-              date_str: "2019-12-30"
-              delta_time: 0.82
+              date_str: "2020-12-22"
+              delta_time: 1.0
               archive_token:
                 label: ztf/archive/token
 - title: ProcessAlerts
@@ -290,7 +290,7 @@ task:
               unit: T2CatalogMatch
           unit: ZiArchiveMuxer
           config:
-            future_days: 50
+            future_days: 0.001
             history_days: 50
               
 
