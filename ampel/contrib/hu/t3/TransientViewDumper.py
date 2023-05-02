@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : Jakob van Santen <jakob.van.santen@desy.de>
 # Date              : 15.08.2018
-# Last Modified Date: 26.04.2023
+# Last Modified Date: 02.05.2023
 # Last Modified By  : Simeon Reusch <simeon.reusch@desy.de>
 import uuid
 from collections.abc import Generator
@@ -14,13 +14,13 @@ from urllib.parse import ParseResult, urlparse, urlunparse
 from xml.etree import ElementTree
 
 import requests
-from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
+from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.struct.T3Store import T3Store
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import T3Send, UBson
 from ampel.util.json import AmpelEncoder
-from ampel.view.SnapView import SnapView
+from ampel.view.TransientView import TransientView
 from requests.auth import HTTPBasicAuth
 
 
@@ -40,7 +40,7 @@ def strip_path_from_url(url):
     return urlunparse(ParseResult(scheme, netloc, "/", "", "", ""))
 
 
-class TransientViewDumper(AbsT3ReviewUnit):
+class TransientViewDumper(AbsPhotoT3Unit):
     """"""
 
     version = 0.1
@@ -75,14 +75,17 @@ class TransientViewDumper(AbsT3ReviewUnit):
             )
         else:
             self.outfile = GzipFile(self.outputfile + ".json.gz", mode="w")
+
         # don't bother preserving immutable types
         self.encoder = AmpelEncoder(lossy=True)
 
     def process(
-        self, transients: Generator[SnapView, T3Send, None], t3s: T3Store
+        self, transients: Generator[TransientView, T3Send, None], t3s: T3Store
     ) -> UBson | UnitResult:
         count = 0
         for count, tran_view in enumerate(transients, 1):
+            print("TransientViewDumper:")
+            print(type(tran_view))
             self.outfile.write(self.encoder.encode(tran_view).encode("utf-8"))
             self.outfile.write(b"\n")
         self.outfile.close()
