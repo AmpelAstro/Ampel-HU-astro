@@ -89,7 +89,7 @@ class TransientViewDumper(AbsPhotoT3Unit):
             self.outfile.write(self.encoder.encode(tran_view).encode("utf-8"))
             self.outfile.write(b"\n")
         self.outfile.close()
-        self.logger.info("Total number of transient printed: %i" % count)
+        self.logger.info("Total number of transients written: %i" % count)
         if self.outputfile:
             self.logger.info(self.outputfile + ".json.gz")
         else:
