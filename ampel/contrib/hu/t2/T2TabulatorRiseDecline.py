@@ -12,6 +12,7 @@ import os
 import numpy as np
 from astropy.table import Table
 from scipy.optimize import curve_fit
+import light_curve
 
 from ampel.types import UBson
 from ampel.abstract.AbsStateT2Unit import AbsStateT2Unit
@@ -25,15 +26,17 @@ from ampel.content.T1Document import T1Document
 
 
 
+
 def getMag(tab: Table, err=False):
     """
     Shorthand to getting the magnitude from flux.
     """
 
-    m = -2.5* np.log10(tab['flux']) + tab['zp']
+    iPos = (tab['flux']>0)
+    m = -2.5* np.log10(tab['flux'][iPos]) + tab['zp'][iPos]
     if err:
         # Simple symmetric method
-        merr = 2.5 / np.log(10) * (tab['fluxerr']/tab['flux'])
+        merr = 2.5 / np.log(10) * (tab['fluxerr'][iPos]/tab['flux'][iPos])
         return m, merr
     else:
         return m
@@ -57,7 +60,7 @@ def getBandBits(bands: Sequence):
     """
     Return number quantifying which bands are included.
     """
-    bandval = {'lsstu':1, 'lsstg':2, 'lsstr':4, 'lssti':8, 'lsstz':16, 'lssty':32}
+    bandval = {'lsstu':1, 'lsstg':2, 'lsstr':4, 'lssti':8, 'lsstz':16, 'lssty':32, 'ztfg': 64, 'ztfr': 128, 'ztfi': 256}
     index = 0
     for band in bands:
         index += bandval[band]
@@ -348,10 +351,104 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
         return o
 
 
-class T2TabulatorRiseDecline(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRiseDeclineBase):
+
+
+
+class BaseLightCurveFeatures(AmpelBaseModel):
+    """
+    Calculate various features of the light curve using the light-curve
+    package described in https://ui.adsabs.harvard.edu/abs/2021MNRAS.502.5147M%2F/abstract
+    
+    Lifted from T2LightCurveFeatures
+    
+    Installed as  python3 -mpip install light-curve 
+    """
+
+    #: Features to extract from the light curve.
+    #: See: https://docs.rs/light-curve-feature/0.2.2/light_curve_feature/features/index.html
+    lightcurve_features: dict[str, None | dict[str, Any]] = {
+#        "InterPercentileRange": {"quantile": 0.25},
+        "Amplitude": None,
+        "AndersonDarlingNormal":None,
+        "BazinFit":{"algorithm":"mcmc"},
+        "BeyondNStd":{"nstd": 1},
+        "Eta": None,
+        "EtaE": None,
+        "ExcessVariance": None,
+        "Kurtosis": None,
+        "LinearFit": None,
+        "MaximumSlope": None,
+        "MedianBufferRangePercentage": {"quantile": 0.1},
+        "PercentDifferenceMagnitudePercentile": {"quantile": 0.05},
+        "Periodogram":{"peaks": 1},
+        "Skew": None,
+        "StandardDeviation": None,
+        "StetsonK": None,
+        
+    }
+    #: Bandpasses to use
+    lightcurve_bands: dict[str, Any] = {"ztfg": "ztfg", "ztfr": "ztfr", "ztfi": "ztfi"}
+    
+
+    def post_init(self) -> None:
+#    def __init__(self, **kwargs):
+#        super().__init__(**kwargs)
+        self.extractor = light_curve.Extractor(
+            *(getattr(light_curve, k)(**(v or {})) for k, v in self.lightcurve_features.items())
+        )
+        print('init lcfeatures', self.extractor)
+
+    def extract_lightcurve_features(self, flux_table: Table) -> UBson:
+        result = {}
+        # 
+        for band, fid in self.lightcurve_bands.items():            
+            if (
+             #   in_band := lightcurve.get_ntuples(
+             #       ["jd", "magpsf", "sigmapsf"],
+             #       {"attribute": "fid", "operator": "==", "value": fid},
+             #   )
+                in_band := flux_table[flux_table['band']==fid]
+            ) is None:
+                continue
+                            
+            m, merr = getMag(in_band, err=True)
+            print('band', band, fid)
+            print(in_band['time'], m, merr)
+
+            
+            # Q: Do we need to crete mag and magerr?
+            # Q: Code says they need "inverse squared magnitude error", but previous code did not use this. Bug or true?
+            #    https://github.com/light-curve/light-curve-python seems to say error directly
+            # Q: Which features to use?
+            # Q: Possibly keep bands to use here?
+
+            try:
+                result.update(
+                    {
+                        f"{k}_{band}": v
+                        for k, v in zip(
+                            self.extractor.names, self.extractor(in_band['time'], m, merr)
+                        )
+                    }
+                )
+            except ValueError:
+                # raised if too few points
+                pass
+        return result
+
+
+
+class T2TabulatorRiseDecline(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRiseDeclineBase, BaseLightCurveFeatures):
 
     plot_prob: float = 0.
     path_testplot: str = "/home/jnordin/tmp/t2test/"
+
+
+#    def __init__(self, **kwargs):
+#        super().__init__(**kwargs)
+#    def super().post_init(self):
+#        super().__init__(**kwargs)
+
 
     def test_plot(self, name, table, t2result):
         """
@@ -454,6 +551,12 @@ class T2TabulatorRiseDecline(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRise
 
         # Calculate get_features
         features = self.compute_stats(flux_table)
+        
+        # Calculate light_curve features
+        features.update( 
+            self.extract_lightcurve_features(flux_table) 
+            )
+        
 
         #if self.do_testplot:
         if features['success'] and np.random.uniform()<self.plot_prob:
