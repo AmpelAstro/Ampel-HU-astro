@@ -69,7 +69,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
     max_age: float = 3.
     # Min age of detection history
     # range of peak magnitudes for submission
-    min_peak_mag: float = 20
+    min_peak_mag: float = 22
     max_peak_mag: float = 16
     # Reported detections in at least this many filters
     min_n_filters: int = 1
@@ -573,7 +573,8 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
 
 
         # iii. Check absolute magnitude - again (but directly from lightcurve)
-        if (z := info.get('ampel_z')) and (obsmag := info.get("peak_mag")):
+        if (z := info.get('ampel_z')) and (obsmag := info.get("peak_mag") and z >= 0):
+            print(z)
             sndist = Distance(z=z, cosmology=Planck15)
             info["absmag"] = obsmag - sndist.distmod.value
             if (self.min_absmag < info['absmag'] < self.max_absmag):
@@ -582,6 +583,9 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             else:
                 criterium_name = "absmag_from_lc"
                 rejects.append(criterium_name)
+        else:
+            criterium_name = "no_absmag_calculated"
+            rejects.append(criterium_name)
 
         # Categorize
         if (kilonovaness < 1):
