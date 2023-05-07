@@ -99,6 +99,18 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
 			json = {
 				"jd": {"$gt": start_jd, "$lt": end_jd},
 				"regions": healpix_regions,
+				"candidate": {
+    					"rb": {
+      						"$gt": 0.3
+    						},
+					"magpsf": {
+						"$gt": 15
+					},
+					"ndethist": {
+						"$gt": 0,
+						"$lte": 10
+					},
+				}
 			}
 		)
 		response.raise_for_status()

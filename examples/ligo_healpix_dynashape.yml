@@ -2,7 +2,7 @@ name: ligo-healpix
 
 mongo:
   prefix: dumpme
-  reset: false
+  reset: true
 
 channel:
 - name: ligo
@@ -23,7 +23,7 @@ task:
           target:
             unit: HealpixTokenGenerator
             config:
-              pvalue_limit: 0.9 
+              pvalue_limit: 0.8
               map_name: "S191222n.fits.gz" 
               map_url: "https://gracedb.ligo.org/api/superevents/S191222n/files/LALInference.fits.gz"
               map_dir: '/home/jnordin/tmp'
@@ -231,7 +231,7 @@ task:
                   unit: T2CatalogMatch
               unit: T2DigestRedshifts
             - config: &possis_config
-                explosion_time_jd: HealpixTriggerTime
+                explosion_time_jd: TriggerTime
                 max_ampelz_group: 7
                 redshift_kind: T2DigestRedshifts
                 t2_dependency:
