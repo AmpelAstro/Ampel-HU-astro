@@ -67,6 +67,7 @@ class AmpelHealpix:
         hpx, headers = hp.read_map(
             os.path.join(self.save_dir, self.map_name), h=True, nest=True
         )
+
         trigger_time = [
             datetime.fromisoformat(header[1])
             for header in headers
@@ -74,8 +75,12 @@ class AmpelHealpix:
         ][0]
         nside = int(hp.npix2nside(len(hpx)))
 
+        self.dist = [header[1] for header in headers if header[0] == "DISTMEAN"][0]
+        self.dist_unc = [header[1] for header in headers if header[0] == "DISTSTD"][0]
+
         # Find credible levels
         idx = np.flipud(np.argsort(hpx))
+
         sorted_credible_levels = np.cumsum(hpx[idx].astype(float))
         credible_levels = np.empty_like(sorted_credible_levels)
         credible_levels[idx] = sorted_credible_levels
@@ -99,6 +104,7 @@ class AmpelHealpix:
         # Create mask for pixel selection
         mask = np.zeros(len(self.credible_levels), int)
         mask[self.credible_levels <= pvalue_limit] = 1
+
         return mask.nonzero()[0].tolist()
 
     def get_cumprob(self, ra: float, dec: float) -> float:
