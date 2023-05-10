@@ -278,6 +278,8 @@ class HealpixTokenConsumer(AlertConsumer):
                             "trigger_time": healpix_map.trigger_time,
                             "map_name": self.map_name,
                             "map_hash": self.map_hash,
+                            "map_dist": healpix_map.dist,
+                            "map_dist_unc": healpix_map.dist_unc,
                         },
                     }
 
