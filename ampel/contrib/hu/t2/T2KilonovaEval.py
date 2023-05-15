@@ -248,6 +248,8 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             criterium_name = "age"
             info['rejects'].append(criterium_name)
         info["age"] = age
+        info["most_recent_detection"] = most_recent_detection
+        info["first_detection"] = first_detection
 
 
         # cut on number of detection after last SIGNIFICANT UL
