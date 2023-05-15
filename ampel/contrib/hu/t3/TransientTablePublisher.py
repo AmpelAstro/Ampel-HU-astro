@@ -213,27 +213,30 @@ class TransientTablePublisher(AbsPhotoT3Unit):
 
         # take everything local_path and put it into new folder named after skymap
         # print(df.keys)
-        files_local_path = os.listdir(self.local_path)
-        skymap_name = df["Healpix map"][
-            0
-        ]  # need to change if for some reason several maps get saved in same file
-        skymap_dir_name = skymap_name[: skymap_name.find(".")]  # bare name
-        if skymap_name[-1] != "z":  # if non trivial rev version (hacky)
-            skymap_dir_name += (
-                "_rev_" + skymap_name[skymap_name.find(",") + 1 :]
-            )  # find "," and add rev version after that
+        if "Healpix map" in list(df.keys()):
+            files_local_path = os.listdir(self.local_path)
+            skymap_name = df["Healpix map"][
+                0
+            ]  # need to change if for some reason several maps get saved in same file
+            skymap_dir_name = skymap_name[: skymap_name.find(".")]  # bare name
+            if skymap_name[-1] != "z":  # if non trivial rev version (hacky)
+                skymap_dir_name += (
+                    "_rev_" + skymap_name[skymap_name.find(",") + 1 :]
+                )  # find "," and add rev version after that
 
-        print("TMP FILES MOVED TO " + skymap_dir_name)
+            print("TMP FILES MOVED TO " + skymap_dir_name)
 
-        if self.local_path is not None:
-            skymap_directory = os.path.join(self.local_path + "/../" + skymap_dir_name)
-            print(skymap_directory)
-            os.makedirs(skymap_directory, exist_ok=True)
-            for file in files_local_path:
-                tmp_file_path = os.path.join(self.local_path, file)
-                if not (os.path.isfile(tmp_file_path)):
-                    continue
-                os.replace(tmp_file_path, os.path.join(skymap_directory, file))
+            if self.local_path is not None:
+                skymap_directory = os.path.join(
+                    self.local_path + "/../" + skymap_dir_name
+                )
+                print(skymap_directory)
+                os.makedirs(skymap_directory, exist_ok=True)
+                for file in files_local_path:
+                    tmp_file_path = os.path.join(self.local_path, file)
+                    if not (os.path.isfile(tmp_file_path)):
+                        continue
+                    os.replace(tmp_file_path, os.path.join(skymap_directory, file))
 
         return None
 

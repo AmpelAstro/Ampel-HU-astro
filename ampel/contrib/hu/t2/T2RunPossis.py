@@ -60,7 +60,7 @@ class T2RunPossis(T2RunSncosmo):
 
     # Fix time to specific explosion timestamp
     # StockTriggerTime assumes the value is updated during runtime
-    explosion_time_jd: None | float | Literal['StockTriggerTime'] | Literal['HealpixTriggerTime']
+    explosion_time_jd: None | float | Literal['TriggerTime']
 
     # Which units should this be changed to
     t2_dependency: Sequence[StateT2Dependency[Literal[ # type: ignore[assignment]
@@ -153,7 +153,7 @@ class T2RunPossis(T2RunSncosmo):
         # Check if model explosion time should be fixed from t2
         if isinstance(self.explosion_time_jd, str):
             for t2_view in t2_views:
-                if not t2_view.unit in ["T2PropagateStockInfo", "T2HealpixMap"]:
+                if not t2_view.unit in ["T2PropagateStockInfo", "T2HealpixProb"]:
                     continue
                 self.logger.debug('Parsing t2 results from {}'.format(t2_view.unit))
                 t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
