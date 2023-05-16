@@ -60,6 +60,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
     max_dist: float = 50       # Max arcsec distance 
     max_kpc_dist: float = 999  # Max distance in kpc (using redshift)
     max_redshift_uncertainty: float = 999
+    max_dist_sigma_diff: float = 2
 
     # Lightcurve (using redshift, so that needs to be there)
     min_absmag: float = -20 
@@ -148,17 +149,15 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             criterium_name = "ampel_dist"
             info['rejects'].append(criterium_name)
 
-        # Calculate physical distance
+        # Calculate physical distance to matched z source
         info['dst_kpc'] = (
-            info["ampel_dist"] *
-                    Planck15.kpc_proper_per_arcmin(info["ampel_z"]).value / 60.0
-                )
+            info["ampel_dist"] * Planck15.kpc_proper_per_arcmin(info["ampel_z"]).value / 60.0
+            )
         if info['dst_kpc'] < self.max_kpc_dist:
             info['pass'] += 1
         else:
-            criterium_name = "dst_kpc"
-            info['rejects'].append(criterium_name)
-        
+            criterium_name = "dst_kpc_zmatch"
+            info['rejects'].append(criterium_name)     
         # Return collected info
         return info
 
@@ -489,6 +488,34 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         return info
 
 
+    def inspect_distance(self, t2res: dict[str, Any], input_info: dict[str, Any]) -> None | dict[str, Any]:
+        """
+        Check wether transient lies within 2sigma of Healpix distance
+        """
+        info = {'pass':0, 'rejects': []}
+
+        distance_ampel = Planck15.luminosity_distance(input_info["ampel_z"]).value
+        distance_healpix = float(t2res["map_dist"])
+        distance_healpix_unc = float(t2res["map_dist_unc"])
+
+        distance_diff = abs(distance_ampel - distance_healpix)
+        distance_sigmaDiff = distance_diff / distance_healpix_unc
+
+        
+
+        if (distance_sigmaDiff > self.max_dist_sigma_diff):
+            info["pass"] -= 10
+            criterium_name = "distance_mismatch"
+            info['rejects'].append(criterium_name)
+        else:
+            info["pass"] += 1 
+
+        info["ampel_healpix_dist"] = (distance_ampel, distance_healpix, distance_healpix_unc)
+        info["distance_sigma_diff"] = distance_sigmaDiff
+
+        #print(t2res)
+
+        return info
 
 
     # MANDATORY
@@ -558,6 +585,17 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                 cat_kilonovaness = cinfo["pass"]
                 #print("T2CatalogMatch in kilonovaeval")
 
+            # distance compared to healpix dist
+            if t2_view.unit == "T2PropagateStockInfo" and info.get("ampel_z"):
+                print("INPSECT DISTANCE")
+                dinfo = self.inspect_distance(t2_res, info)
+                if len(dinfo["rejects"]) > 0:
+                    rejects.extend(dinfo["rejects"])
+                info.update(dinfo)
+                kilonovaness += dinfo['pass']
+                dist_kilonovaness = dinfo["pass"]
+                
+
             # Propagate map info
             if t2_view.unit in ['T2PropagateStockInfo', 'T2HealpixProb']:
                 info.update( t2_res )   # Could there be multiple maps associated? E.g. after updates? TODO
@@ -604,6 +642,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         info["lc_kilonovaness"] = lc_kilonovaness
         info["possis_kilonovaness"] = possis_kilonovaness
         info["cat_kilonovaness"] = cat_kilonovaness
+        info["dist_kilonovaness"] = dist_kilonovaness
         info["rejects"] = rejects
 
         return info
