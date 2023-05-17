@@ -52,6 +52,8 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
         None  # Length of time window in days (default: until now)
     )
 
+    chunk_size: int | None = 500
+
     #: seconds to wait for query to complete
     timeout: float = 60
 
@@ -112,17 +114,20 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
         ]
         count = sum([len(region["pixels"]) for region in healpix_regions])
 
+        query_dict = {
+            "jd": {"$gt": start_jd, "$lt": end_jd},
+            "regions": healpix_regions,
+            "candidate": {
+                "rb": {"$gt": 0.3},
+                "magpsf": {"$gt": 15},
+                "ndethist": {"$gt": 0, "$lte": 10},
+            },
+            "chunk_size": self.chunk_size,
+        }
+
         response = session.post(
             "streams/from_query",
-            json={
-                "jd": {"$gt": start_jd, "$lt": end_jd},
-                "regions": healpix_regions,
-                "candidate": {
-                    "rb": {"$gt": 0.3},
-                    "magpsf": {"$gt": 15},
-                    "ndethist": {"$gt": 0, "$lte": 10},
-                },
-            },
+            json=query_dict,
         )
         response.raise_for_status()
 
