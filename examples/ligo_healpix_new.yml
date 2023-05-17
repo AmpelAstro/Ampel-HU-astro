@@ -43,7 +43,8 @@ task:
         loader:
           unit: ZTFArchiveAlertLoader
           config:
-            resource_name: "S190930t.fits.gz,0_token"
+            with_history: false
+            resource_name: "S200115j.fits.gz,0_token"
     shaper: ZiDataPointShaper
     directives:
     - channel: ligo
