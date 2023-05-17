@@ -39,7 +39,7 @@ class PredetectionFilter(DecentFilter):
         predetection_jds = [jd for jd in alert_jds if jd < self.trigger_jd]
 
         if len(predetection_jds) > 0:
-            self.logger.info(
+            self.logger.debug(
                 f"Transient is too old. There are detections prior to trigger time"
             )
             return None
