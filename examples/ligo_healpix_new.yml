@@ -52,17 +52,17 @@ task:
           gaia_excessnoise_sig_max: 999
           gaia_plx_signif: 3
           gaia_pm_signif: 3
-          gaia_rs: 20
+          gaia_rs: 10
           gaia_veto_gmag_max: 20
           gaia_veto_gmag_min: 9
           min_ndet: 2
-          min_tspan: -99
-          max_tspan: 99
+          min_tspan: -1
+          max_tspan: 1
           min_archive_tspan: -99
-          max_archive_tspan: 100
-          min_drb: 0.995
-          min_gal_lat: 14
-          min_rb: 0.3
+          max_archive_tspan: 365
+          min_drb: 0.3
+          min_gal_lat: 0
+          min_rb: 0.0
           min_sso_dist: 20
           ps1_confusion_rad: 3
           ps1_confusion_sg_tol: 0.1

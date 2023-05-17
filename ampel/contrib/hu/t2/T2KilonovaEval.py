@@ -545,6 +545,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         lc_kilonovaness: int = 0
         possis_kilonovaness: int = 0
         cat_kilonovaness: int = 0
+        dist_kilonovaness: int = 0
         info = {'possis':[]}
         rejects = []
         
