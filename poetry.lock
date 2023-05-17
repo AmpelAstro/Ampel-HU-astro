@@ -246,14 +246,14 @@ mpl = ["matplotlib"]
 
 [[package]]
 name = "ampel-ztf"
-version = "0.8.6"
+version = "0.8.7"
 description = "Zwicky Transient Facility support for the Ampel system"
 category = "main"
 optional = true
 python-versions = ">=3.10,<3.12"
 files = [
-    {file = "ampel_ztf-0.8.6-py3-none-any.whl", hash = "sha256:c475d7eda3d3582f7718694f086ec58e10976c25b42383c14754c4b7f982c5eb"},
-    {file = "ampel_ztf-0.8.6.tar.gz", hash = "sha256:281b5bed05d756be7006773cc8b96a1b67566e608b57920a5dd62d3fb4423c8c"},
+    {file = "ampel_ztf-0.8.7-py3-none-any.whl", hash = "sha256:ef8633350abdc7d1c0fcdf7e5f781c885148496dffadfa05c6a2b8fc0d45d0e2"},
+    {file = "ampel_ztf-0.8.7.tar.gz", hash = "sha256:eb0790ad81f713e74f790e91bcc719fd7700eb01205663a29ac335e8cdd3188c"},
 ]
 
 [package.dependencies]
