@@ -130,7 +130,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             # No match
             criterium_name = "no_ampelz_match"
             info["rejects"].append(criterium_name)
-            info["pass"] -= 10 # TODO maybe find a better way to punish this
+            info["pass"] += 0 # atm dont penalise for missing redshift with manual analysis
             return info
         #info["pass"] += 1
             
@@ -143,6 +143,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         else:
             criterium_name = "redshift"
             info['rejects'].append(criterium_name)
+
         if (self.min_dist < info["ampel_dist"] < self.max_dist):
             info['pass'] += 1
         else:
@@ -169,7 +170,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         if not t2res['z'] or not t2res['sncosmo_result']['success']:
             criterium_name = "no_possis_fits"
             info['rejects'].append(criterium_name)
-            info["pass"] -= 10 # TODO maybe find a better way to punish this
+            info["pass"] -= 0 
             return info	# doesnt make sense to continue analysis if no values available
         #info["pass"]
         
@@ -224,8 +225,9 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             info["pass"] -= 10 # TODO maybe find a better way to punish this
             return info
         else:
-            criterium_name = "pps"
+            criterium_name = "too_few_pps"
             info['rejects'].append(criterium_name)
+            info["pass"] -= 10
         info['detections'] = len(pps)
 
         # cut on age

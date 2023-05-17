@@ -22,18 +22,19 @@ task:
             unit: HealpixTokenGenerator
             config:
               pvalue_limit: 0.9 
-              map_name: "S200115j.fits.gz,0" 
-              map_url: "https://gracedb.ligo.org/api/superevents/S200115j/files/LALInference.fits.gz,0"
+              chunk_size: 2000
+              map_name: "S190930t.fits.gz,0" 
+              map_url: "https://gracedb.ligo.org/api/superevents/S190930t/files/bayestar.fits.gz,0"
               map_dir: './tmp'
               # date_str: "2022-01-15" # 2020-02-13
-              delta_time: 2
+              delta_time: 3
               archive_token:
                 label: ztf/archive/token
 
 - title: ProcessAlerts
   unit: HealpixTokenConsumer
   config:
-    map_name: "S200115j.fits.gz,0"
+    map_name: "S190930t.fits.gz,0"
     iter_max: 1000000
     supplier:
       unit: ZiAlertSupplier
@@ -42,13 +43,13 @@ task:
         loader:
           unit: ZTFArchiveAlertLoader
           config:
-            resource_name: "S200115j.fits.gz,0_token"
+            resource_name: "S190930t.fits.gz,0_token"
     shaper: ZiDataPointShaper
     directives:
     - channel: ligo
       filter:
         config:
-          trigger_jd: 2458863.682751548
+          trigger_jd: 2458757.107033392
           gaia_excessnoise_sig_max: 999
           gaia_plx_signif: 3
           gaia_pm_signif: 3
@@ -285,6 +286,7 @@ task:
               unit: T2RunPossis
             - config:
                 max_redshift: 0.2
+                min_ndet: 2
                 t2_dependency:
                 - config: *digest_redshift_config
                   unit: T2DigestRedshifts
@@ -304,9 +306,9 @@ task:
                 select: first
                 sort: jd
               unit: T2CatalogMatch
-          unit: ZiArchiveMuxer
+          unit: ZiArchiveMuxer  # chunk size?
           config:
-            future_days: 2
+            future_days: 3
             history_days: 50            
 
 - title: Run T2s
