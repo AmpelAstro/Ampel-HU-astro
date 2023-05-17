@@ -45,6 +45,7 @@ task:
         loader:
           unit: ZTFArchiveAlertLoader
           config:
+            with_history: false
             resource_name: "S191222n.fits.gz_token"
     shaper: ZiGWDataPointShaper
     directives:
