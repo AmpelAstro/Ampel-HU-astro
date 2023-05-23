@@ -258,7 +258,7 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
                     weight = weight_quantiles['w']
                     quantiles = weight_quantiles['q']
                     t2_output["z_samples"].append( np.mean( [qv
-                                for q in quantiles if (qv := dp.get(prefix+q,-9))>-9] ) ) # -9 seems to be null
+                                for q in quantiles if (qv := dp.get(prefix+q,-9)) is not None and qv >-9] ) ) # -9 seems to be null
                     t2_output["z_weights"].append(weight)
 
 
