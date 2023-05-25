@@ -151,6 +151,7 @@ class HealpixTokenConsumer(AlertConsumer):
         )
         fblocks = self._fbh.filter_blocks
 
+
         if any_filter:
             filter_results: list[tuple[int, bool | int]] = []
         else:
@@ -189,6 +190,8 @@ class HealpixTokenConsumer(AlertConsumer):
             chatty_interrupt = self.chatty_interrupt
             register_signal = self.register_signal
 
+            rejected_count = 0
+
             # Iterate over alerts
             for alert in self.alert_supplier:
                 # Allow execution to complete for this alert (loop exited after ingestion of current alert)
@@ -208,10 +211,13 @@ class HealpixTokenConsumer(AlertConsumer):
                             res = fblock.filter(alert)
                             if res[1]:
                                 filter_results.append(res)  # type: ignore[arg-type]
+                            else:
+                                #print("Alert rejected.")
+                                rejected_count += 1
 
                         # Unrecoverable (logging related) errors
                         except (PyMongoError, AmpelLoggingError) as e:
-                            print("%s: abording run() procedure" % e.__class__.__name__)
+                            print("%s: aborting run() procedure" % e.__class__.__name__)
                             report_filter_error(e, alert, fblock)
                             raise e
 
@@ -351,6 +357,8 @@ class HealpixTokenConsumer(AlertConsumer):
                 # can be raised during supplier execution
                 signal(SIGINT, chatty_interrupt)
                 signal(SIGTERM, chatty_interrupt)
+
+            #print("Rejected count: ", rejected_count)
 
         # Executed if SIGINT was sent during supplier execution
         except KeyboardInterrupt:
