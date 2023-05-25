@@ -133,7 +133,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             # No match
             criterium_name = "no_ampelz_match"
             info["rejects"].append(criterium_name)
-            info["pass"] -= 10 # TODO maybe find a better way to punish this
+            info["pass"] -= 0 # TODO what to do about no redshifts?
             return info
         # info["pass"] += 1
 
@@ -145,17 +145,9 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             info["pass"] += 1
         else:
             criterium_name = "redshift"
-<<<<<<< .mine
-            info['rejects'].append(criterium_name)
-
-        if (self.min_dist < info["ampel_dist"] < self.max_dist):
-            info['pass'] += 1
-=======
             info["rejects"].append(criterium_name)
         if self.min_dist < info["ampel_dist"] < self.max_dist:
             info["pass"] += 1
-
->>>>>>> .theirs
         else:
             criterium_name = "ampel_dist"
             info["rejects"].append(criterium_name)
@@ -181,7 +173,6 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         info = {"pass": 0, "model": t2res["model_name"], "rejects": []}
         if not t2res["z"] or not t2res["sncosmo_result"]["success"]:
             criterium_name = "no_possis_fits"
-<<<<<<< .mine
             info['rejects'].append(criterium_name)
             info["pass"] -= 0 
             return info	# doesnt make sense to continue analysis if no values available
@@ -193,19 +184,6 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         info['possis_ndof'] = t2res['sncosmo_result']['ndof']
         
         if info['possis_ndof']<0:
-=======
-            info["rejects"].append(criterium_name)
-            info["pass"] -= 10  # TODO maybe find a better way to punish this
-            return info  # doesnt make sense to continue analysis if no values available
-        # info["pass"]
-
-        info["possis_abspeak"] = t2res["fit_metrics"]["restpeak_model_absmag_B"]
-        info["possis_obspeak"] = t2res["fit_metrics"]["obspeak_model_B"]
-        info["possis_chisq"] = t2res["sncosmo_result"]["chisq"]
-        info["possis_ndof"] = t2res["sncosmo_result"]["ndof"]
-
-        if info["possis_ndof"] < 0:
->>>>>>> .theirs
             criterium_name = "possis_ndof"
             info["rejects"].append(criterium_name)
             info["pass"] -= 10  # TODO maybe find a better way to punish this
@@ -252,15 +230,9 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             return info
         else:
             criterium_name = "too_few_pps"
-<<<<<<< .mine
             info['rejects'].append(criterium_name)
             info["pass"] -= 10
         info['detections'] = len(pps)
-=======
-            info["rejects"].append(criterium_name)
-        info["detections"] = len(pps)
-
->>>>>>> .theirs
 
         # cut on age
         # jds = [pp["body"]["jd"] for pp in pps]
