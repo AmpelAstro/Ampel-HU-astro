@@ -133,7 +133,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             # No match
             criterium_name = "no_ampelz_match"
             info["rejects"].append(criterium_name)
-            info["pass"] -= 10  # TODO maybe find a better way to punish this
+            info["pass"] -= 0  # TODO what to do about no redshifts?
             return info
         # info["pass"] += 1
 
