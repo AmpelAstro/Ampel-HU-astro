@@ -21,33 +21,32 @@ from ampel.view.T2DocView import T2DocView
 
 # Tying classification output classes with ELAsTICC taxonomy classes
 parsnip_taxonomy = {
-    # Correct Elasticc outputs but they changed?
-    # https://github.com/plasticc/taxonomy/blob/main/taxonomy.ipynb ?
-    'SLSN':  131,
-    'SNII':  113,
-    'SNIa':  111,
-    'SNibc': 112,
-    'SNIbc': 112,
-    'TDE':  132,
-    'CART': 134,
-    'ILOT': 133,
-    'Mdwarf-flare': 122,
-    'PISN': 135,
-    'KN': 121,
-    'SLSN-I': 131,
-    'SNIa91bg': 115,
-    'SNIax': 114,
-    'dwarf-nova': 123,
+    # extracted from https://github.com/LSSTDESC/elasticc/blob/bc0de488c5276ce61b650117db19e93634b10815/taxonomy/taxonomy.ipynb
+    'SLSN':  2243,
+    'SNII':  2224,
+    'SNIa':  2222,
+    'SNibc': 2223,
+    'SNIbc': 2223,
+    'TDE':  2243,
+    'CART': 2245,
+    'ILOT': 2244,
+    'Mdwarf-flare': 2233,
+    'PISN': 2246,
+    'KN': 2232,
+    'SLSN-I': 2243,
+    'SNIa91bg': 2226,
+    'SNIax': 2225,
+    'dwarf-nova': 2234,
     # mssing
-    'uLens': 124,
+    'uLens': 2235,
     }
 
 # T2XgbClassifier can also yield direct evaluations for some cases
 # when the main run fails. We here map these to elasticc codes
 direct_evaluations = {
-    'AGN': 22,
-    'uLens': 124,
-    'EB': 21
+    'AGN': 2330,
+    'uLens': 2235,
+    'EB': 2320
 }
 
 
