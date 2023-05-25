@@ -7,6 +7,7 @@
 # Last Modified Date:  11.04.2022
 # Last Modified By:    jno <jnordin@physik.hu-berlin.de>
 
+from collections import defaultdict
 from itertools import islice
 from typing import Iterable, TYPE_CHECKING
 from collections.abc import Generator
@@ -64,6 +65,7 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
     broker_name: str = 'AMPEL'
     broker_version: str = 'v0.1'
     tom_url: str = "https://desc-tom.lbl.gov"
+    endpoint: str = "/elasticc2/brokermessage/"
     desc_user: NamedSecret[str]
     desc_password: NamedSecret[str]
 
@@ -77,7 +79,7 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
     unit: str = "T2ElasticcReport"
 
     def post_init(self) -> None:
-        self.tomclient = ElasticcTomClient(self.desc_user.get(), self.desc_password.get(), self.logger, self.tom_url)
+        self.tomclient = ElasticcTomClient(self.desc_user.get(), self.desc_password.get(), self.logger, self.tom_url, self.endpoint)
 
     def search_journal_elasticc(
         self, tran_view: TransientView
@@ -134,6 +136,23 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
                 else:
                     state_map[link]= False
         return state_map
+
+    @staticmethod
+    def _one_report_per_classifier(reports: list[dict]):
+        """
+        reformat a v0.9 brokerClassification for v0.9.1
+        see: https://raw.githubusercontent.com/LSSTDESC/elasticc/5d7b314b537197c99086acf019e6e2c1dc4aa267/alert_schema/elasticc.v0_9_1.brokerClassification.avsc
+        """
+        for report in reports:
+            by_classifier = defaultdict(list)
+            for c in report["classifications"]:
+                by_classifier[(c["classifierName"], c["classifierParams"])].append({k: c[k] for k in ("classId", "probability")})
+            for (name, params), classifications in by_classifier.items():
+                new_report = report.copy()
+                new_report["classifications"] = [{k: c[k] for k in ("classId", "probability")} for c in classifications]
+                new_report["classifierName"] = name
+                new_report["classifierParams"] = params
+                yield new_report
 
     def _get_reports(self, gen: Generator[TransientView, T3Send, None]) -> Generator[tuple[TransientView,int,dict],None,None]:
 
@@ -192,7 +211,11 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
                 continue
 
             # use the ElasticcTomClient
-            desc_response = self.tomclient.tom_post(class_reports)
+            desc_response = self.tomclient.tom_post(
+                list(self._one_report_per_classifier(class_reports))
+                if "elasticc2" in self.endpoint
+                else class_reports
+            )
 
             if desc_response['success']:
                 submitted += len(class_reports)

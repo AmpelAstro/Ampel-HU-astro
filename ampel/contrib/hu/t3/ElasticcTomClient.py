@@ -45,14 +45,18 @@ class ElasticcTomClient:
     (is the session best started in a post_init()?)
 
     """
-    def __init__(self, desc_username: str, desc_password: str, logger, tom_url: str = "https://desc-tom.lbl.gov"):
+    def __init__(
+        self,
+        desc_username: str,
+        desc_password: str,
+        logger,
+        tom_url: str = "https://desc-tom.lbl.gov",
+        endpoint: str = "/elasticc/brokermessage/"
+    ):
         self.logger = logger
 
-        # Debug url
-#        self.tom_url = "https://desc-tom-rknop-dev.lbl.gov"
-        # Production
-        # self.tom_url = "https://desc-tom.lbl.gov"
         self.tom_url = tom_url
+        self.endpoint = endpoint
 
         # Setup django connection. From Rob Knop:
         # There's a bit of a dance to log in since django
@@ -84,7 +88,7 @@ class ElasticcTomClient:
         max_time=60,
         )
     def tom_post(self, classification: Union[ElasticcClassification,list[ElasticcClassification]])->Dict[Any,Any]:
-        response = self.session.put(f'{self.tom_url}/elasticc/brokermessage/',
+        response = self.session.put(f'{self.tom_url}{self.endpoint}',
                                 json=classification, headers=self.csrfheader)
 
         if response.ok:
