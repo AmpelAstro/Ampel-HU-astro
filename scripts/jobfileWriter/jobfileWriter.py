@@ -18,7 +18,10 @@ def writeJobfilesFromDict(jobfile_template, jobfile_list_dict, commonName = "job
       map_url: <<map_url>>
       map_dir: './tmp'
     
-    """               
+    """   
+
+    jobcall_template = "ampel job --schema <<jobfile>> --config $MASTERARBEIT/ampel/Ampel-HU-astro/ampel_conf.yaml --secrets $MASTERARBEIT/ampel/Ampel-HU-astro/vault.yaml"
+
 
     with open(jobfile_template) as template:
         for map, replaceDict in jobfile_list_dict.items():
@@ -39,7 +42,8 @@ def writeJobfilesFromDict(jobfile_template, jobfile_list_dict, commonName = "job
                     for placeHolder, value in replaceDict.items():
                         newline = newline.replace("<<" + placeHolder + ">>", str(value))
 
-                    response.write(newline)    
+                    response.write(newline)   
+            print(jobcall_template.replace("<<jobfile>>",  os.path.abspath(response.name))) 
             response.close()
             template.seek(0, 0)
     template.close()

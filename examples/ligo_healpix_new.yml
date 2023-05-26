@@ -44,13 +44,13 @@ task:
           unit: ZTFArchiveAlertLoader
           config:
             with_history: false
-            resource_name: "S200115j.fits.gz,0_token"
+            resource_name: "S190930t.fits.gz,0_token"
     shaper: ZiDataPointShaper
     directives:
     - channel: ligo
       filter:
         config:
-          trigger_jd: 2458757.107033392
+          trigger_jd: 2458757.10703339
           gaia_excessnoise_sig_max: 999
           gaia_plx_signif: 3
           gaia_pm_signif: 3
@@ -60,8 +60,8 @@ task:
           min_ndet: 2
           min_tspan: -1
           max_tspan: 1
-          min_archive_tspan: -99
-          max_archive_tspan: 365
+          #min_archive_tspan: -99
+          max_archive_tspan: 3
           min_drb: 0.3
           min_gal_lat: 0
           min_rb: 0.0

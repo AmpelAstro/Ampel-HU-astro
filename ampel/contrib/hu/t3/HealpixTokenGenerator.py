@@ -52,6 +52,9 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
         None  # Length of time window in days (default: until now)
     )
 
+    # overwrite candidate section in query
+    candidate: dict = {}
+
     chunk_size: int | None = 500
 
     #: seconds to wait for query to complete
@@ -114,16 +117,24 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
         ]
         count = sum([len(region["pixels"]) for region in healpix_regions])
 
-        query_dict = {
-            "jd": {"$gt": start_jd, "$lt": end_jd},
-            "regions": healpix_regions,
-            "candidate": {
+        candidate_dict = {
                 "rb": {"$gt": 0.3},
                 "magpsf": {"$gt": 15},
                 "ndethist": {"$gt": 0, "$lte": 10},
-            },
+                "jdstarthist": {"$gt": start_jd}
+            }
+        
+        candidate_dict.update(self.candidate)
+
+# TODO: candidate optional input, jdstarthis = start_jd + epsilon
+        query_dict = {
+            "jd": {"$gt": start_jd, "$lt": end_jd},
+            "regions": healpix_regions,
+            "candidate": candidate_dict,
             "chunk_size": self.chunk_size,
         }
+
+        print(query_dict)
 
         response = session.post(
             "streams/from_query",
