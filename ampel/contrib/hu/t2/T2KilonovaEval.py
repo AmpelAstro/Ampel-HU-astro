@@ -516,11 +516,11 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         else:
             info["pass"] += 1
 
-        info["ampel_healpix_dist"] = (
-            distance_ampel,
-            distance_healpix,
-            distance_healpix_unc,
-        )
+        info["ampel_healpix_dist"] = distance_ampel #(
+            #,
+            #distance_healpix,
+           # distance_healpix_unc,
+        #)
         info["distance_sigma_diff"] = distance_sigmaDiff
 
         # print(t2res)

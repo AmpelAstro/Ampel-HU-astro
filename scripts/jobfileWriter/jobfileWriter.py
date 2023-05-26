@@ -43,7 +43,7 @@ def writeJobfilesFromDict(jobfile_template, jobfile_list_dict, commonName = "job
                         newline = newline.replace("<<" + placeHolder + ">>", str(value))
 
                     response.write(newline)   
-            print(jobcall_template.replace("<<jobfile>>",  os.path.abspath(response.name))) 
+            print(jobcall_template.replace("<<jobfile>>",  os.path.abspath(response.name)), "\n") 
             response.close()
             template.seek(0, 0)
     template.close()
