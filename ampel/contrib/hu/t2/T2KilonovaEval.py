@@ -506,11 +506,14 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         distance_healpix = float(t2res["map_dist"])
         distance_healpix_unc = float(t2res["map_dist_unc"])
 
-        distance_diff = abs(distance_ampel - distance_healpix)
+        distance_diff = abs(distance_ampel - distance_healpix) 
+
+        print("difference redshift precision +: ", Planck15.luminosity_distance(input_info["ampel_z"] + input_info["ampel_z_precision"]).value - distance_ampel)
+        print("difference redshift precision -: ", Planck15.luminosity_distance(input_info["ampel_z"] - input_info["ampel_z_precision"]).value - distance_ampel)
         distance_sigmaDiff = distance_diff / distance_healpix_unc
 
         if distance_sigmaDiff > self.max_dist_sigma_diff:
-            info["pass"] -= 10
+            info["pass"] -= 20
             criterium_name = "distance_mismatch"
             info["rejects"].append(criterium_name)
         else:
@@ -626,7 +629,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
 
         # iii. Check absolute magnitude - again (but directly from lightcurve)
         if (z := info.get("ampel_z")) and (obsmag := info.get("peak_mag") and z >= 0):
-            print(z)
+            #print(z)
             sndist = Distance(z=z, cosmology=Planck15)
             info["absmag"] = obsmag - sndist.distmod.value
             if self.min_absmag < info["absmag"] < self.max_absmag:
