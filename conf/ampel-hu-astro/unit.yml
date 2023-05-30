@@ -1,5 +1,6 @@
 - ampel.contrib.hu.t0.SimpleDecentFilter
 - ampel.contrib.hu.t0.XShooterFilter
+- ampel.contrib.hu.t0.PredetectionFilter
 - ampel.contrib.hu.t0.TransientInClusterFilter
 - ampel.contrib.hu.t0.LensedTransientFilter
 - ampel.contrib.hu.t0.RandFilter

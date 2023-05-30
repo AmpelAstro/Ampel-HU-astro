@@ -196,10 +196,11 @@ class SimpleDecentFilter(AbsAlertFilter):
             self.logger.info(None, extra={"rb": latest["rb"]})
             return None
 
-        if self.min_drb > 0.0 and latest["drb"] < self.min_drb:
-            # self.logger.debug("rejected: RB score %.2f below threshod (%.2f)"% (latest['rb'], self.min_rb))
-            self.logger.info(None, extra={"drb": latest["drb"]})
-            return None
+        if (latest.get("drb")):
+            if self.min_drb > 0.0 and latest["drb"] < self.min_drb:
+                # self.logger.debug("rejected: RB score %.2f below threshod (%.2f)"% (latest['rb'], self.min_rb))
+                self.logger.info(None, extra={"drb": latest["drb"]})
+                return None
 
         if latest["fwhm"] > self.max_fwhm:
             # self.logger.debug("rejected: fwhm %.2f above threshod (%.2f)"% (latest['fwhm'], self.max_fwhm))

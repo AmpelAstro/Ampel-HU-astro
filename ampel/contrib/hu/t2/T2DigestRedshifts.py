@@ -287,7 +287,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
 
     def _get_matchbts_groupz(self, t2_res: dict[str, Any])->list[list[float]]:
         """
-        Parse output from T2MatachBTS.
+        Parse output from T2MatchBTS.
 
         Any transient with a redshift with two decimals (from SN template matching) is put in Group II,
         those with more (from host, high-res spec) are put into Group I.
@@ -377,7 +377,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
                 t2_output['ampel_z'] = float(np.mean(group_redshifts[k]))
                 t2_output['group_z_precision'] = self.category_precision[k]
                 t2_output['group_z_nbr'] = k+1
-                t2_output['ampel_dist'] = float(np.mean(group_distances[k]))
+                t2_output['ampel_dist'] = float(np.mean(group_distances[k])) # distance transient to matched z sources NOT TO EARTH
                 # We then do *not* look for higher group (more uncertain) matches
                 break
         if self.catalogmatch_override:
