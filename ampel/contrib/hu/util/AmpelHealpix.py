@@ -32,18 +32,18 @@ class AmpelHealpix:
     save_dir: str = "."
 
     def __init__(
-        self, map_name: str, map_url: None | str = None, save_dir: None | str = None
+        self, map_name: str, map_url: None | str = None, save_dir: None | str = None, nside: None | int = None
     ):
         self.map_name = map_name
         self.map_url = map_url
         if save_dir:
             self.save_dir = save_dir
+        self.nside = nside
 
         self._get_map()
         # Attribues
         self.credible_levels: None | list = None
         self.trigger_time: None | float = None
-        self.nside: None | int = None
 
     def _get_map(self, clobber=False) -> int:
         path = os.path.join(self.save_dir, self.map_name)
@@ -75,8 +75,15 @@ class AmpelHealpix:
         ][0]
         nside = int(hp.npix2nside(len(hpx)))
 
+        # Downgrade resolution 
+        if self.nside and self.nside<nside:
+            hpx = hp.ud_grade( hpx, nside_out=self.nside,order_in='NESTED',order_out='NESTED',power=-2)
+        else:
+            self.nside = nside
+           
         self.dist = [header[1] for header in headers if header[0] == "DISTMEAN"][0]
         self.dist_unc = [header[1] for header in headers if header[0] == "DISTSTD"][0]
+
 
         # Find credible levels
         idx = np.flipud(np.argsort(hpx))
@@ -87,7 +94,6 @@ class AmpelHealpix:
 
         self.credible_levels = credible_levels
         self.trigger_time = Time(trigger_time).jd
-        self.nside = nside
 
         return b64encode(
             blake2b(sorted_credible_levels, digest_size=7).digest()
