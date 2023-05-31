@@ -8,7 +8,7 @@
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 from typing import Any, Union, TYPE_CHECKING, Sequence, Iterable
-import os
+import os, re
 import numpy as np
 from astropy.table import Table
 from scipy.optimize import curve_fit
@@ -27,7 +27,7 @@ from ampel.content.T1Document import T1Document
 
 
 
-def getMag(tab: Table, err=False):
+def getMag(tab: Table, err=False, time=False):
     """
     Shorthand to getting the magnitude from flux.
     """
@@ -37,9 +37,15 @@ def getMag(tab: Table, err=False):
     if err:
         # Simple symmetric method
         merr = 2.5 / np.log(10) * (tab['fluxerr'][iPos]/tab['flux'][iPos])
-        return m, merr
+        if time:
+            return m, merr, tab['time'][iPos]
+        else:
+            return m, merr
     else:
-        return m
+        if time:
+            return m, tab['time'][iPos]
+        else:
+            return m
 
 def getMeanflux(tab: Table, jdstart, jdend):
     """
@@ -223,13 +229,50 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
         """
         Limit to some _total_ set of significant detections.
         """
-        sig_mask = (flux_table['flux']) / flux_table['fluxerr']>self.sigma_det
+        sig_mask = np.abs( (flux_table['flux']) / flux_table['fluxerr'] ) >self.sigma_det
         sig_time = list( flux_table['time'][sig_mask] )
         if len(sig_time)>self.max_ndet:
             max_time = sorted(sig_time)[self.max_ndet]
             flux_table = flux_table[ flux_table['time']<=max_time ]
 
         return flux_table
+
+
+    def average_filtervalues(self, features: dict[str, Any], matchlist: list[str] = []) -> dict[str, Any]:
+        """
+        Many (most) features calculated per band or color, with available filter/color varying from object 
+        to object.
+        
+        This method will attempt to average over any filter or color-specific fields available and create an averaged entry.
+        
+        A base matchlist is created based on significant bands and the color list unit parameters.
+        
+        """
+        
+        matchlist.extend(
+        	['_{}_'.format(band) for band in self.significant_bands]
+            )
+        matchlist.extend(
+        	['_{}-{}_'.format(col[0],col[1]) for col in self.color_list]
+            )
+        
+        matchedvalues = {}
+        # Can this be redone to avoid nested loop?
+        for match in matchlist:
+            p = re.compile(match)
+            for key, val in features.items():
+                stub = p.sub('_',key)    # Name of averaged entry in return dict
+                if stub==key:            # Match string not found
+                    continue
+                if not stub in matchedvalues:
+                    matchedvalues[stub] = []
+                matchedvalues[stub].append(val)
+                
+        return {k:np.nanmean(v) for k, v in matchedvalues.items()}
+
+
+
+
 
 
 
@@ -244,10 +287,11 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
 
         # Create subset of table with significant detections in significant bands
         band_mask = [bandobs in self.significant_bands for bandobs in flux_table['band'] ]
-        sig_mask = (flux_table['flux']) / flux_table['fluxerr']>self.sigma_det
+        sig_mask = np.abs( (flux_table['flux']) / flux_table['fluxerr'] )>self.sigma_det
         det_table = flux_table[band_mask & sig_mask]
-
+        # Calculate fraction negative detection (we no longer cut only because of this)
         o['ndet'] = len(det_table)
+
         if o['ndet']==0:
             o['success'] = False
             o['cause'] = "No data survive significance criteria."
@@ -257,9 +301,11 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
             o['nnegdet'] = len( flux_table[band_mask & neg_mask] )
 
             return o
+        o['frac_pos'] = np.sum(det_table['flux']>0) / o['ndet']
 
         o["jd_det"] = det_table['time'].min()
         o["jd_last"] = det_table['time'].max()
+        o["t_lc"] = o["jd_last"] - o["jd_det"]
 
         # Get the max time of obs in signifant bands prior to jd_det
         if flux_table[band_mask]['time'].min()<o['jd_det']:
@@ -267,14 +313,17 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
                     flux_table['time'][band_mask]<o["jd_det"] ]['time'].max()
         else:
             o["t_predetect"] = None
-
+            
+        # Magnitude and color calculations below assume detections are positive
+        if flux_table[flux_table['time']==o["jd_det"]]['flux']<0 or flux_table[flux_table['time']==o["jd_last"]]['flux']<0:
+            return o
+        
         o["mag_det"] = float( getMag(flux_table[flux_table['time']==o["jd_det"]]) )
         o["band_det_id"] = getBandBits( [flux_table[flux_table['time']==o["jd_det"]]['band'][0]] )
 
         o["mag_last"] = float( getMag(flux_table[flux_table['time']==o["jd_last"]]) )
         o["band_last_id"] = getBandBits( [flux_table[flux_table['time']==o["jd_last"]]['band'][0]] )
 
-        o["t_lc"] = o["jd_last"] - o["jd_det"]
 
         # Check for non-signficant obs between det and last
         ultab = flux_table[band_mask & ~sig_mask]
@@ -362,78 +411,118 @@ class BaseLightCurveFeatures(AmpelBaseModel):
     Lifted from T2LightCurveFeatures
     
     Installed as  python3 -mpip install light-curve 
+    
+    Problems with current setup:
+    - Different number of parameters required, extraction fails if one fails. A: Divide into low and high param req?
+    - Built on magnitudes, so cuts out obs with neg flux. But these were the data we wanted to find! A: Try running in flux space?
+      Or running some separately in flux space?
+    - Why does ndet number vary!
+    
+    Combine results in different bands? Get mean values?
+    
     """
 
     #: Features to extract from the light curve.
     #: See: https://docs.rs/light-curve-feature/0.2.2/light_curve_feature/features/index.html
-    lightcurve_features: dict[str, None | dict[str, Any]] = {
-#        "InterPercentileRange": {"quantile": 0.25},
-        "Amplitude": None,
-        "AndersonDarlingNormal":None,
-        "BazinFit":{"algorithm":"mcmc"},
-        "BeyondNStd":{"nstd": 1},
-        "Eta": None,
-        "EtaE": None,
-        "ExcessVariance": None,
-        "Kurtosis": None,
-        "LinearFit": None,
-        "MaximumSlope": None,
-        "MedianBufferRangePercentage": {"quantile": 0.1},
-        "PercentDifferenceMagnitudePercentile": {"quantile": 0.05},
-        "Periodogram":{"peaks": 1},
-        "Skew": None,
-        "StandardDeviation": None,
-        "StetsonK": None,
-        
+    lightcurve_features_flux: dict[str, None | dict[str, Any]] = {
+        "AndersonDarlingNormal":None,                                              # 4
+        "BeyondNStd":{"nstd": 1},                                                  # 2
+        "Eta": None,                                                               # 2
+        "EtaE": None,                                                              # 2
+        "ExcessVariance": None,                                                    # 2        
+        "Kurtosis": None,                                                          # 4 
+        "MaximumSlope": None,                                                      # 2
+        "MedianBufferRangePercentage": {"quantile": 0.1},                          # 1
+        "PercentDifferenceMagnitudePercentile": {"quantile": 0.05},                # 1
+        "Periodogram":{"peaks": 1},                                                # 4?
+        "Skew": None,                                                              # 3
+        "StandardDeviation": None,                                                 # 2
+        "StetsonK": None,                                                          # 2
+    }
+    # Mag based few detections
+    lightcurve_features_short: dict[str, None | dict[str, Any]] = {
+        "BeyondNStd":{"nstd": 1},                                                  # 2
+        "Eta": None,                                                               # 2
+        "EtaE": None,                                                              # 2
+        "ExcessVariance": None,                                                    # 2        
+        "MaximumSlope": None,                                                      # 2
+        "MedianBufferRangePercentage": {"quantile": 0.1},                          # 1
+        "PercentDifferenceMagnitudePercentile": {"quantile": 0.05},                # 1
+        "StandardDeviation": None,                                                 # 2
+        "StetsonK": None,                                                          # 2
+    }
+    # Mag based many detections
+    lightcurve_features_long: dict[str, None | dict[str, Any]] = {
+        "AndersonDarlingNormal":None,                                              # 4
+        "BazinFit":{"algorithm":"mcmc"},                                           # 6
+        "Kurtosis": None,                                                          # 4 
+        "LinearFit": None,                                                         # 3
+        "Periodogram":{"peaks": 1},                                                # 4?
+        "Skew": None,                                                              # 3
     }
     #: Bandpasses to use
-    lightcurve_bands: dict[str, Any] = {"ztfg": "ztfg", "ztfr": "ztfr", "ztfi": "ztfi"}
-    
+    lightcurve_bands: dict[str, Any] = {"ztfg": "ztfg", "ztfr": "ztfr", "ztfi": "ztfi",
+    		"lsstu":"lsstu","lsstg":"lsstg","lsstr":"lsstr","lssti":"lssti","lsstz":"lsstz","lssty":"lssty"}
 
     def post_init(self) -> None:
 #    def __init__(self, **kwargs):
 #        super().__init__(**kwargs)
-        self.extractor = light_curve.Extractor(
-            *(getattr(light_curve, k)(**(v or {})) for k, v in self.lightcurve_features.items())
+        self.fluxextractor = light_curve.Extractor(
+            *(getattr(light_curve, k)(**(v or {})) for k, v in self.lightcurve_features_flux.items())
         )
-        print('init lcfeatures', self.extractor)
+        self.shortmagextractor = light_curve.Extractor(
+            *(getattr(light_curve, k)(**(v or {})) for k, v in self.lightcurve_features_short.items())
+        )
+        self.longmagextractor = light_curve.Extractor(
+            *(getattr(light_curve, k)(**(v or {})) for k, v in self.lightcurve_features_long.items())
+        )
+
 
     def extract_lightcurve_features(self, flux_table: Table) -> UBson:
         result = {}
         # 
         for band, fid in self.lightcurve_bands.items():            
             if (
-             #   in_band := lightcurve.get_ntuples(
-             #       ["jd", "magpsf", "sigmapsf"],
-             #       {"attribute": "fid", "operator": "==", "value": fid},
-             #   )
                 in_band := flux_table[flux_table['band']==fid]
             ) is None:
                 continue
                             
-            m, merr = getMag(in_band, err=True)
-            print('band', band, fid)
-            print(in_band['time'], m, merr)
+            m, merr, mtime = getMag(in_band, err=True, time=True)
 
             
             # Q: Do we need to crete mag and magerr?
             # Q: Code says they need "inverse squared magnitude error", but previous code did not use this. Bug or true?
             #    https://github.com/light-curve/light-curve-python seems to say error directly
-            # Q: Which features to use?
-            # Q: Possibly keep bands to use here?
 
-            try:
-                result.update(
-                    {
-                        f"{k}_{band}": v
-                        for k, v in zip(
-                            self.extractor.names, self.extractor(in_band['time'], m, merr)
-                        )
-                    }
-                )
-            except ValueError:
-                # raised if too few points
-                pass
+            # Flux based, requires at least 4 detections
+            if len(in_band['flux'])>=4:
+                lcout = {
+                            f"{k}_{band}_flux": v
+                            for k, v in zip(
+                                self.fluxextractor.names, self.fluxextractor(in_band['time'], in_band['flux'], in_band['fluxerr'])
+                            )
+                        }
+                result.update(lcout)
+            # Mag based, few detections
+            if len(m)>=2:
+                lcout = {
+                            f"{k}_{band}_mshort": v
+                            for k, v in zip(
+                                self.shortmagextractor.names, self.shortmagextractor(mtime, m, merr)
+                            )
+                        }
+                result.update(lcout)
+            # Mag based, many detections
+            if len(m)>=6:
+                lcout = {
+                            f"{k}_{band}_mlong": v
+                            for k, v in zip(
+                                self.longmagextractor.names, self.longmagextractor(mtime, m, merr)
+                            )
+                        }
+                result.update(lcout)
+            
+            
         return result
 
 
@@ -553,13 +642,19 @@ class T2TabulatorRiseDecline(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRise
         features = self.compute_stats(flux_table)
         
         # Calculate light_curve features
-        features.update( 
-            self.extract_lightcurve_features(flux_table) 
-            )
+        lcfeat = self.extract_lightcurve_features(flux_table)
+        features.update(lcfeat)
+        #features.update( 
+        #    self.extract_lightcurve_features(flux_table) 
+        #    )
+        
+        # Create averaged values
+        avgfeat = self.average_filtervalues(features)
+        features.update(avgfeat)
         
 
         #if self.do_testplot:
-        if features['success'] and np.random.uniform()<self.plot_prob:
+        if features.get('success') and np.random.uniform()<self.plot_prob:
             self.test_plot(compound.get('stock'), flux_table, features)
 
         return features
