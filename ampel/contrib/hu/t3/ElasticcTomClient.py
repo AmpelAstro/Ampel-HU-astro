@@ -14,7 +14,9 @@ import requests
 import json
 import backoff
 from requests import HTTPError
+from requests.models import InvalidJSONError
 from io import BytesIO
+from math import isfinite
 
 from ampel.lsst.alert.load.HttpSchemaRepository import parse_schema
 from ampel.ztf.t0.load.AllConsumingConsumer import AllConsumingConsumer
@@ -94,8 +96,16 @@ class ElasticcTomClient:
         max_time=60,
         )
     def tom_post(self, classification: Union[ElasticcClassification,list[ElasticcClassification]])->Dict[Any,Any]:
-        response = self.session.put(f'{self.tom_url}{self.endpoint}',
-                                json=classification, headers=self.csrfheader)
+        try:
+            response = self.session.put(f'{self.tom_url}{self.endpoint}',
+                                    json=classification, headers=self.csrfheader)
+        except InvalidJSONError:
+            for report in (classification if isinstance(classification, list) else [classification]):
+                try:
+                    json.dumps(report, allow_nan=False)
+                except ValueError:
+                    self.logger.error(f"invalid report: {report}")
+            raise
 
         if response.ok:
             self.logger.debug('ElasticcTomClient submit done', extra={"payload": classification})
@@ -157,6 +167,10 @@ if __name__ == "__main__":
     fastavro.read.LOGICAL_READERS.clear()
     try:
         for chunk in chunks_from_kafka(broker=args.bootstrap, topic=args.topic, group_id=args.group, avro_schema=args.schema, timeout=args.timeout, chunk_size=args.chunk_size):
+            for report in chunk:
+                for classification in report["classifications"]:
+                    if not isfinite(classification["probability"]):
+                        classification["probability"] = 0
             response = tom_client.tom_post(chunk)
             if not response["success"]:
                 logger.error(response["response_body"])
