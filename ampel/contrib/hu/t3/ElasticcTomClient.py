@@ -7,13 +7,19 @@
 # Last Modified Date:  11.04.2022
 # Last Modified By:    jno <jnordin@physik.hu-berlin.de>
 
-from typing import Sequence, Dict, Any, Union
+from typing import Generator, Sequence, Dict, Any, Union
 
+import logging
 import requests
 import json
 import backoff
 from requests import HTTPError
+from io import BytesIO
 
+from ampel.lsst.alert.load.HttpSchemaRepository import parse_schema
+from ampel.ztf.t0.load.AllConsumingConsumer import AllConsumingConsumer
+import fastavro
+from ampel.util.collections import get_chunks
 
 class ClassificationDict():
     classifierName: str
@@ -97,3 +103,66 @@ class ElasticcTomClient:
 
         self.logger.info('ElasticcTomClient submit fail', extra={"payload": classification})
         return {'success':False, 'response':response.status_code, 'response_body': response.text}
+
+logger = logging.getLogger()
+
+class AvroDeserializer:
+    def __init__(self, schema: str | dict):
+        self._schema = parse_schema(schema)
+    def __call__(self, message) -> dict:
+        return fastavro.schemaless_reader(
+            BytesIO(message.value()), self._schema
+        )
+
+def chunks_from_kafka(broker: str, topic: str, group_id: str, avro_schema: str | dict, timeout: float=30, chunk_size: int=1000, **consumer_config) -> Generator[list[dict], None, None]:
+    """
+    Yield chunks of messages a topic, forever
+    """
+    consumer = AllConsumingConsumer(broker, timeout=timeout, topics=[topic], auto_commit=False, logger=logger, **{"group.id": group_id}, )
+    deserializer = AvroDeserializer(avro_schema)
+    while True:
+        for chunk in get_chunks(map(deserializer, consumer), chunk_size):
+            yield chunk
+            consumer.commit()
+        logger.debug("no more chunks")
+
+if __name__ == "__main__":
+    from argparse import ArgumentParser
+
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)-8s %(name)s:%(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+
+    parser = ArgumentParser()
+    parser.add_argument("--bootstrap")
+    parser.add_argument("--topic")
+    parser.add_argument("--group")
+    parser.add_argument("--schema")
+    parser.add_argument("--tom")
+    parser.add_argument("-u", "--user")
+    parser.add_argument("-p", "--password")
+    parser.add_argument("--endpoint", default="/elasticc2/brokermessage/")
+    parser.add_argument("--timeout", type=float, default=30)
+    parser.add_argument("--chunk-size", type=int, default=1000)
+
+    args = parser.parse_args()
+
+    tom_client = ElasticcTomClient(
+        tom_url=args.tom,
+        desc_username=args.user,
+        desc_password=args.password,
+        endpoint=args.endpoint,
+        logger=logger
+    )
+
+    # disable logical type conversion, in particular int -> datetime for timestamp-millis
+    fastavro.read.LOGICAL_READERS.clear()
+    try:
+        for chunk in chunks_from_kafka(broker=args.bootstrap, topic=args.topic, group_id=args.group, avro_schema=args.schema, timeout=args.timeout, chunk_size=args.chunk_size):
+            response = tom_client.tom_post(chunk)
+            if not response["success"]:
+                logger.error(response["response_body"])
+                raise RuntimeError(f"POST failed with status {response['response']}")
+            logger.info(f"posted {len(chunk)} classifications")
+    except KeyboardInterrupt:
+        logger.info("exiting")
+
+    
