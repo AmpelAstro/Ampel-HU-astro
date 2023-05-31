@@ -7,8 +7,11 @@
 # Last Modified Date:  13.12.2022
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
-from typing import Literal, Union
+from collections import defaultdict
+from typing import ClassVar, Literal, Union
 from collections.abc import Sequence
+from functools import cached_property
+from ampel.base.AmpelUnit import AmpelUnit
 import numpy as np
 
 from ampel.types import UBson
@@ -83,6 +86,44 @@ galcol_prior: dict[str, list[float]] = {'CART': [1.1681864134021618, 0.545161013
 # Correlation between galaxy color and mwebv
 galcol_mwebv_slope =  1.1582821
 
+from ampel.lsst.alert.load.HttpSchemaRepository import parse_schema
+from confluent_kafka import Producer
+from fastavro import schemaless_writer
+from typing import Any
+from io import BytesIO
+
+class KafkaReporter(AmpelUnit):
+
+    broker: str
+    topic: str
+    avro_schema: dict | str
+
+    producer_config: dict[str, Any] = {}
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self._schema = parse_schema(self.avro_schema)
+        self._producer = Producer(**{
+            "bootstrap.servers": self.broker,
+        } | self.producer_config)
+
+    def serialize(self, record: dict) -> bytes:
+        buf = BytesIO()
+        schemaless_writer(buf, self._schema, record)
+        return buf.getvalue()
+
+    def send(self, record: dict) -> None:
+        self._producer.poll(0)
+        self._producer.produce(self.topic, self.serialize(record))
+    
+    def flush(self):
+        self._producer.flush()
+        self._producer.poll(0)
+
+
+
+
 
 class T2ElasticcReport(AbsTiedStateT2Unit):
     """
@@ -118,19 +159,52 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
     # Which units should this be changed to
     t2_dependency: Sequence[StateT2Dependency[Literal["T2RunParsnip", "T2MultiXgbClassifier"]]]
 
+    send_reports: ClassVar[bool] = True
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._reporter: None | KafkaReporter = None
+
+    def make_reporter(self) -> KafkaReporter:
+        return KafkaReporter(
+            broker="kafka-kafka-bootstrap",
+            topic="elasticc2-reports-test",
+            avro_schema="https://raw.githubusercontent.com/LSSTDESC/elasticc/bc0de488c5276ce61b650117db19e93634b10815/alert_schema/elasticc.v0_9_1.brokerClassification.avsc"
+        )
+
+
+    @staticmethod
+    def _one_report_per_classifier(report: dict):
+        """
+        reformat a v0.9 brokerClassification for v0.9.1
+        see: https://raw.githubusercontent.com/LSSTDESC/elasticc/5d7b314b537197c99086acf019e6e2c1dc4aa267/alert_schema/elasticc.v0_9_1.brokerClassification.avsc
+        """
+        by_classifier = defaultdict(list)
+        for c in report["classifications"]:
+            by_classifier[(c["classifierName"], c["classifierParams"])].append({k: c[k] for k in ("classId", "probability")})
+        for (name, params), classifications in by_classifier.items():
+            new_report = report.copy()
+            new_report["classifications"] = [{k: c[k] for k in ("classId", "probability")} for c in classifications]
+            new_report["classifierName"] = name
+            new_report["classifierParams"] = params
+            yield new_report
+
+
     def submit(self, report: dict) -> str:
         """
         Placeholder for actually doing a quick T2 submit.
         """
 
-        # Possibly check total probability
-        #psum = 0
-        #for klass in report['classifications']:
-        #    psum += klass['probability']
-        #if not abs(psum-1)<0.01:
-        #    self.log.info('Probability does not add.')
+        if not self.send_reports:
+            return 'Not submitted.'
+        if self._reporter is None:
+            self._reporter = self.make_reporter()
+        
+        for classification in self._one_report_per_classifier(report):
+            self._reporter.send(classification)
+            self._reporter.flush()
+        
 
-        return 'Not submitted.'
 
     def add_zprior(self, parsnip_prob: dict, z: float):
         """
