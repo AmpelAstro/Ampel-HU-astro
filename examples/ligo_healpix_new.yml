@@ -57,11 +57,11 @@ task:
           gaia_rs: 10
           gaia_veto_gmag_max: 20
           gaia_veto_gmag_min: 9
-          min_ndet: 2
+          min_ndet: 1
           min_tspan: -1
           max_tspan: 1
           #min_archive_tspan: -99
-          max_archive_tspan: 3
+          max_archive_tspan: 0.1
           min_drb: 0.3
           min_gal_lat: 0
           min_rb: 0.0
