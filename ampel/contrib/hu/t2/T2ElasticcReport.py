@@ -222,7 +222,8 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
 
         # Reweight probabilities
         p = sum( [v for v in scaled_prob.values()] )
-        
+        if not p > 0:
+            p = 1.
 
         return { k:v/p for k,v in scaled_prob.items() }
 
@@ -238,6 +239,8 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
 
         # Reweight probabilities
         p = sum( [v for v in scaled_prob.values()] )
+        if not p > 0:
+            p = 1.
 
         return { k:v/p for k,v in scaled_prob.items() }
 
