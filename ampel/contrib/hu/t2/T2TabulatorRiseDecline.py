@@ -59,6 +59,7 @@ def getMeanflux(tab: Table, jdstart, jdend):
     for band in set(tt['band']):
         btt = tt[tt['band']==band]
         means[band] = np.average( btt['flux'], weights=1./btt['fluxerr']**2)
+#        means[band] = 1
         used_bands.append(band)
     return means, used_bands
 
@@ -132,7 +133,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
     sigma_det: float = 5.
     sigma_slope: float = 3. # Threshold for having detected a slope
     color_list: Sequence[Sequence[str]] = [['lsstu','lsstg'], ['lsstg','lsstr'],
-                        ['lsstr','lssti'], ['lssti','lsstz'],['lsstz','lssty']]
+                        ['lsstr','lssti'], ['lssti','lsstz'],['lsstz','lssty'],['ztg','ztfr'],['ztfr','ztfi']]
     max_tgap: int = 30
 
     # Cut the lightcurve if longer than this limit.
@@ -207,14 +208,14 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
 
         # If the transient has both a rise and a fall we can
         # define a central peak
-        if banddata['bool_rise'] and banddata['bool_fall']:
-            banddata['bool_peaked'] = True
-            # Use jd of all bands for which we could estimate rise+fall
-            banddata['jd_peak'] = np.median(
-                                [ banddata['jd_peak_'+band]
+        if banddata['bool_rise'] and banddata['bool_fall'] and ( 
+            len(peakjds := [ banddata['jd_peak_'+band]
                                        for band in set(ftable['band'])
                                   if 'rise_slope_'+band in banddata and
-                                     'fall_slope_'+band in banddata] )
+                                     'fall_slope_'+band in banddata])>0):
+            banddata['bool_peaked'] = True
+            # Use jd of all bands for which we could estimate rise+fall
+            banddata['jd_peak'] = np.median( peakjds  )
         else:
             banddata['bool_peaked'] = False
 
@@ -245,20 +246,20 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
         
         This method will attempt to average over any filter or color-specific fields available and create an averaged entry.
         
-        A base matchlist is created based on significant bands and the color list unit parameters.
+        A base matchlist is created based on significant bands. (plus potentially an input matchlist)
         
         """
         
-        matchlist.extend(
-        	['_{}_'.format(band) for band in self.significant_bands]
-            )
-        matchlist.extend(
-        	['_{}-{}_'.format(col[0],col[1]) for col in self.color_list]
-            )
+        mymatchlist = ['_{}_'.format(band) for band in self.significant_bands]
+        # Ignore the colors for now, would need to rework how these averages are described.
+        #mymatchlist.extend(
+        #	['{}-{}_'.format(col[0],col[1]) for col in self.color_list]
+        #    )
+       	mymatchlist.extend(matchlist)
         
         matchedvalues = {}
         # Can this be redone to avoid nested loop?
-        for match in matchlist:
+        for match in mymatchlist:
             p = re.compile(match)
             for key, val in features.items():
                 stub = p.sub('_',key)    # Name of averaged entry in return dict
@@ -282,8 +283,6 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
         # Output dict that we will start to populate
         o: dict[str, Any] = {}
 
-        # Step 1. Base determinations based on combined detections
-        self.logger.debug("Starting joint band RiseDeclineStat estimations")
 
         # Create subset of table with significant detections in significant bands
         band_mask = [bandobs in self.significant_bands for bandobs in flux_table['band'] ]
@@ -291,7 +290,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
         det_table = flux_table[band_mask & sig_mask]
         # Calculate fraction negative detection (we no longer cut only because of this)
         o['ndet'] = len(det_table)
-
+        
         if o['ndet']==0:
             o['success'] = False
             o['cause'] = "No data survive significance criteria."
@@ -301,6 +300,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
             o['nnegdet'] = len( flux_table[band_mask & neg_mask] )
 
             return o
+            
         o['frac_pos'] = np.sum(det_table['flux']>0) / o['ndet']
 
         o["jd_det"] = det_table['time'].min()
@@ -317,6 +317,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
         # Magnitude and color calculations below assume detections are positive
         if flux_table[flux_table['time']==o["jd_det"]]['flux']<0 or flux_table[flux_table['time']==o["jd_last"]]['flux']<0:
             return o
+
         
         o["mag_det"] = float( getMag(flux_table[flux_table['time']==o["jd_det"]]) )
         o["band_det_id"] = getBandBits( [flux_table[flux_table['time']==o["jd_det"]]['band'][0]] )
@@ -344,7 +345,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
         # If there is a peak we additionally check whether this is within t_cadence
         # days of detector or last, and call this fastrise and fastfall
         o['bool_fastrise'], o['bool_fastfall'] = None, None
-        if o['bool_peaked']:
+        if o.get('bool_peaked',False):
             if np.abs(o['jd_det']-o['jd_peak'])<self.t_cadence:
                 o['bool_fastrise'] = True
             else:
@@ -387,7 +388,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
             if fluxdict.get(colbands[0],-1)>0 and fluxdict.get(colbands[1],-1)>0:
                 o[f"{colbands[0]}-{colbands[1]}_last"] = -2.5 * np.log10(fluxdict[colbands[0]] / fluxdict[colbands[1]])
         # Peak colors, if found
-        if o['bool_peaked']:
+        if o.get('bool_peaked',False):
             fluxdict, fluxbands =  getMeanflux(flux_table, o["jd_peak"]-self.t_cadence/2,
                                                 o["jd_peak"]+self.t_cadence/2)
             o['peak_bands'] = getBandBits(fluxbands)
@@ -493,34 +494,39 @@ class BaseLightCurveFeatures(AmpelBaseModel):
             # Q: Do we need to crete mag and magerr?
             # Q: Code says they need "inverse squared magnitude error", but previous code did not use this. Bug or true?
             #    https://github.com/light-curve/light-curve-python seems to say error directly
-
-            # Flux based, requires at least 4 detections
-            if len(in_band['flux'])>=4:
-                lcout = {
-                            f"{k}_{band}_flux": v
-                            for k, v in zip(
-                                self.fluxextractor.names, self.fluxextractor(in_band['time'], in_band['flux'], in_band['fluxerr'])
-                            )
-                        }
-                result.update(lcout)
-            # Mag based, few detections
-            if len(m)>=2:
-                lcout = {
-                            f"{k}_{band}_mshort": v
-                            for k, v in zip(
-                                self.shortmagextractor.names, self.shortmagextractor(mtime, m, merr)
-                            )
-                        }
-                result.update(lcout)
-            # Mag based, many detections
-            if len(m)>=6:
-                lcout = {
-                            f"{k}_{band}_mlong": v
-                            for k, v in zip(
-                                self.longmagextractor.names, self.longmagextractor(mtime, m, merr)
-                            )
-                        }
-                result.update(lcout)
+            
+            # We wrap this in a try statement, since there are a few ways these can fail, typically with poor data in one or another aspect
+            try:
+                # Flux based, requires at least 4 detections
+                if len(in_band['flux'])>=4:
+                    lcout = {
+                                f"{k}_{band}_flux": v
+                                for k, v in zip(
+                                    self.fluxextractor.names, self.fluxextractor(in_band['time'], in_band['flux'], in_band['fluxerr'])
+                                )
+                            }
+                    result.update(lcout)
+                # Mag based, few detections
+                if len(m)>=2:
+                    lcout = {
+                                f"{k}_{band}_mshort": v
+                                for k, v in zip(
+                                    self.shortmagextractor.names, self.shortmagextractor(mtime, m, merr)
+                                )
+                            }
+                    result.update(lcout)
+                # Mag based, many detections
+                if len(m)>=6:
+                    lcout = {
+                                f"{k}_{band}_mlong": v
+                                for k, v in zip(
+                                    self.longmagextractor.names, self.longmagextractor(mtime, m, merr)
+                                )
+                            }
+                    result.update(lcout)
+            except ValueError:
+                self.logger.info('lightkurve extract fail')
+                pass
             
             
         return result
