@@ -74,7 +74,7 @@ task:
           max_elong: 20
           max_magdiff: 20
           max_nbad: 20
-        on_stock_match: bypass
+        on_stock_match: silent_overrule
         unit: PredetectionFilter
       ingest:
         mux:
