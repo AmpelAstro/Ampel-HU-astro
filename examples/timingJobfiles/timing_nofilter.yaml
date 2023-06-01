@@ -48,34 +48,6 @@ task:
     shaper: ZiDataPointShaper
     directives:
     - channel: timing
-      filter:
-        config:
-          trigger_jd: 2458863.682951
-          gaia_excessnoise_sig_max: 999
-          gaia_plx_signif: 3
-          gaia_pm_signif: 3
-          gaia_rs: 10
-          gaia_veto_gmag_max: 90
-          gaia_veto_gmag_min: -2
-          min_ndet: 0
-          min_tspan: -1
-          max_tspan: 99
-          #min_archive_tspan: -99
-          max_archive_tspan: 365
-          min_drb: 0.0
-          min_gal_lat: 0
-          min_rb: 0.0
-          min_sso_dist: 0
-          ps1_confusion_rad: 3
-          ps1_confusion_sg_tol: 0.1
-          ps1_sgveto_rad: 1
-          ps1_sgveto_th: 0.8
-          max_fwhm: 20
-          max_elong: 20
-          max_magdiff: 20
-          max_nbad: 20
-        on_stock_match: bypass
-        unit: PredetectionFilter
       ingest:
         mux:
           insert:

@@ -51,11 +51,11 @@ task:
       filter:
         config:
           trigger_jd: 2458863.682951
-          gaia_excessnoise_sig_max: 999
+          gaia_excessnoise_sig_max: 0
           gaia_plx_signif: 3
           gaia_pm_signif: 3
           gaia_rs: 10
-          gaia_veto_gmag_max: 90
+          gaia_veto_gmag_max: 0
           gaia_veto_gmag_min: -2
           min_ndet: 0
           min_tspan: -1
