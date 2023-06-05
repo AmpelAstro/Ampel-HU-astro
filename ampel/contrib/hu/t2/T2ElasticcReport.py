@@ -8,14 +8,15 @@
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
 from collections import defaultdict
-from typing import ClassVar, Literal, Union
+from typing import ClassVar, Literal
 from collections.abc import Sequence
-from functools import cached_property
-from ampel.base.AmpelUnit import AmpelUnit
 import numpy as np
 
+from ampel.base.AmpelUnit import AmpelUnit
+from ampel.enum.DocumentCode import DocumentCode
 from ampel.types import UBson
 from ampel.struct.UnitResult import UnitResult
+from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.content.T1Document import T1Document
@@ -190,13 +191,13 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
             yield new_report
 
 
-    def submit(self, report: dict) -> str:
+    def submit(self, report: dict) -> bool:
         """
         Placeholder for actually doing a quick T2 submit.
         """
 
         if not self.send_reports:
-            return 'Not submitted.'
+            return True
         if self._reporter is None:
             self._reporter = self.make_reporter()
         
@@ -204,6 +205,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
             self._reporter.send(classification)
             self._reporter.flush()
         
+        return False
 
 
     def add_zprior(self, parsnip_prob: dict, z: float):
@@ -297,11 +299,22 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
         return u-g
 
 
+    def make_unit_result(self, compound: T1Document, class_report: dict[str,UBson]) -> UnitResult:
+        return UnitResult(
+            body={
+                "report": class_report,
+                "t2_submit": self.submit(class_report),
+            },
+            code=DocumentCode.OK,
+            journal=JournalAttributes(extra={"link": compound["link"]})
+        )
+
+
     def process(self,
         compound: T1Document,
         datapoints: Sequence[DataPoint],
         t2_views: Sequence[T2DocView]
-    ) -> Union[UBson, UnitResult]:
+    ) -> UnitResult:
         """
 
         Extract and combine results.
@@ -396,10 +409,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
                     'probability': 1.,
                 }
             )
-            return {
-                "report": class_report,
-                "t2_submit": self.submit(class_report),
-            }
+            return self.make_unit_result(compound, class_report)
 
         # Create first set of probabilities
         prob1 = is1
@@ -435,10 +445,8 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
         # If Parsnip did not run we are done here
         if parsnip_class is None:
             self.logger.debug('No Parsnip result, file simple report')
-            return {
-                "report": class_report,
-                "t2_submit": self.submit(class_report),
-            }
+            return self.make_unit_result(compound, class_report)
+
 
         # Create a new series of classifications including base Parsnip
         parsnip_classifications = [ dict(d, classifierName = self.classifier_name + 'SNGuess'+ 'Parsnip')
@@ -499,7 +507,5 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
                 class_report['classifications'] = parsnip_classifications
 
         # Return report
-        return {
-            "report": class_report,
-            "t2_submit": self.submit(class_report),
-        }
+        return self.make_unit_result(compound, class_report)
+
