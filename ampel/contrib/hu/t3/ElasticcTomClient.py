@@ -171,11 +171,11 @@ if __name__ == "__main__":
                 for classification in report["classifications"]:
                     if not isfinite(classification["probability"]):
                         classification["probability"] = 0
+            logger.info(f"posting {len(chunk)} classifications")
             response = tom_client.tom_post(chunk)
             if not response["success"]:
                 logger.error(response["response_body"])
                 raise RuntimeError(f"POST failed with status {response['response']}")
-            logger.info(f"posted {len(chunk)} classifications")
     except KeyboardInterrupt:
         logger.info("exiting")
 
