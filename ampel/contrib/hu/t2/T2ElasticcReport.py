@@ -22,7 +22,7 @@ from ampel.view.T2DocView import T2DocView
 # Tying classification output classes with ELAsTICC taxonomy classes
 parsnip_taxonomy = {
     # extracted from https://github.com/LSSTDESC/elasticc/blob/bc0de488c5276ce61b650117db19e93634b10815/taxonomy/taxonomy.ipynb
-    'SLSN':  2243,
+#    'SLSN':  2242,   # never used?
     'SNII':  2224,
     'SNIa':  2222,
     'SNibc': 2223,
@@ -33,7 +33,7 @@ parsnip_taxonomy = {
     'Mdwarf-flare': 2233,
     'PISN': 2246,
     'KN': 2232,
-    'SLSN-I': 2243,
+    'SLSN-I': 2242,
     'SNIa91bg': 2226,
     'SNIax': 2225,
     'dwarf-nova': 2234,
@@ -62,14 +62,15 @@ zmap = {'CART': {0: 9, 1: 124, 2: 135, 3: 143, 4: 143, 5: 127, 6: 97, 7: 62, 8: 
 # Based on BTS _observed_ rate distributions, i.e. no knowledge of elasticc
 # or LSST simulation properties.
 # Probabilities assumed to add up to 1000
-btsmap = {'SNIa': 663, 'uLens': 10, 'SLSN': 14, 'dwarf-nova': 10, 'SNIa91bg': 10, 'ILOT': 10, 'SNIax': 10, 'TDE': 10, 'KN': 10, 'SNII': 168, 'SNIbc': 58, 'Mdwarf-flare': 10, 'PISN': 10, 'CART': 10}
+btsmap = {'SNIa': 663, 'uLens': 10, 'SLSN-I': 14, 'dwarf-nova': 10, 'SNIa91bg': 10, 'ILOT': 10, 'SNIax': 10, 'TDE': 10, 'KN': 10, 'SNII': 168, 'SNIbc': 58, 'Mdwarf-flare': 10, 'PISN': 10, 'CART': 10}
 
 # Priors based on the host galaxy u-g color (from elasticc_galcol notebook)
 galcol_prior: dict[str, list[float]] = {'CART': [1.1681864134021618, 0.5451610139053239],
  'ILOT': [1.1458356003495815, 0.5093055923613805],
  'KN': [1.3089799059907905, 0.3303618787483199],
  'PISN': [0.3426406749881123, 0.4465663913955291],
- 'SLSN': [0.37962520970022234, 0.3723189361658543],
+ #'SLSN': [0.37962520970022234, 0.3723189361658543],
+ 'SLSN-I': [0.37962520970022234, 0.3723189361658543],
  'SNIa91bg': [1.8926892171924607, 0.4252978932935133],
  'SNIa': [0.6102884945155177, 0.39269590167347995],
  'SNIax': [0.6945950080255028, 0.36977359393920906],
@@ -147,6 +148,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
 
         # Reweight probabilities
         p = sum( [v for v in scaled_prob.values()] )
+        
 
         return { k:v/p for k,v in scaled_prob.items() }
 
