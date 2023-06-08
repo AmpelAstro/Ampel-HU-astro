@@ -23,7 +23,8 @@ parameters:
   value: https://portal.nersc.gov/cfs/lsst/DESC_TD_PUBLIC/ELASTICC/5000alerts.tar.gz
 
 mongo:
-  prefix: Elasticc5000_vDec_Argo_Dir_v4
+  prefix: ampel_elasticc
+  reset: true
 
 channel:
 - name: Elasticc
@@ -85,6 +86,12 @@ task:
             combine:
             - unit: LSSTT1Combiner
               state_t2:
+              - config:
+                  tabulator:
+                  - unit: LSSTT2Tabulator
+                    config:
+                      zp: 27.5
+                unit: T2TabulatorRiseDecline
 
               - &xgb_config
                 unit: T2MultiXgbClassifier
@@ -130,16 +137,25 @@ task:
           url: "{{ job.parameters.alertsample }}"
 
 
-- title: t2
+- title: t2_row1
   multiplier: 4
   unit: T2Worker
   config:
     doc_limit: 50000
-    run_dependent_t2s: false
-    wait_for_durable_write: false
-    updates_buffer_size: 500
-    garbage_collect: false
     max_try: 10
+    unit_ids:
+    - T2ElasticcRedshiftSampler
+    - T2GetDiaObject
+
+- title: t2_row2
+  multiplier: 4
+  unit: T2Worker
+  config:
+    doc_limit: 50000
+    max_try: 10
+    unit_ids:
+    - T2MultiXgbClassifier
+    - T2RunParsnip
   inputs:
     artifacts:
       - name: classifier
@@ -162,3 +178,11 @@ task:
         path: xgb_v6_simmod_tree121113_ndet1_1000.json
         http:
           url: "{{ job.parameters.xgb_v6_simmod_tree121113 }}"
+          
+- title: t2_row3
+  multiplier: 4
+  unit: T2Worker
+  config:
+    doc_limit: 50000
+    max_try: 10
+
