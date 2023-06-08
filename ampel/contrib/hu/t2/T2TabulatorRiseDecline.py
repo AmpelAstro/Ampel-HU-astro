@@ -176,18 +176,19 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
                 try:
                     fit, cov=curve_fit(linearFunc,riset['time']-tscale,riset['flux'],
                                         sigma=riset['fluxerr'],absolute_sigma=True)
+                    banddata['rise_slope_'+band] = fit[1]
+                    banddata['rise_slopesig_'+band] = fit[1] / np.sqrt(cov[1][1])
                 except RuntimeError as exc:
-                    raise FitFailed from exc
-                banddata['rise_slope_'+band] = fit[1]
-                banddata['rise_slopesig_'+band] = fit[1] / np.sqrt(cov[1][1])
+                    self.logger.info('Risetime curve fit failed.')
             if len(fallt)>1:
                 try:
                     fit, cov=curve_fit(linearFunc,fallt['time']-tscale,fallt['flux'],
                                         sigma=fallt['fluxerr'],absolute_sigma=True)
+                    banddata['fall_slope_'+band] = fit[1]
+                    banddata['fall_slopesig_'+band] = fit[1] / np.sqrt(cov[1][1])
                 except RuntimeError as exc:
-                    raise FitFailed from exc
-                banddata['fall_slope_'+band] = fit[1]
-                banddata['fall_slopesig_'+band] = fit[1] / np.sqrt(cov[1][1])
+                    self.logger.info('Falltime curve fit failed.')
+
 
         # In v1 we also had a requirement that a sufficient time should have
         # passed after peak, such that we "should" have seen a decline.
