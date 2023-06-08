@@ -36,6 +36,7 @@ python = ">=3.10,<3.12"
 ampel-plot = {version = "^0.8.3", source = "pypi"}
 ampel-ztf = {version = "^0.8.3", source = "pypi", extras = ["kafka"], optional = true}
 ampel-photometry = {version = "^0.8.3", source = "pypi"}
+ampel-lsst = {git = "https://github.com/AmpelProject/Ampel-LSST.git", optional = true}
 sncosmo = {version = "^2.5.0", optional = true}
 iminuit = {version = "^2.8.0", optional = true}
 sfdmap = {version = "^0.1.1", optional = true, source = "pypi"} # conda-forge stale at py3.6
@@ -66,6 +67,7 @@ more-itertools = "^9.0.0"
 uncertainties = "^3.1.7"
 scikit-learn = "^1.1.3"
 corner = "^2.2.1"
+light-curve = {version = "^0.7.2", optional = true}
 
 [tool.poetry.dev-dependencies]
 mypy = "^0.991"
@@ -81,7 +83,7 @@ setuptools = "*"
 sncosmo = ["sncosmo", "iminuit", "sfdmap"]
 extcats = ["extcats"]
 slack = ["slack_sdk"]
-elasticc = ["xgboost", "astro-parsnip", "timeout-decorator"]
+elasticc = ["xgboost", "astro-parsnip", "timeout-decorator", "ampel-lsst", "light-curve"]
 ztf = ["ampel-ztf"]
 notebook = ["jupyter"]
 voevent = ["voevent-parse"]
