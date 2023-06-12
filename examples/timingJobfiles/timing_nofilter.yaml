@@ -21,7 +21,7 @@ task:
           target:
             unit: HealpixTokenGenerator
             config:
-              pvalue_limit: 0.5 
+              pvalue_limit: 0.8
               chunk_size: 2000
               map_name: "S200115j.fits.gz,0" 
               map_url: https://gracedb.ligo.org/api/superevents/S200115j/files/LALInference.fits.gz,0
@@ -58,7 +58,7 @@ task:
           unit: ZiArchiveMuxer
           config:
             future_days: 3.
-            history_days: 3.
+            history_days: 50
               
 - title: Run T2s
   unit: T2Worker

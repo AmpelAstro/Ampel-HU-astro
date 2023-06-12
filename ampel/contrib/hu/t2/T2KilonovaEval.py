@@ -64,6 +64,8 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
     max_dist: float = 50  # Max arcsec distance
     max_kpc_dist: float = 999  # Max distance in kpc (using redshift)
     max_redshift_uncertainty: float = 999
+
+    distance_mode: str = "reward" # possible: "reward", "punish", "pass"
     max_dist_sigma_diff: float = 2
 
     # Lightcurve (using redshift, so that needs to be there)
@@ -500,6 +502,23 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         """
         Check wether transient lies within 2sigma of Healpix distance
         """
+
+        possible_modes = ["reward", "punish", "pass"]
+        if self.distance_mode not in possible_modes:
+            raise ValueError("results: distance mode must be one of %r." % possible_modes)
+
+        # reward/punish distance math depending on mode
+        match self.distance_mode:
+            case "reward":
+                reward = 5
+                punish = 0
+            case "punish":
+                reward = 0
+                punish = -20
+            case "pass":
+                reward = 1
+                punish = 0
+
         info = {"pass": 0, "rejects": []}
 
         distance_ampel = Planck15.luminosity_distance(input_info["ampel_z"]).value
@@ -513,11 +532,11 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         distance_sigmaDiff = distance_diff / distance_healpix_unc
 
         if distance_sigmaDiff > self.max_dist_sigma_diff:
-            info["pass"] -= 20
+            info["pass"] += punish
             criterium_name = "distance_mismatch"
             info["rejects"].append(criterium_name)
         else:
-            info["pass"] += 1
+            info["pass"] += reward
 
         info["ampel_healpix_dist"] = distance_ampel #(
             #,

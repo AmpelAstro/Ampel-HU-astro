@@ -21,7 +21,7 @@ task:
           target:
             unit: HealpixTokenGenerator
             config:
-              pvalue_limit: 0.5 
+              pvalue_limit: 0.8 # results in around 290 alerts
               chunk_size: 2000
               map_name: "S200115j.fits.gz,0" 
               map_url: https://gracedb.ligo.org/api/superevents/S200115j/files/LALInference.fits.gz,0
@@ -50,32 +50,8 @@ task:
     - channel: timing
       filter:
         config:
-          trigger_jd: 2458863.682951
-          gaia_excessnoise_sig_max: 0
-          gaia_plx_signif: 3
-          gaia_pm_signif: 3
-          gaia_rs: 10
-          gaia_veto_gmag_max: 0
-          gaia_veto_gmag_min: -2
-          min_ndet: 0
-          min_tspan: -1
-          max_tspan: 99
-          #min_archive_tspan: -99
-          max_archive_tspan: 365
-          min_drb: 0.0
-          min_gal_lat: 0
-          min_rb: 0.0
-          min_sso_dist: 0
-          ps1_confusion_rad: 3
-          ps1_confusion_sg_tol: 0.1
-          ps1_sgveto_rad: 1
-          ps1_sgveto_th: 0.8
-          max_fwhm: 20
-          max_elong: 20
-          max_magdiff: 20
-          max_nbad: 20
-        on_stock_match: overrule
-        unit: PredetectionFilter
+          passing_rate: 0
+        unit: RandFilter
       ingest:
         mux:
           insert:
@@ -86,7 +62,7 @@ task:
           unit: ZiArchiveMuxer
           config:
             future_days: 3.
-            history_days: 3.
+            history_days: 50
               
 - title: Run T2s
   unit: T2Worker

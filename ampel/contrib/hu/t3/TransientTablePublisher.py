@@ -86,6 +86,9 @@ class TransientTablePublisher(AbsPhotoT3Unit):
     include_stock: bool = False
     convert_stock_to: str | None = None
 
+    sort_by_key: str | None = "Kilonovaness"
+    sort_ascending: bool = False
+
     include_channels: bool = True
     # Add also transients lacking any T2 info
     save_base_info: bool = False
@@ -195,6 +198,12 @@ class TransientTablePublisher(AbsPhotoT3Unit):
         # Export assembled information
         # Convert
         df = pd.DataFrame.from_dict(table_rows)
+
+        # sort dataframe by key
+        if self.sort_by_key in df.keys():
+            df = df.sort_values(by=self.sort_by_key, ascending=self.sort_ascending)
+        else:
+            self.logger.warn(f"Cannot sort table by {self.sort_by_key} - legal keys: {df.keys()}") 
 
         # Local save
         if self.local_path is not None:
