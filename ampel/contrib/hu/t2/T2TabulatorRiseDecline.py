@@ -410,57 +410,28 @@ class BaseLightCurveFeatures(AmpelBaseModel):
     package described in https://ui.adsabs.harvard.edu/abs/2021MNRAS.502.5147M%2F/abstract
     
     Lifted from T2LightCurveFeatures
-    
     Installed as  python3 -mpip install light-curve 
     
-    Problems with current setup:
-    - Different number of parameters required, extraction fails if one fails. A: Divide into low and high param req?
-    - Built on magnitudes, so cuts out obs with neg flux. But these were the data we wanted to find! A: Try running in flux space?
-      Or running some separately in flux space?
-    - Why does ndet number vary!
-    
-    Combine results in different bands? Get mean values?
-    
+    This v2 contains feature selection and choice of flux as unit based on most common features to influence
+    a binary tree classifier (compare rank_tabulator_features and previous version of this unit).
+    Also decided to require 4 detection in a band for using.    
     """
 
     #: Features to extract from the light curve.
     #: See: https://docs.rs/light-curve-feature/0.2.2/light_curve_feature/features/index.html
     lightcurve_features_flux: dict[str, None | dict[str, Any]] = {
-        "AndersonDarlingNormal":None,                                              # 4
-        "BeyondNStd":{"nstd": 1},                                                  # 2
         "Eta": None,                                                               # 2
-        "EtaE": None,                                                              # 2
-        "ExcessVariance": None,                                                    # 2        
-        "Kurtosis": None,                                                          # 4 
         "MaximumSlope": None,                                                      # 2
-        "MedianBufferRangePercentage": {"quantile": 0.1},                          # 1
-        "PercentDifferenceMagnitudePercentile": {"quantile": 0.05},                # 1
         "Periodogram":{"peaks": 1},                                                # 4?
         "Skew": None,                                                              # 3
         "StandardDeviation": None,                                                 # 2
-        "StetsonK": None,                                                          # 2
-    }
-    # Mag based few detections
-    lightcurve_features_short: dict[str, None | dict[str, Any]] = {
-        "BeyondNStd":{"nstd": 1},                                                  # 2
-        "Eta": None,                                                               # 2
-        "EtaE": None,                                                              # 2
         "ExcessVariance": None,                                                    # 2        
-        "MaximumSlope": None,                                                      # 2
-        "MedianBufferRangePercentage": {"quantile": 0.1},                          # 1
-        "PercentDifferenceMagnitudePercentile": {"quantile": 0.05},                # 1
-        "StandardDeviation": None,                                                 # 2
-        "StetsonK": None,                                                          # 2
-    }
-    # Mag based many detections
-    lightcurve_features_long: dict[str, None | dict[str, Any]] = {
-        "AndersonDarlingNormal":None,                                              # 4
-        "BazinFit":{"algorithm":"mcmc"},                                           # 6
-        "Kurtosis": None,                                                          # 4 
         "LinearFit": None,                                                         # 3
-        "Periodogram":{"peaks": 1},                                                # 4?
-        "Skew": None,                                                              # 3
+        "AndersonDarlingNormal":None,                                              # 4
+        "Kurtosis": None,                                                          # 4 
+        "StetsonK": None,                                                          # 2
     }
+
     #: Bandpasses to use
     lightcurve_bands: dict[str, Any] = {"ztfg": "ztfg", "ztfr": "ztfr", "ztfi": "ztfi",
     		"lsstu":"lsstu","lsstg":"lsstg","lsstr":"lsstr","lssti":"lssti","lsstz":"lsstz","lssty":"lssty"}
@@ -471,11 +442,8 @@ class BaseLightCurveFeatures(AmpelBaseModel):
         self.fluxextractor = light_curve.Extractor(
             *(getattr(light_curve, k)(**(v or {})) for k, v in self.lightcurve_features_flux.items())
         )
-        self.shortmagextractor = light_curve.Extractor(
-            *(getattr(light_curve, k)(**(v or {})) for k, v in self.lightcurve_features_short.items())
-        )
-        self.longmagextractor = light_curve.Extractor(
-            *(getattr(light_curve, k)(**(v or {})) for k, v in self.lightcurve_features_long.items())
+        self.magextractor = light_curve.Extractor(
+            *(getattr(light_curve, k)(**(v or {})) for k, v in self.lightcurve_features_mag.items())
         )
 
 
@@ -487,13 +455,11 @@ class BaseLightCurveFeatures(AmpelBaseModel):
                 in_band := flux_table[flux_table['band']==fid]
             ) is None:
                 continue
-                            
-            m, merr, mtime = getMag(in_band, err=True, time=True)
+
+            # Conversion to mag not used if features determined in flux space                            
+            # m, merr, mtime = getMag(in_band, err=True, time=True)
 
             
-            # Q: Do we need to crete mag and magerr?
-            # Q: Code says they need "inverse squared magnitude error", but previous code did not use this. Bug or true?
-            #    https://github.com/light-curve/light-curve-python seems to say error directly
             
             # We wrap this in a try statement, since there are a few ways these can fail, typically with poor data in one or another aspect
             try:
@@ -503,24 +469,6 @@ class BaseLightCurveFeatures(AmpelBaseModel):
                                 f"{k}_{band}_flux": v
                                 for k, v in zip(
                                     self.fluxextractor.names, self.fluxextractor(in_band['time'], in_band['flux'], in_band['fluxerr'])
-                                )
-                            }
-                    result.update(lcout)
-                # Mag based, few detections
-                if len(m)>=2:
-                    lcout = {
-                                f"{k}_{band}_mshort": v
-                                for k, v in zip(
-                                    self.shortmagextractor.names, self.shortmagextractor(mtime, m, merr)
-                                )
-                            }
-                    result.update(lcout)
-                # Mag based, many detections
-                if len(m)>=6:
-                    lcout = {
-                                f"{k}_{band}_mlong": v
-                                for k, v in zip(
-                                    self.longmagextractor.names, self.longmagextractor(mtime, m, merr)
                                 )
                             }
                     result.update(lcout)
