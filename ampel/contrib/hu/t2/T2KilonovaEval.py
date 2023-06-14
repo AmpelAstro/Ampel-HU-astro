@@ -75,6 +75,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
     min_ndet_postul: int = 0  # and if it has this minimum nr of detection after the last significant (max_maglim) UL.
     min_age: float = 0.01  # require 2 detections separated by 15 minutes
     max_age: float = 3.0
+    min_mag_sigma_diff: float = 1 # consider lc decreasing if two consecutive detections are more than 2 sigma apart
     # Min age of detection history
     # range of peak magnitudes for submission
     min_peak_mag: float = 22
@@ -189,7 +190,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         if info["possis_ndof"] < 0:
             criterium_name = "possis_ndof"
             info["rejects"].append(criterium_name)
-            info["pass"] -= 10  # TODO maybe find a better way to punish this
+            info["pass"] -= 0  # TODO maybe find a better way to punish this
             return info
         info["pass"] += 1
 
@@ -229,12 +230,12 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         elif len(pps) == 0:
             criterium_name = "no_pps"
             info["rejects"].append(criterium_name)
-            info["pass"] -= 10  # TODO maybe find a better way to punish this
+            info["pass"] -= 0  # TODO maybe find a better way to punish this
             return info
         else:
             criterium_name = "too_few_pps"
             info["rejects"].append(criterium_name)
-            info["pass"] -= 10
+            info["pass"] -= 0
         info["detections"] = len(pps)
 
         # cut on age
@@ -259,7 +260,27 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         info["most_recent_detection"] = most_recent_detection
         info["first_detection"] = first_detection
 
+
+        # check if theres two consecutive detections that have significant decrease in brightness
+        # TODO: filter wise distinction
+        if (len(pps) > 1):
+            for i in range(1, len(pps)):
+                # start at back to see if decrease
+                pp_next = pps[-i]
+                pp_curr = pps[-i - 1]
+                magpsf_curr = pp_curr["body"]["magpsf"] + pp_curr["body"]["sigmapsf"]
+                magpsf_next = pp_next["body"]["magpsf"] - pp_next["body"]["sigmapsf"]
+                magpsf_sigma_diff = (magpsf_curr - magpsf_next) / pp_curr["body"]["sigmapsf"]
+
+                print("SIGMA DIFFERNCE MAGNITUDE ", magpsf_sigma_diff)
+                if (magpsf_sigma_diff > self.min_mag_sigma_diff):
+                    info["pass"] += 5
+                    break
+            criterium_name = "lc_not_decrease"
+            info["rejects"].append(criterium_name)
+
         # cut on number of detection after last SIGNIFICANT UL
+        # upper limit = no detection, meaning they know something was _not_ brighter than this upper limit
         ulims = lc.get_upperlimits(
             filters={
                 "attribute": "diffmaglim",
@@ -290,6 +311,9 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                 # return None
             else:
                 info["pass"] += 1
+
+            
+                    
 
             # Check that there is a recent ul
             if (most_recent_detection - last_ulim_jd) > self.maglim_maxago:
@@ -354,7 +378,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             if not len(latest_pps) == 1:
                 criterium_name = "unique_latest_pps"
                 info["rejects"].append(criterium_name)
-                info["pass"] -= 5
+                info["pass"] -= 0
                 return info
                 # raise ValueError("Have assumed a unique last photopoint")
             info["latest_mag"] = latest_pps[0]["body"]["magpsf"]
@@ -367,7 +391,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         else:
             criterium_name = "lc_no_points"
             info["rejects"].append(criterium_name)
-            info["pass"] -= 5
+            info["pass"] -= 0
             return info
             # raise ValueError("Light curve contains no points")
         coordinates = SkyCoord(ra, dec, unit="deg")
@@ -422,7 +446,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                 )
                 criterium_name = "is_ps1_star"
                 info["rejects"].append(criterium_name)
-                info["pass"] -= 5
+                info["pass"] -= 0
                 # return None
             else:
                 info[
