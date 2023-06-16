@@ -75,7 +75,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
     min_ndet_postul: int = 0  # and if it has this minimum nr of detection after the last significant (max_maglim) UL.
     min_age: float = 0.01  # require 2 detections separated by 15 minutes
     max_age: float = 3.0
-    min_mag_sigma_diff: float = 1 # consider lc decreasing if two consecutive detections are more than 2 sigma apart
+    min_mag_sigma_diff: float = 1 # consider lc decreasing if two consecutive detections including uncertainty are more than 1 sigma apart
     # Min age of detection history
     # range of peak magnitudes for submission
     min_peak_mag: float = 22
@@ -264,20 +264,31 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         # check if theres two consecutive detections that have significant decrease in brightness
         # TODO: filter wise distinction
         if (len(pps) > 1):
-            for i in range(1, len(pps)):
-                # start at back to see if decrease
-                pp_next = pps[-i]
-                pp_curr = pps[-i - 1]
-                magpsf_curr = pp_curr["body"]["magpsf"] + pp_curr["body"]["sigmapsf"]
-                magpsf_next = pp_next["body"]["magpsf"] - pp_next["body"]["sigmapsf"]
-                magpsf_sigma_diff = (magpsf_curr - magpsf_next) / pp_curr["body"]["sigmapsf"]
-
-                print("SIGMA DIFFERNCE MAGNITUDE ", magpsf_sigma_diff)
-                if (magpsf_sigma_diff > self.min_mag_sigma_diff):
-                    info["pass"] += 5
-                    break
             criterium_name = "lc_not_decrease"
-            info["rejects"].append(criterium_name)
+            fids_list = []
+            fids_list = [pp_tmp["body"]["fid"] for pp_tmp in pps if pp_tmp["body"]["fid"] not in fids_list]
+            fids_list = np.unique(fids_list)
+            print("FIDS LIST ATTEMPT: ", fids_list)
+            for fid_tmp in fids_list:
+                filter_pps = [pp_tmp for pp_tmp in pps if pp_tmp["body"]["fid"] == fid_tmp]
+                print(len(filter_pps), len(pps))
+                if (len(filter_pps) > 1):
+                    for i in range(1, len(filter_pps)):
+                        # start at back to see if decrease
+                        pp_next = filter_pps[-i]
+                        pp_curr = filter_pps[-i - 1]
+                        magpsf_curr = pp_curr["body"]["magpsf"] + pp_curr["body"]["sigmapsf"]
+                        magpsf_next = pp_next["body"]["magpsf"] - pp_next["body"]["sigmapsf"]
+                        magpsf_sigma_diff = (magpsf_curr - magpsf_next) / pp_curr["body"]["sigmapsf"]
+
+                        print("SIGMA DIFFERNCE MAGNITUDE ", magpsf_sigma_diff)
+                        info["mag_sigma_fid_" + str(fid_tmp)] = magpsf_sigma_diff
+                        if (magpsf_sigma_diff > self.min_mag_sigma_diff):
+                            info["pass"] += 5
+                            criterium_name = None
+                            break
+            if criterium_name is not None:
+                info["rejects"].append(criterium_name)
 
         # cut on number of detection after last SIGNIFICANT UL
         # upper limit = no detection, meaning they know something was _not_ brighter than this upper limit
@@ -551,8 +562,8 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
 
         distance_diff = abs(distance_ampel - distance_healpix) 
 
-        print("difference redshift precision +: ", Planck15.luminosity_distance(input_info["ampel_z"] + input_info["ampel_z_precision"]).value - distance_ampel)
-        print("difference redshift precision -: ", Planck15.luminosity_distance(input_info["ampel_z"] - input_info["ampel_z_precision"]).value - distance_ampel)
+        #print("difference redshift precision +: ", Planck15.luminosity_distance(input_info["ampel_z"] + input_info["ampel_z_precision"]).value - distance_ampel)
+        #print("difference redshift precision -: ", Planck15.luminosity_distance(input_info["ampel_z"] - input_info["ampel_z_precision"]).value - distance_ampel)
         distance_sigmaDiff = distance_diff / distance_healpix_unc
 
         if distance_sigmaDiff > self.max_dist_sigma_diff:
@@ -646,7 +657,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
 
             # distance compared to healpix dist
             if t2_view.unit == "T2PropagateStockInfo" and info.get("ampel_z"):
-                print("INPSECT DISTANCE")
+                #print("INPSECT DISTANCE")
                 dinfo = self.inspect_distance(t2_res, info)
                 if len(dinfo["rejects"]) > 0:
                     rejects.extend(dinfo["rejects"])

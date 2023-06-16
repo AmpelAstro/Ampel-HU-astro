@@ -391,6 +391,10 @@ task:
                           - ampel_healpix_dist
                         'Sigma difference distances':
                           - distance_sigma_diff
+                        'Mag. sigma diff. in fid 1':
+                          - mag_sigma_fid_1
+                        'Mag. sigma diff. in fid 2':
+                          - mag_sigma_fid_2
                     transient_table_schema:
                       T2PropagateStockInfo:
                         'Trigger time':
