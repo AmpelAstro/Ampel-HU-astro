@@ -66,7 +66,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
     max_redshift_uncertainty: float = 999
 
     distance_mode: str = "reward" # possible: "reward", "punish", "pass"
-    max_dist_sigma_diff: float = 2
+    max_dist_sigma_diff: float = 3
 
     # Lightcurve (using redshift, so that needs to be there)
     min_absmag: float = -20

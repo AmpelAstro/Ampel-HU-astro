@@ -40,6 +40,11 @@ S191205ah:
 
 S200115j:
   map_url: https://gracedb.ligo.org/api/superevents/S200115j/files/LALInference.fits.gz,0
-  map_name: S200115j.fit.gz,0
+  map_name: S200115j.fits.gz,0
   trigger_jd: 2458863.682951
+
+S191213g:
+  map_url: https://gracedb.ligo.org/api/superevents/S191213g/files/LALInference.fits.gz
+  map_name: S191213g.fits.gz
+  trigger_jd: 2458830.690579
 
