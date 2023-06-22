@@ -395,6 +395,10 @@ task:
                           - mag_sigma_fid_1
                         'Mag. sigma diff. in fid 2':
                           - mag_sigma_fid_2
+                        'Detections':
+                          - detections
+                        'Detection times':
+                          - detection_times
                     transient_table_schema:
                       T2PropagateStockInfo:
                         'Trigger time':

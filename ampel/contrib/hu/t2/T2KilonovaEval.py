@@ -224,6 +224,8 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         #     return None
         # info["detections"] = len(pps)
 
+        info["detection_times"] = []
+
         # pass on number of detections
         if len(pps) >= self.min_ndet:
             info["pass"] += 1
@@ -249,6 +251,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
 
         # pass on age
         jds = [pp["body"]["jd"] for pp in pps]
+        info["detection_times"] = jds
         most_recent_detection, first_detection = max(jds), min(jds)
         age = most_recent_detection - first_detection
         if age <= self.max_age and age >= self.min_age:
@@ -262,7 +265,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
 
 
         # check if theres two consecutive detections that have significant decrease in brightness
-        # TODO: filter wise distinction
+        # DONE: filter wise distinction
         if (len(pps) > 1):
             criterium_name = []
             fids_list = []
