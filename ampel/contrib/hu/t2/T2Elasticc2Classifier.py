@@ -22,12 +22,20 @@ from ampel.content.DataPoint import DataPoint
 from ampel.view.T2DocView import T2DocView
 
 from ampel.contrib.hu.t2.T2ElasticcRedshiftSampler import get_elasticc_redshift_samples
+from ampel.contrib.hu.t2.T2RunParsnip import run_parsnip_zsample
 from ampel.contrib.hu.t2.T2TabulatorRiseDecline import T2TabulatorRiseDeclineBase, FitFailed, BaseLightCurveFeatures
 
+# Parsnip models - avoid importing these if running in the light mode?
+import parsnip
+import lcdata
 
-class T2Elasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRiseDeclineBase, BaseLightCurveFeatures):
+
+
+class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRiseDeclineBase, BaseLightCurveFeatures):
     """
-    Carry out operations which yield one (or more) Elasticc Taxonomy classifications.
+    Base class for carrying out operations which yield one (or more) Elasticc Taxonomy classifications.
+    Classifications carried out by classifier method, which is assumed to be
+    implemented in child.
 
     Base feature extraction structure:
     - 1a. Extract alert ID.
@@ -70,9 +78,9 @@ class T2Elasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRiseD
 
     # Setting for report to construct
     broker_name: str = 'AMPEL'
-    broker_version: str = 'v0.5'
-    classifier_name: str = 'ElasticcLive'
-    classifier_version: str = 'v230622'
+    broker_version: str = 'v0.8'
+    classifier_name: str
+    classifier_version: str
 
     ## Paths to classifiers to load.
     paths_xgbbinary: dict[str,str] = {
@@ -83,7 +91,6 @@ class T2Elasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRiseD
     paths_parsnip: dict[str,str] = {
 
     }
-
 
     # Parameters controlling host galaxy information
     # How many redshifts samples to return ? Implemented are 1,3 or 5.
@@ -96,18 +103,34 @@ class T2Elasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRiseD
     # Parameters controlling feature extraction
     max_ndet: int = 200000
 
+    # Parameters controlling any parsnip fit
+    # The parsnip model zeropoint will by default be set to that of
+    # the input lightcurve. This can be adjusted by zp offset.
+    # Offset can e.g. appear if training performed with wrong zeropoint...
+    parsnip_zeropoint_offset: float = 0
+
 
     def read_class_models(self) -> None:
         self.class_xgbbinary = {
             label : joblib.load(path)
                 for label, path in self.paths_xgbbinary.items()
         }
+        self.class_xgbmulti = {
+            label : joblib.load(path)
+                for label, path in self.paths_xgbmulti.items()
+        }
+        self.class_parsnip = {
+            label: {
+                'classifier': parsnip.Classifier.load(paths['classifier']),
+                'model':     parsnip.load_model(paths['model'], threads=1) }
+                            for label, paths in self.paths_parsnip.items()
+        }
 
     def post_init(self) -> None:
         self.init_lightcurve_extractor()
         self.read_class_models()
 
-    def get_binary_class(self, classlabel, features):
+    def get_xgb_class(self, classlabel, features):
         """
         Return the classification for the labeled xgb model
         Classify based on features ordered according to columns
@@ -117,6 +140,22 @@ class T2Elasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRiseD
             np.array( [ features.get(col, np.nan)
                     for col in self.class_xgbbinary[classlabel]['columns'] ] ).reshape(1,-1)
         )
+
+
+    def get_parsnip_class(self, classlabel, features, lctable)->dict | None:
+        """
+        Return the classification for the labeled parsnip model
+        Classify based on features ordered according to columns
+        """
+        pdict = run_parsnip_zsample(lctable,
+            {'label':classlabel, 'z':features['z_samples'], 'z_weights':features['z_weights']},
+            self.class_parsnip[classlabel]['model'],
+            self.class_parsnip[classlabel]['classifier'],
+            self.parsnip_zeropoint_offset )
+        if pdict.get('Failed',None) is not None:
+            return pdict
+        return pdict
+
 
 
     def submit(self, class_reports: list[dict]) -> list[dict]:
@@ -130,7 +169,7 @@ class T2Elasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRiseD
             ]
 
 
-    def classify(self, base_class_dict, features) -> list[dict]:
+    def classify(self, base_class_dict, features, lc_table) -> (list[dict], dict):
         """
         Based on the provided features, extend the base_class dict into
         one or more elasticc2 classification reports.
@@ -139,7 +178,7 @@ class T2Elasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRiseD
         """
 
         testlabel = 'kn_vs_nonrec'
-        gotclass = self.get_binary_class(testlabel, features)[0]
+        gotclass = self.get_xgb_class(testlabel, features)[0]
 
         my_class = {k:v for k,v in base_class_dict.items()}
         my_class['classifications'].extend( [
@@ -147,7 +186,7 @@ class T2Elasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRiseD
             {'classId': 2220, 'probability': float(gotclass[1])},
             ] )
 
-        return [my_class]
+        return ([my_class], {'binary':[float(gotclass[0])]})
 
     def process(self,
         compound: T1Document,
@@ -171,6 +210,8 @@ class T2Elasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRiseD
         class_report: dict[str,UBson] = {
             'brokerName': self.broker_name,
             'brokerVersion': self.broker_version,
+            'classifierName': self.classifier_name,
+            'classifierParams': self.classifier_version,
         }
         # use an alias variable to inform mypy that classifications is always a list
         class_report['classifications'] = classifications = []
@@ -247,7 +288,7 @@ class T2Elasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRiseD
         # Otherwise, prepare and report classification: {'classId':300, probability: 1}
 
         # Run the classifiers, tie together to one or more reports
-        classification_reports = self.classify(class_report, features)
+        (classification_reports, probabilities) = self.classify(class_report, features, flux_table)
 
         # Potentially, immediately submit reports through kafka
         replies = self.submit( classification_reports )
@@ -255,5 +296,106 @@ class T2Elasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRiseD
         # Prepare t2 document
         return {
             "reports_replies": replies,
-            "features": features
+            "features": features,
+            "probabilities": probabilities
         }
+
+
+
+class T2Elasticc2Classifier(BaseElasticc2Classifier):
+    """
+
+    Feature extraction, submission in Base.
+
+    Classification steps implemented here:
+    - 2a. Run galactic vs nongalactic tree.
+    - 2b. Run agn vs [kn+sn+long] IF significant nongalactic prob, otherwise set all of these to zero.
+    - 2c. Run ulens vs [periodic+mdwarf+dwarf] IF significant galactic prob, otherwise set all of these to zero.
+    - 2d. Run periodic star subclassification IF significant galactic prob, otherwise set all of these to zero.
+
+    If there are few detection + short lightcurve:
+    - 3a. Run kn vs [sn+long]
+    - 3b. Run [mdwarf, dwarf-nova] x [periodic+mdwarf/dwarf-nova]
+    [kn,mdwarf and dwarf-nova prob set to zero if the condition is not fulfilled.]
+
+    If there are multiple detections:
+    - 4a. Run parsnip for sn+long
+    (- 4b. Periodic star subclassification could be here if we do not always run it.
+    Note that the limits for sec 3 and 4 might not be the same. There are KN with up to 10 detections (even if very rare) and the parsnip model can work with less data (they use an internal algorithm).
+
+
+    Q: What should the min ndet be for running parsnip? Remember that these are not counted
+    the same way. Need to run and compare...
+
+    """
+
+    # Setting for report to construct
+    classifier_name: str = 'ElasticcMonster'
+    classifier_version: str = 'v230622'
+
+    # Classifier mode?
+    # fast: do not run parsnip (or multixgb if that is timeconsuming)
+    # extragalactic: run parsnip if extragalctic prob>1%
+    classifier_mode: Literal["full", "fast", "extragalactic"] = "extragalactic"
+
+    ## Paths to classifiers to load.
+    paths_xgbbinary: dict[str,str] = {
+        'gal_vs_nongal': '/home/jnordin/Downloads/model_kn_vs_other_non_recurring',
+        'agn_vs_knsnlong': '/home/jnordin/Downloads/model_kn_vs_other_non_recurring',
+        'kn_vs_snlong': '/home/jnordin/Downloads/model_kn_vs_other_non_recurring',
+        'mdwarf_vs_galactic': '/home/jnordin/Downloads/model_kn_vs_other_non_recurring',
+        'dflare_vs_galactic': '/home/jnordin/Downloads/model_kn_vs_other_non_recurring',
+    }
+    paths_xgbmulti: dict[str,str] = {
+    }
+    paths_parsnip: dict[str,dict[str,str]] = {
+        'snlong': {
+'model':'/home/jnordin/github/ampel83elasticc2/ml_workshop/parsnip/trained_models/model-elasticc2_run20_SNLONG.h5',
+'classifier':'/home/jnordin/github/ampel83elasticc2/ml_workshop/parsnip/trained_models_classifiers/elasticc2_run20_SNLONG_pred_classifier.pkl'
+        }
+    }
+
+    def classify(self, base_class_dict, features, flux_table) -> (list[dict], dict):
+        """
+        Base:
+        - galactic vs nongalactic
+
+        TODO: Could improve speed by not running leafs if node
+        below prob threshold.
+        """
+
+
+        pgal = self.get_xgb_class('gal_vs_nongal', features)[0]
+        pagn = self.get_xgb_class('agn_vs_knsnlong', features)[0]
+        pkn = self.get_xgb_class('kn_vs_snlong', features)[0]
+        pmd = self.get_xgb_class('mdwarf_vs_galactic', features)[0]
+        pdf = self.get_xgb_class('dflare_vs_galactic', features)[0]
+
+        if self.classifier_mode in ['full','extragalactic']:
+            if features['ndet']<4:
+                print('NOT ENOUGH NDET; NOT RUNNING PARSNIP')
+                parsnip_class = {'fail':'few det'}
+            elif self.classifier_mode=='extragalactic' and pgal[1]<0.01:
+                print('LOOKS GALACTIC')
+                parsnip_class = {'fail':'galactic'}
+            else:
+                # attempt to run parsnip
+                parsnip_class = self.get_parsnip_class('snlong', features, flux_table)
+                print('parsnip', parsnip_class)
+
+
+        my_class = {k:v for k,v in base_class_dict.items()}
+        # Prob some more elegant way using the tree structure to add these
+        my_class['classifications'].extend( [
+            {'classId': 2232, 'probability': float(pgal[1]*pagn[1]*pkn[0])},
+            {'classId': 2220, 'probability': float(pgal[1]*pagn[1]*pkn[1])},
+            {'classId': 2332, 'probability': float(pgal[1]*pagn[0])},
+            {'classId': 2320, 'probability': float(pgal[0])},
+            ] )
+
+        prob = {'binary':[float(pgal[0]), float(pagn[0]), float(pkn[0]), float(pmd[0]), float(pdf[0]) ],
+                'multiple': [],
+                'parsnip': parsnip_class
+        }
+
+        return ([my_class], prob)

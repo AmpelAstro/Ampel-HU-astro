@@ -32,7 +32,7 @@ task:
 
   unit: AlertConsumer
   config:
-    iter_max: 10000000
+    iter_max: 100
     compiler_opts: LSSTCompilerOptions
 
     supplier:
@@ -80,7 +80,7 @@ task:
 
           
 - title: t2_row3
-  multiplier: 4
+  multiplier: 1
   unit: T2Worker
   config:
     doc_limit: 50000

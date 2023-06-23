@@ -61,6 +61,94 @@ dcast_class = {
     'object_id' : str,
 }
 
+
+
+
+
+def run_parsnip_zsample(sncosmo_table, t2dict, model, classifier, delta_zp=0) -> dict:
+    """
+    Fit a parsnip model for multiple redshifts.
+    t2dict assumed to contain 'z' and 'z_weights' lists
+
+    delta_zp: the parsnip model zp is set to what is found in the lc table
+        with this offset added (for example to reflect different training zp)
+    """
+
+    # Adjust zeropoint - does this matter? and should we have changed it?
+    run_zeropoints = set( sncosmo_table['zp'] )
+    if len(run_zeropoints)>1:
+        self.logger.info('Warning, multiple zeropoints, using avg.')
+        run_zeropoint = np.mean(list(run_zeropoints))
+    else:
+        run_zeropoint = run_zeropoints.pop()
+    model.settings['zeropoint'] = run_zeropoint + delta_zp
+
+
+
+    # Create a list of lightcurves, each at a discrete redshift
+    lcs = []
+    for redshift in t2dict['z']:
+        use_lc = sncosmo_table.copy()
+        use_lc.meta['object_id']  = f'parsnip_z{redshift:4f}'
+        use_lc.meta['redshift'] = redshift
+        lcs.append(use_lc)
+    lc_dataset = lcdata.from_light_curves(lcs)
+    lc_predictions = model.predict_dataset(lc_dataset)
+    lc_classifications = classifier.classify(lc_predictions)
+
+    # Cast result for storage and look at relative probabilities
+    predictions = {}
+    classifcations = {}
+    for i, redshift in enumerate( t2dict['z'] ):
+        foo = dict(lc_predictions[i][lc_predictions.colnames[1:]])
+        predictions[str(redshift)] = {k: dcast_pred[k](v)
+                                    if k in dcast_pred and v is not None
+							        else float(v) for k, v in foo.items()}
+        # Not sure whether the dof could change? Normalizing now
+        if foo['model_dof']>0:
+            predictions[str(redshift)]['chi2pdf'] = chi2.pdf(
+                                    foo['model_chisq'], foo['model_dof'] )
+        else:
+            # Not enough data - earlier check?
+            predictions[str(redshift)]['chi2pdf'] = 0.
+        foo = dict(lc_classifications[i][lc_classifications.colnames[1:]])
+        classifcations[str(redshift)] = {k: dcast_class[k](v)
+	                                  if k in dcast_class and v is not None
+								      else float(v) for k, v in foo.items()}
+
+    # Marginalize over the redshift
+    # p(c|y) = Integral[p(c|z,y) p(z|y) dz]
+    types = lc_classifications.colnames[1:]
+    dtype = lc_classifications[types[0]].dtype
+    probabilities = lc_classifications[types].as_array().view((dtype, len(types)))
+    # Now we could normalize these z prob and normalize types over redshifts
+    z_probabilities = np.array( [lcfit['chi2pdf']
+                for redshift, lcfit in predictions.items()] )
+
+    t2dict["predictions"] = predictions
+    t2dict["classifications"] = classifcations
+
+    if np.sum(z_probabilities)>0:
+        # Take redshift probabilities into account, if available
+        if t2dict['z_weights'] is not None:
+            z_probabilities *= t2dict['z_weights']
+        integrated_probabilities = z_probabilities.dot(probabilities)
+        integrated_probabilities /= np.sum(integrated_probabilities)
+        t2dict["marginal_lc_classifications"] = dict(zip(types, integrated_probabilities))
+        # Find the best redshifts
+        t2dict["z_at_minchi"] =  t2dict['z'][np.argmax(z_probabilities)]
+        # Map these to singular value predictions/lc_classifications
+        # (wastes DB space, but possible to filter based on)
+        t2dict["prediction"] = predictions[str(t2dict["z_at_minchi"])]
+        t2dict["classification"] = classifcations[str(t2dict["z_at_minchi"])]
+    else:
+        # Not enough data for a chi2 estimate or fits with negligable probability
+        t2dict["Failed"] = 'NoFit'
+
+    return t2dict
+
+
+
 class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
     """
     Gathers information and runs the parsnip model and classifier.
@@ -78,8 +166,8 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
 
     # Name (in case standard) or path to parsnip model to load
     parsnip_model: str
-    # Path to classifier to apply to lightcurve fit. If not set, no classification will be done.
-    parsnip_classifier: Optional[str]
+    # Path to classifier to apply to lightcurve fit.
+    parsnip_classifier: str
 
     # Redshift usage options. Current options
     # T2MatchBTS : Use the redshift published by BTS and  synced by that T2.
@@ -298,26 +386,14 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         max_tries=3,
     )
     @timeout_decorator.timeout(5, use_signals=True)
-    def _classify_parsnip(self, predictions):
+    def _run_parsnip(self, sncosmo_table, t2dict, zpdiff):
         """
-        Carry out the parsnip classification.
+        Execute the parsnip classifier with a timeout decorator.
         """
-        if self.classifier is not None:
-            return self.classifier.classify(predictions)
-        else:
-            raise RuntimeError("No classifier configured")
 
-    @backoff.on_exception(
-        backoff.constant,
-        timeout_decorator.timeout_decorator.TimeoutError,
-        max_tries=3,
-    )
-    @timeout_decorator.timeout(5, use_signals=True)
-    def _predict_parsnip(self, dataset):
-        """
-        Carry out the parsnip predictions.
-        """
-        return self.model.predict_dataset(dataset)
+        return run_parsnip_zsample(sncosmo_table, t2dict, self.model, self.classifier, zpdiff)
+
+
 
     # ==================== #
     # AMPEL T2 MANDATORY   #
@@ -377,15 +453,6 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                                     ]
         self.logger.debug('Sncosmo table {}'.format(sncosmo_table))
 
-        # Adjust zeropoint - does this matter? and should we have changed it?
-        run_zeropoints = set( sncosmo_table['zp'] )
-        if len(run_zeropoints)>1:
-            self.logger.info('Warning, multiple zeropoints, using avg.')
-            run_zeropoint = np.mean(list(run_zeropoints))
-        else:
-            run_zeropoint = run_zeropoints.pop()
-        self.model.settings['zeropoint'] = self.default_zeropoint + run_zeropoint - self.training_zeropoint
-
 
         # Potentially correct for dust absorption
         if self.apply_mwcorrection:
@@ -410,75 +477,17 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             if not hasattr(self.model, 'predict_redshift_distribution'):
                 self.logger.warn("Redshift fitting is not supported in that version of parsnip")
                 return t2_output
+            # Note that these probabilities are ignored, hopefully recreated
+            # when we run parsnip for these values
             z, z_probabilities = self.model.predict_redshift_distribution(
                                 sncosmo_table, max_redshift=self.max_fit_z)
         assert z is not None
 
-        # Create a list of lightcurves, each at a discrete redshift
-        lcs = []
-        for redshift in z:
-            use_lc = sncosmo_table.copy()
-            use_lc.meta['object_id']  = f'parsnip_z{redshift:4f}'
-            use_lc.meta['redshift'] = redshift
-            lcs.append(use_lc)
-        lc_dataset = lcdata.from_light_curves(lcs)
-
-        lc_predictions = self._predict_parsnip(lc_dataset)
-        lc_classifications = self._classify_parsnip(lc_predictions)
-
-
-        # Cast result for storage and look at relative probabilities
-        predictions = {}
-        classifcations = {}
-        for i, redshift in enumerate(z):
-            foo = dict(lc_predictions[i][lc_predictions.colnames[1:]])
-            predictions[str(redshift)] = {k: dcast_pred[k](v)
-                                        if k in dcast_pred and v is not None
-								        else float(v) for k, v in foo.items()}
-            # Not sure whether the dof could change? Normalizing now
-            if foo['model_dof']>0:
-                predictions[str(redshift)]['chi2pdf'] = chi2.pdf(
-                                        foo['model_chisq'], foo['model_dof'] )
-            else:
-                # Not enough data - earlier check?
-                predictions[str(redshift)]['chi2pdf'] = 0.
-            foo = dict(lc_classifications[i][lc_classifications.colnames[1:]])
-            classifcations[str(redshift)] = {k: dcast_class[k](v)
-		                                  if k in dcast_class and v is not None
-									      else float(v) for k, v in foo.items()}
-
-        # Marginalize over the redshift
-        # p(c|y) = Integral[p(c|z,y) p(z|y) dz]
-        types = lc_classifications.colnames[1:]
-        dtype = lc_classifications[types[0]].dtype
-        probabilities = lc_classifications[types].as_array().view((dtype, len(types)))
-        # Now we could normalize these z prob and normalize types over redshifts
-        z_probabilities = np.array( [lcfit['chi2pdf']
-                    for redshift, lcfit in predictions.items()] )
-
-        t2_output["predictions"] = predictions
-        t2_output["classifications"] = classifcations
-
-        if np.sum(z_probabilities)>0:
-            # Take redshift probabilities into account, if available
-            if z_weights is not None:
-                z_probabilities *= z_weights
-            integrated_probabilities = z_probabilities.dot(probabilities)
-            integrated_probabilities /= np.sum(integrated_probabilities)
-            t2_output["marginal_lc_classifications"] = dict(zip(types, integrated_probabilities))
-            # Find the best redshifts
-            t2_output["z_at_minchi"] = z[np.argmax(z_probabilities)]
-            # Map these to singular value predictions/lc_classifications
-            # (wastes DB space, but possible to filter based on)
-            t2_output["prediction"] = predictions[str(t2_output["z_at_minchi"])]
-            t2_output["classification"] = classifcations[str(t2_output["z_at_minchi"])]
-        else:
-            # Not enough data for a chi2 estimate
-            t2_output["Failed"] = 'NoDOF'
-            return t2_output
+        t2_output = self._run_parsnip(self, sncosmo_table, t2_output,
+                        self.default_zeropoint - self.training_zeropoint)
 
         # Plot
-        if self.plot_suffix and self.plot_dir:
+        if self.plot_suffix and self.plot_dir and not 'Failed' in t2_output.keys():
 
             # How to construct name?
             tname = compound.get('stock')
