@@ -29,6 +29,14 @@ from ampel.contrib.hu.t2.T2TabulatorRiseDecline import T2TabulatorRiseDeclineBas
 import parsnip
 import lcdata
 
+# METHODDATA
+parsnip_taxonomy = {
+    'SNII':  2224, 'SNIa':  2222, 'SNibc': 2223, 'SNIbc': 2223,
+    'TDE':  2243, 'CART': 2245, 'ILOT': 2244, 'Mdwarf-flare': 2233,
+    'PISN': 2246, 'KN': 2232, 'SLSN-I': 2242, 'SLSN': 2242,
+    'SNIa91bg': 2226, 'SNIax': 2225, 'dwarf-nova': 2234, 'uLens': 2235,
+    }
+
 
 
 class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRiseDeclineBase, BaseLightCurveFeatures):
@@ -86,7 +94,7 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
     paths_xgbbinary: dict[str,str] = {
         'kn_vs_nonrec': '/home/jnordin/Downloads/model_kn_vs_other_non_recurring'
     }
-    paths_xgbmulti: dict[str,str] = {
+    paths_xgbmulti: dict[str,dict] = {
     }
     paths_parsnip: dict[str,str] = {
 
@@ -116,8 +124,8 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
                 for label, path in self.paths_xgbbinary.items()
         }
         self.class_xgbmulti = {
-            label : joblib.load(path)
-                for label, path in self.paths_xgbmulti.items()
+            label : {**joblib.load(pathdir['path']), 'classes': pathdir['classes']}
+                for label, pathdir in self.paths_xgbmulti.items()
         }
         self.class_parsnip = {
             label: {
@@ -140,6 +148,21 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
             np.array( [ features.get(col, np.nan)
                     for col in self.class_xgbbinary[classlabel]['columns'] ] ).reshape(1,-1)
         )
+
+    def get_multixgb_class(self, classlabel, features):
+        """
+        Return the classification for the labeled xgb model
+        Classify based on features ordered according to columns
+        """
+
+        pvals = self.class_xgbmulti[classlabel]['model'].predict_proba(
+            np.array( [ features.get(col, np.nan)
+                    for col in self.class_xgbmulti[classlabel]['columns'] ] ).reshape(1,-1)
+        )
+        return {
+            self.class_xgbmulti[classlabel]['classes'][k]:float(prob)
+                for k, prob in enumerate(list(pvals[0]))
+            }
 
 
     def get_parsnip_class(self, classlabel, features, lctable)->dict | None:
@@ -326,6 +349,7 @@ class T2Elasticc2Classifier(BaseElasticc2Classifier):
 
     Q: What should the min ndet be for running parsnip? Remember that these are not counted
     the same way. Need to run and compare...
+    Q: Two options to choose among: varstar multi + binary nova/mdwarf or all in one multi?
 
     """
 
@@ -340,13 +364,17 @@ class T2Elasticc2Classifier(BaseElasticc2Classifier):
 
     ## Paths to classifiers to load.
     paths_xgbbinary: dict[str,str] = {
-        'gal_vs_nongal': '/home/jnordin/Downloads/model_kn_vs_other_non_recurring',
-        'agn_vs_knsnlong': '/home/jnordin/Downloads/model_kn_vs_other_non_recurring',
-        'kn_vs_snlong': '/home/jnordin/Downloads/model_kn_vs_other_non_recurring',
-        'mdwarf_vs_galactic': '/home/jnordin/Downloads/model_kn_vs_other_non_recurring',
-        'dflare_vs_galactic': '/home/jnordin/Downloads/model_kn_vs_other_non_recurring',
-    }
-    paths_xgbmulti: dict[str,str] = {
+        'gal_vs_nongal': '/home/jnordin/data/elasticc2/syncandshare/xgboost/models_binary/galactic_vs_non_galactic/model_galactic_vs_non_galactic',
+        'agn_vs_knsnlong': '/home/jnordin/Downloads/model_kn_vs_other_non_recurring',   # NOT THERE
+        'kn_vs_snlong': '/home/jnordin/data/elasticc2/syncandshare/xgboost/models_binary/kn_vs_parsnip/model_kn_vs_parsnip',
+        'varstarulens_vs_mdwarfnova': '/home/jnordin/data/elasticc2/syncandshare/xgboost/models_binary/varstar_ulens_vs_mdwarf_nova/model_varstar_ulens_vs_mdwarf_nova',
+        'nova_vs_mdwarf': '/home/jnordin/data/elasticc2/syncandshare/xgboost/models_binary/nova_vs_mdwarf/model_nova_vs_mdwarf',
+        'sn_vs_long': '/home/jnordin/Downloads/model_kn_vs_other_non_recurring',   # NOT THERE
+        }
+    paths_xgbmulti: dict[str,dict] = {
+        'stars_ulens': {'path':'/home/jnordin/data/elasticc2/syncandshare/xgboost/models_multivar/stars_ulens/model_stars_ulens',
+                        'classes':[2322,2324,2325,2323,2235]},
+#        'stars_ulens_mdwarf_nova': '/home/jnordin/data/elasticc2/syncandshare/xgboost/models_multivar/stars_ulens_mdwarf_nova/model_stars_ulens_mdwarf_nova',
     }
     paths_parsnip: dict[str,dict[str,str]] = {
         'snlong': {
@@ -363,39 +391,69 @@ class T2Elasticc2Classifier(BaseElasticc2Classifier):
         TODO: Could improve speed by not running leafs if node
         below prob threshold.
         """
+        my_class = {k:v for k,v in base_class_dict.items()}
 
-
+        # Base binary classifications
         pgal = self.get_xgb_class('gal_vs_nongal', features)[0]
-        pagn = self.get_xgb_class('agn_vs_knsnlong', features)[0]
+        pagn = self.get_xgb_class('agn_vs_knsnlong', features)[0]  # NOT THERE
         pkn = self.get_xgb_class('kn_vs_snlong', features)[0]
-        pmd = self.get_xgb_class('mdwarf_vs_galactic', features)[0]
-        pdf = self.get_xgb_class('dflare_vs_galactic', features)[0]
+        pvar = self.get_xgb_class('varstarulens_vs_mdwarfnova', features)[0]
+        pnova = self.get_xgb_class('nova_vs_mdwarf', features)[0]
+        psn = self.get_xgb_class('sn_vs_long', features)[0]        # NOT THERE
 
+        # Initial set of values
+        my_class['classifications'].extend( [
+            {'classId': 2232, 'probability': float(pgal[1]*pagn[1]*pkn[0])},
+            {'classId': 2332, 'probability': float(pgal[1]*pagn[0])},
+            {'classId': 2233, 'probability': float(pgal[0]*pvar[1]*pnova[1])},
+            {'classId': 2234, 'probability': float(pgal[0]*pvar[1]*pnova[0])},
+            ] )
+
+        # (possibly) run parsnip
         if self.classifier_mode in ['full','extragalactic']:
-            if features['ndet']<4:
-                print('NOT ENOUGH NDET; NOT RUNNING PARSNIP')
-                parsnip_class = {'fail':'few det'}
+            if features['ndet']<0:
+                parsnip_class = {'Failed':'few det'}
             elif self.classifier_mode=='extragalactic' and pgal[1]<0.01:
-                print('LOOKS GALACTIC')
-                parsnip_class = {'fail':'galactic'}
+                parsnip_class = {'Failed':'galactic'}
             else:
                 # attempt to run parsnip
                 parsnip_class = self.get_parsnip_class('snlong', features, flux_table)
-                print('parsnip', parsnip_class)
+        else:
+            parsnip_class = {'Failed': 'notrun'}
 
-
-        my_class = {k:v for k,v in base_class_dict.items()}
-        # Prob some more elegant way using the tree structure to add these
-        my_class['classifications'].extend( [
-            {'classId': 2232, 'probability': float(pgal[1]*pagn[1]*pkn[0])},
-            {'classId': 2220, 'probability': float(pgal[1]*pagn[1]*pkn[1])},
-            {'classId': 2332, 'probability': float(pgal[1]*pagn[0])},
-            {'classId': 2320, 'probability': float(pgal[0])},
+        # Add the parsnip classes
+        if 'Failed' in parsnip_class.keys():
+            my_class['classifications'].extend( [
+                {'classId': 2220, 'probability': float(pgal[1]*pagn[1]*pkn[1]*psn[0])},
+                {'classId': 2240, 'probability': float(pgal[1]*pagn[1]*pkn[1]*psn[1])},
+            ] )
+        else:
+            my_class['classifications'].extend( [
+                {'classId': parsnip_taxonomy[fitclass], 'probability': float(pgal[1]*pagn[1]*pkn[1]*fitprop)}
+                    for fitclass, fitprop in parsnip_class['classification'].items()
             ] )
 
-        prob = {'binary':[float(pgal[0]), float(pagn[0]), float(pkn[0]), float(pmd[0]), float(pdf[0]) ],
-                'multiple': [],
+        # Temporary variable star
+        multivarstar_prob = self.get_multixgb_class('stars_ulens', features)
+        my_class['classifications'].extend( [
+                {'classId': fitclass, 'probability': float(pgal[0]*pvar[0]*fitprop)}
+                    for fitclass, fitprop in multivarstar_prob.items()
+            ]
+        )
+
+        prob = {'binary':[float(pgal[0]), float(pagn[0]), float(pkn[0]), float(pvar[0]), float(pnova[0]), float(psn[0]) ],
+                'multiple': {str(k):v for k,v in multivarstar_prob.items()},
                 'parsnip': parsnip_class
         }
+
+        # Verification
+        testsum = sum( [d['probability'] for d in my_class['classifications']] )
+        if np.abs(testsum-1)>0.01:
+            print('WHAT IS GOING ON')
+            print('TESTSUM', testsum)
+            print(my_class)
+            print(prob)
+            self.logger.info('Sum not adding to one')
+
 
         return ([my_class], prob)
