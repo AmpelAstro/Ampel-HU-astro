@@ -211,7 +211,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
 
         # If the transient has both a rise and a fall we can
         # define a central peak
-        if banddata['bool_rise'] and banddata['bool_fall'] and ( 
+        if banddata['bool_rise'] and banddata['bool_fall'] and (
             len(peakjds := [ banddata['jd_peak_'+band]
                                        for band in set(ftable['band'])
                                   if 'rise_slope_'+band in banddata and
@@ -244,22 +244,22 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
 
     def average_filtervalues(self, features: dict[str, Any], matchlist: list[str] = []) -> dict[str, Any]:
         """
-        Many (most) features calculated per band or color, with available filter/color varying from object 
+        Many (most) features calculated per band or color, with available filter/color varying from object
         to object.
-        
+
         This method will attempt to average over any filter or color-specific fields available and create an averaged entry.
-        
+
         A base matchlist is created based on significant bands. (plus potentially an input matchlist)
-        
+
         """
-        
+
         mymatchlist = ['_{}_'.format(band) for band in self.significant_bands]
         # Ignore the colors for now, would need to rework how these averages are described.
         #mymatchlist.extend(
         #	['{}-{}_'.format(col[0],col[1]) for col in self.color_list]
         #    )
        	mymatchlist.extend(matchlist)
-        
+
         matchedvalues = {}
         # Can this be redone to avoid nested loop?
         for match in mymatchlist:
@@ -271,7 +271,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
                 if not stub in matchedvalues:
                     matchedvalues[stub] = []
                 matchedvalues[stub].append(val)
-                
+
         return {k:np.nanmean(v) for k, v in matchedvalues.items()}
 
 
@@ -293,7 +293,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
         det_table = flux_table[band_mask & sig_mask]
         # Calculate fraction negative detection (we no longer cut only because of this)
         o['ndet'] = len(det_table)
-        
+
         if o['ndet']==0:
             o['success'] = False
             o['cause'] = "No data survive significance criteria."
@@ -303,7 +303,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
             o['nnegdet'] = len( flux_table[band_mask & neg_mask] )
 
             return o
-            
+
         o['frac_pos'] = np.sum(det_table['flux']>0) / o['ndet']
 
         o["jd_det"] = det_table['time'].min()
@@ -316,14 +316,14 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
                     flux_table['time'][band_mask]<o["jd_det"] ]['time'].max()
         else:
             o["t_predetect"] = None
-            
+
         # Magnitude and color calculations below assume detections are positive
         if flux_table[flux_table['time']==o["jd_det"]]['flux']<0 or flux_table[flux_table['time']==o["jd_last"]]['flux']<0:
             # Did we succeed with feature calculation or not?
             o['success'] = True
             return o
 
-        
+
         o["mag_det"] = float( getMag(flux_table[flux_table['time']==o["jd_det"]]) )
         o["band_det_id"] = getBandBits( [flux_table[flux_table['time']==o["jd_det"]]['band'][0]] )
 
@@ -415,13 +415,13 @@ class BaseLightCurveFeatures(AmpelBaseModel):
     """
     Calculate various features of the light curve using the light-curve
     package described in https://ui.adsabs.harvard.edu/abs/2021MNRAS.502.5147M%2F/abstract
-    
+
     Lifted from T2LightCurveFeatures
-    Installed as  python3 -mpip install light-curve 
-    
+    Installed as  python3 -mpip install light-curve
+
     This v2 contains feature selection and choice of flux as unit based on most common features to influence
     a binary tree classifier (compare rank_tabulator_features and previous version of this unit).
-    Also decided to require 4 detection in a band for using.    
+    Also decided to require 4 detection in a band for using.
     """
 
     #: Features to extract from the light curve.
@@ -432,10 +432,10 @@ class BaseLightCurveFeatures(AmpelBaseModel):
         "Periodogram":{"peaks": 1},                                                # 4?
         "Skew": None,                                                              # 3
         "StandardDeviation": None,                                                 # 2
-        "ExcessVariance": None,                                                    # 2        
+        "ExcessVariance": None,                                                    # 2
         "LinearFit": None,                                                         # 3
         "AndersonDarlingNormal":None,                                              # 4
-        "Kurtosis": None,                                                          # 4 
+        "Kurtosis": None,                                                          # 4
         "StetsonK": None,                                                          # 2
     }
 
@@ -443,31 +443,30 @@ class BaseLightCurveFeatures(AmpelBaseModel):
     lightcurve_bands: dict[str, Any] = {"ztfg": "ztfg", "ztfr": "ztfr", "ztfi": "ztfi",
     		"lsstu":"lsstu","lsstg":"lsstg","lsstr":"lsstr","lssti":"lssti","lsstz":"lsstz","lssty":"lssty"}
 
-    def post_init(self) -> None:
-#    def __init__(self, **kwargs):
-#        super().__init__(**kwargs)
+    def init_lightcurve_extractor(self) -> None:
         self.fluxextractor = light_curve.Extractor(
             *(getattr(light_curve, k)(**(v or {})) for k, v in self.lightcurve_features_flux.items())
         )
-        #self.magextractor = light_curve.Extractor(
-        #    *(getattr(light_curve, k)(**(v or {})) for k, v in self.lightcurve_features_mag.items())
-        #)
+
+
+    def post_init(self) -> None:
+        self.init_lightcurve_extractor()
 
 
     def extract_lightcurve_features(self, flux_table: Table) -> UBson:
         result = {}
-        # 
-        for band, fid in self.lightcurve_bands.items():            
+        #
+        for band, fid in self.lightcurve_bands.items():
             if (
                 in_band := flux_table[flux_table['band']==fid]
             ) is None:
                 continue
 
-            # Conversion to mag not used if features determined in flux space                            
+            # Conversion to mag not used if features determined in flux space
             # m, merr, mtime = getMag(in_band, err=True, time=True)
 
-            
-            
+
+
             # We wrap this in a try statement, since there are a few ways these can fail, typically with poor data in one or another aspect
             try:
                 # Flux based, requires at least 4 detections
@@ -482,8 +481,8 @@ class BaseLightCurveFeatures(AmpelBaseModel):
             except ValueError:
                 self.logger.info('lightkurve extract fail')
                 pass
-            
-            
+
+
         return result
 
 
@@ -601,18 +600,18 @@ class T2TabulatorRiseDecline(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRise
 
         # Calculate get_features
         features = self.compute_stats(flux_table)
-        
+
         # Calculate light_curve features
         lcfeat = self.extract_lightcurve_features(flux_table)
         features.update(lcfeat)
-        #features.update( 
-        #    self.extract_lightcurve_features(flux_table) 
+        #features.update(
+        #    self.extract_lightcurve_features(flux_table)
         #    )
-        
+
         # Create averaged values
         avgfeat = self.average_filtervalues(features)
         features.update(avgfeat)
-        
+
 
         #if self.do_testplot:
         if features.get('success') and np.random.uniform()<self.plot_prob:

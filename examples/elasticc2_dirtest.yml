@@ -1,0 +1,88 @@
+# Dev version for developic elasticc2 pipeline
+
+
+name: elasticc2-dev
+parameters:
+- name: classifier_url
+  value: https://box.hu-berlin.de/f/d1cec88c0bec4123b208/?dl=1
+- name: model_url
+  value: https://box.hu-berlin.de/f/78d7594841da4653a743/?dl=1
+- name: xgb_v6_simmod_tree12
+  value: https://box.hu-berlin.de/f/63c3848162a44d67aa24/?dl=1
+- name: xgb_v6_simmod_tree2122
+  value: https://box.hu-berlin.de/f/485c4dbf84c74ad1b2d8/?dl=1
+- name: xgb_v6_simmod_tree121113
+  value: https://box.hu-berlin.de/f/877b110e1e4f44e9b1e7/?dl=1
+- name: alertsample
+  value: https://portal.nersc.gov/cfs/lsst/DESC_TD_PUBLIC/ELASTICC/5000alerts.tar.gz
+
+mongo:
+  prefix: Elasticc2
+  reset: true
+
+channel:
+- name: elasticc
+  access: []
+  policy: []
+  version: 1
+
+task:
+
+- title: ingest
+
+  unit: AlertConsumer
+  config:
+    iter_max: 10000000
+    compiler_opts: LSSTCompilerOptions
+
+    supplier:
+      unit: LSSTAlertSupplier
+      config:
+        deserialize: null
+        loader:
+          config:
+            folder: 5000alertsdir/NITE60562
+            extension: "*avro.gz"
+          unit: ElasticcDirAlertLoader
+
+    shaper: {unit: LSSTDataPointShaper}
+
+    directives:
+    - channel: elasticc
+
+      filter:
+        unit: ReallySimpleLSSTFilter
+        on_stock_match: bypass
+        config:
+          min_ndet: 0
+          min_tspan: 0
+          max_tspan: 10000
+
+      ingest:
+          mux:
+            unit: LSSTMongoMuxer
+            combine:
+            - unit: LSSTT1Combiner
+              state_t2:
+              - config:
+                  tabulator:
+                  - unit: LSSTT2Tabulator
+                    config:
+                      zp: 31.4
+                unit: T2Elasticc2Classifier
+  inputs:
+    artifacts:
+      - name: alertsample
+        path: 5000alertsdir
+        http:
+          url: "{{ job.parameters.alertsample }}"
+
+
+          
+- title: t2_row3
+  multiplier: 4
+  unit: T2Worker
+  config:
+    doc_limit: 50000
+    max_try: 10
+
