@@ -167,10 +167,21 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
         Classify based on features ordered according to columns
         """
 
-        pvals = self.class_xgbmulti[classlabel]['model'].predict_proba(
-            np.array( [ features.get(col, np.nan)
+        if self.class_xgbmulti[classlabel]['model'].objective=="multi:softmax":
+            # Single type classifier
+            modelguess = self.class_xgbmulti[classlabel]['model'].predict(
+                np.array( [ features.get(col, np.nan)
                     for col in self.class_xgbmulti[classlabel]['columns'] ] ).reshape(1,-1)
-        )
+                    )
+            pvals = [np.zeros(len(self.class_xgbmulti[classlabel]['classes']))]
+            pvals[0][modelguess] = 1
+        elif self.class_xgbmulti[classlabel]['model'].objective=="multi:softprob":
+            # Multiple
+            pvals = self.class_xgbmulti[classlabel]['model'].predict_proba(
+                np.array( [ features.get(col, np.nan)
+                        for col in self.class_xgbmulti[classlabel]['columns'] ] ).reshape(1,-1)
+            )
+
         return {
             self.class_xgbmulti[classlabel]['classes'][k]:float(prob)
                 for k, prob in enumerate(list(pvals[0]))
@@ -251,7 +262,7 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
         }
         # use an alias variable to inform mypy that classifications is always a list
         classifications : list[dict] = []
-        class_report['classifications'] = classifications 
+        class_report['classifications'] = classifications
 
         ## 1a+b: extract alert information
 
