@@ -15,6 +15,7 @@ import joblib
 import copy
 
 from ampel.types import UBson
+from ampel.model.UnitModel import UnitModel
 from ampel.struct.UnitResult import UnitResult
 from ampel.abstract.AbsStateT2Unit import AbsStateT2Unit
 from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
@@ -125,6 +126,7 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
     # Offset can e.g. appear if training performed with wrong zeropoint...
     parsnip_zeropoint_offset: float = 0
 
+    result_adapter: None | UnitModel = None
 
     def read_class_models(self) -> None:
         self.class_xgbbinary = {
@@ -231,7 +233,7 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
     def process(self,
         compound: T1Document,
         datapoints: Iterable[DataPoint]
-        ) -> Union[UBson, UnitResult]:
+        ) -> UnitResult:
         """
 
         Extract and combine results.
@@ -335,11 +337,14 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
         replies = self.submit( classification_reports )
 
         # Prepare t2 document
-        return {
-            "reports_replies": replies,
-            "features": features,
-            "probabilities": probabilities
-        }
+        return UnitResult(
+            body={
+                "reports_replies": replies,
+                "features": features,
+                "probabilities": probabilities
+            },
+            adapter=self.result_adapter,
+        )
 
 
 

@@ -36,6 +36,7 @@
 - ampel.contrib.hu.t2.T2ElasticcReport
 - ampel.contrib.hu.t2.T2FastDecliner
 - ampel.contrib.hu.t2.T2Elasticc2Classifier
+- ampel.contrib.hu.t2.KafkaAdapter
 - ampel.contrib.hu.t3.TransientInfoPrinter
 - ampel.contrib.hu.t3.TransientViewDumper
 - ampel.contrib.hu.t3.ChannelSummaryPublisher

@@ -33,10 +33,11 @@ include = [
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.12"
+ampel-interface = {version = "^0.8.10"}
 ampel-plot = {version = "^0.8.3", source = "pypi"}
 ampel-ztf = {version = "^0.8.3", source = "pypi", extras = ["kafka"], optional = true}
 ampel-photometry = {version = "^0.8.3", source = "pypi"}
-ampel-lsst = {git = "https://github.com/AmpelProject/Ampel-LSST.git", optional = true}
+ampel-lsst = {version = "^0.8.5", optional = true}
 sncosmo = {version = "^2.5.0", optional = true}
 iminuit = {version = "^2.8.0", optional = true}
 sfdmap = {version = "^0.1.1", optional = true, source = "pypi"} # conda-forge stale at py3.6
@@ -127,8 +128,9 @@ module = [
   "adjustText.*",
   "extcats.*",
   "voeventparse.*",
+  "joblib.*",
 ]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
-addopts = "--cov=ampel --showlocals -ra"
+#addopts = "--cov=ampel --showlocals -ra"
