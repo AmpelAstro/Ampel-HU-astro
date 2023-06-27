@@ -7,7 +7,7 @@
 # Last Modified Date:  13.12.2022
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
-from typing import Literal, Union
+from typing import Any, Iterable, Literal, TypedDict, Union
 from collections.abc import Sequence
 import numpy as np
 
@@ -38,7 +38,13 @@ parsnip_taxonomy = {
     'SNIa91bg': 2226, 'SNIax': 2225, 'dwarf-nova': 2234, 'uLens': 2235,
     }
 
+class ParsnipModelFiles(TypedDict):
+    model: str
+    classifier: str
 
+class XgbMultiModelFiles(TypedDict):
+    path: str
+    classes: list[int]
 
 class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRiseDeclineBase, BaseLightCurveFeatures):
     """
@@ -95,7 +101,7 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
     paths_xgbbinary: dict[str,str] = {
         'kn_vs_nonrec': '/home/jnordin/Downloads/model_kn_vs_other_non_recurring'
     }
-    paths_xgbmulti: dict[str,dict] = {
+    paths_xgbmulti: dict[str,XgbMultiModelFiles] = {
     }
     xgbmulti_objective: None | str = None
     paths_parsnip: dict[str,ParsnipModelFiles] = {
@@ -108,7 +114,7 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
     # Check for final/spectroscopic redshifts, and use if present
     use_final_z: bool = False
     # Which bands should be used to estimate the galaxy color?
-    use_galcol: list[list[str]] = [['u','i'], ['u','g']]
+    use_galcol: list[tuple[str, str]] = [('u','i'), ('u','g')]
 
     # Parameters controlling feature extraction
     max_ndet: int = 200000
@@ -125,7 +131,7 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
             label : joblib.load(path)
                 for label, path in self.paths_xgbbinary.items()
         }
-        self.class_xgbmulti = {
+        self.class_xgbmulti: dict[str,Any] = {
             label : {**joblib.load(pathdir['path']), 'classes': pathdir['classes']}
                 for label, pathdir in self.paths_xgbmulti.items()
         }
@@ -171,7 +177,7 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
             }
 
 
-    def get_parsnip_class(self, classlabel, features, lctable)->dict | None:
+    def get_parsnip_class(self, classlabel, features, lctable) -> dict[str,Any]:
         """
         Return the classification for the labeled parsnip model
         Classify based on features ordered according to columns
@@ -198,7 +204,7 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
             ]
 
 
-    def classify(self, base_class_dict, features, lc_table) -> (list[dict], dict):
+    def classify(self, base_class_dict, features, lc_table) -> tuple[list[dict], dict]:
         """
         Based on the provided features, extend the base_class dict into
         one or more elasticc2 classification reports.
@@ -219,7 +225,7 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
 
     def process(self,
         compound: T1Document,
-        datapoints: Sequence[DataPoint]
+        datapoints: Iterable[DataPoint]
         ) -> Union[UBson, UnitResult]:
         """
 
@@ -234,6 +240,7 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
         -------
         dict
         """
+        dps = list(datapoints)
 
         # Construct the base reply. We have some magic here to fill
         class_report: dict[str,UBson] = {
@@ -243,8 +250,8 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
             'classifierParams': self.classifier_version,
         }
         # use an alias variable to inform mypy that classifications is always a list
-        class_report['classifications'] = classifications = []
-
+        classifications : list[dict] = []
+        class_report['classifications'] = classifications 
 
         ## 1a+b: extract alert information
 
@@ -257,13 +264,13 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
                 class_report['elasticcPublishTimestamp'] = alert_ts
 
         # Extract information from the diaObject
-        for dp in reversed(datapoints):
+        for dp in reversed(dps):
             if 'diaSourceId' in dp['body'].keys():
                 class_report['diaSourceId'] = dp['body']['diaSourceId']
                 break
         # Get the last diaSource id in datapoints
-        features = {}
-        for dp in reversed(datapoints):
+        features: dict[str,Any] = {}
+        for dp in reversed(dps):
             if 'mwebv' in dp['body'].keys():
                 features.update( get_elasticc_redshift_samples(dp['body'],
                         self.nbr_samples, self.use_galcol, self.use_final_z) )
@@ -360,8 +367,8 @@ def add_elasticc2_zprior(classification_dict: dict, z: float):
             return classification_dict
         zbin = int( (z + 0.09) / 0.1 )
 
-        postprob = 0
-        preprob = 0
+        postprob = 0.
+        preprob = 0.
         for classprob in classification_dict['classifications']:
             if classprob['classId'] in zmap.keys():
                 preprob += classprob['probability']
@@ -392,8 +399,8 @@ def add_bts_rateprior(classification_dict: dict):
                     2242: 14, 2243: 10, 2244: 10, 2245: 10, 2246: 10
                     }
 
-        postprob = 0
-        preprob = 0
+        postprob = 0.
+        preprob = 0.
         for classprob in classification_dict['classifications']:
             if classprob['classId'] in btsmap.keys():
                 preprob += classprob['probability']
@@ -437,8 +444,8 @@ def add_elasticc2_galcolprior(classification_dict: dict, host_ug: float | None, 
         # Correct for mwebv dependence
         host_ug = host_ug-galcol_mwebv_slope*mwebv
 
-        postprob = 0
-        preprob = 0
+        postprob = 0.
+        preprob = 0.
         for classprob in classification_dict['classifications']:
             if classprob['classId'] in galcol_prior.keys():
                 preprob += classprob['probability']
@@ -500,11 +507,7 @@ class T2Elasticc2Classifier(BaseElasticc2Classifier):
     classifier_mode: Literal["full", "fast", "extragalactic"] = "extragalactic"
     ## Paths to classifiers to load.
 
-    paths_xgbbinary: dict[str,str]
-    paths_xgbmulti: dict[str,dict] = {}
-    paths_parsnip: dict[str,dict[str,str]] = {}
-
-    def classify(self, base_class_dict, features, flux_table) -> (list[dict], dict):
+    def classify(self, base_class_dict, features, flux_table) -> tuple[list[dict], dict]:
         """
         Base:
         - galactic vs nongalactic
@@ -534,7 +537,7 @@ class T2Elasticc2Classifier(BaseElasticc2Classifier):
         # (possibly) run parsnip
         if self.classifier_mode in ['full','extragalactic']:
             if features['ndet']<0:
-                parsnip_class = {'Failed':'few det'}
+                parsnip_class: dict[str, Any] = {'Failed':'few det'}
             elif self.classifier_mode=='extragalactic' and pgal[1]<0.01:
                 parsnip_class = {'Failed':'galactic'}
             else:
