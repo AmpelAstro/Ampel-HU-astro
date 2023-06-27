@@ -12,6 +12,7 @@ from collections.abc import Sequence
 import numpy as np
 
 import joblib
+import copy
 
 from ampel.types import UBson
 from ampel.struct.UnitResult import UnitResult
@@ -325,6 +326,131 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
 
 
 
+
+def add_elasticc2_zprior(classification_dict: dict, z: float):
+        """
+        Adjust probabilities based on redshift prior.
+        """
+        # Elasticc redshift priors.
+        # Warning: Based on normalized distributions of training sample, no rate info taken into account.
+        # Bins based on z 0.1 bins starting at -0.09 and extending to 3.4
+        # Probabilities assumed to add up to 1000 for each redshift bin.
+        # Cutting out FAST galactic objects (not included in this run, but compare T2ElasticcReport.)
+        zmap = {
+            2222: {0: 12, 1: 19, 2: 26, 3: 39, 4: 60, 5: 92, 6: 134, 7: 181, 8: 217, 9: 225, 10: 200, 11: 150, 12: 93, 13: 48, 14: 23, 15: 11, 16: 5, 17: 2, 18: 0, 19: 0, 20: 0, 21: 0, 22: 0, 23: 0, 24: 0, 25: 0, 26: 0, 27: 0, 28: 0, 29: 0, 30: 0, 31: 0, 32: 0, 33: 0, 34: 0, 35: 0},
+            2223: {0: 49, 1: 60, 2: 73, 3: 89, 4: 105, 5: 119, 6: 127, 7: 128, 8: 121, 9: 107, 10: 90, 11: 72, 12: 53, 13: 36, 14: 25, 15: 18, 16: 13, 17: 8, 18: 3, 19: 1, 20: 0, 21: 0, 22: 0, 23: 0, 24: 0, 25: 0, 26: 0, 27: 0, 28: 0, 29: 0, 30: 0, 31: 0, 32: 0, 33: 0, 34: 0, 35: 0},
+            2224: {0: 37, 1: 47, 2: 59, 3: 75, 4: 94, 5: 112, 6: 126, 7: 131, 8: 127, 9: 117, 10: 105, 11: 95, 12: 86, 13: 77, 14: 70, 15: 66, 16: 63, 17: 59, 18: 48, 19: 33, 20: 21, 21: 11, 22: 5, 23: 2, 24: 0, 25: 0, 26: 0, 27: 0, 28: 0, 29: 0, 30: 0, 31: 0, 32: 0, 33: 0, 34: 0, 35: 0},
+            2225: {0: 49, 1: 64, 2: 77, 3: 95, 4: 116, 5: 136, 6: 145, 7: 137, 8: 111, 9: 77, 10: 46, 11: 23, 12: 9, 13: 3, 14: 1, 15: 1, 16: 1, 17: 2, 18: 1, 19: 0, 20: 0, 21: 0, 22: 0, 23: 0, 24: 0, 25: 0, 26: 0, 27: 0, 28: 0, 29: 0, 30: 0, 31: 0, 32: 0, 33: 0, 34: 0, 35: 0},
+            2226: {0: 61, 1: 78, 2: 100, 3: 127, 4: 151, 5: 156, 6: 132, 7: 88, 8: 45, 9: 17, 10: 6, 11: 3, 12: 2, 13: 2, 14: 1, 15: 0, 16: 0, 17: 0, 18: 0, 19: 0, 20: 0, 21: 0, 22: 0, 23: 0, 24: 0, 25: 0, 26: 0, 27: 0, 28: 0, 29: 0, 30: 0, 31: 0, 32: 0, 33: 0, 34: 0, 35: 0},
+            2232: {0: 354, 1: 293, 2: 234, 3: 166, 4: 98, 5: 45, 6: 15, 7: 3, 8: 0, 9: 0, 10: 0, 11: 0, 12: 0, 13: 0, 14: 0, 15: 0, 16: 0, 17: 0, 18: 0, 19: 0, 20: 0, 21: 0, 22: 0, 23: 0, 24: 0, 25: 0, 26: 0, 27: 0, 28: 0, 29: 0, 30: 0, 31: 0, 32: 0, 33: 0, 34: 0, 35: 0},
+            2242: {0: 0, 1: 1, 2: 2, 3: 3, 4: 5, 5: 11, 6: 20, 7: 35, 8: 55, 9: 80, 10: 112, 11: 153, 12: 215, 13: 307, 14: 421, 15: 536, 16: 645, 17: 746, 18: 827, 19: 879, 20: 911, 21: 936, 22: 958, 23: 976, 24: 988, 25: 995, 26: 998, 27: 999, 28: 999, 29: 999, 30: 999, 31: 999, 32: 999, 33: 999, 34: 999, 35: 999},
+            2243: {0: 37, 1: 46, 2: 56, 3: 69, 4: 84, 5: 100, 6: 113, 7: 123, 8: 133, 9: 141, 10: 145, 11: 142, 12: 130, 13: 108, 14: 83, 15: 63, 16: 50, 17: 43, 18: 38, 19: 34, 20: 30, 21: 25, 22: 20, 23: 14, 24: 9, 25: 4, 26: 1, 27: 0, 28: 0, 29: 0, 30: 0, 31: 0, 32: 0, 33: 0, 34: 0, 35: 0},
+            2244: {0: 293, 1: 257, 2: 223, 3: 173, 4: 114, 5: 59, 6: 23, 7: 6, 8: 1, 9: 0, 10: 0, 11: 0, 12: 0, 13: 0, 14: 0, 15: 0, 16: 0, 17: 0, 18: 0, 19: 0, 20: 0, 21: 0, 22: 0, 23: 0, 24: 0, 25: 0, 26: 0, 27: 0, 28: 0, 29: 0, 30: 0, 31: 0, 32: 0, 33: 0, 34: 0, 35: 0},
+            2245: {0: 110, 1: 124, 2: 135, 3: 143, 4: 143, 5: 127, 6: 97, 7: 62, 8: 33, 9: 16, 10: 8, 11: 6, 12: 6, 13: 5, 14: 5, 15: 6, 16: 7, 17: 6, 18: 3, 19: 1, 20: 0, 21: 0, 22: 0, 23: 0, 24: 0, 25: 0, 26: 0, 27: 0, 28: 0, 29: 0, 30: 0, 31: 0, 32: 0, 33: 0, 34: 0, 35: 0},
+            2246: {0: 0, 1: 7, 2: 10, 3: 16, 4: 24, 5: 38, 6: 62, 7: 100, 8: 152, 9: 215, 10: 284, 11: 352, 12: 401, 13: 409, 14: 368, 15: 296, 16: 211, 17: 131, 18: 76, 19: 49, 20: 36, 21: 26, 22: 15, 23: 6, 24: 1, 25: 0, 26: 0, 27: 0, 28: 0, 29: 0, 30: 0, 31: 0, 32: 0, 33: 0, 34: 0, 35: 0}
+            }
+
+        # Out of range
+        if  z>3.409 or z<0:
+            return classification_dict
+        zbin = int( (z + 0.09) / 0.1 )
+
+        postprob = 0
+        preprob = 0
+        for classprob in classification_dict['classifications']:
+            if classprob['classId'] in zmap.keys():
+                preprob += classprob['probability']
+                classprob['probability'] *= float(zmap[classprob['classId']][zbin])/1000
+                postprob += classprob['probability']
+        if postprob==0:
+            postprob = 1.0e-15
+        probnorm = preprob / postprob
+        for classprob in classification_dict['classifications']:
+            if classprob['classId'] in zmap.keys():
+                classprob['probability'] *= probnorm
+
+        return classification_dict
+
+
+def add_bts_rateprior(classification_dict: dict):
+        """
+        Adjust probabilities based BTS reported rates.
+
+        """
+        # Parsnip type priors
+        # Based on BTS _observed_ rate distributions, i.e. no knowledge of elasticc
+        # or LSST simulation properties.
+        # Probabilities assumed to add up to 1000
+        btsmap = {
+                    2222: 663, 2223: 58, 2224: 168, 2225: 10, 2226: 10,
+                    2232: 10, 2233: 10, 2234: 10, 2235: 10,
+                    2242: 14, 2243: 10, 2244: 10, 2245: 10, 2246: 10
+                    }
+
+        postprob = 0
+        preprob = 0
+        for classprob in classification_dict['classifications']:
+            if classprob['classId'] in btsmap.keys():
+                preprob += classprob['probability']
+                classprob['probability'] *= float(btsmap[classprob['classId']])/1000
+                postprob += classprob['probability']
+        if postprob==0:
+            postprob = 1.0e-15
+        probnorm = preprob / postprob
+        for classprob in classification_dict['classifications']:
+            if classprob['classId'] in btsmap.keys():
+                classprob['probability'] *= probnorm
+
+        return classification_dict
+
+
+def add_elasticc2_galcolprior(classification_dict: dict, host_ug: float | None, mwebv: float):
+        """
+        Adjust probabilities based on host galaxy color.
+        """
+
+        # Priors based on the host galaxy u-g color (from elasticc_galcol notebook)
+        galcol_prior: dict[int, list[float]] = {
+            2222: [0.6102884945155177, 0.39269590167347995],
+            2223: [0.9490882652856778, 0.5687292278916529],
+            2224: [0.8752024059665746, 0.5297978836976114],
+            2225: [0.6945950080255028, 0.36977359393920906],
+            2226: [1.8926892171924607, 0.4252978932935133],
+            2232: [1.3089799059907905, 0.3303618787483199],
+            2242: [0.37962520970022234, 0.3723189361658543],
+            2243: [0.8753566579007913, 0.7194828408852172],
+            2244: [1.1458356003495815, 0.5093055923613805],
+            2245: [1.1681864134021618, 0.5451610139053239],
+            2246: [0.3426406749881123, 0.4465663913955291],
+            }
+        # Correlation between galaxy color and mwebv
+        galcol_mwebv_slope =  1.1582821
+
+
+        if host_ug is None:
+            return classification_dict
+        # Correct for mwebv dependence
+        host_ug = host_ug-galcol_mwebv_slope*mwebv
+
+        postprob = 0
+        preprob = 0
+        for classprob in classification_dict['classifications']:
+            if classprob['classId'] in galcol_prior.keys():
+                preprob += classprob['probability']
+                classprob['probability'] *= np.exp(
+        -(host_ug-galcol_prior[classprob['classId']][0])**2/(2.*galcol_prior[classprob['classId']][1]**2)
+                )
+                postprob += classprob['probability']
+        if postprob==0:
+            postprob = 1.0e-15
+        probnorm = preprob / postprob
+        for classprob in classification_dict['classifications']:
+            if classprob['classId'] in galcol_prior.keys():
+                classprob['probability'] *= probnorm
+        return classification_dict
+
+
+
 class T2Elasticc2Classifier(BaseElasticc2Classifier):
     """
 
@@ -351,6 +477,12 @@ class T2Elasticc2Classifier(BaseElasticc2Classifier):
     the same way. Need to run and compare...
     Q: Two options to choose among: varstar multi + binary nova/mdwarf or all in one multi?
 
+    # Actually we should have a few different channels
+    - one for KN, since they are so rare we will have a lot of false positive.
+    - others where we simply skip KN, will cause faulse positives.
+    - Possibly always have a non-parsnip version, and then add new parsnip
+    and parsnip prior as possible.
+
     """
 
     # Setting for report to construct
@@ -361,27 +493,11 @@ class T2Elasticc2Classifier(BaseElasticc2Classifier):
     # fast: do not run parsnip (or multixgb if that is timeconsuming)
     # extragalactic: run parsnip if extragalctic prob>1%
     classifier_mode: Literal["full", "fast", "extragalactic"] = "extragalactic"
-
     ## Paths to classifiers to load.
-    paths_xgbbinary: dict[str,str] = {
-        'gal_vs_nongal': '/home/jnordin/data/elasticc2/syncandshare/xgboost/models_binary/galactic_vs_non_galactic/model_galactic_vs_non_galactic',
-        'agn_vs_knsnlong': '/home/jnordin/Downloads/model_kn_vs_other_non_recurring',   # NOT THERE
-        'kn_vs_snlong': '/home/jnordin/data/elasticc2/syncandshare/xgboost/models_binary/kn_vs_parsnip/model_kn_vs_parsnip',
-        'varstarulens_vs_mdwarfnova': '/home/jnordin/data/elasticc2/syncandshare/xgboost/models_binary/varstar_ulens_vs_mdwarf_nova/model_varstar_ulens_vs_mdwarf_nova',
-        'nova_vs_mdwarf': '/home/jnordin/data/elasticc2/syncandshare/xgboost/models_binary/nova_vs_mdwarf/model_nova_vs_mdwarf',
-        'sn_vs_long': '/home/jnordin/Downloads/model_kn_vs_other_non_recurring',   # NOT THERE
-        }
-    paths_xgbmulti: dict[str,dict] = {
-        'stars_ulens': {'path':'/home/jnordin/data/elasticc2/syncandshare/xgboost/models_multivar/stars_ulens/model_stars_ulens',
-                        'classes':[2322,2324,2325,2323,2235]},
-#        'stars_ulens_mdwarf_nova': '/home/jnordin/data/elasticc2/syncandshare/xgboost/models_multivar/stars_ulens_mdwarf_nova/model_stars_ulens_mdwarf_nova',
-    }
-    paths_parsnip: dict[str,dict[str,str]] = {
-        'snlong': {
-'model':'/home/jnordin/github/ampel83elasticc2/ml_workshop/parsnip/trained_models/model-elasticc2_run20_SNLONG.h5',
-'classifier':'/home/jnordin/github/ampel83elasticc2/ml_workshop/parsnip/trained_models_classifiers/elasticc2_run20_SNLONG_pred_classifier.pkl'
-        }
-    }
+
+    paths_xgbbinary: dict[str,str]
+    paths_xgbmulti: dict[str,dict] = {}
+    paths_parsnip: dict[str,dict[str,str]] = {}
 
     def classify(self, base_class_dict, features, flux_table) -> (list[dict], dict):
         """
@@ -408,6 +524,7 @@ class T2Elasticc2Classifier(BaseElasticc2Classifier):
             {'classId': 2233, 'probability': float(pgal[0]*pvar[1]*pnova[1])},
             {'classId': 2234, 'probability': float(pgal[0]*pvar[1]*pnova[0])},
             ] )
+#        print('KN prop', [classprob for classprob in my_class['classifications'] if classprob['classId']==2232])
 
         # (possibly) run parsnip
         if self.classifier_mode in ['full','extragalactic']:
@@ -422,6 +539,8 @@ class T2Elasticc2Classifier(BaseElasticc2Classifier):
             parsnip_class = {'Failed': 'notrun'}
 
         # Add the parsnip classes
+        # TODO: optionally, we could always create the non-parsnip report, and then
+        # add a second one if parsnip succeded.
         if 'Failed' in parsnip_class.keys():
             my_class['classifications'].extend( [
                 {'classId': 2220, 'probability': float(pgal[1]*pagn[1]*pkn[1]*psn[0])},
@@ -432,6 +551,7 @@ class T2Elasticc2Classifier(BaseElasticc2Classifier):
                 {'classId': parsnip_taxonomy[fitclass], 'probability': float(pgal[1]*pagn[1]*pkn[1]*fitprop)}
                     for fitclass, fitprop in parsnip_class['classification'].items()
             ] )
+#        print('parsnipcheck prop', [classprob for classprob in my_class['classifications'] if classprob['classId']==2232])
 
         # Temporary variable star
         multivarstar_prob = self.get_multixgb_class('stars_ulens', features)
@@ -440,6 +560,7 @@ class T2Elasticc2Classifier(BaseElasticc2Classifier):
                     for fitclass, fitprop in multivarstar_prob.items()
             ]
         )
+#        print('multistar', [classprob for classprob in my_class['classifications'] if classprob['classId']==2232])
 
         prob = {'binary':[float(pgal[0]), float(pagn[0]), float(pkn[0]), float(pvar[0]), float(pnova[0]), float(psn[0]) ],
                 'multiple': {str(k):v for k,v in multivarstar_prob.items()},
@@ -455,5 +576,16 @@ class T2Elasticc2Classifier(BaseElasticc2Classifier):
             print(prob)
             self.logger.info('Sum not adding to one')
 
+        # Create a version of the classification including priors. Only do this
+        # Only do this if parsnip ran OK
+        if not 'Failed' in parsnip_class.keys():
+            prior_class = copy.deepcopy(my_class)
+            prior_class['classifierName'] += 'Post'
+            # Z prior not quite logical, and z is used by parsnip/xgb
+            # prior_class = add_elasticc2_zprior(prior_class, features['z'])
+            prior_class = add_bts_rateprior(prior_class)
+            prior_class = add_elasticc2_galcolprior(prior_class,
+                    features.get("hostgal_mag_u-g"), features.get("mwebv") )
+            return ([my_class, prior_class], prob)
 
         return ([my_class], prob)

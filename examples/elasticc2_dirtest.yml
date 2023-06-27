@@ -3,16 +3,24 @@
 
 name: elasticc2-dev
 parameters:
-- name: classifier_url
-  value: https://box.hu-berlin.de/f/d1cec88c0bec4123b208/?dl=1
-- name: model_url
-  value: https://box.hu-berlin.de/f/78d7594841da4653a743/?dl=1
-- name: xgb_v6_simmod_tree12
-  value: https://box.hu-berlin.de/f/63c3848162a44d67aa24/?dl=1
-- name: xgb_v6_simmod_tree2122
-  value: https://box.hu-berlin.de/f/485c4dbf84c74ad1b2d8/?dl=1
-- name: xgb_v6_simmod_tree121113
-  value: https://box.hu-berlin.de/f/877b110e1e4f44e9b1e7/?dl=1
+- name: parsnip_classifier_url
+  value: https://box.hu-berlin.de/f/9b2b669d82c74f328cef/?dl=1
+- name: parsnip_model_url
+  value: https://box.hu-berlin.de/f/ad6093bac5fd43ec80ee/?dl=1
+- name: model_stars_ulens
+  value: https://box.hu-berlin.de/f/5fc0d96512574fbebe43/?dl=1
+- name: model_sn_vs_long
+  value: https://box.hu-berlin.de/f/331223e24ff44ea88747/?dl=1
+- name: model_nova_vs_mdwarf
+  value: https://box.hu-berlin.de/f/e761392803af444e9da4/?dl=1
+- name: model_varstar_ulens_vs_mdwarf_nova
+  value: https://box.hu-berlin.de/f/1a577354f6614f7c92df/?dl=1
+- name: model_kn_vs_parsnip
+  value: https://box.hu-berlin.de/f/160f9cf5c5eb4f218f89/?dl=1
+- name: model_agn_vs_kn_parsnip
+  value: https://box.hu-berlin.de/f/91b01311453f4ed59aca/?dl=1
+- name: model_galactic_vs_non_galactic
+  value: https://box.hu-berlin.de/f/49db4489233240e49ac5/?dl=1
 - name: alertsample
   value: https://portal.nersc.gov/cfs/lsst/DESC_TD_PUBLIC/ELASTICC/5000alerts.tar.gz
 
@@ -65,6 +73,21 @@ task:
             - unit: LSSTT1Combiner
               state_t2:
               - config:
+                  paths_xgbbinary:
+                    gal_vs_nongal: model_galactic_vs_non_galactic
+                    agn_vs_knsnlong: model_agn_vs_kn_parsnip
+                    kn_vs_snlong: model_kn_vs_parsnip
+                    varstarulens_vs_mdwarfnova: model_varstar_ulens_vs_mdwarf_nova
+                    nova_vs_mdwarf: model_nova_vs_mdwarf
+                    sn_vs_long: model_sn_vs_long
+                  paths_xgbmulti:
+                    stars_ulens: 
+                      path: model_stars_ulens
+                      classes: [2322,2324,2325,2323,2235]
+                  paths_parsnip:
+                    snlong: 
+                      model: elasticc2_run20_KNSNLONG.h5
+                      classifier: elasticc2_run20_KNSNLONG_pred_aug10_classifier.pkl
                   tabulator:
                   - unit: LSSTT2Tabulator
                     config:
@@ -76,6 +99,42 @@ task:
         path: 5000alertsdir
         http:
           url: "{{ job.parameters.alertsample }}"
+      - name: model_galactic_vs_non_galactic
+        path: model_galactic_vs_non_galactic
+        http:
+          url: "{{ job.parameters.model_galactic_vs_non_galactic }}"
+      - name: model_agn_vs_kn_parsnip
+        path: model_agn_vs_kn_parsnip
+        http:
+          url: "{{ job.parameters.model_agn_vs_kn_parsnip }}"
+      - name: model_kn_vs_parsnip
+        path: model_kn_vs_parsnip
+        http:
+          url: "{{ job.parameters.model_kn_vs_parsnip }}"
+      - name: model_varstar_ulens_vs_mdwarf_nova
+        path: model_varstar_ulens_vs_mdwarf_nova
+        http:
+          url: "{{ job.parameters.model_varstar_ulens_vs_mdwarf_nova }}"
+      - name: model_nova_vs_mdwarf
+        path: model_nova_vs_mdwarf
+        http:
+          url: "{{ job.parameters.model_nova_vs_mdwarf }}"
+      - name: model_sn_vs_long
+        path: model_sn_vs_long
+        http:
+          url: "{{ job.parameters.model_sn_vs_long }}"
+      - name: model_stars_ulens
+        path: model_stars_ulens
+        http:
+          url: "{{ job.parameters.model_stars_ulens }}"
+      - name: elasticc2_run20_KNSNLONG
+        path: elasticc2_run20_KNSNLONG.h5
+        http:
+          url: "{{ job.parameters.parsnip_model_url }}"
+      - name: elasticc2_run20_KNSNLONG_pred_aug10_classifier
+        path: elasticc2_run20_KNSNLONG_pred_aug10_classifier.pkl
+        http:
+          url: "{{ job.parameters.parsnip_classifier_url }}"
 
 
           
