@@ -84,6 +84,7 @@ task:
                     stars_ulens: 
                       path: model_stars_ulens
                       classes: [2322,2324,2325,2323,2235]
+                  xgbmulti_objective: 'multi:softproba'
                   paths_parsnip:
                     snlong: 
                       model: elasticc2_run20_KNSNLONG.h5
