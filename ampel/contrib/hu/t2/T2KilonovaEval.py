@@ -272,13 +272,18 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             fids_list = [pp_tmp["body"]["fid"] for pp_tmp in pps if pp_tmp["body"]["fid"] not in fids_list]
             fids_list = np.unique(fids_list)
             print("FIDS LIST ATTEMPT: ", fids_list)
+
+            lc_pass_score = 0
+            # loop over bands
             for fid_tmp in fids_list:
                 filter_pps = [pp_tmp for pp_tmp in pps if pp_tmp["body"]["fid"] == fid_tmp]
                 print(len(filter_pps), len(pps))
                 if (len(filter_pps) > 1):
+                    # loop over photopoints in this band
                     for i in range(1, len(filter_pps)):
                         # start at back to see if decrease
                         pp_next = filter_pps[-i]
+                        # compare to all following photopoints in same band
                         for k in range(i, len(filter_pps)):
                             pp_curr = filter_pps[-k - 1]
                             magpsf_curr = pp_curr["body"]["magpsf"]# + pp_curr["body"]["sigmapsf"]
@@ -288,23 +293,24 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                             print("SIGMA DIFFERNCE MAGNITUDE ", magpsf_sigma_diff)
                             info["mag_sigma_fid_" + str(fid_tmp)] = magpsf_sigma_diff
                             if (magpsf_sigma_diff <= -self.min_mag_sigma_diff):
-                                info["pass"] += 5
+                                lc_pass_score += 5
                                 #criterium_name = None
                                 #break
                             elif (magpsf_sigma_diff >= 0):
                                 time_diff = pp_next["body"]["jd"] - pp_curr["body"]["jd"]
                                 print(time_diff)
                                 if (time_diff >= .5):
-                                    info["pass"] -= 5
+                                    lc_pass_score -= 5
                                     criterium_name.append("long_nondecrease_lc")
                                     #break
                                 elif (time_diff >= 0):
-                                    info["pass"] -= 1
+                                    lc_pass_score -= 1
                                     criterium_name.append( "short_nondecrease_lc")
                                     #break
                 #if criterium_name is not None:
                     # if flatness detected, dont check further
                     #break
+            info["pass"] += lc_pass_score / len(pps)
             if criterium_name is not None:
                 info["rejects"].append(criterium_name)
 
