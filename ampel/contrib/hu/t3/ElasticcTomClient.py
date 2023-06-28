@@ -128,7 +128,7 @@ def chunks_from_kafka(broker: str, topic: str, group_id: str, avro_schema: str |
     """
     Yield chunks of messages a topic, forever
     """
-    consumer = AllConsumingConsumer(broker, timeout=timeout, topics=[topic], auto_commit=False, logger=logger, **{"group.id": group_id}, )
+    consumer = AllConsumingConsumer(broker, timeout=timeout, topics=[topic], auto_commit=False, logger=logger, **{"group.id": group_id} | consumer_config, )
     deserializer = AvroDeserializer(avro_schema)
     while True:
         for chunk in get_chunks(map(deserializer, consumer), chunk_size):
