@@ -9,6 +9,8 @@ parameters:
   value: https://box.hu-berlin.de/f/ad6093bac5fd43ec80ee/?dl=1
 - name: model_stars_ulens
   value: https://box.hu-berlin.de/f/5fc0d96512574fbebe43/?dl=1
+- name: model_stars
+  value: https://box.hu-berlin.de/f/e14e1e01077d4fe3b73e/?dl=1
 - name: model_sn_vs_long
   value: https://box.hu-berlin.de/f/331223e24ff44ea88747/?dl=1
 - name: model_nova_vs_mdwarf
@@ -84,6 +86,9 @@ task:
                     stars_ulens: 
                       path: model_stars_ulens
                       classes: [2322,2324,2325,2323,2235]
+                    stars: 
+                      path: model_stars
+                      classes: [2322,2324,2325,2323]
                   paths_parsnip:
                     snlong: 
                       model: elasticc2_run20_KNSNLONG.h5
@@ -127,6 +132,10 @@ task:
         path: model_stars_ulens
         http:
           url: "{{ job.parameters.model_stars_ulens }}"
+      - name: model_stars
+        path: model_stars
+        http:
+          url: "{{ job.parameters.model_stars }}"
       - name: elasticc2_run20_KNSNLONG
         path: elasticc2_run20_KNSNLONG.h5
         http:

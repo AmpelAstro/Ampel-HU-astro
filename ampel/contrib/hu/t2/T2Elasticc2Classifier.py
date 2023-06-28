@@ -220,19 +220,13 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
         Based on the provided features, extend the base_class dict into
         one or more elasticc2 classification reports.
 
-        Meant to be replaced in other classes.
+        Return a tuple with:
+        - a list of classification dictionaries
+        - a general dict to be stored in db.
         """
+        ...
 
-        testlabel = 'kn_vs_nonrec'
-        gotclass = self.get_xgb_class(testlabel, features)[0]
 
-        my_class = {k:v for k,v in base_class_dict.items()}
-        my_class['classifications'].extend( [
-            {'classId': 2232, 'probability': float(gotclass[0])},
-            {'classId': 2220, 'probability': float(gotclass[1])},
-            ] )
-
-        return ([my_class], {'binary':[float(gotclass[0])]})
 
     def process(self,
         compound: T1Document,
@@ -535,21 +529,42 @@ class T2Elasticc2Classifier(BaseElasticc2Classifier):
         pvar = self.get_xgb_class('varstarulens_vs_mdwarfnova', features)[0]
         pnova = self.get_xgb_class('nova_vs_mdwarf', features)[0]
         psn = self.get_xgb_class('sn_vs_long', features)[0]        # NOT THERE
+        # returns [prob_neg, prob_pos]: px[1] provides *pos* pred.
 
-        # Initial set of values
+        # Common set of values for this classifier: AGN, mdwarf, novae
         my_class['classifications'].extend( [
-            {'classId': 2232, 'probability': float(pgal[1]*pagn[1]*pkn[0])},
-            {'classId': 2332, 'probability': float(pgal[1]*pagn[0])},
-            {'classId': 2233, 'probability': float(pgal[0]*pvar[1]*pnova[1])},
-            {'classId': 2234, 'probability': float(pgal[0]*pvar[1]*pnova[0])},
+            {'classId': 2332, 'probability': float(pgal[0]*pagn[1])},
+            {'classId': 2233, 'probability': float(pgal[1]*pvar[0]*pnova[0])},
+            {'classId': 2234, 'probability': float(pgal[1]*pvar[0]*pnova[1])},
             ] )
 #        print('KN prop', [classprob for classprob in my_class['classifications'] if classprob['classId']==2232])
+
+
+        # Variable star section - TODO, update with new model
+        multivarstar_prob = self.get_multixgb_class('stars_ulens', features)
+        my_class['classifications'].extend( [
+                {'classId': fitclass, 'probability': float(pgal[1]*pvar[1]*fitprop)}
+                    for fitclass, fitprop in multivarstar_prob.items()
+            ]
+        )
+        multivarstar_prob2 = self.get_multixgb_class('stars', features)
+
+
+        # Create non-parsnip classification report
+        simple_class =  copy.deepcopy(my_class)
+        simple_class['classifications'].extend( [
+                {'classId': 2232, 'probability': float(pgal[0]*pagn[0]*pkn[1])},
+                {'classId': 2220, 'probability': float(pgal[0]*pagn[0]*pkn[0]*psn[1])},
+                {'classId': 2240, 'probability': float(pgal[0]*pagn[0]*pkn[0]*psn[0])},
+            ] )
+        output_classes = [simple_class]
+
 
         # (possibly) run parsnip
         if self.classifier_mode in ['full','extragalactic']:
             if features['ndet']<0:
                 parsnip_class: dict[str, Any] = {'Failed':'few det'}
-            elif self.classifier_mode=='extragalactic' and pgal[1]<0.01:
+            elif self.classifier_mode=='extragalactic' and pgal[0]<0.01:
                 parsnip_class = {'Failed':'galactic'}
             else:
                 # attempt to run parsnip
@@ -557,47 +572,17 @@ class T2Elasticc2Classifier(BaseElasticc2Classifier):
         else:
             parsnip_class = {'Failed': 'notrun'}
 
-        # Add the parsnip classes
-        # TODO: optionally, we could always create the non-parsnip report, and then
-        # add a second one if parsnip succeded.
-        if 'Failed' in parsnip_class.keys():
-            my_class['classifications'].extend( [
-                {'classId': 2220, 'probability': float(pgal[1]*pagn[1]*pkn[1]*psn[0])},
-                {'classId': 2240, 'probability': float(pgal[1]*pagn[1]*pkn[1]*psn[1])},
-            ] )
-        else:
-            my_class['classifications'].extend( [
-                {'classId': parsnip_taxonomy[fitclass], 'probability': float(pgal[1]*pagn[1]*pkn[1]*fitprop)}
+        # Add the parsnip classes if available. Assuming KN part of parnsip!
+        my_class['classifierName'] += 'Probe'
+        if not 'Failed' in parsnip_class.keys():
+            my_class['classifications'].extend([
+                {'classId': parsnip_taxonomy[fitclass], 'probability': float(pgal[0]*pagn[0]*fitprop)}
                     for fitclass, fitprop in parsnip_class['classification'].items()
             ] )
-#        print('parsnipcheck prop', [classprob for classprob in my_class['classifications'] if classprob['classId']==2232])
+            output_classes.append( my_class )
 
-        # Temporary variable star
-        multivarstar_prob = self.get_multixgb_class('stars_ulens', features)
-        my_class['classifications'].extend( [
-                {'classId': fitclass, 'probability': float(pgal[0]*pvar[0]*fitprop)}
-                    for fitclass, fitprop in multivarstar_prob.items()
-            ]
-        )
-#        print('multistar', [classprob for classprob in my_class['classifications'] if classprob['classId']==2232])
-
-        prob = {'binary':[float(pgal[0]), float(pagn[0]), float(pkn[0]), float(pvar[0]), float(pnova[0]), float(psn[0]) ],
-                'multiple': {str(k):v for k,v in multivarstar_prob.items()},
-                'parsnip': parsnip_class
-        }
-
-        # Verification
-        testsum = sum( [d['probability'] for d in my_class['classifications']] )
-        if np.abs(testsum-1)>0.01:
-            print('WHAT IS GOING ON')
-            print('TESTSUM', testsum)
-            print(my_class)
-            print(prob)
-            self.logger.info('Sum not adding to one')
-
-        # Create a version of the classification including priors. Only do this
-        # Only do this if parsnip ran OK
-        if not 'Failed' in parsnip_class.keys():
+            # Create a version of the classification including priors.
+            # (if parsnip ran OK)
             prior_class = copy.deepcopy(my_class)
             prior_class['classifierName'] += 'Post'
             # Z prior not quite logical, and z is used by parsnip/xgb
@@ -605,6 +590,26 @@ class T2Elasticc2Classifier(BaseElasticc2Classifier):
             prior_class = add_bts_rateprior(prior_class)
             prior_class = add_elasticc2_galcolprior(prior_class,
                     features.get("hostgal_mag_u-g"), features.get("mwebv") )
-            return ([my_class, prior_class], prob)
+            output_classes.append( prior_class )
 
-        return ([my_class], prob)
+
+
+
+        prob = {'binary':[float(pgal[1]), float(pagn[1]), float(pkn[1]), float(pvar[1]), float(pnova[1]), float(psn[1]) ],
+                'multiple': {str(k):v for k,v in multivarstar_prob.items()},
+                'multiple_test': {str(k):v for k,v in multivarstar_prob2.items()},
+                'parsnip': parsnip_class
+        }
+
+        # Verification
+        for report in output_classes:
+            testsum = sum([d['probability'] for d in report['classifications']])
+            if np.abs(testsum-1)>0.01:
+                print('WHAT IS GOING ON')
+                print('TESTSUM', testsum)
+                print(report)
+                print(prob)
+                self.logger.info('Sum not adding to one')
+
+
+        return (output_classes, prob)
