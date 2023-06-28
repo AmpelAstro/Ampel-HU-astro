@@ -104,7 +104,6 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
     }
     paths_xgbmulti: dict[str,XgbMultiModelFiles] = {
     }
-    xgbmulti_objective: None | str = None
     paths_parsnip: dict[str,ParsnipModelFiles] = {
 
     }
@@ -137,10 +136,6 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
             label : {**joblib.load(pathdir['path']), 'classes': pathdir['classes']}
                 for label, pathdir in self.paths_xgbmulti.items()
         }
-        # work around ValueError: multi:softmax doesn't support `predict_proba`.  Switch to `multi:softproba` instead
-        if self.xgbmulti_objective:
-            for classlabel in self.class_xgbmulti:
-                self.class_xgbmulti[classlabel]['model'].objective = self.xgbmulti_objective
         self.class_parsnip = {
             label: {
                 'classifier': parsnip.Classifier.load(paths['classifier']),
