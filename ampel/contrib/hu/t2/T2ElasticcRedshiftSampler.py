@@ -90,7 +90,7 @@ def get_elasticc_hostprob(hostinfo: dict) -> tuple[float, float, float]:
         return (0.0, 1.0, hostinfo['hostgal2_snsep'])
 
 
-def get_elasticc_redshift_samples(dp: dict, nbr_samples: int, use_galcol: list[str],
+def get_elasticc_redshift_samples(dp: dict, nbr_samples: int, use_galcol: list[tuple[str,str]],
                                     use_final_z: bool=False,
                                     default_zs: list[float] = [0.01, 0.2, 0.5, 0.8],
                                     default_weights: list[float] = [0.4, 0.2, 0.2, 0.2])-> RedshiftSamples:

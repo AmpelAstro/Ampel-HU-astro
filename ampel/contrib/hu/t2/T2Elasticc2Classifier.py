@@ -7,6 +7,7 @@
 # Last Modified Date:  13.12.2022
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
+from abc import abstractmethod
 from typing import Any, Iterable, Literal, TypedDict, Union
 from collections.abc import Sequence
 import numpy as np
@@ -200,6 +201,7 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
         return pdict
 
 
+    @abstractmethod
     def classify(self, base_class_dict, features, lc_table) -> tuple[list[dict], dict]:
         """
         Based on the provided features, extend the base_class dict into

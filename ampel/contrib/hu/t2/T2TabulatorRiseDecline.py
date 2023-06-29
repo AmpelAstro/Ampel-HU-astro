@@ -453,7 +453,7 @@ class BaseLightCurveFeatures(AmpelBaseModel):
         self.init_lightcurve_extractor()
 
 
-    def extract_lightcurve_features(self, flux_table: Table) -> UBson:
+    def extract_lightcurve_features(self, flux_table: Table) -> dict[str,float]:
         result = {}
         #
         for band, fid in self.lightcurve_bands.items():

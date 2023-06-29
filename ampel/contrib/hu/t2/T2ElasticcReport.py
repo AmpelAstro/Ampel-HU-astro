@@ -23,6 +23,8 @@ from ampel.content.T1Document import T1Document
 from ampel.content.DataPoint import DataPoint
 from ampel.view.T2DocView import T2DocView
 
+from .KafkaAdapter import KafkaReporter
+
 # Tying classification output classes with ELAsTICC taxonomy classes
 parsnip_taxonomy = {
     # extracted from https://github.com/LSSTDESC/elasticc/blob/bc0de488c5276ce61b650117db19e93634b10815/taxonomy/taxonomy.ipynb
@@ -86,45 +88,6 @@ galcol_prior: dict[str, list[float]] = {'CART': [1.1681864134021618, 0.545161013
  'dwarf-nova':[0,0]}
 # Correlation between galaxy color and mwebv
 galcol_mwebv_slope =  1.1582821
-
-from ampel.lsst.alert.load.HttpSchemaRepository import parse_schema
-from confluent_kafka import Producer
-from fastavro import schemaless_writer
-from typing import Any
-from io import BytesIO
-
-class KafkaReporter(AmpelUnit):
-
-    broker: str
-    topic: str
-    avro_schema: dict | str
-
-    producer_config: dict[str, Any] = {}
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-        self._schema = parse_schema(self.avro_schema)
-        self._producer = Producer(**{
-            "bootstrap.servers": self.broker,
-        } | self.producer_config)
-
-    def serialize(self, record: dict) -> bytes:
-        buf = BytesIO()
-        schemaless_writer(buf, self._schema, record)
-        return buf.getvalue()
-
-    def send(self, record: dict) -> None:
-        self._producer.poll(0)
-        self._producer.produce(self.topic, self.serialize(record))
-    
-    def flush(self):
-        self._producer.flush()
-        self._producer.poll(0)
-
-
-
-
 
 class T2ElasticcReport(AbsTiedStateT2Unit):
     """
