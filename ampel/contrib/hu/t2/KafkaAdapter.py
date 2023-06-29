@@ -55,6 +55,10 @@ class KafkaAdapter(AbsUnitResultAdapter, KafkaReporter):
         if isinstance(message := get_by_path(ur.body, self.message_path), dict):
             self.send(message)
             self.flush()
+        elif isinstance(message, list):
+            for part in message:
+                self.send(part)
+            self.flush()
         elif self.raise_exc:
             raise KeyError(f"{self.message_path} not found in {ur.body!r}")
 
