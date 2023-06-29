@@ -200,18 +200,6 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
         return pdict
 
 
-
-    def submit(self, class_reports: list[dict]) -> list[dict]:
-        """
-        Submit reports if so configured, record response.
-        """
-
-        return [
-                {"class_report": report, "submitted": False}
-                for report in class_reports
-            ]
-
-
     def classify(self, base_class_dict, features, lc_table) -> tuple[list[dict], dict]:
         """
         Based on the provided features, extend the base_class dict into
@@ -328,13 +316,10 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
         # Run the classifiers, tie together to one or more reports
         (classification_reports, probabilities) = self.classify(class_report, features, flux_table)
 
-        # Potentially, immediately submit reports through kafka
-        replies = self.submit( classification_reports )
-
         # Prepare t2 document
         return UnitResult(
             body={
-                "reports_replies": replies,
+                "reports": classification_reports,
                 "features": features,
                 "probabilities": probabilities
             },
