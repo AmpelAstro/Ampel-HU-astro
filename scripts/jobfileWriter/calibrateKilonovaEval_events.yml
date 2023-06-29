@@ -103,15 +103,183 @@ S200128d:
   map_name: S200128d.fits.gz,1
   trigger_jd: 2458876.5977881947
 
+S200316bj:
+  map_url: https://gracedb.ligo.org/api/superevents/S200316bj/files/bayestar.fits.gz,1
+  map_name: S200316bj.fits.gz,1
+  trigger_jd: 2458925.415661574
+
+S200311bg:
+  map_url: https://gracedb.ligo.org/api/superevents/S200311bg/files/bayestar.fits.gz,1
+  map_name: S200311bg.fits.gz,1
+  trigger_jd: 2458919.9996574074
+
+S200308e:
+  trigger_jd: 2458916.5556087964
+  map_url: https://gracedb.ligo.org/api/superevents/S200308e/files/bayestar.fits.gz,1
+  map_name: S200311bg.fits.gz,1
+
+S200303ba:
+  map_url: https://gracedb.ligo.org/api/superevents/S200303ba/files/bayestar.fits.gz,1
+  trigger_jd: 2458912.0114086806
+  map_name: S200303ba.fits.gz,1
+
+S200302c:
+  map_url: https://gracedb.ligo.org/api/superevents/S200302c/files/bayestar.fits.gz,1
+  trigger_jd: 2458910.5825060187
+  map_name: S200302c.fits.gz,1
+
+S200225q:
+  map_url: https://gracedb.ligo.org/api/superevents/S200225q/files/bayestar.fits.gz,1
+  trigger_jd: 2458904.7534537036
+  map_name: S200225q.fits.gz,1
+
+S200224ca:
+  map_url: https://gracedb.ligo.org/api/superevents/S200224ca/files/bayestar.fits.gz,1
+  map_name: S200224ca.fits.gz,1
+  trigger_jd: 2458904.432770602
+
+S200219ac:
+  map_url: https://gracedb.ligo.org/api/superevents/S200219ac/files/bayestar.fits.gz,0
+  map_name: S200219ac.fits.gz,0
+  trigger_jd: 2458898.9061596063
+
+S200213t:
+  map_url: https://gracedb.ligo.org/api/superevents/S200213t/files/bayestar.fits.gz,1
+  trigger_jd: 2458892.6745061344 
+  map_name: S200213t.fits.gz,1
+
+S200208q:  
+  map_url: https://gracedb.ligo.org/api/superevents/S200208q/files/bayestar.fits.gz,1
+  trigger_jd: 2458888.0429975693
+  map_name: S200208q.fits.gz,1
+
+S200129m:
+  map_url:  https://gracedb.ligo.org/api/superevents/S200129m/files/bayestar.fits.gz,1
+  trigger_jd: 2458877.7886046297
+  map_name: S200129m.fits.gz,1
+
+S200128d:
+  map_url:  https://gracedb.ligo.org/api/superevents/S200128d/files/bayestar.fits.gz,1
+  trigger_jd: 2458876.5977881947
+  map_name: S200128d
+
+S200116ah:
+  map_url:  https://gracedb.ligo.org/api/superevents/S200116ah/files/bayestar.fits.gz,1
+  trigger_jd: 2458864.998138542
+  map_name: S200116ah.fits.gz,1
+
+S200114f:
+  map_url:  https://gracedb.ligo.org/api/superevents/S200114f/files/cWB.fits.gz,3
+  map_name: S200114f.fits.gz,3
+  trigger_jd: 2458862.5895282407
+
+S200112r:
+  map_url:  https://gracedb.ligo.org/api/superevents/S200112r/files/bayestar.fits.gz,1
+  trigger_jd: 2458861.166146875
+  map_name: S200112r.fits.gz,1
+
+S200108v:
+  map_url:  https://gracedb.ligo.org/api/superevents/S200108v/files/bayestar.fits.gz,1
+  trigger_jd: 2458856.9175412036
+  map_name: S200108v.fits.gz,1
+
+S200106av:
+  map_url:  https://gracedb.ligo.org/api/superevents/S200106av/files/bayestar.fits.gz,1 
+  trigger_jd: 2458855.2743122685
+  map_name: S200106av.fits.gz,1
+
+S200106au:
+  map_url:  https://gracedb.ligo.org/api/superevents/S200106au/files/bayestar.fits.gz,1
+  trigger_jd: 2458855.2743783565
+  map_name: S200106au.fits.gz,1
+
+S200105ae:
+  map_url:  https://gracedb.ligo.org/api/superevents/S200105ae/files/bayestar.fits.gz,1
+  trigger_jd: 2458854.1840631943
+
+
+  https://gracedb.ligo.org/api/superevents/S191225aq/files/bayestar.fits.gz,1
+  trigger_jd: 2458843.4151952546
+
+  https://gracedb.ligo.org/api/superevents/S191222n/files/bayestar.fits.gz,1
+  trigger_jd: 2458839.650163426
+
+  https://gracedb.ligo.org/api/superevents/S191220af/files/bayestar.fits.gz,1
+  trigger_jd: 2458838.0172649305
+
+
+https://gracedb.ligo.org/api/superevents/S191215w/files/bayestar.fits.gz,1
+  trigger_jd: 2458833.438533912
+
+
+https://gracedb.ligo.org/api/superevents/S191213ai/files/bayestar.fits.gz,1
+ trigger_jd: 2458831.16646875
+
+https://gracedb.ligo.org/api/superevents/S191213g/files/bayestar.fits.gz,1
+  trigger_jd: 2458830.6908002314
+
+
+https://gracedb.ligo.org/api/superevents/S191212q/files/bayestar.fits.gz,1
+  trigger_jd: 2458829.8528430555
+
+
+https://gracedb.ligo.org/api/superevents/S191205ah/files/bayestar.fits.gz,1
+  trigger_jd: 2458823.4116385416
+
+
+https://gracedb.ligo.org/api/superevents/S191204r/files/bayestar.fits.gz,2
+  trigger_jd: 2458822.219480208
 
 
 
+https://gracedb.ligo.org/api/superevents/S191129u/files/bayestar.fits.gz,1
+  trigger_jd: 2458817.0702106482
+
+
+https://gracedb.ligo.org/api/superevents/S191124be/files/bayestar.fits.gz,0
+  trigger_jd: 2458811.9166099536
+
+
+https://gracedb.ligo.org/api/superevents/S191120at/files/bayestar.fits.gz,0
+  trigger_jd: 2458808.339749074
+
+
+https://gracedb.ligo.org/api/superevents/S191120aj/files/bayestar.fits.gz,0
+  trigger_jd: 2458808.1834657406
+
+
+https://gracedb.ligo.org/api/superevents/S191117j/files/bayestar.fits.gz,0
+ trigger_jd: 2458804.756243634
+
+
+https://gracedb.ligo.org/api/superevents/S191110af/files/cWB.fits.gz,1
+  trigger_jd: 2458798.4634395833
+
+
+https://gracedb.ligo.org/api/superevents/S191110x/files/bayestar.fits.gz,0
+  trigger_jd: 2458798.256472338
+
+
+https://gracedb.ligo.org/api/superevents/S191109d/files/bayestar.fits.gz,0
+  trigger_jd: 2458796.547155324
+
+
+https://gracedb.ligo.org/api/superevents/S191105e/files/bayestar.fits.gz,1
+  trigger_jd: 2458793.108320949
 
 
 
+https://gracedb.ligo.org/api/superevents/S190930s/files/bayestar.fits.gz,0
+  trigger_jd: 2458757.0668778936
 
 
 
+https://gracedb.ligo.org/api/superevents/S190928c/files/cWB.fits.gz,1
+  trigger_jd: 2458754.591925463
+
+
+https://gracedb.ligo.org/api/superevents/S190924h/files/bayestar.fits.gz,0
+  trigger_jd: 2458750.5968038193
 
 
 

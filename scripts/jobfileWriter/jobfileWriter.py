@@ -21,6 +21,8 @@ def writeJobfilesFromDict(jobfile_template, jobfile_list_dict, commonName = "job
     """   
 
     jobcall_template = "ampel job --schema <<jobfile>> --config $MASTERARBEIT/ampel/Ampel-HU-astro/ampel_conf.yaml --secrets $MASTERARBEIT/ampel/Ampel-HU-astro/vault.yaml"
+    
+    jobfile_list = []
 
 
     with open(jobfile_template) as template:
@@ -29,6 +31,15 @@ def writeJobfilesFromDict(jobfile_template, jobfile_list_dict, commonName = "job
             newJobfileName = commonName + "_" + map + ".yaml" 
 
             if replaceDict.get("map_name"):
+                map_name = replaceDict.get("map_name")
+                replaceDict["resource_name"] = replaceDict["map_name"] + "_token"
+            else:
+                map_name = map
+                if replaceDict["map_url"].find(",") != -1:
+                    map_name += replaceDict["map_url"][-10:]
+                else:
+                    map_name += replaceDict["map_url"][-8:]
+                replaceDict["map_name"] = map_name
                 replaceDict["resource_name"] = replaceDict["map_name"] + "_token"
 
             print(f"Creating jobfile {newJobfileName} ...")
@@ -43,10 +54,12 @@ def writeJobfilesFromDict(jobfile_template, jobfile_list_dict, commonName = "job
                         newline = newline.replace("<<" + placeHolder + ">>", str(value))
 
                     response.write(newline)   
+            jobfile_list.append(newJobfileName)
             print(jobcall_template.replace("<<jobfile>>",  os.path.abspath(response.name)), "\n") 
             response.close()
             template.seek(0, 0)
     template.close()
+    print(jobfile_list)
     print("Done!")
 
 

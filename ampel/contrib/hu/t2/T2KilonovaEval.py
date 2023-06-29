@@ -65,8 +65,13 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
     max_kpc_dist: float = 999  # Max distance in kpc (using redshift)
     max_redshift_uncertainty: float = 999
 
+    # distance compared to healpix distance
     distance_mode: str = "reward" # possible: "reward", "punish", "pass"
     max_dist_sigma_diff: float = 3
+
+    # probability contour evaluation
+    prob_sigma_rewards = [3, 1, 0]
+
 
     # Lightcurve (using redshift, so that needs to be there)
     min_absmag: float = -20
@@ -271,13 +276,13 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             fids_list = []
             fids_list = [pp_tmp["body"]["fid"] for pp_tmp in pps if pp_tmp["body"]["fid"] not in fids_list]
             fids_list = np.unique(fids_list)
-            print("FIDS LIST ATTEMPT: ", fids_list)
+            #print("FIDS LIST ATTEMPT: ", fids_list)
 
             lc_pass_score = 0
             # loop over bands
             for fid_tmp in fids_list:
                 filter_pps = [pp_tmp for pp_tmp in pps if pp_tmp["body"]["fid"] == fid_tmp]
-                print(len(filter_pps), len(pps))
+                #print(len(filter_pps), len(pps))
                 if (len(filter_pps) > 1):
                     # loop over photopoints in this band
                     for i in range(1, len(filter_pps)):
@@ -290,7 +295,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                             magpsf_next = pp_next["body"]["magpsf"]# - pp_next["body"]["sigmapsf"]
                             magpsf_sigma_diff = (magpsf_curr - magpsf_next) / pp_curr["body"]["sigmapsf"]
 
-                            print("SIGMA DIFFERNCE MAGNITUDE ", magpsf_sigma_diff)
+                            #print("SIGMA DIFFERNCE MAGNITUDE ", magpsf_sigma_diff)
                             info["mag_sigma_fid_" + str(fid_tmp)] = magpsf_sigma_diff
                             if (magpsf_sigma_diff <= -self.min_mag_sigma_diff):
                                 lc_pass_score += 5
@@ -298,7 +303,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                                 #break
                             elif (magpsf_sigma_diff >= 0):
                                 time_diff = pp_next["body"]["jd"] - pp_curr["body"]["jd"]
-                                print(time_diff)
+                                #print(time_diff)
                                 if (time_diff >= .5):
                                     lc_pass_score -= 5
                                     criterium_name.append("long_nondecrease_lc")
@@ -608,6 +613,26 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
 
         return info
 
+
+    def inspect_prob(self, t2res: dict[str, Any], input_info: dict[str, Any]
+    ) -> None | dict[str, Any]:
+        
+        info = {"pass": 0, "rejects": []}
+
+        prob_cont = float(input_info["prob_contour"])
+
+        if prob_cont <= 0.68:
+            reward = self.prob_sigma_rewards[0]
+        elif prob_cont <= 0.95:
+            reward = self.prob_sigma_rewards[1]
+        else:
+            reward = self.prob_sigma_rewards[2]
+
+        #print("PROB CONTOUR REWARD", type(prob_cont), prob_cont, reward)
+
+        info["pass"] += reward
+        return info
+
     # MANDATORY
     def process(
         self, light_curve: LightCurve, t2_views: Sequence[T2DocView]
@@ -679,21 +704,30 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                 cat_kilonovaness = cinfo["pass"]
                 # print("T2CatalogMatch in kilonovaeval")
 
-            # distance compared to healpix dist
-            if t2_view.unit == "T2PropagateStockInfo" and info.get("ampel_z"):
-                #print("INPSECT DISTANCE")
-                dinfo = self.inspect_distance(t2_res, info)
-                if len(dinfo["rejects"]) > 0:
-                    rejects.extend(dinfo["rejects"])
-                info.update(dinfo)
-                kilonovaness += dinfo["pass"]
-                dist_kilonovaness = dinfo["pass"]
+            
 
             # Propagate map info
             if t2_view.unit in ["T2PropagateStockInfo", "T2HealpixProb"]:
                 info.update(
                     t2_res
                 )  # Could there be multiple maps associated? E.g. after updates? TODO
+
+            # distance compared to healpix dist
+            if t2_view.unit == "T2PropagateStockInfo":
+                #print("INSPECT PROPAGATE STOCK INFO")
+                #print(info.keys())
+                if (info.get("ampel_z")):
+                    dinfo = self.inspect_distance(t2_res, info)
+                    if len(dinfo["rejects"]) > 0:
+                        rejects.extend(dinfo["rejects"])
+                    info.update(dinfo)
+                    kilonovaness += dinfo["pass"]
+                    dist_kilonovaness = dinfo["pass"]
+                if (info.get("prob_contour")):
+                    probinfo = self.inspect_prob(t2_res, info)
+                    info.update(probinfo)
+                    kilonovaness += probinfo["pass"]
+
 
         # Check whether the lightcurve passes selection criteria
         # TODO: add kilonovaness criteria
