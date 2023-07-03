@@ -8,8 +8,7 @@
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
 from abc import abstractmethod
-from typing import Any, Iterable, Literal, TypedDict, Union
-from collections.abc import Sequence
+from typing import Any, Iterable, Literal, TypedDict
 import numpy as np
 
 import joblib
@@ -22,7 +21,7 @@ from ampel.abstract.AbsStateT2Unit import AbsStateT2Unit
 from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
 from ampel.content.T1Document import T1Document
 from ampel.content.DataPoint import DataPoint
-from ampel.view.T2DocView import T2DocView
+from ampel.struct.JournalAttributes import JournalAttributes
 
 from ampel.contrib.hu.t2.T2ElasticcRedshiftSampler import get_elasticc_redshift_samples
 from ampel.contrib.hu.t2.T2RunParsnip import run_parsnip_zsample
@@ -326,6 +325,8 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
                 "probabilities": probabilities
             },
             adapter=self.result_adapter,
+            # record the link the stock journal so we can tell which states have been reported
+            journal=JournalAttributes(extra={"link": compound["link"]})
         )
 
 
