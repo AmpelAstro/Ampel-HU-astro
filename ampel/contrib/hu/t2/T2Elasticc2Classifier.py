@@ -250,7 +250,7 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
         for metarecord in compound['meta']:
             if isinstance(alert_id := metarecord.get('alert'), int):
                 class_report['alertId'] = alert_id
-                class_report['brokerIngestTimestamp'] = metarecord['ts']
+                class_report['brokerIngestTimestamp'] = metarecord['ts'] * 1000
             if isinstance(alert_ts := metarecord.get('alert_ts'), int):
                 class_report['elasticcPublishTimestamp'] = alert_ts
 
