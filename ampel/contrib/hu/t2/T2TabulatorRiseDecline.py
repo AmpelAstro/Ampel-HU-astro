@@ -330,7 +330,11 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
         o["mag_last"] = float( getMag(flux_table[flux_table['time']==o["jd_last"]]) )
         o["band_last_id"] = getBandBits( [flux_table[flux_table['time']==o["jd_last"]]['band'][0]] )
 
-        o["mag_min"] = float( getMag(flux_table[flux_table['flux']==max(flux_table['flux']) ]) )
+        # Check fails irregularly
+        try:
+            o["mag_min"] = float( getMag(flux_table[flux_table['flux'] == max(flux_table['flux']) ]))
+        except TypeError:
+            self.logger.info("Mag min extraction failed.")
 
 
         # Check for non-signficant obs between det and last
