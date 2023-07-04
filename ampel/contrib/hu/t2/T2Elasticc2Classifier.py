@@ -461,38 +461,18 @@ class T2Elasticc2Classifier(BaseElasticc2Classifier):
 
     Feature extraction, submission in Base.
 
-    Classification steps implemented here:
-    - 2a. Run galactic vs nongalactic tree.
-    - 2b. Run agn vs [kn+sn+long] IF significant nongalactic prob, otherwise set all of these to zero.
-    - 2c. Run ulens vs [periodic+mdwarf+dwarf] IF significant galactic prob, otherwise set all of these to zero.
-    - 2d. Run periodic star subclassification IF significant galactic prob, otherwise set all of these to zero.
-
-    If there are few detection + short lightcurve:
-    - 3a. Run kn vs [sn+long]
-    - 3b. Run [mdwarf, dwarf-nova] x [periodic+mdwarf/dwarf-nova]
-    [kn,mdwarf and dwarf-nova prob set to zero if the condition is not fulfilled.]
-
-    If there are multiple detections:
-    - 4a. Run parsnip for sn+long
-    (- 4b. Periodic star subclassification could be here if we do not always run it.
-    Note that the limits for sec 3 and 4 might not be the same. There are KN with up to 10 detections (even if very rare) and the parsnip model can work with less data (they use an internal algorithm).
-
-
-    Q: What should the min ndet be for running parsnip? Remember that these are not counted
-    the same way. Need to run and compare...
-    Q: Two options to choose among: varstar multi + binary nova/mdwarf or all in one multi?
-
-    # Actually we should have a few different channels
-    - one for KN, since they are so rare we will have a lot of false positive.
-    - others where we simply skip KN, will cause faulse positives.
-    - Possibly always have a non-parsnip version, and then add new parsnip
-    and parsnip prior as possible.
+    Classification structure:
+    - 1. Run Multi RF
+    - 2. Possibly run parsnip (extragalactic + fit success). If so, get
+         complementing RF.
+    - 3. Add postversions.
+    - 4. Check for ping conditions.
 
     """
 
     # Setting for report to construct
     classifier_name: str = 'ElasticcMonster'
-    classifier_version: str = 'v230622'
+    classifier_version: str = 'v230704'
 
     # Classifier mode?
     # fast: do not run parsnip (or multixgb if that is timeconsuming)
@@ -502,50 +482,31 @@ class T2Elasticc2Classifier(BaseElasticc2Classifier):
 
     def classify(self, base_class_dict, features, flux_table) -> tuple[list[dict], dict]:
         """
-        Base:
-        - galactic vs nongalactic
 
-        TODO: Could improve speed by not running leafs if node
-        below prob threshold.
         """
-        my_class = {k:v for k,v in base_class_dict.items()}
 
-        # Base binary classifications
+        # 1.  MultiXGB classifier
+        multixgb_class =  copy.deepcopy(base_class_dict)
+        multixgb_prob = self.get_multixgb_class('all', features)
+        multixgb_class['classifications'].extend( [
+                {'classId': fitclass, 'probability': float(fitprop)}
+                    for fitclass, fitprop in multixgb_prob.items()
+            ]
+        )
+        multixgb_class['classifierName'] += 'All'
+        output_classes = [multixgb_class]
+
+        ## 2. Parsnip Probe part.
+        probe_class =  copy.deepcopy(base_class_dict)
+        probe_class['classifierName'] += 'Probe'
+        # Run the necessary trees
+        multivarstardwarf_prob = self.get_multixgb_class('stars_ulens_mdwarf_nova', features)
         # returns [prob_neg, prob_pos]: px[1] provides *pos* pred.
         pgal = self.get_xgb_class('gal_vs_nongal', features)[0]
         pagn = self.get_xgb_class('agn_vs_knsnlong', features)[0]
         pkn = self.get_xgb_class('kn_vs_snlong', features)[0]
-        psn = self.get_xgb_class('sn_vs_long', features)[0]
 
-        ## MultiXGB classifier
-        multixgb_class =  copy.deepcopy(my_class)
-        multixgb_prob = self.get_multixgb_class('all', features)
-        multixgb_class['classifications'].extend( [
-                {'classId': fitclass, 'probability': float(fitprop)}
-                    for fitclass, fitprop in multixgb_prob.items()
-            ]
-        )
-        multixgb_class['classifierName'] += 'All'
-        output_classes = [multixgb_class]
-
-        # Common set of values for remaining classifier: AGN
-        my_class['classifications'].extend( [
-            {'classId': 2332, 'probability': float(pgal[0]*pagn[1])},
-            ] )
-
-        ## MultiXGB classifier
-        multixgb_class =  copy.deepcopy(my_class)
-        multixgb_prob = self.get_multixgb_class('all', features)
-        multixgb_class['classifications'].extend( [
-                {'classId': fitclass, 'probability': float(fitprop)}
-                    for fitclass, fitprop in multixgb_prob.items()
-            ]
-        )
-        multixgb_class['classifierName'] += 'All'
-        output_classes = [multixgb_class]
-
-
-        # Try to run run parsnip
+        # Run parsnip
         if self.classifier_mode in ['full','extragalactic']:
             if features['ndet']<0:
                 parsnip_class: dict[str, Any] = {'Failed':'few det'}
@@ -553,69 +514,68 @@ class T2Elasticc2Classifier(BaseElasticc2Classifier):
                 parsnip_class = {'Failed':'galactic'}
             else:
                 # attempt to run parsnip
-                parsnip_class = self.get_parsnip_class('knsnlong', features, flux_table)
+                parsnip_class = self.get_parsnip_class('snlong', features, flux_table)
         else:
             parsnip_class = {'Failed': 'notrun'}
 
-        # A new class for the separate kn method:
-        binarykn_class =  copy.deepcopy(multidwarf_class)
-
-        # Add the parsnip classes if available. Assuming KN part of parnsip!
-        multidwarf_class['classifierName'] += 'Probe'
+        # Start building the taxonomy
+        # AGN
+        probe_class['classifications'].extend( [
+                {'classId': 2332, 'probability': float(pgal[0]*pagn[1])},
+        ] )
+        # KN
+        probe_class['classifications'].extend( [
+                    {'classId': 2232, 'probability': float(pgal[0]*pagn[0]*pkn[1])},
+                ] )
+        # Stars
+        probe_class['classifications'].extend( [
+                {'classId': fitclass, 'probability': float(pgal[1]*fitprop)}
+                    for fitclass, fitprop in multivarstardwarf_prob.items()
+            ]
+        )
+        # SNe + LONG
         if 'Failed' in parsnip_class.keys():
             # Parsnip did not work, so use the binary
-            multidwarf_class['classifications'].extend( [
-                    {'classId': 2232, 'probability': float(pgal[0]*pagn[0]*pkn[1])},
+            psn = self.get_xgb_class('sn_vs_long', features)[0]
+            probe_class['classifications'].extend( [
                     {'classId': 2220, 'probability': float(pgal[0]*pagn[0]*pkn[0]*psn[1])},
                     {'classId': 2240, 'probability': float(pgal[0]*pagn[0]*pkn[0]*psn[0])},
                 ] )
-            output_classes.append( multidwarf_class )
-            # Create a version of the classification including priors.
-            prior_class = copy.deepcopy(multidwarf_class)
-            prior_class['classifierName'] += 'Post'
-            output_classes.append( prior_class )
         else:
-            multidwarf_class['classifications'].extend([
-                {'classId': parsnip_taxonomy[fitclass], 'probability': float(pgal[0]*pagn[0]*fitprop)}
+            probe_class['classifications'].extend([
+                {'classId': parsnip_taxonomy[fitclass], 'probability': float(pgal[0]*pagn[0]*pkn[0]*fitprop)}
                     for fitclass, fitprop in parsnip_class['classification'].items()
             ] )
-            output_classes.append( multidwarf_class )
+        output_classes.append(probe_class)
 
-            # Create a version of the classification including priors.
-            prior_class = copy.deepcopy(multidwarf_class)
-            prior_class['classifierName'] += 'Post'
-            # If parnsip ran ok, add priors
-            # Z prior not quite logical, and z is used by parsnip/xgb
-            # prior_class = add_elasticc2_zprior(prior_class, features['z'])
-            prior_class = add_bts_rateprior(prior_class)
-            prior_class = add_elasticc2_galcolprior(prior_class,
+        ## 3. Create POST versions of the above
+
+        # All
+        all_post_class = copy.deepcopy(multixgb_class)
+        all_post_class['classifierName'] += 'Post'
+        # Z prior not quite logical, and z is used by parsnip/xgb - skip?
+        # all_post_class = add_elasticc2_zprior(all_post_class, features['z'])
+        all_post_class = add_bts_rateprior(all_post_class)
+        all_post_class = add_elasticc2_galcolprior(all_post_class,
                     features.get("hostgal_mag_u-g"), features.get("mwebv") )
-            output_classes.append( prior_class )
+        output_classes.append( all_post_class )
+        # Probe
+        probe_post_class = copy.deepcopy(probe_class)
+        probe_post_class['classifierName'] += 'Post'
+        # Z prior not quite logical, and z is used by parsnip/xgb - skip?
+        # probe_post_class = add_elasticc2_zprior(probe_post_class, features['z'])
+        probe_post_class = add_bts_rateprior(probe_post_class)
+        probe_post_class = add_elasticc2_galcolprior(probe_post_class,
+                    features.get("hostgal_mag_u-g"), features.get("mwebv") )
+        output_classes.append( probe_post_class )
 
-
-        # Create the tmp KN binary version
-        binarykn_class['classifierName'] += 'BinaryKN'
-        nokn_class = self.get_parsnip_class('snlong', features, flux_table)
-        if 'Failed' in parsnip_class.keys() or 'Failed' in nokn_class.keys():
-            binarykn_class['classifications'].extend( [
-                    {'classId': 2232, 'probability': float(pgal[0]*pagn[0]*pkn[1])},
-                    {'classId': 2220, 'probability': float(pgal[0]*pagn[0]*pkn[0]*psn[1])},
-                    {'classId': 2240, 'probability': float(pgal[0]*pagn[0]*pkn[0]*psn[0])},
-                ] )
-        else:
-            binarykn_class['classifications'].extend([
-                {'classId': parsnip_taxonomy[fitclass], 'probability': float(pgal[0]*pagn[0]*pkn[0]*fitprop)}
-                    for fitclass, fitprop in nokn_class['classification'].items()
-            ] )
-            binarykn_class['classifications'].extend( [
-                    {'classId': 2232, 'probability': float(pgal[0]*pagn[0]*pkn[1])},
-                ] )
-        output_classes.append( binarykn_class )
+        # 4. Create PING version.
 
 
 
-        prob = {'binary':[float(pgal[1]), float(pagn[1]), float(pkn[1]), float(psn[1]) ],
+        prob = {'binary':[float(pgal[1]), float(pagn[1]), float(pkn[1]) ],
                 'allxgb': {str(k):v for k,v in multixgb_prob.items()},
+                'gal_recurrants': {str(k):v for k,v in multivarstardwarf_prob.items()},
                 'parsnip': parsnip_class
         }
 

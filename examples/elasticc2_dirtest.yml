@@ -3,24 +3,16 @@
 
 name: elasticc2-dev
 parameters:
-- name: parsnip_classifier_url
-  value: https://box.hu-berlin.de/f/9b2b669d82c74f328cef/?dl=1
-- name: parsnip_model_url
-  value: https://box.hu-berlin.de/f/ad6093bac5fd43ec80ee/?dl=1
 - name: parsnip_noknclassifier_url
   value: https://box.hu-berlin.de/f/ee8aa4c5fd84420bacce/?dl=1
 - name: parsnip_noknmodel_url
   value: https://box.hu-berlin.de/f/9212c49069674dd6bef5/?dl=1
-- name: model_stars_ulens
-  value: https://box.hu-berlin.de/f/181b349a8dc54754b5a8/?dl=1
 - name: model_stars_ulens_mdwarf_nova
   value: https://box.hu-berlin.de/f/35dee5238131438687e8/?dl=1
+- name: model_all
+  value: https://box.hu-berlin.de/f/040982be36c24c5b8881/?dl=1
 - name: model_sn_vs_long
   value: https://box.hu-berlin.de/f/331223e24ff44ea88747/?dl=1
-- name: model_nova_vs_mdwarf
-  value: https://box.hu-berlin.de/f/e761392803af444e9da4/?dl=1
-- name: model_varstar_ulens_vs_mdwarf_nova
-  value: https://box.hu-berlin.de/f/1a577354f6614f7c92df/?dl=1
 - name: model_kn_vs_parsnip
   value: https://box.hu-berlin.de/f/160f9cf5c5eb4f218f89/?dl=1
 - name: model_agn_vs_kn_parsnip
@@ -85,9 +77,6 @@ task:
                     kn_vs_snlong: model_kn_vs_parsnip
                     sn_vs_long: model_sn_vs_long
                   paths_xgbmulti:
-                    stars_ulens:
-                      path: model_stars_ulens
-                      classes: [2322, 2324, 2325, 2323, 2235]
                     stars_ulens_mdwarf_nova:
                       path: model_stars_ulens_mdwarf_nova
                       classes: [2322, 2324, 2325, 2233, 2234, 2323, 2235]
@@ -95,9 +84,6 @@ task:
                       path: model_all
                       classes: [2332, 2245, 2322, 2324, 2325, 2244, 2232, 2233, 2234, 2246, 2323, 2242, 2226, 2222, 2225, 2223, 2224, 2243, 2235]
                   paths_parsnip:
-                    knsnlong:
-                      model: elasticc2_run20_KNSNLONG.h5
-                      classifier: elasticc2_run20_KNSNLONG_pred_aug10_classifier.pkl
                     snlong:
                       model: elasticc2_run20_SNLONG.h5
                       classifier: elasticc2_run20_SNLONG_pred_aug10_classifier.pkl
@@ -124,34 +110,18 @@ task:
         path: model_kn_vs_parsnip
         http:
           url: "{{ job.parameters.model_kn_vs_parsnip }}"
-      - name: model_varstar_ulens_vs_mdwarf_nova
-        path: model_varstar_ulens_vs_mdwarf_nova
-        http:
-          url: "{{ job.parameters.model_varstar_ulens_vs_mdwarf_nova }}"
-      - name: model_nova_vs_mdwarf
-        path: model_nova_vs_mdwarf
-        http:
-          url: "{{ job.parameters.model_nova_vs_mdwarf }}"
       - name: model_sn_vs_long
         path: model_sn_vs_long
         http:
           url: "{{ job.parameters.model_sn_vs_long }}"
-      - name: model_stars_ulens
-        path: model_stars_ulens
-        http:
-          url: "{{ job.parameters.model_stars_ulens }}"
       - name: model_stars_ulens_mdwarf_nova
         path: model_stars_ulens_mdwarf_nova
         http:
           url: "{{ job.parameters.model_stars_ulens_mdwarf_nova }}"
-      - name: elasticc2_run20_KNSNLONG
-        path: elasticc2_run20_KNSNLONG.h5
+      - name: model_all
+        path: model_all
         http:
-          url: "{{ job.parameters.parsnip_model_url }}"
-      - name: elasticc2_run20_KNSNLONG_pred_aug10_classifier
-        path: elasticc2_run20_KNSNLONG_pred_aug10_classifier.pkl
-        http:
-          url: "{{ job.parameters.parsnip_classifier_url }}"
+          url: "{{ job.parameters.model_all }}"
       - name: elasticc2_run20_SNLONG
         path: elasticc2_run20_SNLONG.h5
         http:
@@ -164,7 +134,7 @@ task:
 
 
 - title: t2_row3
-  multiplier: 1
+  multiplier: 16
   unit: T2Worker
   config:
     doc_limit: 50000
