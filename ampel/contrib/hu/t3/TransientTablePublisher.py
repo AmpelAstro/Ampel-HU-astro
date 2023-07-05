@@ -242,10 +242,11 @@ class TransientTablePublisher(AbsPhotoT3Unit):
                 print(skymap_directory)
                 os.makedirs(skymap_directory, exist_ok=True)
                 for file in files_local_path:
-                    tmp_file_path = os.path.join(self.local_path, file)
-                    if not (os.path.isfile(tmp_file_path)):
-                        continue
-                    os.replace(tmp_file_path, os.path.join(skymap_directory, file))
+                    if file.find(".fits.gz") == -1:
+                        tmp_file_path = os.path.join(self.local_path, file)
+                        if not (os.path.isfile(tmp_file_path)):
+                            continue
+                        os.replace(tmp_file_path, os.path.join(skymap_directory, file))
 
         return None
 

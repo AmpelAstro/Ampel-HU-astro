@@ -67,6 +67,10 @@ class AmpelHealpix:
         hpx, headers = hp.read_map(
             os.path.join(self.save_dir, self.map_name), h=True, nest=True
         )
+        #print("HEADERS")
+        #print(headers)
+        #print(type(headers))
+        #print("END HEADERS")
 
         trigger_time = [
             datetime.fromisoformat(header[1])
@@ -82,6 +86,10 @@ class AmpelHealpix:
             self.nside = nside
            
         self.dist = [header[1] for header in headers if header[0] == "DISTMEAN"][0]
+        #for header in headers:
+            #print(header[1], header[0])
+        
+        #print(self.dist)
         self.dist_unc = [header[1] for header in headers if header[0] == "DISTSTD"][0]
 
 
@@ -161,7 +169,8 @@ def deres(nside, ipix, min_nside=1):
 
 def main():
     ah = AmpelHealpix(
-        map_name="S191222n.fits.gz",
+        #map_name="S191222n.fits.gz",
+        map_name="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/new_BBH_mergers_O3a_IAS_pipeline/skymapGW190704_104834.fits.gz",
         map_url="https://gracedb.ligo.org/api/superevents/S191222n/files/LALInference.fits.gz",
     )
     hashit = ah.process_map()

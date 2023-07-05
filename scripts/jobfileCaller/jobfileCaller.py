@@ -13,10 +13,11 @@ import astropy.time as atime
 
 
 # directory where ampel job should be run (NEEDS .tmp FOLDER)
-execute_directory="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/ligo-healpix/test2"
+execute_directory="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/weizmann"
 
 # directory where jobfiles are found
 jobfile_save_dir="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/examples/calibrateKilonovaEval_jobfiles/"
+jobfile_save_dir="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/examples/weizmann_jobfiles/"
 
 #jobfiles_to_execute_file = os.listdir(jobfile_save_dir)
 # list of names of jobfiles to run
@@ -34,7 +35,7 @@ def execute_jobfile(job_call, execute_directory):
     command = job_call
     command_list = shlex.split(command)
 
-    #print(command_list)
+    print(command_list)
 
     stream_not_found_err = "Stream not found"
 
