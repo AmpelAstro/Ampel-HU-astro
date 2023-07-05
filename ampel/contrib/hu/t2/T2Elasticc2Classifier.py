@@ -474,11 +474,17 @@ class T2Elasticc2Classifier(BaseElasticc2Classifier):
     classifier_name: str = 'ElasticcMonster'
     classifier_version: str = 'v230704'
 
-    # Classifier mode?
+    # May reports to be generated
+    reports: int = 99 #
+
     # fast: do not run parsnip (or multixgb if that is timeconsuming)
     # extragalactic: run parsnip if extragalctic prob>1%
-    classifier_mode: Literal["full", "fast", "extragalactic"] = "extragalactic"
-    ## Paths to classifiers to load.
+    parsnip_mode: Literal["full", "fast", "extragalactic"] = "extragalactic"
+
+    # Ping limit (SNIa)
+    pinglim: float = 0.5
+    pingtrange: list[float] = [15., 60.]
+    pingmaxmag: float = 22.
 
     def classify(self, base_class_dict, features, flux_table) -> tuple[list[dict], dict]:
         """
@@ -495,9 +501,25 @@ class T2Elasticc2Classifier(BaseElasticc2Classifier):
         )
         multixgb_class['classifierName'] += 'All'
         output_classes = [multixgb_class]
+        prob = {'allxgb': {str(k):v for k,v in multixgb_prob.items()}  }
+        if self.reports<2:
+            return (output_classes, prob)
+
+        # Create post version of all
+        all_post_class = copy.deepcopy(multixgb_class)
+        all_post_class['classifierName'] += 'Post'
+        # Z prior not quite logical, and z is used by parsnip/xgb - skip?
+        # all_post_class = add_elasticc2_zprior(all_post_class, features['z'])
+        all_post_class = add_bts_rateprior(all_post_class)
+        all_post_class = add_elasticc2_galcolprior(all_post_class,
+                    features.get("hostgal_mag_u-g"), features.get("mwebv") )
+        output_classes.append( all_post_class )
+        if self.reports<3:
+            return (output_classes, prob)
+
 
         ## 2. Parsnip Probe part.
-        probe_class =  copy.deepcopy(base_class_dict)
+        probe_class = copy.deepcopy(base_class_dict)
         probe_class['classifierName'] += 'Probe'
         # Run the necessary trees
         multivarstardwarf_prob = self.get_multixgb_class('stars_ulens_mdwarf_nova', features)
@@ -507,10 +529,10 @@ class T2Elasticc2Classifier(BaseElasticc2Classifier):
         pkn = self.get_xgb_class('kn_vs_snlong', features)[0]
 
         # Run parsnip
-        if self.classifier_mode in ['full','extragalactic']:
+        if self.parsnip_mode in ['full','extragalactic']:
             if features['ndet']<0:
                 parsnip_class: dict[str, Any] = {'Failed':'few det'}
-            elif self.classifier_mode=='extragalactic' and pgal[0]<0.01:
+            elif self.parsnip_mode=='extragalactic' and pgal[0]<0.01:
                 parsnip_class = {'Failed':'galactic'}
             else:
                 # attempt to run parsnip
@@ -547,19 +569,13 @@ class T2Elasticc2Classifier(BaseElasticc2Classifier):
                     for fitclass, fitprop in parsnip_class['classification'].items()
             ] )
         output_classes.append(probe_class)
+        prob.update( {'binary':[float(pgal[1]), float(pagn[1]), float(pkn[1]) ],
+                'gal_recurrants': {str(k):v for k,v in multivarstardwarf_prob.items()},
+                'parsnip': parsnip_class } )
+        if self.reports<4:
+            return (output_classes, prob)
 
-        ## 3. Create POST versions of the above
-
-        # All
-        all_post_class = copy.deepcopy(multixgb_class)
-        all_post_class['classifierName'] += 'Post'
-        # Z prior not quite logical, and z is used by parsnip/xgb - skip?
-        # all_post_class = add_elasticc2_zprior(all_post_class, features['z'])
-        all_post_class = add_bts_rateprior(all_post_class)
-        all_post_class = add_elasticc2_galcolprior(all_post_class,
-                    features.get("hostgal_mag_u-g"), features.get("mwebv") )
-        output_classes.append( all_post_class )
-        # Probe
+        # Create post version
         probe_post_class = copy.deepcopy(probe_class)
         probe_post_class['classifierName'] += 'Post'
         # Z prior not quite logical, and z is used by parsnip/xgb - skip?
@@ -568,26 +584,31 @@ class T2Elasticc2Classifier(BaseElasticc2Classifier):
         probe_post_class = add_elasticc2_galcolprior(probe_post_class,
                     features.get("hostgal_mag_u-g"), features.get("mwebv") )
         output_classes.append( probe_post_class )
+        if self.reports<5:
+            return (output_classes, prob)
 
         # 4. Create PING version.
-
-
-
-        prob = {'binary':[float(pgal[1]), float(pagn[1]), float(pkn[1]) ],
-                'allxgb': {str(k):v for k,v in multixgb_prob.items()},
-                'gal_recurrants': {str(k):v for k,v in multivarstardwarf_prob.items()},
-                'parsnip': parsnip_class
-        }
+        snprob = [ classp['probability'] for classp in multixgb_class['classifications'] if classp['classId']==2222 ]
+        snprob.extend( [ classp['probability'] for classp in probe_class['classifications'] if classp['classId']==2222 ] )
+        # One should be defined
+        if max(snprob)>self.pinglim:
+            # Check other features
+            if (self.pingtrange[0] <= features.get('t_lc',0) <= self.pingtrange[1]
+                and self.pingmaxmag>features.get('mag_last',99)):
+                ping_class = copy.deepcopy(base_class_dict)
+                ping_class['classifierName'] += 'Ping'
+                ping_class['classifications'].extend( [
+                        {'classId': 2222, 'probability': 1.0},
+                        ])
+                output_classes.append(ping_class)
+        if self.reports<6:
+            return (output_classes, prob)
 
         # Verification
         for report in output_classes:
             testsum = sum([d['probability'] for d in report['classifications']])
             if np.abs(testsum-1)>0.01:
-                print('WHAT IS GOING ON')
-                print('TESTSUM', testsum)
-                print(report)
-                print(prob)
-                self.logger.info('Sum not adding to one')
+                self.logger.info('prob ne 1',extra=report)
 
 
         return (output_classes, prob)
