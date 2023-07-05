@@ -3,9 +3,9 @@
 
 name: elasticc2-dev
 parameters:
-- name: parsnip_noknclassifier_url
+- name: parsnip_noknclassifier
   value: https://box.hu-berlin.de/f/ee8aa4c5fd84420bacce/?dl=1
-- name: parsnip_noknmodel_url
+- name: parsnip_noknmodel
   value: https://box.hu-berlin.de/f/9212c49069674dd6bef5/?dl=1
 - name: model_stars_ulens_mdwarf_nova
   value: https://box.hu-berlin.de/f/35dee5238131438687e8/?dl=1
@@ -122,14 +122,14 @@ task:
         path: model_all
         http:
           url: "{{ job.parameters.model_all }}"
-      - name: elasticc2_run20_SNLONG
+      - name: parsnip_noknmodel
         path: elasticc2_run20_SNLONG.h5
         http:
-          url: "{{ job.parameters.parsnip_noknmodel_url }}"
-      - name: elasticc2_run20_SNLONG_pred_aug10_classifier
+          url: "{{ job.parameters.parsnip_noknmodel }}"
+      - name: parsnip_noknclassifier
         path: elasticc2_run20_SNLONG_pred_aug10_classifier.pkl
         http:
-          url: "{{ job.parameters.parsnip_noknclassifier_url }}"
+          url: "{{ job.parameters.parsnip_noknclassifier }}"
 
 
 
