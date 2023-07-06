@@ -125,6 +125,9 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
     # Offset can e.g. appear if training performed with wrong zeropoint...
     parsnip_zeropoint_offset: float = 0
 
+    # Include features and ML results in t2_record
+    return_features: bool = False
+
     result_adapter: None | UnitModel = None
 
     def read_class_models(self) -> None:
@@ -317,13 +320,20 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
         # Run the classifiers, tie together to one or more reports
         (classification_reports, probabilities) = self.classify(class_report, features, flux_table)
 
-        # Prepare t2 document
-        return UnitResult(
-            body={
+        if self.return_features:
+            t2body = {
                 "reports": classification_reports,
                 "features": features,
                 "probabilities": probabilities
-            },
+            }
+        else:
+            t2body = {
+                "reports": classification_reports,
+            }
+
+        # Prepare t2 document
+        return UnitResult(
+            body=t2body,
             adapter=self.result_adapter,
             # record the link the stock journal so we can tell which states have been reported
             journal=JournalAttributes(extra={"link": compound["link"]})
