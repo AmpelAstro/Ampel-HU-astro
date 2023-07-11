@@ -50,6 +50,8 @@ class KafkaAdapter(AbsUnitResultAdapter, KafkaReporter):
     # NB: use list[int | str] to prevent coercion to str
     message_path: int | str | list[int | str]
     raise_exc: bool = False
+    #: Clear the body before returning
+    drop_body: bool = False
 
     def handle(self, ur: UnitResult) -> UnitResult:
         if isinstance(message := get_by_path(ur.body, self.message_path), dict):
@@ -61,5 +63,7 @@ class KafkaAdapter(AbsUnitResultAdapter, KafkaReporter):
             self.flush()
         elif self.raise_exc:
             raise KeyError(f"{self.message_path} not found in {ur.body!r}")
+        if self.drop_body:
+            ur.body = None
 
         return ur
