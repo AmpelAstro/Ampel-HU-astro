@@ -20,6 +20,7 @@ from math import isfinite
 
 from ampel.lsst.alert.load.HttpSchemaRepository import parse_schema
 from ampel.ztf.t0.load.AllConsumingConsumer import AllConsumingConsumer
+from confluent_kafka import TIMESTAMP_NOT_AVAILABLE
 import fastavro
 from ampel.util.collections import get_chunks
 
@@ -117,19 +118,34 @@ class ElasticcTomClient:
 logger = logging.getLogger()
 
 class AvroDeserializer:
-    def __init__(self, schema: str | dict):
+    def __init__(self, schema: str | dict, timestamp_field: str | None = None):
         self._schema = parse_schema(schema)
+        self._timestamp_field = timestamp_field
     def __call__(self, message) -> dict:
-        return fastavro.schemaless_reader(
+        payload = fastavro.schemaless_reader(
             BytesIO(message.value()), self._schema
         )
+        if self._timestamp_field is not None:
+            timestamp_kind, timestamp = message.timestamp()
+            if timestamp_kind != TIMESTAMP_NOT_AVAILABLE:
+                payload[self._timestamp_field] = timestamp
+        return payload
 
-def chunks_from_kafka(broker: str, topic: str, group_id: str, avro_schema: str | dict, timeout: float=30, chunk_size: int=1000, **consumer_config) -> Generator[list[dict], None, None]:
+def chunks_from_kafka(
+    broker: str,
+    topic: str,
+    group_id: str,
+    avro_schema: str | dict,
+    timestamp_field: str | None=None,
+    timeout: float=30,
+    chunk_size: int=1000,
+    **consumer_config,
+) -> Generator[list[dict], None, None]:
     """
     Yield chunks of messages a topic, forever
     """
     consumer = AllConsumingConsumer(broker, timeout=timeout, topics=[topic], auto_commit=False, logger=logger, **{"group.id": group_id} | consumer_config, )
-    deserializer = AvroDeserializer(avro_schema)
+    deserializer = AvroDeserializer(avro_schema, timestamp_field)
     while True:
         for chunk in get_chunks(map(deserializer, consumer), chunk_size):
             yield chunk
@@ -150,6 +166,7 @@ if __name__ == "__main__":
     parser.add_argument("-u", "--user")
     parser.add_argument("-p", "--password")
     parser.add_argument("--endpoint", default="/elasticc2/brokermessage/")
+    parser.add_argument("--timestamp", default=None, type=str)
     parser.add_argument("--timeout", type=float, default=30)
     parser.add_argument("--chunk-size", type=int, default=1000)
 
@@ -166,7 +183,15 @@ if __name__ == "__main__":
     # disable logical type conversion, in particular int -> datetime for timestamp-millis
     fastavro.read.LOGICAL_READERS.clear()
     try:
-        for chunk in chunks_from_kafka(broker=args.bootstrap, topic=args.topic, group_id=args.group, avro_schema=args.schema, timeout=args.timeout, chunk_size=args.chunk_size):
+        for chunk in chunks_from_kafka(
+            broker=args.bootstrap,
+            topic=args.topic,
+            group_id=args.group,
+            avro_schema=args.schema,
+            timestamp_field=args.timestamp,
+            timeout=args.timeout,
+            chunk_size=args.chunk_size
+        ):
             for report in chunk:
                 for classification in report["classifications"]:
                     if not isfinite(classification["probability"]):
