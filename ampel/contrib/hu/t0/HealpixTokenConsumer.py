@@ -286,6 +286,7 @@ class HealpixTokenConsumer(AlertConsumer):
                             "map_hash": self.map_hash,
                             "map_dist": healpix_map.dist,
                             "map_dist_unc": healpix_map.dist_unc,
+                            #"map_area": healpix_map.get_maparea()
                         },
                     }
 

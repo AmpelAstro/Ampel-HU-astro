@@ -120,6 +120,27 @@ class AmpelHealpix:
         mask[self.credible_levels <= pvalue_limit] = 1
 
         return mask.nonzero()[0].tolist()
+    
+    def get_maparea(self, pvalue_limit):
+        """
+        Return sky area for probability threshold in square degrees.
+        """
+        
+        pixels = self.get_pixelmask(pvalue_limit)
+        # Combine pixels when possible
+        deresdict = deres(self.nside, pixels)
+        healpix_regions = [
+            {"nside": nside, "pixels": members} for nside, members in deresdict.items()
+        ]
+        # calculate relevant map area
+        hp_area = 0
+        for region in healpix_regions:
+            npix_from_nside = 12 * region["nside"]**2
+            hp_area += len(region["pixels"]) / npix_from_nside
+        hp_area *= 360**2 / np.pi
+        print("USED MAP AREA: ", hp_area)
+
+        return hp_area
 
     def get_cumprob(self, ra: float, dec: float) -> float:
         """

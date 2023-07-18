@@ -80,7 +80,8 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
     min_ndet_postul: int = 0  # and if it has this minimum nr of detection after the last significant (max_maglim) UL.
     min_age: float = 0.01  # require 2 detections separated by 15 minutes
     max_age: float = 3.0
-    min_mag_sigma_diff: float = 2 # consider lc decreasing if two consecutive detections including uncertainty are more than 1 sigma apart
+    #min_mag_sigma_diff: float = 2 # consider lc decreasing if two consecutive detections including uncertainty are more than x sigma apart
+    mag_dec_diff: float = 0.4 # consider lc decreasing if two consecutive detections' magnitude difference more than this
     # Min age of detection history
     # range of peak magnitudes for submission
     min_peak_mag: float = 22
@@ -282,40 +283,51 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             # loop over bands
             for fid_tmp in fids_list:
                 filter_pps = [pp_tmp for pp_tmp in pps if pp_tmp["body"]["fid"] == fid_tmp]
-                #print(len(filter_pps), len(pps))
+                lc_pass_score = 0
+                print(len(filter_pps), "fid:", fid_tmp, info["first_detection"])
                 if (len(filter_pps) > 1):
                     # loop over photopoints in this band
-                    for i in range(1, len(filter_pps)):
-                        # start at back to see if decrease
-                        pp_next = filter_pps[-i]
+                    for i in range(0, len(filter_pps)-1):
+                        #
+                        pp_curr = filter_pps[i]
                         # compare to all following photopoints in same band
-                        for k in range(i, len(filter_pps)):
-                            pp_curr = filter_pps[-k - 1]
-                            magpsf_curr = pp_curr["body"]["magpsf"]# + pp_curr["body"]["sigmapsf"]
-                            magpsf_next = pp_next["body"]["magpsf"]# - pp_next["body"]["sigmapsf"]
-                            magpsf_sigma_diff = (magpsf_curr - magpsf_next) / pp_curr["body"]["sigmapsf"]
+                        #for k in range(i, len(filter_pps)):
+                        pp_next = filter_pps[i + 1]
+                        magpsf_curr = pp_curr["body"]["magpsf"]# + pp_curr["body"]["sigmapsf"]
+                        magpsf_next = pp_next["body"]["magpsf"]# - pp_next["body"]["sigmapsf"]
+                        magpsf_sigma_diff = (magpsf_curr - magpsf_next) / pp_curr["body"]["sigmapsf"]
+                        magpsf_diff = magpsf_next - magpsf_curr
 
-                            #print("SIGMA DIFFERNCE MAGNITUDE ", magpsf_sigma_diff)
-                            info["mag_sigma_fid_" + str(fid_tmp)] = magpsf_sigma_diff
-                            if (magpsf_sigma_diff <= -self.min_mag_sigma_diff):
-                                lc_pass_score += 5
-                                #criterium_name = None
+                        #print("SIGMA DIFFERNCE MAGNITUDE ", magpsf_sigma_diff)
+                        info["mag_sigma_fid_" + str(fid_tmp)] = magpsf_sigma_diff
+                        info["mag_diff_fid_" + str(fid_tmp)] = magpsf_diff
+                        print(i, magpsf_diff, "DIFFERENCE MAGNITUDE", fid_tmp, info["first_detection"])
+
+                        #if (magpsf_sigma_diff <= -self.min_mag_sigma_diff):
+                        if (magpsf_diff >= self.mag_dec_diff):
+                            lc_pass_score += 1
+                            print("GOOD MAGPSF DIFFERENCE:", magpsf_diff, fid_tmp)
+                            print(magpsf_next, magpsf_curr, pp_next["body"]["jd"], pp_curr["body"]["jd"])
+                            #criterium_name = None
+                            #break
+                        #elif (magpsf_sigma_diff >= 0):
+                        else:
+                            time_diff = pp_next["body"]["jd"] - pp_curr["body"]["jd"]
+                            #print(time_diff)
+                            if (time_diff >= .5):
+                                lc_pass_score -=0
+                                criterium_name.append("long_nondecrease_lc")
                                 #break
-                            elif (magpsf_sigma_diff >= 0):
-                                time_diff = pp_next["body"]["jd"] - pp_curr["body"]["jd"]
-                                #print(time_diff)
-                                if (time_diff >= .5):
-                                    lc_pass_score -= 5
-                                    criterium_name.append("long_nondecrease_lc")
-                                    #break
-                                elif (time_diff >= 0):
-                                    lc_pass_score -= 1
-                                    criterium_name.append( "short_nondecrease_lc")
-                                    #break
+                            elif (time_diff >= 0):
+                                lc_pass_score -= 0
+                                criterium_name.append("short_nondecrease_lc")
+                                #break
+                            else:
+                                criterium_name.append("negative_time_diff")
                 #if criterium_name is not None:
                     # if flatness detected, dont check further
                     #break
-            info["pass"] += lc_pass_score / len(pps)
+                    info["pass"] += lc_pass_score # / len(pps)
             if criterium_name is not None:
                 info["rejects"].append(criterium_name)
 

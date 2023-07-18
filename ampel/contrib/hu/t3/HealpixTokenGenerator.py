@@ -11,6 +11,7 @@ import random
 import time
 from datetime import datetime
 from typing import Any
+import numpy as np
 
 from ampel.abstract.AbsT3PlainUnit import AbsT3PlainUnit
 from ampel.contrib.hu.util.AmpelHealpix import AmpelHealpix, deres
@@ -117,6 +118,8 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
         ]
         count = sum([len(region["pixels"]) for region in healpix_regions])
 
+        hp_area = ah.get_maparea(self.pvalue_limit)
+
         candidate_dict = {
                 "rb": {"$gt": 0.3},
                 "magpsf": {"$gt": 15},
@@ -170,6 +173,7 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
             "hash": map_hash,
             "token": token,
             "jd": ah.trigger_time,
+            "map_area": hp_area,
         }
 
         r = Resource(name=self.map_name, value=resource)
@@ -181,6 +185,8 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
         r = Resource(name="healpix_map_hash", value=map_hash)
         t3s.add_resource(r)
         r = Resource(name="healpix_map_name", value=self.map_name)
+        t3s.add_resource(r)
+        r = Resource(name="map_area", value=hp_area)
         t3s.add_resource(r)
 
         if self.debug:

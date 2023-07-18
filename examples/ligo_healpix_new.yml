@@ -23,8 +23,8 @@ task:
             config:
               pvalue_limit: 0.9 
               chunk_size: 2000
-              map_name: "S190930t.fits.gz,0" 
-              map_url: "https://gracedb.ligo.org/api/superevents/S190930t/files/bayestar.fits.gz,0"
+              map_name: S200115j.fits.gz,0
+              map_url: https://gracedb.ligo.org/api/superevents/S200115j/files/LALInference.fits.gz,0
               map_dir: './tmp'
               # date_str: "2022-01-15" # 2020-02-13
               delta_time: 3
@@ -34,7 +34,7 @@ task:
 - title: ProcessAlerts
   unit: HealpixTokenConsumer
   config:
-    map_name: "S190930t.fits.gz,0"
+    map_name: S200115j.fits.gz,0
     iter_max: 1000000
     supplier:
       unit: ZiAlertSupplier
@@ -44,13 +44,13 @@ task:
           unit: ZTFArchiveAlertLoader
           config:
             with_history: false
-            resource_name: "S190930t.fits.gz,0_token"
+            resource_name: "S200115j.fits.gz,0_token"
     shaper: ZiDataPointShaper
     directives:
     - channel: ligo
       filter:
         config:
-          trigger_jd: 2458757.10703339
+          trigger_jd: 2458863.682951
           gaia_excessnoise_sig_max: 999
           gaia_plx_signif: 3
           gaia_pm_signif: 3
@@ -101,6 +101,10 @@ task:
                 - journal
                 - healpix
                 - map_dist_unc
+                map_area:
+                - journal
+                - healpix
+                - map_area
         mux:
           combine:
           - state_t2:
@@ -403,4 +407,6 @@ task:
                           - prob_contour
                         'Healpix map':
                           - healpix_map
+                        "Healpix area":
+                          - map_area
 
