@@ -21,6 +21,7 @@ from astropy.coordinates import SkyCoord
 from astropy.table import Table
 from extcats.catquery_utils import get_closest, get_distances
 from numpy import asarray, degrees, mean
+import numpy as np
 
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.content.DataPoint import DataPoint
@@ -31,7 +32,7 @@ from ampel.model.DPSelection import DPSelection
 from ampel.content.T1Document import T1Document
 from ampel.abstract.AbsStateT2Unit import AbsStateT2Unit
 from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
-from ampel.contrib.hu.util.AmpelHealpix import AmpelHealpix 
+from ampel.contrib.hu.util.AmpelHealpix import AmpelHealpix, deres
 
 
 class T2HealpixProb(AbsStateT2Unit, AbsTabulatedT2Unit):
@@ -58,6 +59,8 @@ class T2HealpixProb(AbsStateT2Unit, AbsTabulatedT2Unit):
     healpix_map: None | AmpelHealpix = None
     map_hash: None | str = None
 
+    pvalue_limit: float = 0.9
+
     # URL for healpix retrieval
 #    map_url: None | str = None
 #    map_dir: None | str = None   # Will first look here
@@ -81,7 +84,9 @@ class T2HealpixProb(AbsStateT2Unit, AbsTabulatedT2Unit):
         {
             'cumprob': 0.666,
             'map_name': 'HealpixID14',
-            'map_hash': 'x'
+            'map_hash': 'x',
+            "map_dist": 123.3,
+            "map_dist_unc": 40.3,
         }
         """
         
@@ -105,5 +110,27 @@ class T2HealpixProb(AbsStateT2Unit, AbsTabulatedT2Unit):
 	# 4. Use this to return the prob. 
         out_dict: dict[str, Any] = {'map_name': self.map_name, 'map_hash': self.map_hash, 'trigger_time': self.healpix_map.trigger_time}
         out_dict['cumprob'] = self.healpix_map.get_cumprob(mean([dp[1] for dp in pos]), mean([dp[2] for dp in pos]))
+
+    # 5. Calculate used area
+        # Combine pixels when possible
+        pixels = self.healpix_map.get_pixelmask(self.pvalue_limit)
+        deresdict = deres(self.healpix_map.nside, pixels)
+        healpix_regions = [
+            {"nside": nside, "pixels": members} for nside, members in deresdict.items()
+        ]
+
+        hp_area = 0
+        for region in healpix_regions:
+            npix_from_nside = 12 * region["nside"]**2
+            hp_area += len(region["pixels"]) / npix_from_nside
+        hp_area *= 360**2 / np.pi
+        print("HEALPIX AREA:", hp_area)
+        out_dict["map_area"] = hp_area
+    
+    # 6. return map distance & uncertainty
+        map_dist, map_dist_unc = self.healpix_map.get_mapdist()
+        out_dict["map_dist"] = map_dist
+        out_dict["map_dist_unc"] = map_dist_unc
+
 
         return out_dict

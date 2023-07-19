@@ -631,7 +631,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         
         info = {"pass": 0, "rejects": []}
 
-        prob_cont = float(input_info["prob_contour"])
+        prob_cont = float(input_info["cumprob"])
 
         if prob_cont <= 0.68:
             reward = self.prob_sigma_rewards[0]
@@ -725,8 +725,8 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                 )  # Could there be multiple maps associated? E.g. after updates? TODO
 
             # distance compared to healpix dist
-            if t2_view.unit == "T2PropagateStockInfo":
-                #print("INSPECT PROPAGATE STOCK INFO")
+            if t2_view.unit == "T2HealpixProb":
+                #print("INSPECT HEALPIX PROB")
                 #print(info.keys())
                 if (info.get("ampel_z")):
                     dinfo = self.inspect_distance(t2_res, info)
@@ -735,7 +735,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                     info.update(dinfo)
                     kilonovaness += dinfo["pass"]
                     dist_kilonovaness = dinfo["pass"]
-                if (info.get("prob_contour")):
+                if (t2_res.get("cumprob")):
                     probinfo = self.inspect_prob(t2_res, info)
                     info.update(probinfo)
                     kilonovaness += probinfo["pass"]

@@ -26,6 +26,7 @@ class AmpelHealpix:
     - Obtain and load (GW) Healpix map.
     - Get pixels above some probability threshold.
     - Get probability for some (ra,dec).
+    - Get mean distance & distance uncertainty
     """
 
     # Disk storage
@@ -85,6 +86,7 @@ class AmpelHealpix:
         else:
             self.nside = nside
            
+        #print(headers)
         self.dist = [header[1] for header in headers if header[0] == "DISTMEAN"][0]
         #for header in headers:
             #print(header[1], header[0])
@@ -121,7 +123,7 @@ class AmpelHealpix:
 
         return mask.nonzero()[0].tolist()
     
-    def get_maparea(self, pvalue_limit):
+    def get_maparea(self, pvalue_limit: float) -> float:
         """
         Return sky area for probability threshold in square degrees.
         """
@@ -157,6 +159,16 @@ class AmpelHealpix:
             hp.npix2nside(len(self.credible_levels)), theta, phi, nest=True
         )
         return self.credible_levels[alertpix]
+    
+    def get_mapdist(self) -> tuple[float, float]:
+        """
+        Obtain mean distance + std from healpix map in Mpc.
+        """
+        if not self.nside:
+            raise ValueError("First get and process map before using.")
+        
+        return self.dist, self.dist_unc
+
 
 
 def deres(nside, ipix, min_nside=1):
@@ -189,9 +201,12 @@ def deres(nside, ipix, min_nside=1):
 
 
 def main():
+    map_name = "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/new_BBH_mergers_O3a_IAS_pipeline/skymapGW190704_104834.fits.gz"
+    map_name = "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/ligo-kilonova/tmp/S190408an.fits.gz,0"
+    #map_name = "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/ligo-kilonova/tmp/S190426c.fits.gz,1"
     ah = AmpelHealpix(
         #map_name="S191222n.fits.gz",
-        map_name="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/new_BBH_mergers_O3a_IAS_pipeline/skymapGW190704_104834.fits.gz",
+        map_name=map_name,
         map_url="https://gracedb.ligo.org/api/superevents/S191222n/files/LALInference.fits.gz",
     )
     hashit = ah.process_map()

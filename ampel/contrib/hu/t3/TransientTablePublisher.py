@@ -222,9 +222,10 @@ class TransientTablePublisher(AbsPhotoT3Unit):
 
         # take everything local_path and put it into new folder named after skymap
         # print(df.keys)
-        if "Healpix map" in list(df.keys()):
+        map_name_key = "Map name"
+        if map_name_key in list(df.keys()):
             files_local_path = os.listdir(self.local_path)
-            skymap_name = df["Healpix map"][
+            skymap_name = df[map_name_key][
                 0
             ]  # need to change if for some reason several maps get saved in same file
             skymap_dir_name = skymap_name[: skymap_name.find(".")]  # bare name

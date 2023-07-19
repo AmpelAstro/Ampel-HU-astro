@@ -13,11 +13,12 @@ import astropy.time as atime
 
 
 # directory where ampel job should be run (NEEDS .tmp FOLDER)
-execute_directory="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/weizmann"
+#execute_directory="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/weizmann"
+execute_directory="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/ligo-kilonova"
 
 # directory where jobfiles are found
 jobfile_save_dir="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/examples/calibrateKilonovaEval_jobfiles/"
-jobfile_save_dir="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/examples/weizmann_jobfiles/"
+#jobfile_save_dir="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/examples/weizmann_jobfiles/"
 
 #jobfiles_to_execute_file = os.listdir(jobfile_save_dir)
 # list of names of jobfiles to run
@@ -43,7 +44,7 @@ def execute_jobfile(job_call, execute_directory):
 
     timeout = 0.1
     retry = True
-    max_retries = 5
+    max_retries = 2
     retry_ind = 0
     while retry:
         print("STARTING SUBPROCESS, try #", retry_ind)
@@ -94,7 +95,7 @@ def execute_jobfile(job_call, execute_directory):
 
 
 if __name__=="__main__":
-    for jobfile_name in jobfile_names:
+    for jobfile_name in jobfile_names[15:]:
 
         jobfile = os.path.join(jobfile_save_dir, jobfile_name)
 
