@@ -74,10 +74,10 @@ def get_elasticc_hostprob(hostinfo: dict) -> tuple[float, float, float]:
         hostgal2_sigsep = -99.
 
     # SNsep can be exactly zero.
-    if hostinfo.get('hostgal_snsep',-99)>=0 and hostinfo.get('hostgal2_snsep',-99)<0:
+    if hostinfo.get('hostgal_snsep',-99)>=0 and not hostinfo.get('hostgal2_snsep',-99)>0:
         # The easy case, only have first galaxy
         return (1.0, 0.0, hostinfo['hostgal_snsep'])
-    elif hostinfo.get('hostgal_snsep',-99)<0 and hostinfo.get('hostgal2_snsep',-99)<0:
+    elif not (hostinfo.get('hostgal_snsep',-99)>=0 or hostinfo.get('hostgal2_snsep',-99)>=0):
         # "Hostless" - if these exist
         return (0.0, 0.0, -99.)
 
