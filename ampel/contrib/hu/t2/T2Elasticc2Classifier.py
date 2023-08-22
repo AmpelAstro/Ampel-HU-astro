@@ -357,7 +357,7 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
             body=t2body,
             adapter=self.result_adapter,
             # record the link the stock journal so we can tell which states have been reported
-            #journal=JournalAttributes(extra={"link": compound["link"]})
+            journal=JournalAttributes(extra={"link": compound["link"]})
         )
 
 
