@@ -115,6 +115,9 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
     use_final_z: bool = False
     # Which bands should be used to estimate the galaxy color?
     use_galcol: list[tuple[str, str]] = [('u','i'), ('u','g')]
+    # Max sample redshift
+    sample_redshift_max: float = 3.            # Models, like parsnip, might not be able to process large redshifts
+                                                  # Adjust redshifts to this level.  
 
     # Parameters controlling feature extraction
     max_ndet: int = 200000
@@ -192,9 +195,25 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
         """
         Return the classification for the labeled parsnip model
         Classify based on features ordered according to columns
+        
+        Also limit to max model redshift.
         """
+        
+        if max(features['z_samples'])>=self.sample_redshift_max:
+            zs, zw, maxweight = [],[], 0
+            for z, w in zip(features['z_samples'], features['z_weights']):
+                if z<self.sample_redshift_max:
+                    zs.append(z)
+                    zw.append(w)
+                else:
+                    maxweight += w
+            zs.append(self.sample_redshift_max)
+            zw.append(maxweight)                                
+        else:                
+            zs, zw = features['z_samples'], features['z_weights']
+        
         pdict = run_parsnip_zsample(lctable,
-            {'label':classlabel, 'z':features['z_samples'], 'z_weights':features['z_weights']},
+            {'label':classlabel, 'z':zs, 'z_weights':zw},
             self.class_parsnip[classlabel]['model'],
             self.class_parsnip[classlabel]['classifier'],
             self.parsnip_zeropoint_offset )
@@ -287,6 +306,7 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
         except FitFailed:
             # Continue, but likely cant say much without these
             pass
+        
         try:
             # Calculate light_curve features
             features.update(self.extract_lightcurve_features(flux_table))
@@ -313,6 +333,7 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
             # Assuming three samples - this is what was used in feature training
             features['z'] = features['z_samples'][1]
             features['z_source'] = zkind[features['z_source']]
+        # Correct redshift 
 
         # TODO: Check for minimal data to attempt classifcation?
         # Otherwise, prepare and report classification: {'classId':300, probability: 1}
@@ -336,7 +357,7 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
             body=t2body,
             adapter=self.result_adapter,
             # record the link the stock journal so we can tell which states have been reported
-            journal=JournalAttributes(extra={"link": compound["link"]})
+            #journal=JournalAttributes(extra={"link": compound["link"]})
         )
 
 
@@ -477,12 +498,17 @@ class T2Elasticc2Classifier(BaseElasticc2Classifier):
          complementing RF.
     - 3. Add postversions.
     - 4. Check for ping conditions.
+    - 5. Run all model w parsnip data
+    
+    If all works...
+    - Try running parsnip, if so use that all model
+    - Else use xgb model w/o parsnip?
 
     """
 
     # Setting for report to construct
     classifier_name: str = 'ElasticcMonster'
-    classifier_version: str = 'v230704'
+    classifier_version: str = 'v230819'
 
     # May reports to be generated
     reports: int = 99 #
@@ -613,6 +639,27 @@ class T2Elasticc2Classifier(BaseElasticc2Classifier):
                 output_classes.append(ping_class)
         if self.reports<6:
             return (output_classes, prob)
+
+        # 5. Create pure "all" version
+        if 'prediction' in parsnip_class.keys():
+            # Add parsnip features to features
+            features.update( {'parsnip_'+featname : featval for featname, featval in  parsnip_class['prediction'].items() } )
+            features['parsnip_modelchidof'] = features['parsnip_model_chisq'] / features['parsnip_model_dof']
+            # Create new class setup
+            allincl_class =  copy.deepcopy(base_class_dict)
+            allincl_prob = self.get_multixgb_class('all_incl', features)
+            allincl_class['classifications'].extend( [
+                    {'classId': fitclass, 'probability': float(fitprop)}
+                        for fitclass, fitprop in allincl_prob.items()
+                        ]
+                )
+            allincl_class['classifierName'] += 'AllInclusive'
+            output_classes.append(allincl_class)
+            prob['allincl'] = {str(k):v for k,v in allincl_prob.items()}
+        if self.reports<7:
+            return (output_classes, prob)
+
+
 
         # Verification
         for report in output_classes:
