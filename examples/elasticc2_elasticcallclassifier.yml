@@ -1,0 +1,112 @@
+# Dev version for developic elasticc2 pipeline
+
+
+name: elasticc2-dev
+parameters:
+- name: parsnip_noknclassifier
+  value: https://box.hu-berlin.de/f/0365c6b710be4322902c/?dl=1
+- name: parsnip_noknmodel
+  value: https://box.hu-berlin.de/f/6b98c410769d4b69b9e8/?dl=1
+- name: model_all
+  value: https://box.hu-berlin.de/f/ebb41733ced1429dbe5c/?dl=1
+- name: model_all_wparsnip
+  value: https://box.hu-berlin.de/f/8c517c66b1344993bb82/?dl=1
+- name: alertsample
+  value: https://portal.nersc.gov/cfs/lsst/DESC_TD_PUBLIC/ELASTICC/5000alerts.tar.gz
+
+mongo:
+  prefix: Elasticc2
+  reset: true
+
+channel:
+- name: elasticc
+  access: []
+  policy: []
+  version: 1
+
+task:
+
+- title: ingest
+
+  unit: AlertConsumer
+  config:
+    iter_max: 100000000
+    compiler_opts: LSSTCompilerOptions
+
+    supplier:
+      unit: LSSTAlertSupplier
+      config:
+        deserialize: null
+        loader:
+          config:
+            folder: 5000alertsdir/NITE60562
+            extension: "*avro.gz"
+          unit: ElasticcDirAlertLoader
+
+    shaper: {unit: LSSTDataPointShaper}
+
+    directives:
+    - channel: elasticc
+
+      filter:
+        unit: ReallySimpleLSSTFilter
+        on_stock_match: bypass
+        config:
+          min_ndet: 0
+          min_tspan: 0
+          max_tspan: 10000
+
+      ingest:
+          mux:
+            unit: LSSTMongoMuxer
+            combine:
+            - unit: LSSTT1Combiner
+              state_t2:
+              - config:
+                  paths_xgbmulti:
+                    all:
+                      path: model_all
+                      classes: [2332, 2245, 2322, 2324, 2325, 2244, 2232, 2233, 2234, 2246, 2323, 2242, 2226, 2222, 2225, 2223, 2224, 2243, 2235]
+                    all_incl:
+                      path: model_all_wparsnip
+                      classes: [2332, 2245, 2322, 2324, 2325, 2244, 2232, 2233, 2234, 2246, 2323, 2242, 2226, 2222, 2225, 2223, 2224, 2243, 2235]
+                  paths_parsnip:
+                    snlong:
+                      model: elasticc2_run20_SNLONG_latentsize4_twin600_minlearnratem6.h5
+                      classifier: elasticc2_run20_SNLONG_latentsize4_twin600_minlearnratem6_pred_classifier.pkl
+                  tabulator:
+                  - unit: LSSTT2Tabulator
+                    config:
+                      zp: 31.4
+                unit: T2ElasticcAllClassifier
+  inputs:
+    artifacts:
+      - name: alertsample
+        path: 5000alertsdir
+        http:
+          url: "{{ job.parameters.alertsample }}"
+      - name: model_all
+        path: model_all
+        http:
+          url: "{{ job.parameters.model_all }}"
+      - name: parsnip_noknmodel
+        path: elasticc2_run20_SNLONG_latentsize4_twin600_minlearnratem6.h5
+        http:
+          url: "{{ job.parameters.parsnip_noknmodel }}"
+      - name: parsnip_noknclassifier
+        path: elasticc2_run20_SNLONG_latentsize4_twin600_minlearnratem6_pred_classifier.pkl
+        http:
+          url: "{{ job.parameters.parsnip_noknclassifier }}"
+      - name: model_all_wparsnip
+        path: model_all_wparsnip
+        http:
+          url: '{{ job.parameters.model_all_wparsnip }}'
+
+
+
+- title: t2_row3
+  multiplier: 8
+  unit: T2Worker
+  config:
+    doc_limit: 50000
+    max_try: 10
