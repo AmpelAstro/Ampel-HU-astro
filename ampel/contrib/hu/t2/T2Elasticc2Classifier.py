@@ -100,7 +100,6 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
 
     ## Paths to classifiers to load.
     paths_xgbbinary: dict[str,str] = {
-        'kn_vs_nonrec': '/home/jnordin/Downloads/model_kn_vs_other_non_recurring'
     }
     paths_xgbmulti: dict[str,XgbMultiModelFiles] = {
     }
