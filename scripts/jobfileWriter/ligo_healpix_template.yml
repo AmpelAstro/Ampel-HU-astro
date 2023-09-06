@@ -415,6 +415,10 @@ task:
                           - map_dist_unc
                         'Map name':
                           - map_name
+                        'Unfiltered alerts':
+                          - unfiltered_alerts
+                        'Queried alerts':
+                          - queried_alerts
                       T2PropagateStockInfo:
                         'Trigger time':
                           - trigger_time

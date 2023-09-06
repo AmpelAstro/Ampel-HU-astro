@@ -228,7 +228,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
             skymap_name = df[map_name_key][
                 0
             ]  # need to change if for some reason several maps get saved in same file
-            skymap_dir_name = skymap_name[: skymap_name.find(".")]  # bare name
+            skymap_dir_name = skymap_name #[: skymap_name.find(".")]  # bare name
             if skymap_name[-1] != "z":  # if non trivial rev version (hacky)
                 skymap_dir_name += (
                     "_rev_" + skymap_name[skymap_name.find(",") + 1 :]

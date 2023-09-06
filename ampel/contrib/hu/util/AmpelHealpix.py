@@ -48,8 +48,9 @@ class AmpelHealpix:
 
     def _get_map(self, clobber=False) -> int:
         path = os.path.join(self.save_dir, self.map_name)
-
+        print(path)
         if os.path.exists(path) and not clobber:
+            print("Map exists and found")
             return 1
 
         # Retrieve mapfile.
@@ -64,12 +65,15 @@ class AmpelHealpix:
         Load map and determine prob values.
         """
 
+        print(os.path.join(self.save_dir, self.map_name))
+
+
         # Process map
         hpx, headers = hp.read_map(
             os.path.join(self.save_dir, self.map_name), h=True, nest=True
         )
-        #print("HEADERS")
-        #print(headers)
+        print("HEADERS")
+        print(headers)
         #print(type(headers))
         #print("END HEADERS")
 
@@ -201,19 +205,22 @@ def deres(nside, ipix, min_nside=1):
 
 
 def main():
-    map_name = "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/new_BBH_mergers_O3a_IAS_pipeline/skymapGW190704_104834.fits.gz"
-    map_name = "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/ligo-kilonova/tmp/S190408an.fits.gz,0"
+    #map_name = "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/new_BBH_mergers_O3a_IAS_pipeline/skymapGW190704_104834.fits.gz"
+    #map_name = "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/ligo-kilonova/tmp/S190408an.fits.gz,0"
+    map_name = "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/simulated_maps/tmp_gaussmap.fits.gz"
     #map_name = "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/ligo-kilonova/tmp/S190426c.fits.gz,1"
     ah = AmpelHealpix(
         #map_name="S191222n.fits.gz",
         map_name=map_name,
-        map_url="https://gracedb.ligo.org/api/superevents/S191222n/files/LALInference.fits.gz",
+        #map_url="https://gracedb.ligo.org/api/superevents/S191222n/files/LALInference.fits.gz",
     )
     hashit = ah.process_map()
     print(hashit)
     pixels = ah.get_pixelmask(0.9)
+    print(ah.get_maparea(.9))
+    print(ah.get_mapdist())
+
     print(ah.trigger_time)
-    print(pixels[0:10])
 
     print(ah.get_cumprob(13, 48))
     print(ah.get_cumprob(200, -14.88))

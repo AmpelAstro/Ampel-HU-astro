@@ -137,6 +137,17 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
             "chunk_size": self.chunk_size,
         }
 
+        # count alerts before trigger time without querying for them
+        count_query_dict = {
+            "jd": {"$gt": start_jd, "$lt": end_jd},
+            "regions": healpix_regions,
+        }
+        endpoint_count = 'https://ampel.zeuthen.desy.de/api/ztf/archive/v3/alerts/healpix/skymap/count'
+        response_count = session.post(endpoint_count, json=count_query_dict )
+        alert_count_nofilter = response_count.json()["count"]
+        #print("ALERT COUNT NO FILTER", alert_count_nofilter)
+
+
         print(query_dict)
 
         response = session.post(
@@ -150,6 +161,8 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
             token = rd.pop("resume_token")
         except KeyError as exc:
             raise ValueError(f"Unexpected response: {rd}") from exc
+
+        
 
         # wait for query to finish - is this needed, or handled by alert consumer?
         t0 = time.time()
@@ -166,6 +179,11 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
             )
         self.logger.info("Stream created", extra=response.json())
 
+        #print("TOKENGENERATOR AAAAAAAAAAAAAAAAA::", response.json()["remaining"]["items"])
+        if response.json().get("remaining"):
+            queried_alerts = response.json()["remaining"]["items"]
+        else:
+            queried_alerts = 0
         # Package resource needed
         resource = {
             "map_name": self.map_name,
@@ -174,6 +192,8 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
             "token": token,
             "jd": ah.trigger_time,
             "map_area": hp_area,
+            "alert_count_nofilter": alert_count_nofilter,
+            "alert_count_query": queried_alerts
         }
 
         r = Resource(name=self.map_name, value=resource)
@@ -187,6 +207,8 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
         r = Resource(name="healpix_map_name", value=self.map_name)
         t3s.add_resource(r)
         r = Resource(name="map_area", value=hp_area)
+        t3s.add_resource(r)
+        r = Resource(name="alert_count_nofilter", value=alert_count_nofilter)
         t3s.add_resource(r)
 
         if self.debug:

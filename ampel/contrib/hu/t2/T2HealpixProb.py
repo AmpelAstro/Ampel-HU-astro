@@ -103,6 +103,9 @@ class T2HealpixProb(AbsStateT2Unit, AbsTabulatedT2Unit):
                 raise ValueError("Hash changed w.r.t. loaded map")         
         else:
             self.load_map(healdps[0]['body'])
+
+
+        #print("HEALPIXPROB DDDDDDDDDDDDDDDDDDDDDDDDDDDD::", healdps[0].items())
 	    
 	# 3. Otherwise, find the position of the max lum dp.
         pos = self.get_positions(datapoints)   # (jd, ra, dec)
@@ -111,21 +114,23 @@ class T2HealpixProb(AbsStateT2Unit, AbsTabulatedT2Unit):
         out_dict: dict[str, Any] = {'map_name': self.map_name, 'map_hash': self.map_hash, 'trigger_time': self.healpix_map.trigger_time}
         out_dict['cumprob'] = self.healpix_map.get_cumprob(mean([dp[1] for dp in pos]), mean([dp[2] for dp in pos]))
 
-    # 5. Calculate used area
+    # 5. Propagate used area, total alerts (unfiltered)
         # Combine pixels when possible
-        pixels = self.healpix_map.get_pixelmask(self.pvalue_limit)
-        deresdict = deres(self.healpix_map.nside, pixels)
-        healpix_regions = [
-            {"nside": nside, "pixels": members} for nside, members in deresdict.items()
-        ]
+        # pixels = self.healpix_map.get_pixelmask(self.pvalue_limit)
+        # deresdict = deres(self.healpix_map.nside, pixels)
+        # healpix_regions = [
+        #     {"nside": nside, "pixels": members} for nside, members in deresdict.items()
+        # ]
 
-        hp_area = 0
-        for region in healpix_regions:
-            npix_from_nside = 12 * region["nside"]**2
-            hp_area += len(region["pixels"]) / npix_from_nside
-        hp_area *= 360**2 / np.pi
-        print("HEALPIX AREA:", hp_area)
-        out_dict["map_area"] = hp_area
+        # hp_area = 0
+        # for region in healpix_regions:
+        #     npix_from_nside = 12 * region["nside"]**2
+        #     hp_area += len(region["pixels"]) / npix_from_nside
+        # hp_area *= 360**2 / np.pi
+        # print("HEALPIX AREA:", hp_area)
+        out_dict["map_area"] = healdps[0]['body']["map_area"]
+        out_dict["unfiltered_alerts"] = healdps[0]['body']["alert_count_nofilter"]
+        out_dict["queried_alerts"] = healdps[0]['body']["alert_count_query"]
     
     # 6. return map distance & uncertainty
         map_dist, map_dist_unc = self.healpix_map.get_mapdist()

@@ -15,14 +15,18 @@ import astropy.time as atime
 # directory where ampel job should be run (NEEDS .tmp FOLDER)
 #execute_directory="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/weizmann"
 execute_directory="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/ligo-kilonova"
+execute_directory="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/ligo-simulated"
+execute_directory="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/O3_offset"
 
 # directory where jobfiles are found
-jobfile_save_dir="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/examples/calibrateKilonovaEval_jobfiles/"
+#jobfile_save_dir="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/examples/calibrateKilonovaEval_jobfiles/"
 #jobfile_save_dir="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/examples/weizmann_jobfiles/"
+jobfile_save_dir="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/examples/O3_offset_jobfiles/"
 
 #jobfiles_to_execute_file = os.listdir(jobfile_save_dir)
 # list of names of jobfiles to run
 jobfile_names = os.listdir(jobfile_save_dir)
+
 #config file to use
 conf_file = "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/ampel_conf.yaml"
 
@@ -36,7 +40,7 @@ def execute_jobfile(job_call, execute_directory):
     command = job_call
     command_list = shlex.split(command)
 
-    print(command_list)
+    print(command)
 
     stream_not_found_err = "Stream not found"
 
@@ -95,7 +99,7 @@ def execute_jobfile(job_call, execute_directory):
 
 
 if __name__=="__main__":
-    for jobfile_name in jobfile_names[15:]:
+    for jobfile_name in jobfile_names[:8]:
 
         jobfile = os.path.join(jobfile_save_dir, jobfile_name)
 
