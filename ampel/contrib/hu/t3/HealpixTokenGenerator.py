@@ -48,7 +48,7 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
     date_str: None | str = (
         None  # Start of time window we are interested in (default: event trigger time)
     )
-    date_format: str = "%Y-%m-%d"
+    date_format: str = "iso" #"%Y-%m-%d"
     delta_time: None | float = (
         None  # Length of time window in days (default: until now)
     )
@@ -86,8 +86,8 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
         if self.delta_time:
             if self.date_str:
                 start_jd = Time(
-                    str(datetime.strptime(self.date_str, self.date_format)),
-                    format="iso",
+                    self.date_str,
+                    format=self.date_format,
                     scale="utc",
                 ).jd
             else:
@@ -98,8 +98,8 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
         else:
             if self.date_str:
                 start_jd = Time(
-                    str(datetime.strptime(self.date_str, self.date_format)),
-                    format="iso",
+                    self.date_str,
+                    format=self.date_format,
                     scale="utc",
                 ).jd
             else:

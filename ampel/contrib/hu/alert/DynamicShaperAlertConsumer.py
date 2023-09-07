@@ -55,13 +55,13 @@ class DynamicShaperAlertConsumer(AlertConsumer):
 
 
 		# Update shaper
-		print('config first', self.shaper)
+		#print('config first', self.shaper)
 		newconfig = {
 		        	config_key: self.alert_supplier.resources[resource_name].value
 		        	for config_key, resource_name in self.shaper_map.items()
 		        	if resource_name in self.alert_supplier.resources
 			}
-		print('config pure', newconfig)
+		#print('config pure', newconfig)
 		if self.shaper.config:
 			newconfig = self.shaper.config.update(newconfig)
 		shaper = UnitModel(
@@ -70,7 +70,7 @@ class DynamicShaperAlertConsumer(AlertConsumer):
 				secrets = self.shaper.secrets,
 				override = self.shaper.override,
 			)
-		print('config after', shaper)
+		#print('config after', shaper)
 
 
 		return ChainedIngestionHandler(

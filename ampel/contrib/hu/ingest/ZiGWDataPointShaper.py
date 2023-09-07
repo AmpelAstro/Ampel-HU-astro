@@ -40,6 +40,8 @@ class ZiGWDataPointShaper(ZiDataPointShaperBase, AbsT0Unit):
 		
 		dplist = super().process(arg, stock)
 		
+		#print("GWDATAPOINTSHAPER WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW::", self.healpix_info.items())
+
 		# Create new datapoint 
 		sorted_body = dict(sorted(self.healpix_info.items()))
 		dplist.append(

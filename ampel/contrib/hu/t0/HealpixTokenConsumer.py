@@ -137,7 +137,7 @@ class HealpixTokenConsumer(AlertConsumer):
         # Loop variables
         iter_max = self.iter_max
         if self.iter_max != self._defaults["iter_max"]:
-            logger.info(f"Using custom iter_max: {self.iter_max}")
+            logger.debug(f"Using custom iter_max: {self.iter_max}")
 
         self._cancel_run = 0
         iter_count = 0

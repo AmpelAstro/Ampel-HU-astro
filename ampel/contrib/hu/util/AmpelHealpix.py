@@ -48,9 +48,9 @@ class AmpelHealpix:
 
     def _get_map(self, clobber=False) -> int:
         path = os.path.join(self.save_dir, self.map_name)
-        print(path)
+        #print(path)
         if os.path.exists(path) and not clobber:
-            print("Map exists and found")
+            #print("Map exists and found")
             return 1
 
         # Retrieve mapfile.
@@ -65,15 +65,15 @@ class AmpelHealpix:
         Load map and determine prob values.
         """
 
-        print(os.path.join(self.save_dir, self.map_name))
+        #print(os.path.join(self.save_dir, self.map_name))
 
 
         # Process map
         hpx, headers = hp.read_map(
             os.path.join(self.save_dir, self.map_name), h=True, nest=True
         )
-        print("HEADERS")
-        print(headers)
+        #print("HEADERS")
+        #print(headers)
         #print(type(headers))
         #print("END HEADERS")
 
@@ -144,7 +144,7 @@ class AmpelHealpix:
             npix_from_nside = 12 * region["nside"]**2
             hp_area += len(region["pixels"]) / npix_from_nside
         hp_area *= 360**2 / np.pi
-        print("USED MAP AREA: ", hp_area)
+        #print("USED MAP AREA: ", hp_area)
 
         return hp_area
 
@@ -208,7 +208,7 @@ def main():
     #map_name = "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/new_BBH_mergers_O3a_IAS_pipeline/skymapGW190704_104834.fits.gz"
     #map_name = "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/ligo-kilonova/tmp/S190408an.fits.gz,0"
     map_name = "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/simulated_maps/tmp_gaussmap.fits.gz"
-    #map_name = "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/ligo-kilonova/tmp/S190426c.fits.gz,1"
+    map_name = "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/ligo-kilonova/tmp/S190426c.fits.gz,1"
     ah = AmpelHealpix(
         #map_name="S191222n.fits.gz",
         map_name=map_name,

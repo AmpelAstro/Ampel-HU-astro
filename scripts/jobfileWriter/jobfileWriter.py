@@ -5,6 +5,7 @@
 import yaml
 import os
 import sys
+import astropy.time as atime
 
 
 def writeJobfilesFromDict(jobfile_template, jobfile_list_dict, commonName = "jobfile", saveDir = "."):  
@@ -41,6 +42,14 @@ def writeJobfilesFromDict(jobfile_template, jobfile_list_dict, commonName = "job
                     map_name += replaceDict["map_url"][-8:]
                 replaceDict["map_name"] = map_name
                 replaceDict["resource_name"] = replaceDict["map_name"] + "_token"
+
+            if replaceDict.get("trigger_jd"):
+                tmp_time = atime.Time(replaceDict["trigger_jd"], format="jd")
+                tmp_time.format = "iso"
+                date_str = "'" + tmp_time.to_string() + "'"
+                print(date_str, replaceDict["trigger_jd"])
+                replaceDict["date_str"] = date_str
+
 
             print(f"Creating jobfile {newJobfileName} ...")
 

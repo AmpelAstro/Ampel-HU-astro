@@ -23,8 +23,8 @@ task:
             config:
               pvalue_limit: 0.9 
               chunk_size: 2000
-              map_name: S200115j.fits.gz,0
-              map_url: https://gracedb.ligo.org/api/superevents/S200115j/files/LALInference.fits.gz,0
+              map_name: <<map_name>>
+              map_url: <<map_url>>
               map_dir: './tmp'
               # date_str: "2022-01-15" # 2020-02-13
               delta_time: 3
@@ -36,7 +36,7 @@ task:
   config:
     shaper_map:
       map_name: healpix_map_name
-      healpix_info: S200115j.fits.gz,0 # <<map_name>>
+      healpix_info: <<map_name>> # <<map_name>>
     iter_max: 1000000
     supplier:
       unit: ZiAlertSupplier
@@ -46,13 +46,13 @@ task:
           unit: ZTFArchiveAlertLoader
           config:
             with_history: false
-            resource_name: "S200115j.fits.gz,0_token"
+            resource_name: <<resource_name>>
     shaper: ZiGWDataPointShaper
     directives:
     - channel: ligo
       filter:
         config:
-          trigger_jd: 2458863.682951
+          trigger_jd: <<trigger_jd>>
           gaia_excessnoise_sig_max: 999
           gaia_plx_signif: 3
           gaia_pm_signif: 3
@@ -107,12 +107,12 @@ task:
           combine:
           - state_t2:
             - config: &healpixprob_config
-                map_name: "S200115j.fits.gz,0" # <<map_name>>
+                map_name: <<map_name>> # <<map_name>>
                 pvalue_limit: 0.9
                 tabulator:
                   - unit: ZTFT2Tabulator
               unit: T2HealpixProb
-            - config:
+              - config:
                 t_cadence: 3.
                 significant_bands: 
                 - 'ztfg'
@@ -423,8 +423,10 @@ task:
                           - map_dist
                         'Map dist unc':
                           - map_dist_unc
-                        'Map name':
-                          - map_name
+                        'Unfiltered alerts':
+                          - unfiltered_alerts
+                        'Queried alerts':
+                          - queried_alerts
                       T2PropagateStockInfo:
                         'Trigger time':
                           - trigger_time

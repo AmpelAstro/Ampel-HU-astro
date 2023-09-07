@@ -284,7 +284,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             for fid_tmp in fids_list:
                 filter_pps = [pp_tmp for pp_tmp in pps if pp_tmp["body"]["fid"] == fid_tmp]
                 lc_pass_score = 0
-                print(len(filter_pps), "fid:", fid_tmp, info["first_detection"])
+                #print(len(filter_pps), "fid:", fid_tmp, info["first_detection"])
                 if (len(filter_pps) > 1):
                     # loop over photopoints in this band
                     for i in range(0, len(filter_pps)-1):
@@ -301,13 +301,13 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                         #print("SIGMA DIFFERNCE MAGNITUDE ", magpsf_sigma_diff)
                         info["mag_sigma_fid_" + str(fid_tmp)] = magpsf_sigma_diff
                         info["mag_diff_fid_" + str(fid_tmp)] = magpsf_diff
-                        print(i, magpsf_diff, "DIFFERENCE MAGNITUDE", fid_tmp, info["first_detection"])
+                        #print(i, magpsf_diff, "DIFFERENCE MAGNITUDE", fid_tmp, info["first_detection"])
 
                         #if (magpsf_sigma_diff <= -self.min_mag_sigma_diff):
                         if (magpsf_diff >= self.mag_dec_diff):
                             lc_pass_score += 1
-                            print("GOOD MAGPSF DIFFERENCE:", magpsf_diff, fid_tmp)
-                            print(magpsf_next, magpsf_curr, pp_next["body"]["jd"], pp_curr["body"]["jd"])
+                            #("GOOD MAGPSF DIFFERENCE:", magpsf_diff, fid_tmp)
+                            #print(magpsf_next, magpsf_curr, pp_next["body"]["jd"], pp_curr["body"]["jd"])
                             #criterium_name = None
                             #break
                         #elif (magpsf_sigma_diff >= 0):
