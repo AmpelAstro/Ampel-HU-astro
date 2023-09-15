@@ -482,8 +482,8 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             z, z_probabilities = self.model.predict_redshift_distribution(
                                 sncosmo_table, max_redshift=self.max_fit_z)
         assert z is not None
-
-        t2_output = self._run_parsnip(self, sncosmo_table, t2_output,
+        
+        t2_output = self._run_parsnip(sncosmo_table, t2_output,
                         self.default_zeropoint - self.training_zeropoint)
 
         # Plot
