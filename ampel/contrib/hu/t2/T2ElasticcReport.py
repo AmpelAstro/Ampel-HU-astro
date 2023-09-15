@@ -8,7 +8,7 @@
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
 from collections import defaultdict
-from typing import ClassVar, Literal
+from typing import Literal
 from collections.abc import Sequence
 import numpy as np
 
@@ -22,8 +22,6 @@ from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.content.T1Document import T1Document
 from ampel.content.DataPoint import DataPoint
 from ampel.view.T2DocView import T2DocView
-
-from .KafkaAdapter import KafkaReporter
 
 # Tying classification output classes with ELAsTICC taxonomy classes
 parsnip_taxonomy = {
@@ -119,23 +117,11 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
     # Use a redshift prior from elasticc alerts and obs rate prior from BTS.
     use_priors: bool = False
 
-
     # Which units should this be changed to
     t2_dependency: Sequence[StateT2Dependency[Literal["T2RunParsnip", "T2MultiXgbClassifier"]]]
 
-    send_reports: ClassVar[bool] = True
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._reporter: None | KafkaReporter = None
-
-    def make_reporter(self) -> KafkaReporter:
-        return KafkaReporter(
-            broker="kafka-kafka-bootstrap",
-            topic="elasticc2-reports-test",
-            avro_schema="https://raw.githubusercontent.com/LSSTDESC/elasticc/bc0de488c5276ce61b650117db19e93634b10815/alert_schema/elasticc.v0_9_1.brokerClassification.avsc"
-        )
-
 
     @staticmethod
     def _one_report_per_classifier(report: dict):
@@ -152,24 +138,6 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
             new_report["classifierName"] = name
             new_report["classifierParams"] = params
             yield new_report
-
-
-    def submit(self, report: dict) -> bool:
-        """
-        Placeholder for actually doing a quick T2 submit.
-        """
-
-        if not self.send_reports:
-            return True
-        if self._reporter is None:
-            self._reporter = self.make_reporter()
-        
-        for classification in self._one_report_per_classifier(report):
-            self._reporter.send(classification)
-            self._reporter.flush()
-        
-        return False
-
 
     def add_zprior(self, parsnip_prob: dict, z: float):
         """
@@ -266,7 +234,6 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
         return UnitResult(
             body={
                 "report": class_report,
-                "t2_submit": self.submit(class_report),
             },
             code=DocumentCode.OK,
             journal=JournalAttributes(extra={"link": compound["link"]})
