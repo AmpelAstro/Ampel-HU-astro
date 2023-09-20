@@ -112,7 +112,7 @@ task:
                 tabulator:
                   - unit: ZTFT2Tabulator
               unit: T2HealpixProb
-              - config:
+            - config:
                 t_cadence: 3.
                 significant_bands: 
                 - 'ztfg'
