@@ -268,6 +268,17 @@ task:
                   unit: T2CatalogMatch
               unit: T2DigestRedshifts
             - config: &possis_config
+                possis_models:
+                  bns_m3_3comp:
+                    mej_dyn: 0.01
+                    mej_wind: 0.09
+                    phi: 45
+                    cos_theta: 0.3
+                  bns_m3_3comp:
+                    mej_dyn: 0.01
+                    mej_wind: 0.09
+                    phi: 45
+                    cos_theta: 0.3
                 explosion_time_jd: TriggerTime
                 max_ampelz_group: 7
                 redshift_kind: T2DigestRedshifts

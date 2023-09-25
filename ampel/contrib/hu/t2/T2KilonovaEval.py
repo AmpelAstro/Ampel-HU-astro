@@ -66,12 +66,11 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
     max_redshift_uncertainty: float = 999
 
     # distance compared to healpix distance
-    distance_mode: str = "reward" # possible: "reward", "punish", "pass"
+    distance_mode: str = "reward"  # possible: "reward", "punish", "pass"
     max_dist_sigma_diff: float = 3
 
     # probability contour evaluation
     prob_sigma_rewards = [3, 1, 0]
-
 
     # Lightcurve (using redshift, so that needs to be there)
     min_absmag: float = -20
@@ -80,8 +79,8 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
     min_ndet_postul: int = 0  # and if it has this minimum nr of detection after the last significant (max_maglim) UL.
     min_age: float = 0.01  # require 2 detections separated by 15 minutes
     max_age: float = 3.0
-    #min_mag_sigma_diff: float = 2 # consider lc decreasing if two consecutive detections including uncertainty are more than x sigma apart
-    mag_dec_diff: float = 0.4 # consider lc decreasing if two consecutive detections' magnitude difference more than this
+    # min_mag_sigma_diff: float = 2 # consider lc decreasing if two consecutive detections including uncertainty are more than x sigma apart
+    mag_dec_diff: float = 0.4  # consider lc decreasing if two consecutive detections' magnitude difference more than this
     # Min age of detection history
     # range of peak magnitudes for submission
     min_peak_mag: float = 22
@@ -178,27 +177,66 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
 
     def inspect_possis(self, t2res: dict[str, Any]) -> None | dict[str, Any]:
         """
-        Check whether a fit to T2RunPossis models look good.
+        Check whether a fit to T2RunPossis models looks good, save best fit's parameters.
         """
-        info = {"pass": 0, "model": t2res["model_name"], "rejects": []}
-        if not t2res["z"] or not t2res["sncosmo_result"]["success"]:
+
+        possis_exists = False
+        tmp_exists = False
+
+        best_redchisq = 1000
+        best_ind = 0
+
+        # check if possis fits exist and pick the one with reduced chisquare closest to 1
+        for k, model_gen in enumerate(t2res.keys()):
+            print("Evaluating possis model::", model_gen)
+
+            success = (
+                t2res[model_gen]["sncosmo_result"]["success"]
+                if t2res[model_gen].get("sncosmo_result")
+                else False
+            )
+            tmp_exists = t2res[model_gen]["z"] or success
+            possis_exists = possis_exists or tmp_exists
+
+            if tmp_exists:
+                if t2res[model_gen]["sncosmo_result"]["ndof"] > 0:
+                    tmp_redchisq = (
+                        t2res[model_gen]["sncosmo_result"]["chisq"]
+                        / t2res[model_gen]["sncosmo_result"]["ndof"]
+                    )
+
+                if k == 0:
+                    best_redchisq = tmp_redchisq
+
+                if np.abs(tmp_redchisq - 1) < np.abs(best_redchisq - 1):
+                    best_redchisq = tmp_redchisq
+                    best_ind = k
+
+        if not possis_exists:
+            info = {"pass": 0, "rejects": []}
             criterium_name = "no_possis_fits"
             info["rejects"].append(criterium_name)
             info["pass"] -= 0
             return info  # doesnt make sense to continue analysis if no values available
-        # info["pass"]
+  
 
-        info["possis_abspeak"] = t2res["fit_metrics"]["restpeak_model_absmag_B"]
-        info["possis_obspeak"] = t2res["fit_metrics"]["obspeak_model_B"]
-        info["possis_chisq"] = t2res["sncosmo_result"]["chisq"]
-        info["possis_ndof"] = t2res["sncosmo_result"]["ndof"]
+        print(list(t2res.keys()))
+        best_res = t2res[list(t2res.keys())[best_ind]]
 
-        if info["possis_ndof"] < 0:
-            criterium_name = "possis_ndof"
-            info["rejects"].append(criterium_name)
-            info["pass"] -= 0  # TODO maybe find a better way to punish this
-            return info
-        info["pass"] += 1
+        info = {"pass": 0, "model": best_res["model_name"], "rejects": []}
+
+        info["possis_abspeak"] = best_res["fit_metrics"]["restpeak_model_absmag_B"]
+        info["possis_obspeak"] = best_res["fit_metrics"]["obspeak_model_B"]
+        info["possis_chisq"] = best_res["sncosmo_result"]["chisq"]
+        info["possis_ndof"] = best_res["sncosmo_result"]["ndof"]
+
+        # redundant since we only consider fits with positive ndof
+        # if info["possis_ndof"] < 0:
+        #     criterium_name = "possis_ndof"
+        #     info["rejects"].append(criterium_name)
+        #     info["pass"] -= 0  # TODO maybe find a better way to punish this
+        #     return info
+        # info["pass"] += 1
 
         if self.min_absmag < info["possis_abspeak"] < self.max_absmag:
             info["pass"] += 1
@@ -269,65 +307,76 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         info["most_recent_detection"] = most_recent_detection
         info["first_detection"] = first_detection
 
-
         # check if theres two consecutive detections that have significant decrease in brightness
         # DONE: filter wise distinction
-        if (len(pps) > 1):
+        if len(pps) > 1:
             criterium_name = []
             fids_list = []
-            fids_list = [pp_tmp["body"]["fid"] for pp_tmp in pps if pp_tmp["body"]["fid"] not in fids_list]
+            fids_list = [
+                pp_tmp["body"]["fid"]
+                for pp_tmp in pps
+                if pp_tmp["body"]["fid"] not in fids_list
+            ]
             fids_list = np.unique(fids_list)
-            #print("FIDS LIST ATTEMPT: ", fids_list)
+            # print("FIDS LIST ATTEMPT: ", fids_list)
 
             lc_pass_score = 0
             # loop over bands
             for fid_tmp in fids_list:
-                filter_pps = [pp_tmp for pp_tmp in pps if pp_tmp["body"]["fid"] == fid_tmp]
+                filter_pps = [
+                    pp_tmp for pp_tmp in pps if pp_tmp["body"]["fid"] == fid_tmp
+                ]
                 lc_pass_score = 0
-                #print(len(filter_pps), "fid:", fid_tmp, info["first_detection"])
-                if (len(filter_pps) > 1):
+                # print(len(filter_pps), "fid:", fid_tmp, info["first_detection"])
+                if len(filter_pps) > 1:
                     # loop over photopoints in this band
-                    for i in range(0, len(filter_pps)-1):
+                    for i in range(0, len(filter_pps) - 1):
                         #
                         pp_curr = filter_pps[i]
                         # compare to all following photopoints in same band
-                        #for k in range(i, len(filter_pps)):
+                        # for k in range(i, len(filter_pps)):
                         pp_next = filter_pps[i + 1]
-                        magpsf_curr = pp_curr["body"]["magpsf"]# + pp_curr["body"]["sigmapsf"]
-                        magpsf_next = pp_next["body"]["magpsf"]# - pp_next["body"]["sigmapsf"]
-                        magpsf_sigma_diff = (magpsf_curr - magpsf_next) / pp_curr["body"]["sigmapsf"]
+                        magpsf_curr = pp_curr["body"][
+                            "magpsf"
+                        ]  # + pp_curr["body"]["sigmapsf"]
+                        magpsf_next = pp_next["body"][
+                            "magpsf"
+                        ]  # - pp_next["body"]["sigmapsf"]
+                        magpsf_sigma_diff = (magpsf_curr - magpsf_next) / pp_curr[
+                            "body"
+                        ]["sigmapsf"]
                         magpsf_diff = magpsf_next - magpsf_curr
 
-                        #print("SIGMA DIFFERNCE MAGNITUDE ", magpsf_sigma_diff)
+                        # print("SIGMA DIFFERNCE MAGNITUDE ", magpsf_sigma_diff)
                         info["mag_sigma_fid_" + str(fid_tmp)] = magpsf_sigma_diff
                         info["mag_diff_fid_" + str(fid_tmp)] = magpsf_diff
-                        #print(i, magpsf_diff, "DIFFERENCE MAGNITUDE", fid_tmp, info["first_detection"])
+                        # print(i, magpsf_diff, "DIFFERENCE MAGNITUDE", fid_tmp, info["first_detection"])
 
-                        #if (magpsf_sigma_diff <= -self.min_mag_sigma_diff):
-                        if (magpsf_diff >= self.mag_dec_diff):
+                        # if (magpsf_sigma_diff <= -self.min_mag_sigma_diff):
+                        if magpsf_diff >= self.mag_dec_diff:
                             lc_pass_score += 1
-                            #("GOOD MAGPSF DIFFERENCE:", magpsf_diff, fid_tmp)
-                            #print(magpsf_next, magpsf_curr, pp_next["body"]["jd"], pp_curr["body"]["jd"])
-                            #criterium_name = None
-                            #break
-                        #elif (magpsf_sigma_diff >= 0):
+                            # ("GOOD MAGPSF DIFFERENCE:", magpsf_diff, fid_tmp)
+                            # print(magpsf_next, magpsf_curr, pp_next["body"]["jd"], pp_curr["body"]["jd"])
+                            # criterium_name = None
+                            # break
+                        # elif (magpsf_sigma_diff >= 0):
                         else:
                             time_diff = pp_next["body"]["jd"] - pp_curr["body"]["jd"]
-                            #print(time_diff)
-                            if (time_diff >= .5):
-                                lc_pass_score -=0
+                            # print(time_diff)
+                            if time_diff >= 0.5:
+                                lc_pass_score -= 0
                                 criterium_name.append("long_nondecrease_lc")
-                                #break
-                            elif (time_diff >= 0):
+                                # break
+                            elif time_diff >= 0:
                                 lc_pass_score -= 0
                                 criterium_name.append("short_nondecrease_lc")
-                                #break
+                                # break
                             else:
                                 criterium_name.append("negative_time_diff")
-                #if criterium_name is not None:
+                    # if criterium_name is not None:
                     # if flatness detected, dont check further
-                    #break
-                    info["pass"] += lc_pass_score # / len(pps)
+                    # break
+                    info["pass"] += lc_pass_score  # / len(pps)
             if criterium_name is not None:
                 info["rejects"].append(criterium_name)
 
@@ -363,9 +412,6 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                 # return None
             else:
                 info["pass"] += 1
-
-            
-                    
 
             # Check that there is a recent ul
             if (most_recent_detection - last_ulim_jd) > self.maglim_maxago:
@@ -581,7 +627,9 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
 
         possible_modes = ["reward", "punish", "pass"]
         if self.distance_mode not in possible_modes:
-            raise ValueError("results: distance mode must be one of %r." % possible_modes)
+            raise ValueError(
+                "results: distance mode must be one of %r." % possible_modes
+            )
 
         # reward/punish distance math depending on mode
         match self.distance_mode:
@@ -601,10 +649,10 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         distance_healpix = float(t2res["map_dist"])
         distance_healpix_unc = float(t2res["map_dist_unc"])
 
-        distance_diff = abs(distance_ampel - distance_healpix) 
+        distance_diff = abs(distance_ampel - distance_healpix)
 
-        #print("difference redshift precision +: ", Planck15.luminosity_distance(input_info["ampel_z"] + input_info["ampel_z_precision"]).value - distance_ampel)
-        #print("difference redshift precision -: ", Planck15.luminosity_distance(input_info["ampel_z"] - input_info["ampel_z_precision"]).value - distance_ampel)
+        # print("difference redshift precision +: ", Planck15.luminosity_distance(input_info["ampel_z"] + input_info["ampel_z_precision"]).value - distance_ampel)
+        # print("difference redshift precision -: ", Planck15.luminosity_distance(input_info["ampel_z"] - input_info["ampel_z_precision"]).value - distance_ampel)
         distance_sigmaDiff = distance_diff / distance_healpix_unc
 
         if distance_sigmaDiff > self.max_dist_sigma_diff:
@@ -614,21 +662,20 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         else:
             info["pass"] += reward
 
-        info["ampel_healpix_dist"] = distance_ampel #(
-            #,
-            #distance_healpix,
-           # distance_healpix_unc,
-        #)
+        info["ampel_healpix_dist"] = distance_ampel  # (
+        # ,
+        # distance_healpix,
+        # distance_healpix_unc,
+        # )
         info["distance_sigma_diff"] = distance_sigmaDiff
 
         # print(t2res)
 
         return info
 
-
-    def inspect_prob(self, t2res: dict[str, Any], input_info: dict[str, Any]
+    def inspect_prob(
+        self, t2res: dict[str, Any], input_info: dict[str, Any]
     ) -> None | dict[str, Any]:
-        
         info = {"pass": 0, "rejects": []}
 
         prob_cont = float(input_info["cumprob"])
@@ -640,7 +687,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         else:
             reward = self.prob_sigma_rewards[2]
 
-        #print("PROB CONTOUR REWARD", type(prob_cont), prob_cont, reward)
+        # print("PROB CONTOUR REWARD", type(prob_cont), prob_cont, reward)
 
         info["pass"] += reward
         return info
@@ -716,8 +763,6 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                 cat_kilonovaness = cinfo["pass"]
                 # print("T2CatalogMatch in kilonovaeval")
 
-            
-
             # Propagate map info
             if t2_view.unit in ["T2PropagateStockInfo", "T2HealpixProb"]:
                 info.update(
@@ -726,20 +771,19 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
 
             # distance compared to healpix dist
             if t2_view.unit == "T2HealpixProb":
-                #print("INSPECT HEALPIX PROB")
-                #print(info.keys())
-                if (info.get("ampel_z")):
+                # print("INSPECT HEALPIX PROB")
+                # print(info.keys())
+                if info.get("ampel_z"):
                     dinfo = self.inspect_distance(t2_res, info)
                     if len(dinfo["rejects"]) > 0:
                         rejects.extend(dinfo["rejects"])
                     info.update(dinfo)
                     kilonovaness += dinfo["pass"]
                     dist_kilonovaness = dinfo["pass"]
-                if (t2_res.get("cumprob")):
+                if t2_res.get("cumprob"):
                     probinfo = self.inspect_prob(t2_res, info)
                     info.update(probinfo)
                     kilonovaness += probinfo["pass"]
-
 
         # Check whether the lightcurve passes selection criteria
         # TODO: add kilonovaness criteria
@@ -753,7 +797,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
 
         # iii. Check absolute magnitude - again (but directly from lightcurve)
         if (z := info.get("ampel_z")) and (obsmag := info.get("peak_mag") and z >= 0):
-            #print(z)
+            # print(z)
             sndist = Distance(z=z, cosmology=Planck15)
             info["absmag"] = obsmag - sndist.distmod.value
             if self.min_absmag < info["absmag"] < self.max_absmag:
