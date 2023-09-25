@@ -61,7 +61,8 @@ class T2RunPossis(T2RunSncosmo):
     )
 
     possis_models: dict = {
-        model_gen: {
+        "model_ind": {
+            "model_gen": model_gen,
             "mej_dyn": mej_dyn,
             "mej_wind": mej_wind,
             "phi": phi,
@@ -95,23 +96,25 @@ class T2RunPossis(T2RunSncosmo):
         Note that this could be done once at instance init.
         """
 
-        for model_gen in self.possis_models.keys():
-            self.possis_models[model_gen]["sncosmo_model_name"] = "_".join(
+        for model_ind in self.possis_models.keys():
+            model_gen = self.possis_models[model_ind]["model_gen"]
+            self.possis_models[model_ind]["sncosmo_model_name"] = "_".join(
                 map(
                     str,
                     [
                         model_gen,
-                        self.possis_models[model_gen]["mej_dyn"],
-                        self.possis_models[model_gen]["mej_wind"],
-                        self.possis_models[model_gen]["phi"],
-                        self.possis_models[model_gen]["cos_theta"],
+                        self.possis_models[model_ind]["mej_dyn"],
+                        self.possis_models[model_ind]["mej_wind"],
+                        self.possis_models[model_ind]["phi"],
+                        self.possis_models[model_ind]["cos_theta"],
                     ],
                 )
             )
 
         print("T2RUNPOSSIS::", self.possis_models)
 
-        for model_gen, model_dict in self.possis_models.items():
+        for model_ind, model_dict in self.possis_models.items():
+            model_gen = model_dict["model_gen"]
             mej_dyn = (
                 model_dict["mej_dyn"] if model_dict.get("mej_dyn") else self.mej_dyn
             )
@@ -141,6 +144,8 @@ class T2RunPossis(T2RunSncosmo):
                 f"{model_gen}/nph1.0e+06_mejdyn{mej_dyn:05.3f}_mejwind{mej_wind:05.3f}_phi{phi}.txt",
             )
 
+            print(model_url)
+
             # Find file
             with urlopen(model_url) as fh:
                 # Read model Parameters from first three lines
@@ -152,13 +157,17 @@ class T2RunPossis(T2RunSncosmo):
                 t_i = float(line3[1])
                 t_f = float(line3[2])
                 model_cos_theta = np.linspace(0, 1, nobs)  # 11 viewing angles
+                print(cos_theta, model_cos_theta)
                 phase = np.linspace(t_i, t_f, ntime)  # epochs
 
                 # Limit to one angle
-                # Note: U. Feindt developed model where angle was fit, left out for know
-                theta_mask = np.isclose(cos_theta, model_cos_theta)
+                # Note: U. Feindt developed model where angle was fit, left out for now
+                if phi==90:
+                    theta_mask = [True]
+                else:
+                    theta_mask = np.isclose(cos_theta, model_cos_theta)
                 if not sum(theta_mask) == 1:
-                    raise ValueError("Model cos_theta {model_cos_theta} not defined")
+                    raise ValueError(f"Model cos_theta {model_cos_theta} not defined")
 
                 # Read model data
                 mdata = np.genfromtxt(fh)
@@ -205,7 +214,7 @@ class T2RunPossis(T2RunSncosmo):
                 tmp_sncosmo_model.set(t0=self.explosion_time_jd)
                 tmp_fit_params.remove("t0")
 
-            self.sncosmo_data[model_gen] = {
+            self.sncosmo_data[model_ind] = {
                 "sncosmo_model": tmp_sncosmo_model,
                 "fit_params": tmp_fit_params,
                 "dustmap": tmp_dustmap if tmp_dustmap else None,
@@ -229,13 +238,14 @@ class T2RunPossis(T2RunSncosmo):
 
         result_dict = {}
 
-        for model_gen in self.possis_models.keys():
-            print("T2RUNPOSSIS evaluating::", model_gen)
+        for model_ind in self.possis_models.keys():
 
-            self.sncosmo_model = self.sncosmo_data[model_gen]["sncosmo_model"]
-            self.fit_params = self.sncosmo_data[model_gen]["fit_params"]
-            self.dustmap = self.sncosmo_data[model_gen]["dustmap"] 
-            self.apply_mwcorrection = self.sncosmo_data[model_gen]["apply_mwcorrection"]
+            print("T2RUNPOSSIS evaluating::", model_ind)
+
+            self.sncosmo_model = self.sncosmo_data[model_ind]["sncosmo_model"]
+            self.fit_params = self.sncosmo_data[model_ind]["fit_params"]
+            self.dustmap = self.sncosmo_data[model_ind]["dustmap"] 
+            self.apply_mwcorrection = self.sncosmo_data[model_ind]["apply_mwcorrection"]
 
             self.default_param_vals = self.sncosmo_model.parameters
 
@@ -264,7 +274,7 @@ class T2RunPossis(T2RunSncosmo):
 
             model_results = super().process(compound, datapoints, t2_views)
 
-            result_dict[model_gen] = model_results
+            result_dict[model_ind] = model_results
 
         print("T2RUNPOSSIS::", result_dict)
 
