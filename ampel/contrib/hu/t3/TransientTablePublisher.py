@@ -14,6 +14,8 @@ from collections.abc import Generator
 from functools import reduce
 from typing import Any, Optional, Union
 
+import json
+
 import backoff
 import pandas as pd
 import requests
@@ -95,7 +97,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
 
     fmt: str = "csv"
 
-    file_name: str = "TransientTable.csv"
+    file_name: str = "TransientTable"
     slack_channel: None | str = None
     slack_token: None | NamedSecret[str]
     local_path: None | str = None
@@ -209,9 +211,14 @@ class TransientTablePublisher(AbsPhotoT3Unit):
         if self.local_path is not None:
             full_path = os.path.join(self.local_path, self.file_name)
             if self.fmt == "csv":
-                df.to_csv(full_path, sep=";")
+                df.to_csv(full_path + ".csv", sep=";")
             elif self.fmt == "latex":
-                df.to_latex(full_path)
+                df.to_latex(full_path + ".tex")
+            elif self.fmt == "json":
+                json_dumps = df.to_json(indent=2)
+                with open(full_path + ".json", "w") as json_file:
+                    json_file.write(json_dumps)
+                    json_file.close()
             self.logger.info("Exported", extra={"path": full_path})
 
         # Export to slack if requested

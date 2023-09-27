@@ -51,6 +51,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                 "T2PropagateStockInfo",
                 "T2HealpixProb",
                 "T2CatalogMatch",
+                "T2TabulatorRiseDecline"
             ]
         ]
     ]
@@ -186,23 +187,25 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         best_redchisq = 1000
         best_ind = 0
 
+        chisq_dict = {}
+
         # check if possis fits exist and pick the one with reduced chisquare closest to 1
-        for k, model_gen in enumerate(t2res.keys()):
-            print("Evaluating possis model::", model_gen)
+        for k, model_ind in enumerate(t2res.keys()):
+            print("Evaluating possis model::", model_ind)
 
             success = (
-                t2res[model_gen]["sncosmo_result"]["success"]
-                if t2res[model_gen].get("sncosmo_result")
+                t2res[model_ind]["sncosmo_result"]["success"]
+                if t2res[model_ind].get("sncosmo_result")
                 else False
             )
-            tmp_exists = t2res[model_gen]["z"] or success
+            tmp_exists = t2res[model_ind]["z"] or success
             possis_exists = possis_exists or tmp_exists
 
             if tmp_exists:
-                if t2res[model_gen]["sncosmo_result"]["ndof"] > 0:
+                if t2res[model_ind]["sncosmo_result"]["ndof"] > 0:
                     tmp_redchisq = (
-                        t2res[model_gen]["sncosmo_result"]["chisq"]
-                        / t2res[model_gen]["sncosmo_result"]["ndof"]
+                        t2res[model_ind]["sncosmo_result"]["chisq"]
+                        / t2res[model_ind]["sncosmo_result"]["ndof"]
                     )
 
                 if k == 0:
@@ -211,6 +214,10 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                 if np.abs(tmp_redchisq - 1) < np.abs(best_redchisq - 1):
                     best_redchisq = tmp_redchisq
                     best_ind = k
+                
+                chisq_dict[model_ind] = {"chisq": t2res[model_ind]["sncosmo_result"]["chisq"], "ndof": t2res[model_ind]["sncosmo_result"]["ndof"]}
+
+        #print("T2KILONOVAEVAL::", chisq_dict)
 
         if not possis_exists:
             info = {"pass": 0, "rejects": []}
@@ -223,7 +230,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         print(list(t2res.keys()))
         best_res = t2res[list(t2res.keys())[best_ind]]
 
-        info = {"pass": 0, "model": best_res["model_name"], "rejects": []}
+        info = {"pass": 0, "model": best_res["model_name"], "rejects": [], "chisquares": chisq_dict}
 
         info["possis_abspeak"] = best_res["fit_metrics"]["restpeak_model_absmag_B"]
         info["possis_obspeak"] = best_res["fit_metrics"]["obspeak_model_B"]
@@ -676,6 +683,9 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
     def inspect_prob(
         self, t2res: dict[str, Any], input_info: dict[str, Any]
     ) -> None | dict[str, Any]:
+        """
+        Check if map probability is over sigma threshold
+        """
         info = {"pass": 0, "rejects": []}
 
         prob_cont = float(input_info["cumprob"])
@@ -690,6 +700,15 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         # print("PROB CONTOUR REWARD", type(prob_cont), prob_cont, reward)
 
         info["pass"] += reward
+        return info
+    
+    def inspect_risedecline(self, t2res: dict[str, Any]
+    ) -> None | dict[str, Any]:
+        """
+        Propagate parameters from T2TabulatorRiseDecline"""
+
+        info = {"pass": 0, "rise_decline": t2res}
+        info["pass"] = t2res["bool_rise"] + t2res["bool_fall"] + t2res["bool_peaked"]
         return info
 
     # MANDATORY
@@ -762,6 +781,12 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                 kilonovaness += cinfo["pass"]
                 cat_kilonovaness = cinfo["pass"]
                 # print("T2CatalogMatch in kilonovaeval")
+
+            if t2_view.unit == "T2TabulatorRiseDecline":
+                #print("T2RISEDECLINE STUFF", t2_res)
+                rdinfo = self.inspect_risedecline(t2_res)
+                kilonovaness += rdinfo["pass"]
+                info.update(rdinfo)
 
             # Propagate map info
             if t2_view.unit in ["T2PropagateStockInfo", "T2HealpixProb"]:
