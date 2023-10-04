@@ -1,5 +1,4 @@
 name: ligo-kilonova
-
 parameters:
 - name: map_url_var
   value: https://gracedb.ligo.org/api/superevents/S200115j/files/LALInference.fits.gz,0
@@ -330,7 +329,8 @@ task:
           unit: ZiArchiveMuxer  # chunk size?
           config:
             future_days: 3
-            history_days: 50            
+            history_days: 50      
+
 
 - title: Run T2s
   unit: T2Worker
@@ -380,7 +380,7 @@ task:
                     move_files: false
                     table_schema:
                       T2KilonovaEval:
-                        'ampel_z:
+                        'ampel_z':
                           - ampel_z
                         'ampel_z_precision':
                           - ampel_z_precision
@@ -437,4 +437,3 @@ task:
                           - prob_contour
                         'healpix_map':
                           - healpix_map
-
