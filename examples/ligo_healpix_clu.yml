@@ -8,6 +8,10 @@ parameters:
   value: S200115j.fits.gz,0_token
 - name: trigger_jd_var
   value: 2458863.682951
+- name: export_fmt
+  value: json
+- name: transienttable_path
+  value: ./TransientTable.json
 
 mongo:
   prefix: ligo
@@ -375,7 +379,7 @@ task:
                     include_stock: true
                     include_channels: true
                     convert_stock_to: ztf
-                    fmt: json
+                    fmt: "{{ job.parameters.export_fmt }}"
                     local_path: ./
                     move_files: false
                     table_schema:
@@ -437,3 +441,7 @@ task:
                           - prob_contour
                         'healpix_map':
                           - healpix_map
+  outputs:
+    artifacts:
+      - name: transienttable
+        path: "{{ job.parameters.transienttable_path }}"

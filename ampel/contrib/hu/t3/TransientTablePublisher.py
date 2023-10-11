@@ -88,7 +88,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
     include_stock: bool = False
     convert_stock_to: str | None = None
 
-    sort_by_key: str | None = "Kilonovaness"
+    sort_by_key: str | None = "kilonovaness"
     sort_ascending: bool = False
 
     include_channels: bool = True
@@ -101,6 +101,8 @@ class TransientTablePublisher(AbsPhotoT3Unit):
     slack_channel: None | str = None
     slack_token: None | NamedSecret[str]
     local_path: None | str = None
+
+    move_files: bool = True
 
     def process(
         self, gen: Generator[TransientView, T3Send, None], t3s: Optional[T3Store] = None
@@ -210,6 +212,8 @@ class TransientTablePublisher(AbsPhotoT3Unit):
         # Local save
         if self.local_path is not None:
             full_path = os.path.join(self.local_path, self.file_name)
+            with open(full_path + "." + self.fmt, "w") as tmp_file:
+                tmp_file.close()
             if self.fmt == "csv":
                 df.to_csv(full_path + ".csv", sep=";")
             elif self.fmt == "latex":
@@ -230,7 +234,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
         # take everything local_path and put it into new folder named after skymap
         # print(df.keys)
         map_name_key = "Map name"
-        if map_name_key in list(df.keys()):
+        if map_name_key in list(df.keys()) and self.move_files:
             files_local_path = os.listdir(self.local_path)
             skymap_name = df[map_name_key][
                 0
