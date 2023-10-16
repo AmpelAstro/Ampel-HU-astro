@@ -184,10 +184,11 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         possis_exists = False
         tmp_exists = False
 
-        best_redchisq = 1000
+        best_redchisq = 10000
         best_ind = 0
 
         chisq_dict = {}
+        tmp_redchisq = 10000
 
         # check if possis fits exist and pick the one with reduced chisquare closest to 1
         for k, model_ind in enumerate(t2res.keys()):

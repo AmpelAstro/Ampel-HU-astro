@@ -233,7 +233,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
 
         # take everything local_path and put it into new folder named after skymap
         # print(df.keys)
-        map_name_key = "Map name"
+        map_name_key = "map_name"
         if map_name_key in list(df.keys()) and self.move_files:
             files_local_path = os.listdir(self.local_path)
             skymap_name = df[map_name_key][
