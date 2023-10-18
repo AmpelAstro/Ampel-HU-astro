@@ -63,6 +63,7 @@ task:
             - unit: LSSTT1Combiner
               state_t2:
               - config:
+                  paths_xgbbinary: {}
                   paths_xgbmulti:
                     all:
                       path: model_all

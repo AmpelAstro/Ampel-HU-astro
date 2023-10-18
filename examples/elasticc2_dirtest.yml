@@ -40,18 +40,19 @@ task:
 
   unit: AlertConsumer
   config:
-    iter_max: 100000000
+    iter_max: 10000
+    updates_buffer_size: 50000
     compiler_opts: LSSTCompilerOptions
 
     supplier:
       unit: LSSTAlertSupplier
       config:
-        deserialize: null
+        deserialize: avro
         loader:
           config:
-            folder: 5000alertsdir/NITE60562
-            extension: "*avro.gz"
-          unit: ElasticcDirAlertLoader
+            # start: 20000
+            file_path: elasticc2-biguns.tar.gz
+          unit: TarAlertLoader
 
     shaper: {unit: LSSTDataPointShaper}
 
@@ -62,13 +63,18 @@ task:
         unit: ReallySimpleLSSTFilter
         on_stock_match: bypass
         config:
-          min_ndet: 0
+          min_ndet: 8000
+          # max_ndet: 50
           min_tspan: 0
           max_tspan: 10000
 
       ingest:
           mux:
             unit: LSSTMongoMuxer
+            config:
+              projection:
+                _id: 0
+                id: 1
             combine:
             - unit: LSSTT1Combiner
               state_t2:
