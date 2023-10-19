@@ -18,6 +18,7 @@ class KafkaReporter(AmpelUnit):
     avro_schema: dict | str
 
     producer_config: dict[str, Any] = {}
+    delivery_timeout: float = 10.
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -40,7 +41,8 @@ class KafkaReporter(AmpelUnit):
         self._producer.produce(self.topic, self.serialize(record))
 
     def flush(self):
-        self._producer.flush()
+        if (in_queue := self._producer.flush(self.delivery_timeout)) > 0:
+            raise TimeoutError(f"{in_queue} messages still in queue after {self.delivery_timeout}s")
         self._producer.poll(0)
 
 
