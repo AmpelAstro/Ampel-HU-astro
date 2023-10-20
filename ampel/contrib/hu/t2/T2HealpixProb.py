@@ -7,32 +7,17 @@
 # Last Modified Date:  28.03.2021
 # Last Modified By:    jn <jnordin@physik.hu-berlin.de>
 
-from typing import Any, ClassVar, Literal, Iterable, Union
-from functools import cached_property
+from typing import Any, Iterable, Union
 from ampel.types import UBson
 
-from extcats import CatalogQuery
-from pymongo import MongoClient
-from pymongo.errors import AutoReconnect
-import backoff
+from numpy import mean
 
-
-from astropy.coordinates import SkyCoord
-from astropy.table import Table
-from extcats.catquery_utils import get_closest, get_distances
-from numpy import asarray, degrees, mean
-import numpy as np
-
-from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.content.DataPoint import DataPoint
-from ampel.enum.DocumentCode import DocumentCode
 from ampel.struct.UnitResult import UnitResult
-from ampel.struct.Resource import Resource
-from ampel.model.DPSelection import DPSelection
 from ampel.content.T1Document import T1Document
 from ampel.abstract.AbsStateT2Unit import AbsStateT2Unit
 from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
-from ampel.contrib.hu.util.AmpelHealpix import AmpelHealpix, deres
+from ampel.contrib.hu.util.AmpelHealpix import AmpelHealpix
 
 
 class T2HealpixProb(AbsStateT2Unit, AbsTabulatedT2Unit):
