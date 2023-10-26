@@ -124,7 +124,6 @@ task:
                 config:
                   multiple_classifiers: true
                   use_priors: true
-                  send_reports: false
                   t2_dependency:
                     - <<: *xgb_config
                     - <<: *T2RunParsnip
