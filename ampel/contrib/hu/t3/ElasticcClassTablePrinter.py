@@ -118,12 +118,27 @@ class ElasticcClassTablePrinter(AbsT3ReviewUnit):
         flatreport = {'alertId':t2ElasticcReport['alertId'], 'diaSourceId':t2ElasticcReport['diaSourceId']} 
         # Sort classifications
         by_classifier = defaultdict(list)
-        for c in t2ElasticcReport["classifications"]:
-             if not c["classifierName"] in self.classifier_map.keys() or c['probability']<self.min_prob:
-                 continue
-             by_classifier[(c["classifierName"], c["classifierParams"])].append( {k: c[k] 
-                                  for k in ("classId", "probability")}
-        )
+ 
+        # Elasticc1 allowed multiple classifiers in each report, storing names with the probabilities, while e2 assumed a single named stored in the report body
+        if (cname := t2ElasticcReport.get('classifierName', None) ) is not None:  
+            if not cname in self.classifier_map.keys():
+                # elasticc 2, and this classifier not requested
+                return []
+            by_classifier[cname, t2ElasticcReport["classifierParams"]] = [] 
+            for c in t2ElasticcReport["classifications"]:
+                 if c['probability']<self.min_prob:
+                     continue            
+                 by_classifier[cname, t2ElasticcReport["classifierParams"]].append( {k: c[k] 
+                                  for k in ("classId", "probability") } )
+        else:
+            for c in t2ElasticcReport["classifications"]:
+                 if c['probability']<self.min_prob:
+                     continue
+                 if not c["classifierName"] in self.classifier_map.keys():
+                    continue
+                 by_classifier[(c["classifierName"], c["classifierParams"])].append( {k: c[k] 
+                                      for k in ("classId", "probability")} )
+
         # Parse classifications
         for (name, params), classifications in by_classifier.items():
             flatreport.update(
@@ -169,7 +184,14 @@ class ElasticcClassTablePrinter(AbsT3ReviewUnit):
                         )
                     if not isinstance((body := t2view.get_payload()), dict):
                         continue
-                    yield tran_view, t1_link, body["report"]
+                    # Either a singular report or a list of reports 
+                    if (report := body.get('report',None)) is not None:
+                        yield tran_view, t1_link, report
+                    elif isinstance( (reports := body['reports']), tuple):
+                        for report in reports:
+                            yield tran_view, t1_link, report
+                    else:
+                        yield tran_view, t1_link, body["report"]
         self.logger.log(LogFlag.SHOUT, "filtered states", extra=stats)
 
     def process(self, gen: Generator[TransientView, T3Send, None], t3s: T3Store) -> None:
