@@ -476,11 +476,13 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
 
         # Save plot
         if self.plot_props:
-            # Construct name
+            # Construct name JN: What are the standards for noisified?
             stock_id = "-".join([str(v) for v in self.get_stock_id(datapoints)])
             tname = "-".join([str(v) for v in self.get_stock_name(datapoints)])
 
             if self.noisified:
+                stock_id = "-".join([str(v) for v in self.get_stock_id(datapoints)])
+                
                 tname = ZTFNoisifiedIdMapper().to_ext_id(stock_id)
 
             # Add some info
@@ -496,9 +498,9 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                 "redshift_kind": self.redshift_kind,
                 "chisq": sncosmo_result["chisq"],
                 "ndof": sncosmo_result["ndof"],
-                "stock": stock_id,
+                "stock": self.get_stock_id(datapoints)[0]   # Only using first name, assuming this is from ZTF
             }
-
+            
             fig = sncosmo.plot_lc(
                 sncosmo_table,
                 model=fitted_model,
