@@ -90,6 +90,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
     min_n_filters: int = 1
     # Require a detection in one of these filters (e.g. ZTF I-band more often spurious)
     det_filterids: list[int] = [1, 2, 3]  # default to any of them
+    
     # Below are copied from filter - not sure is needed, but kept for legacy
     # Minimal galactic latitide
     min_gal_lat: float = 14

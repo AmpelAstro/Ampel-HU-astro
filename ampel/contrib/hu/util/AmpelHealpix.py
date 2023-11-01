@@ -48,9 +48,9 @@ class AmpelHealpix:
 
     def _get_map(self, clobber=False) -> int:
         path = os.path.join(self.save_dir, self.map_name)
-        #print(path)
+        print(path)
         if os.path.exists(path) and not clobber:
-            #print("Map exists and found")
+            print("Map exists and found")
             return 1
 
         # Retrieve mapfile.

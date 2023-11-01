@@ -72,6 +72,8 @@ healpy = {version = "^1.16.2", optional = false}
 light-curve = "^0.7.3"
 psutil = "^5.9.5"
 ampel-lsst = "^0.8.6"
+pickleshare = "^0.7.5"
+backcall = "^0.2.0"
 
 [tool.poetry.dev-dependencies]
 mypy = "^1.0"
