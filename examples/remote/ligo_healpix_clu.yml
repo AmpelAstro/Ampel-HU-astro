@@ -24,7 +24,7 @@ channel:
 
 task:
 
-- title: HealpixToAlertToken
+- title: token
   unit: T3Processor
   config:
     raise_exc: true
@@ -44,7 +44,7 @@ task:
               archive_token:
                 label: ztf/archive/token
 
-- title: ProcessAlerts
+- title: alerts
   unit: DynamicShaperAlertConsumer
   config:
     shaper_map:
@@ -336,14 +336,14 @@ task:
             history_days: 50      
 
 
-- title: Run T2s
+- title: t2
   unit: T2Worker
   config:
     send_beacon: false
     raise_exc: true
 
 
-- title: React
+- title: react
   unit: T3Processor
   config:
     raise_exc: true
