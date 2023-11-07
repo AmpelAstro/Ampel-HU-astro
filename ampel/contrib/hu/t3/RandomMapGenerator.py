@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# File:                Ampel-HU-astro/ampel/t0/RandomMapGenerator.py
+# File:                Ampel-HU-astro/ampel/t3/RandomMapGenerator.py
 # License:             BSD-3-Clause
 # Author:              ernstand
 # Date:                30.10.2023
 # Last Modified Date:  30.10.2023
 # Last Modified By:    <ernstand@physik.hu-berlin.de>
 
-import os
 import numpy as np
 import pandas as pd
 import astropy as ap
@@ -16,23 +15,14 @@ from astropy import units as u
 import healpy as hp
 from typing import Tuple
 
-from scipy.stats import norm
-from scipy.stats import multivariate_normal
-
-import matplotlib.pyplot as plt
-
 from ampel.abstract.AbsT3PlainUnit import AbsT3PlainUnit
-from ampel.contrib.hu.util.AmpelHealpix import AmpelHealpix, deres
-from ampel.secret.NamedSecret import NamedSecret
 from ampel.struct.Resource import Resource
 from ampel.struct.T3Store import T3Store
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
-from astropy.time import Time  # type: ignore
-from requests_toolbelt.sessions import BaseUrlSession
 
 
-class RandomMap(AbsT3PlainUnit):
+class RandomMapGenerator(AbsT3PlainUnit):
     """
     Generate smoothed circular healpix probability values around a random coordinate.
     """
