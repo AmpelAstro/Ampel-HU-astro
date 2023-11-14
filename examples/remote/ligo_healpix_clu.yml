@@ -1,17 +1,17 @@
 name: ligo-kilonova
 parameters:
 - name: map_url_var
-  value: url #https://box.hu-berlin.de/d/1545d8b265cc496bac48/files/?p=%2Fsim_98.13_58.62_1223725912.7.fits.gz
+  value: https://gracedb.ligo.org/api/superevents/S200115j/files/LALInference.fits.gz,0 #https://box.hu-berlin.de/d/1545d8b265cc496bac48/files/?p=%2Fsim_98.13_58.62_1223725912.7.fits.gz
 - name: map_name_var
-  value: simulated #sim_98.13_58.62_1223725912.7.fits.gz
+  value: S200115j.fits.gz,0 #sim_98.13_58.62_1223725912.7.fits.gz
 - name: map_token_var
-  value: simulated.fits.gz_token #sim_98.13_58.62_1223725912.7.fits.gz_token
+  value: S200115j.fits.gz,0_token #sim_98.13_58.62_1223725912.7.fits.gz_token
 - name: trigger_jd_var
   value: 2458863.682951
 - name: export_fmt
-  value: json
+  value: csv
 - name: transienttable_path
-  value: ./TransientTable.json
+  value: ./TransientTable.csv
 
 mongo:
   prefix: remote

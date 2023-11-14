@@ -37,6 +37,7 @@ class AmpelHealpix:
     ):
         self.map_name = map_name
         self.map_url = map_url
+        print(self.map_url)
         if save_dir:
             self.save_dir = save_dir
         self.nside = nside
