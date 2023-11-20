@@ -1,0 +1,112 @@
+# Dev version for developic elasticc2 pipeline
+
+
+name: elasticcAtRestKN
+
+mongo:
+  prefix: ElAtrestKN
+  reset: true
+
+channel:
+- name: elasticc
+  access: []
+  policy: []
+  version: 1
+
+task:
+
+
+
+- title: ingest
+  inputs:
+    artifacts:
+      - name: alertsample
+        path: kilonovatestsample
+        http:
+          url: https://portal.nersc.gov/cfs/lsst/DESC_TD_PUBLIC/ELASTICC/ELASTICC2_TRAINING_SAMPLE_2/AVRO/2232.tar.bz2
+  unit: AlertConsumer
+  config:
+    iter_max: 10000
+    compiler_opts: LSSTCompilerOptions
+
+    supplier:
+      unit: LSSTAlertSupplier
+      config:
+        deserialize: null
+        loader:
+          config:
+            folder: kilonovatestsample
+            extension: "*avro"
+          unit: ElasticcDirAlertLoader
+
+    shaper: {unit: LSSTDataPointShaper}
+
+    directives:
+    - channel: elasticc
+
+      filter:
+        unit: ReallySimpleLSSTFilter
+        on_stock_match: bypass
+        config:
+          min_ndet: 0
+          min_tspan: 0
+          max_tspan: 10000
+
+      ingest:
+          mux:
+            unit: LSSTMongoMuxer
+            combine:
+            - unit: LSSTT1Combiner
+              state_t2:
+              - config:
+                  return_features: true
+                  tabulator:
+                  - unit: LSSTT2Tabulator
+                    config:
+                      zp: 31.4
+                unit: T2ElasticcKnClassifier
+
+
+
+- title: t2_row3
+  multiplier: 8
+  unit: T2Worker
+  config:
+    doc_limit: 50000
+    max_try: 10
+    
+    
+- title: Print
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3ReviewUnitExecutor
+        config:
+          supply:
+            unit: T3DefaultBufferSupplier
+            config:
+              select:
+                unit: T3StockSelector
+                config:
+                  channel: elasticc
+              load:
+                unit: T3SimpleDataLoader
+                config:
+                  directives:
+                    - STOCK
+                    - T2
+          stage:
+            unit: T3SimpleStager
+            config:
+              execute:
+                - unit: ElasticcClassTablePrinter
+                  config:
+                    unit: T2ElasticcKnClassifier
+                    print_stdout: true
+                    output_dir: "."
+                    output_file: elasticcAtRest_kn.csv
+                    classifier_map: 
+                      ElasticcAtRest: ElasticcAtRest
+                    min_prob: 0.05
+
