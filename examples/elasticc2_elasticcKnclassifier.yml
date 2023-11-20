@@ -33,6 +33,7 @@ task:
           config:
             folder: 5000alertsdir/NITE60562
             extension: "*avro.gz"
+            avro_schema: https://raw.githubusercontent.com/LSSTDESC/elasticc/c47fbd301b87f915c77ac0046d7845c68c306444/alert_schema/elasticc.v0_9.alert.avsc
           unit: ElasticcDirAlertLoader
 
     shaper: {unit: LSSTDataPointShaper}
@@ -107,7 +108,7 @@ task:
                     unit: T2ElasticcKnClassifier
                     print_stdout: true
                     output_dir: "."
-                    output_file: 'elasticcClassifications.csv'
+                    output_file: elasticcAtRest_random.csv
                     classifier_map: 
                       ElasticcAtRest: ElasticcAtRest
                     min_prob: 0.05

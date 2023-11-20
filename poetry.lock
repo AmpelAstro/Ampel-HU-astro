@@ -205,13 +205,13 @@ docs = ["Sphinx (>=6.0.0,<7.0.0)", "sphinx-autodoc-typehints (>=1.11.1,<2.0.0)",
 
 [[package]]
 name = "ampel-lsst"
-version = "0.8.5"
+version = "0.8.6"
 description = "Legacy Survey of Space and Time support for the Ampel system"
 optional = true
 python-versions = ">=3.10,<3.12"
 files = [
-    {file = "ampel_lsst-0.8.5-py3-none-any.whl", hash = "sha256:9d0779cb3f3102a0b54ce44f02419e8ae3ac73bbf4f92587675e7302ccea5598"},
-    {file = "ampel_lsst-0.8.5.tar.gz", hash = "sha256:92898f268b8f482a84fe0fa9a769ffe95c354567e1db10f5786aaed92dc490ef"},
+    {file = "ampel_lsst-0.8.6-py3-none-any.whl", hash = "sha256:3ff87e914926e2d8ad6a7ec8c84422cc3fcef18d6b5bc568a24a16a60d60a346"},
+    {file = "ampel_lsst-0.8.6.tar.gz", hash = "sha256:865d2698cbb156092ace4c23dabf5f0efc97c0937d751272e3608836d1e38073"},
 ]
 
 [package.dependencies]
