@@ -18,7 +18,7 @@ numpy = "*"
 name = "aiohttp"
 version = "3.8.3"
 description = "Async http client/server framework (asyncio)"
-optional = true
+optional = false
 python-versions = ">=3.6"
 files = [
     {file = "aiohttp-3.8.3-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:ba71c9b4dcbb16212f334126cc3d8beb6af377f6703d9dc2d9fb3874fd667ee9"},
@@ -126,7 +126,7 @@ speedups = ["Brotli", "aiodns", "cchardet"]
 name = "aiosignal"
 version = "1.3.1"
 description = "aiosignal: a list of registered asynchronous callbacks"
-optional = true
+optional = false
 python-versions = ">=3.7"
 files = [
     {file = "aiosignal-1.3.1-py3-none-any.whl", hash = "sha256:f8376fb07dd1e86a584e4fcdec80b36b7f81aac666ebc724e2c090300dd83b17"},
@@ -138,18 +138,18 @@ frozenlist = ">=1.1.0"
 
 [[package]]
 name = "ampel-alerts"
-version = "0.8.5"
+version = "0.8.6a0"
 description = "Alert support for the Ampel system"
-optional = true
+optional = false
 python-versions = ">=3.10,<3.12"
 files = [
-    {file = "ampel_alerts-0.8.5-py3-none-any.whl", hash = "sha256:8992a1b7719cf1ddd5739367ca2b0ee18661451c0ed2fe3b32bc917952985d35"},
-    {file = "ampel_alerts-0.8.5.tar.gz", hash = "sha256:991a2c82b138de76f0f760dfb5749c784eb444f0494f4d99473834eac137e36f"},
+    {file = "ampel_alerts-0.8.6a0-py3-none-any.whl", hash = "sha256:10bf92ae76c468c1d1417d2c5dc65a06eb0012f4fd06313310300b02a4f97c03"},
+    {file = "ampel_alerts-0.8.6a0.tar.gz", hash = "sha256:f17c07eb473423ac676f9171bb7d97d6b010bbd116fd773149e4a8acd6fe6db7"},
 ]
 
 [package.dependencies]
-ampel-core = ">=0.8.6,<0.9.0"
-ampel-interface = ">=0.8.7,<0.9.0"
+ampel-core = ">=0.8.7a0,<0.9"
+ampel-interface = ">=0.8.7,<0.9"
 
 [package.extras]
 docs = ["Sphinx (>=6.1.2,<6.2.0)", "sphinx-autodoc-typehints (>=1.11.1,<2.0.0)", "tomlkit (>=0.11.0,<0.12.0)"]
@@ -205,18 +205,18 @@ docs = ["Sphinx (>=6.0.0,<7.0.0)", "sphinx-autodoc-typehints (>=1.11.1,<2.0.0)",
 
 [[package]]
 name = "ampel-lsst"
-version = "0.8.6"
+version = "0.8.7a2"
 description = "Legacy Survey of Space and Time support for the Ampel system"
-optional = true
+optional = false
 python-versions = ">=3.10,<3.12"
 files = [
-    {file = "ampel_lsst-0.8.6-py3-none-any.whl", hash = "sha256:3ff87e914926e2d8ad6a7ec8c84422cc3fcef18d6b5bc568a24a16a60d60a346"},
-    {file = "ampel_lsst-0.8.6.tar.gz", hash = "sha256:865d2698cbb156092ace4c23dabf5f0efc97c0937d751272e3608836d1e38073"},
+    {file = "ampel_lsst-0.8.7a2-py3-none-any.whl", hash = "sha256:59c98c98050d3ec22ee61563d3f1643c818908ff1cd09c746e4d9c46db9e6820"},
+    {file = "ampel_lsst-0.8.7a2.tar.gz", hash = "sha256:57a77e419b79397a613276be1767431f94e96b30d7cddb90ef4fad55def19284"},
 ]
 
 [package.dependencies]
-ampel-alerts = ">=0.8.5,<0.9.0"
-ampel-ztf = {version = ">=0.8.5,<0.9.0", extras = ["kafka"]}
+ampel-alerts = ">=0.8.6a0,<0.9"
+ampel-ztf = {version = ">=0.8.9a0,<0.9", extras = ["kafka"]}
 astropy = ">=5.0.2,<6.0.0"
 fastavro = ">=1.3.2,<2.0.0"
 
@@ -255,13 +255,13 @@ mpl = ["matplotlib"]
 
 [[package]]
 name = "ampel-ztf"
-version = "0.8.7"
+version = "0.8.9"
 description = "Zwicky Transient Facility support for the Ampel system"
-optional = true
+optional = false
 python-versions = ">=3.10,<3.12"
 files = [
-    {file = "ampel_ztf-0.8.7-py3-none-any.whl", hash = "sha256:ef8633350abdc7d1c0fcdf7e5f781c885148496dffadfa05c6a2b8fc0d45d0e2"},
-    {file = "ampel_ztf-0.8.7.tar.gz", hash = "sha256:eb0790ad81f713e74f790e91bcc719fd7700eb01205663a29ac335e8cdd3188c"},
+    {file = "ampel_ztf-0.8.9-py3-none-any.whl", hash = "sha256:6ae186fd2a9b97ffeed4c291e9505896388e8051dbc7dbef503afd4e09cbbd34"},
+    {file = "ampel_ztf-0.8.9.tar.gz", hash = "sha256:7eac9cc46f7c514fe6e45702b161cfc75c884a85c22ef219117d2cce8eab6846"},
 ]
 
 [package.dependencies]
@@ -516,7 +516,7 @@ test = ["astroid", "pytest"]
 name = "async-timeout"
 version = "4.0.2"
 description = "Timeout context manager for asyncio programs"
-optional = true
+optional = false
 python-versions = ">=3.6"
 files = [
     {file = "async-timeout-4.0.2.tar.gz", hash = "sha256:2163e1640ddb52b7a8c80d0a67a08587e5d245cc9c553a74a847056bc2976b15"},
@@ -779,7 +779,7 @@ test = ["pytest"]
 name = "confluent-kafka"
 version = "2.1.1"
 description = "Confluent's Python client for Apache Kafka"
-optional = true
+optional = false
 python-versions = "*"
 files = [
     {file = "confluent-kafka-2.1.1.tar.gz", hash = "sha256:a665e74030a85c5f4203538cfe77e401133a849c4b92052a60225b26052a7e9d"},
@@ -1211,7 +1211,7 @@ numpy = ">=1.13.3"
 name = "fastavro"
 version = "1.6.1"
 description = "Fast read/write of AVRO files"
-optional = true
+optional = false
 python-versions = ">=3.7"
 files = [
     {file = "fastavro-1.6.1-cp310-cp310-macosx_10_14_x86_64.whl", hash = "sha256:de244146a3d7bc4e60c7be11f317054ee0e57ca807d85923bd8407981488ff18"},
@@ -1293,7 +1293,7 @@ files = [
 name = "frozenlist"
 version = "1.3.3"
 description = "A list-like structure which implements collections.abc.MutableSequence"
-optional = true
+optional = false
 python-versions = ">=3.7"
 files = [
     {file = "frozenlist-1.3.3-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:ff8bf625fe85e119553b5383ba0fb6aa3d0ec2ae980295aaefa552374926b3f4"},
@@ -2419,7 +2419,7 @@ files = [
 name = "multidict"
 version = "6.0.4"
 description = "multidict implementation"
-optional = true
+optional = false
 python-versions = ">=3.7"
 files = [
     {file = "multidict-6.0.4-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:0b1a97283e0c85772d613878028fec909f003993e1007eafa715b24b377cb9b8"},
@@ -2678,7 +2678,7 @@ test = ["pep440", "pre-commit", "pytest", "testpath"]
 name = "nest-asyncio"
 version = "1.5.6"
 description = "Patch asyncio to allow nested event loops"
-optional = true
+optional = false
 python-versions = ">=3.5"
 files = [
     {file = "nest_asyncio-1.5.6-py3-none-any.whl", hash = "sha256:b9a953fb40dceaa587d109609098db21900182b16440652454a146cffb06e8b8"},
@@ -3969,7 +3969,7 @@ use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 name = "requests-toolbelt"
 version = "0.10.1"
 description = "A utility belt for advanced users of python-requests"
-optional = true
+optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 files = [
     {file = "requests-toolbelt-0.10.1.tar.gz", hash = "sha256:62e09f7ff5ccbda92772a29f394a49c3ad6cb181d568b1337626b2abb628a63d"},
@@ -4922,7 +4922,7 @@ files = [
 name = "yarl"
 version = "1.8.2"
 description = "Yet another URL library"
-optional = true
+optional = false
 python-versions = ">=3.7"
 files = [
     {file = "yarl-1.8.2-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:bb81f753c815f6b8e2ddd2eef3c855cf7da193b82396ac013c661aaa6cc6b0a5"},
@@ -5036,7 +5036,7 @@ files = [
 ]
 
 [extras]
-elasticc = ["ampel-lsst", "astro-parsnip", "light-curve", "timeout-decorator", "xgboost"]
+elasticc = ["astro-parsnip", "light-curve", "timeout-decorator", "xgboost"]
 extcats = ["extcats"]
 notebook = ["jupyter"]
 slack = ["slack-sdk"]
@@ -5047,4 +5047,4 @@ ztf = ["ampel-ztf"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.12"
-content-hash = "fc2fa34aac3bae86a9d73a7c89d543d2d98f4c4e90cf7ce9cba36a409e57e6f6"
+content-hash = "0c0ab90d1745c2562105249775c8b41fdaa381209528c71b305389443f795667"
