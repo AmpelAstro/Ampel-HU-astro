@@ -9,6 +9,7 @@
 
 from ampel.protocol.AmpelAlertProtocol import AmpelAlertProtocol
 from ampel.ztf.t0.DecentFilter import DecentFilter
+from ampel.contrib.hu.util.AmpelHealpix import AmpelHealpix
 from numpy import array
 
 
@@ -19,7 +20,9 @@ class PredetectionFilter(DecentFilter):
     (trigger_jd), e.g. for kilonova searches in GW follow up.
     """
 
-    trigger_jd: float
+    trigger_jd: float or None = 0
+    map_dir: str or None = "./"
+    map_name: str or None = None
 
     def post_init(self):
         super().post_init()
@@ -29,6 +32,14 @@ class PredetectionFilter(DecentFilter):
         self.select_photopoints = [
             {"attribute": "magpsf", "operator": "is not", "value": None}
         ]
+
+        #if self.map_name is not None:
+            #ah = AmpelHealpix(
+            #map_name=self.map_name, map_url="", save_dir=self.map_dir
+            #)
+            #map_hash = ah.process_map()
+            #self.trigger_jd = ah.trigger_time
+            
 
     def process(self, alert: AmpelAlertProtocol) -> None | bool | int:
         """
