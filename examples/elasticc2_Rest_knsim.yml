@@ -37,6 +37,7 @@ task:
           config:
             folder: kilonovatestsample
             extension: "*avro"
+            avro_schema: https://raw.githubusercontent.com/LSSTDESC/elasticc/main/alert_schema/elasticc.v0_9_1.alert.avsc
           unit: ElasticcDirAlertLoader
 
     shaper: {unit: LSSTDataPointShaper}

@@ -1,11 +1,11 @@
-	# Dev version for developic elasticc2 pipeline
+# Dev version for developic elasticc2 pipeline
 
 
 name: elasticcAtRestIax
 
 mongo:
   prefix: ElAtrestIax
-  reset: false
+  reset: true
 
 channel:
 - name: elasticc
@@ -37,6 +37,7 @@ task:
           config:
             folder: iaxtestsample
             extension: "*avro"
+            avro_schema: https://raw.githubusercontent.com/LSSTDESC/elasticc/main/alert_schema/elasticc.v0_9_1.alert.avsc
           unit: ElasticcDirAlertLoader
 
     shaper: {unit: LSSTDataPointShaper}
