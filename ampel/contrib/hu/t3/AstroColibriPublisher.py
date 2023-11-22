@@ -74,6 +74,7 @@ class AstroColibriPublisher(AbsPhotoT3Unit):
     - "Nearby" if AmpelZ<0.02
     - "ProbSNIa" if ParsnipP(SNIa)>0.5
     - "ProbSN" if SNGuess=True at any phase.
+    - Kilonovaness if available.
 
     Will update if new obs was made after last posting.
 
@@ -85,7 +86,7 @@ class AstroColibriPublisher(AbsPhotoT3Unit):
     min_kilonovaness: float = 0.  # Parsnip class prob to call something SNIa
 
     # Image upload
-    # STOCK will be replaced with the transient stock
+    # ZTFNAME will be replaced with the ZTF interpreted stock id
     image_path: None | str = None
 
 
@@ -260,8 +261,10 @@ class AstroColibriPublisher(AbsPhotoT3Unit):
             # Check whether we have a figure to upload.
             # Assuming this exists locally under {stock}.png
             if self.image_path is not None:
-                ipath = self.image_path.replace("STOCK", str(tview.id))
-                print('opath', self.image_path, 'npath', ipath)
+                ipath = self.image_path.replace("ZTFNAME", to_ztf_id(int(tview.id)))
+                # Only upload if it actually exists:
+                if not os.path.isfile(ipath):
+                    ipath = None
             else:
                 ipath = None
 
