@@ -290,29 +290,7 @@ task:
                 explosion_time_jd: TriggerTime
                 max_ampelz_group: 7
                 redshift_kind: T2DigestRedshifts
-                plot_props:
-                  file_name:
-                    format_str: "%s.png"
-                    arg_keys:
-                      - stock
-                  title:
-                    format_str: "%s %s %s"
-                    arg_keys:
-                      - stock
-                      - model
-                      - redshift_kind
-                  fig_text:
-                    format_str: "%s %s \nchisq %.2f ndof %s"
-                    arg_keys:
-                      - stock
-                      - model
-                      - chisq
-                      - ndof
-                  width: 10
-                  height: 6
-                  id_mapper: null
-                  disk_save: /home/jnordin/github/ampelgwO4/Ampel-HU-astro/examples/remote
-                plot_db: false
+                plot_matplotlib_suffix: _possis.png
                 t2_dependency:
                 - config: *digest_redshift_config
                   unit: T2DigestRedshifts
@@ -389,6 +367,7 @@ task:
                 - unit: AstroColibriPublisher
                   config:
                     randname: true
+                    image_path: ZTFNAME_possis.png
 
 - title: react
   unit: T3Processor
