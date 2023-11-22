@@ -8,6 +8,7 @@
 # Last Modified By:    simeon.reusch@desy.de
 
 
+import os
 import copy
 import errno
 from collections.abc import Sequence
@@ -113,10 +114,15 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
     # (T2BayesianBlocks should be added)
     phaseselect_kind: None | str
 
+    noisified: bool = False
+
+
     # Plot parameters
     plot_db: bool = False
-    plot_props: None | PlotProperties = None
-    noisified: bool = False
+    plot_props: None | PlotProperties = None   # Plot properties for SvgRecord creation
+    plot_matplotlib_suffix: None | str = None    # Suffix if stored (locally) through matplotlib (e.g. _crayzmodel.png). Will add transient name 
+    plot_matplotlib_dir: str = '.'    # Suffix if stored (locally) through matplotlib (e.g. _crayzmodel.png). Will add transient name 
+
 
     # Units from which time limits to use or redshifts can be picked. 
     t2_dependency: Sequence[StateT2Dependency[Literal[
@@ -475,14 +481,13 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         t2_output["sncosmo_result"] = sncosmo_result
 
         # Save plot
-        if self.plot_props:
+        if self.plot_props or self.plot_matplotlib_suffix:
             # Construct name JN: What are the standards for noisified?
             stock_id = "-".join([str(v) for v in self.get_stock_id(datapoints)])
             tname = "-".join([str(v) for v in self.get_stock_name(datapoints)])
 
             if self.noisified:
                 stock_id = "-".join([str(v) for v in self.get_stock_id(datapoints)])
-                
                 tname = ZTFNoisifiedIdMapper().to_ext_id(stock_id)
 
             # Add some info
@@ -510,11 +515,16 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                 # fill_data_marker = self.fit_mask, # Activate if add fit mask
             )
 
-            # Also store to DB if requested
-            plots = [
-                create_plot_record(fig, self.plot_props, plot_extra, logger=self.logger)
-            ]
-            if self.plot_db:
-                t2_output["plots"] = plots
+
+            if self.plot_props:
+                plots = [
+                    create_plot_record(fig, self.plot_props, plot_extra, logger=self.logger)
+                ]
+                # Also store to DB if requested
+                if self.plot_db:
+                    t2_output["plots"] = plots
+            if self.plot_matplotlib_suffix:
+                fpath = os.path.join(self.plot_matplotlib_dir,tname+self.plot_matplotlib_suffix)
+                fig.savefig(fpath)
 
         return t2_output
