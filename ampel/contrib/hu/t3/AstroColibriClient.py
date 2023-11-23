@@ -72,7 +72,6 @@ class AstroColibriClient:
 #        response = requests.post(self.api_url+'/add_image_to_storage',
 #                            data=payload, headers=headers, auth=self.session.auth)
         response = self.session.post(self.api_url+'/add_image_to_storage', data=payload, headers=headers)
-#        print('upload response', response)
         return response.json()['url_lc']
 
 

@@ -8,10 +8,11 @@
 # Last Modified By:    simeon.reusch@desy.de
 
 
+import os
 import copy
 import errno
 from collections.abc import Sequence
-from typing import Literal
+from typing import Literal, Optional
 
 import backoff
 import numpy as np
@@ -89,6 +90,9 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
     # If loading redshifts from DigestRedshifts, provide the max ampel z group to make use of.
     # (note that filtering based on this can also be done for a potential t3)
     max_ampelz_group: int = 3
+    # If none of the above is selected, a fixed redshift can be provided.
+    # If this is None, the redshift will be included as a free parameter in the fit
+    fixed_z: None | float
     # It is also possible to use fixed redshift whenever a dynamic redshift kind is not possible
     backup_z: None | float
     # Finally, the provided lens redshift might be multiplied with a scale
@@ -110,10 +114,15 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
     # (T2BayesianBlocks should be added)
     phaseselect_kind: None | str
 
+    noisified: bool = False
+
+
     # Plot parameters
     plot_db: bool = False
-    plot_props: None | PlotProperties = None
-    noisified: bool = False
+    plot_props: None | PlotProperties = None   # Plot properties for SvgRecord creation
+    plot_matplotlib_suffix: None | str = None    # Suffix if stored (locally) through matplotlib (e.g. _crayzmodel.png). Will add transient name 
+    plot_matplotlib_dir: str = '.'    # Suffix if stored (locally) through matplotlib (e.g. _crayzmodel.png). Will add transient name 
+
 
     # Units from which time limits to use or redshifts can be picked. 
     t2_dependency: Sequence[StateT2Dependency[Literal[
@@ -228,17 +237,17 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         # return z, z_source, z_weights
         # We now simply pick the middle number
         if isinstance(z_weights, list):
-            z = z[ z_weights.index( max(z_weights) ) ]
+            z = z[ z_weights.index( max(z_weights) ) ]  # type: ignore
             print('INPUT')
             print(z, z_weights)
             print('SNCOSMOS z', z)
         elif isinstance(z, list):
             if len(z) % 2 != 0:
-                z = z[int(len(z) / 2)]
+                z = z[int(len(z) / 2)]  # type: ignore
             else:
-                z = (((z[int(len(z) / 2)]) + (z[int(len(z) / 2) - 1])) / 2)
+                z = (((z[int(len(z) / 2)]) + (z[int(len(z) / 2) - 1])) / 2)  # type: ignore
                 
-        return z, z_source
+        return z, z_source  # type: ignore
 
 
     def _get_phaselimit(self, t2_views) -> tuple[None | float, None | float]:
@@ -472,12 +481,13 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         t2_output["sncosmo_result"] = sncosmo_result
 
         # Save plot
-        if self.plot_props:
-            # Construct name
+        if self.plot_props or self.plot_matplotlib_suffix:
+            # Construct name JN: What are the standards for noisified?
             stock_id = "-".join([str(v) for v in self.get_stock_id(datapoints)])
             tname = "-".join([str(v) for v in self.get_stock_name(datapoints)])
 
             if self.noisified:
+                stock_id = "-".join([str(v) for v in self.get_stock_id(datapoints)])
                 tname = ZTFNoisifiedIdMapper().to_ext_id(stock_id)
 
             # Add some info
@@ -493,9 +503,9 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                 "redshift_kind": self.redshift_kind,
                 "chisq": sncosmo_result["chisq"],
                 "ndof": sncosmo_result["ndof"],
-                "stock": stock_id,
+                "stock": self.get_stock_id(datapoints)[0]   # Only using first name, assuming this is from ZTF
             }
-
+            
             fig = sncosmo.plot_lc(
                 sncosmo_table,
                 model=fitted_model,
@@ -505,11 +515,16 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                 # fill_data_marker = self.fit_mask, # Activate if add fit mask
             )
 
-            # Also store to DB if requested
-            plots = [
-                create_plot_record(fig, self.plot_props, plot_extra, logger=self.logger)
-            ]
-            if self.plot_db:
-                t2_output["plots"] = plots
+
+            if self.plot_props:
+                plots = [
+                    create_plot_record(fig, self.plot_props, plot_extra, logger=self.logger)
+                ]
+                # Also store to DB if requested
+                if self.plot_db:
+                    t2_output["plots"] = plots
+            if self.plot_matplotlib_suffix:
+                fpath = os.path.join(self.plot_matplotlib_dir,tname+self.plot_matplotlib_suffix)
+                fig.savefig(fpath)
 
         return t2_output
