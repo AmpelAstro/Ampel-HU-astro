@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              jnordin@physik.hu-berlin.de
 # Date:                22.08.2023
-# Last Modified Date:  22.08.2023
+# Last Modified Date:  23.11.2023
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
 from typing import Any, Iterable, Literal, TypedDict
@@ -31,14 +31,14 @@ class T2ElasticcAllClassifier(BaseElasticc2Classifier):
     - 5. Create base results: 3 or 4.
     - 6. Add prior result variant.
     - 7. Add ping result variant.
-    - 8. If (4) worked, create add this as specific result. 
+    - 8. If (4) worked, create add this as specific result.
     (should there be ping or prior variants of these?)
-    
+
     """
 
     # Setting for report to construct
-    classifier_name: str = 'ElasticcMonster'
-    classifier_version: str = 'v230819'
+    classifier_name: str = 'EM'
+    classifier_version: str = 'v231123'
 
 
     # Ping limit (SNIa)
@@ -52,15 +52,16 @@ class T2ElasticcAllClassifier(BaseElasticc2Classifier):
         """
 
         # 2. Try to parsnip
-        if features['ndet']<0:
+        if features['ndet']<1:
             parsnip_class: dict[str, Any] = {'Failed':'few det'}
         else:
             parsnip_class = self.get_parsnip_class('snlong', features, flux_table)
 
-        # 3./4.  Run Xgb classifier 
+        # 3./4.  Run Xgb classifier
+        # After validation, we could add a clause to not even run the xgb model
         if 'Failed' in parsnip_class.keys():
             xgb_prob = self.get_multixgb_class('all', features)
-        else:                         
+        else:
             # Add parsnip features to features
             features.update( {'parsnip_'+featname : featval for featname, featval in  parsnip_class['prediction'].items() } )
             features['parsnip_modelchidof'] = features['parsnip_model_chisq'] / features['parsnip_model_dof']
@@ -68,11 +69,14 @@ class T2ElasticcAllClassifier(BaseElasticc2Classifier):
 
         # 5.  Create core result
         multixgb_class =  copy.deepcopy(base_class_dict)
-        multixgb_class['classifications'].extend( [
-                {'classId': fitclass, 'probability': float(fitprop)}
-                    for fitclass, fitprop in xgb_prob.items()
-            ]
-        )
+        if features['ndet']==0:
+            multixgb_class['classifications'].append( {'classId': 2000, 'probability': 1.0} )
+        else:
+            multixgb_class['classifications'].extend( [
+                    {'classId': fitclass, 'probability': float(fitprop)}
+                        for fitclass, fitprop in xgb_prob.items()
+                ]
+            )
         multixgb_class['classifierName'] += 'AllIncl'
         output_classes = [multixgb_class]
         prob = {'allxgb': {str(k):v for k,v in xgb_prob.items()}  }
@@ -91,7 +95,7 @@ class T2ElasticcAllClassifier(BaseElasticc2Classifier):
         # List historic artifact when several models were used to gather SNIa probabilities
         snprob = [ classp['probability'] for classp in multixgb_class['classifications'] if classp['classId']==2222 ]
         # One should be defined
-        if max(snprob)>self.pinglim:
+        if len(snprob)>0 and max(snprob)>self.pinglim:
             # Check other features
             if (self.pingtrange[0] <= features.get('t_lc',0) <= self.pingtrange[1]
                 and self.pingmaxmag>features.get('mag_last',99)):
