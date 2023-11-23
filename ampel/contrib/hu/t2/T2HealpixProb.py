@@ -94,6 +94,8 @@ class T2HealpixProb(AbsStateT2Unit, AbsTabulatedT2Unit):
 	    
 	# 3. Otherwise, find the position of the max lum dp.
         pos = self.get_positions(datapoints)   # (jd, ra, dec)
+        #print("DATAPOINTS::", datapoints)
+        #print("POSITIONS::", pos)
 	
 	# 4. Use this to return the prob. 
         out_dict: dict[str, Any] = {'map_name': self.map_name, 'map_hash': self.map_hash, 'trigger_time': self.healpix_map.trigger_time}
