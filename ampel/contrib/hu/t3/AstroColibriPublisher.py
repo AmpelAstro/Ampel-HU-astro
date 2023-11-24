@@ -14,7 +14,7 @@
 from typing import TYPE_CHECKING
 from collections.abc import Generator
 from functools import partial
-import re
+import re, os
 import numpy as np
 from astropy.time import Time
 
@@ -74,6 +74,7 @@ class AstroColibriPublisher(AbsPhotoT3Unit):
     - "Nearby" if AmpelZ<0.02
     - "ProbSNIa" if ParsnipP(SNIa)>0.5
     - "ProbSN" if SNGuess=True at any phase.
+    - Kilonovaness if available.
 
     Will update if new obs was made after last posting.
 
@@ -82,12 +83,20 @@ class AstroColibriPublisher(AbsPhotoT3Unit):
     # Limits for attributes
     nearby_z: float = 0.02
     snia_minprob: float = 0.7  # Parsnip class prob to call something SNIa
+    min_kilonovaness: float = 0.  # Parsnip class prob to call something SNIa
+
+    # Image upload
+    # ZTFNAME will be replaced with the ZTF interpreted stock id
+    image_path: None | str = None
+
 
     # TODO: What is the use here, when selecting matching journal entries.
     process_name: None | str = None
 
-    # testrun
-    testrun: bool = True
+    # Testcollect (will not try to post)
+    testcollect: bool = False
+    # randname (for repeat submission to dev AstroColibri, not checking TNS)
+    randname: bool = False
 
 #    user: NamedSecret[str]
 #    password: NamedSecret[str]
@@ -108,7 +117,8 @@ class AstroColibriPublisher(AbsPhotoT3Unit):
             and (self.process_name is None or jentry["process"] == self.process_name)
             and jentry["ts"] >= after
             and jentry.get("extra") is not None and jentry['extra']['success']
-            and not jentry['extra'].get("testrun", False)
+            and not jentry['extra'].get("testcollect", False)
+            and not jentry['extra'].get("randname", True)   # Allow submission of same
             # Possibly add check for whether submit was ok: sucess=True. But see how this looks in journal.
             #and (jentry.get("extra") is not None and ("descPutComplete" in entry["extra"]) )
             #and (entry["extra"]["descPutComplete"]) )
@@ -169,18 +179,22 @@ class AstroColibriPublisher(AbsPhotoT3Unit):
         Iterate through TransientView and check which should be
         submitted / updated.
         """
-        print('starting')
 
         for tview in tviews:
 
-            # Find TNS name (required for AstroColibri posting)
-            # Currently assumes that this is stored either in the
-            # stock name list or can be found in the T3 journal
-            # (probably from the TNSTalker)
-            tns_name = self.get_tnsname(tview)
-            if not tns_name:
-                self.logger.info('No TNS.',extra={'tnsName':None})
-                continue
+            if self.randname:
+                import random
+                # Generate random name (assuming publishing to dev AC)
+                tns_name = 'AmpelRand{}'.format(random.randint(1,999))
+            else:
+                # Find TNS name (required for AstroColibri posting)
+                # Currently assumes that this is stored either in the
+                # stock name list or can be found in the T3 journal
+                # (probably from the TNSTalker)
+                tns_name = self.get_tnsname(tview)
+                if not tns_name:
+                    self.logger.info('No TNS.',extra={'tnsName':None})
+                    continue
 
             # Check if this was submitted
             # TODO: How should the first submit differ from updates?
@@ -216,30 +230,51 @@ class AstroColibriPublisher(AbsPhotoT3Unit):
             payload['dec'] = np.mean( [pp['body']['dec'] for pp in dps_det] )
             payload['err'] = 1. / 3600  # position err ~1 arcsec in dec
 
+            # If part of random testing, perturb coordinates
+            if self.randname:
+                payload['ra'] += random.randrange(-1,1)
+                payload['dec'] += random.randrange(-1,1)
+                payload['source_name'] += payload['trigger_id'][12:]
 
             # Gather attributes
             attributes = []
             # Nearby attribute
             t2res = tview.get_t2_body(unit="T2DigestRedshifts")
-            if isinstance(t2res, dict) and t2res['ampel_z']<self.nearby_z:
+            if isinstance(t2res, dict) and t2res.get('ampel_z',999)<self.nearby_z:
                 attributes.append('Nearby')
+                attributes.append('AmpelZ{:.2f}'.format(t2res['ampel_z']))
             # Infant attribute
             t2res = tview.get_t2_body(unit="T2InfantCatalogEval")
-            if isinstance(t2res, dict) and t2res['action']:
+            if isinstance(t2res, dict) and t2res.get('action',False):
                 attributes.append('Young')
             # SNIa
             t2res = tview.get_t2_body(unit="T2RunParsnip")
             if isinstance(t2res, dict) and 'classification' in t2res.keys():
                 if t2res['classification']['SNIa'] > self.snia_minprob:
                     attributes.append('ProbSNIa')
-            attributes.append('AnExtraAttribute')
+            # Kilonovaness
+            t2res = tview.get_t2_body(unit="T2KilonovaEval")
+            if isinstance(t2res, dict) and t2res.get('kilonovaness',-99)>self.min_kilonovaness:
+                attributes.append('Kilonovaness{}'.format(t2res['kilonovaness']))
+                attributes.append('LVKmap{}'.format(t2res['map_name']))
+
+            # Check whether we have a figure to upload.
+            # Assuming this exists locally under {stock}.png
+            if self.image_path is not None:
+                ipath = self.image_path.replace("ZTFNAME", to_ztf_id(int(tview.id)))
+                # Only upload if it actually exists:
+                if not os.path.isfile(ipath):
+                    ipath = None
+            else:
+                ipath = None
+
+
+
             payload["ampel_attributes"] = attributes
-            payload["ampel_attributes"] = ['Nearby','AThirdAttribute']
-            print('payload', payload)
             self.logger.debug("reacting", extra={"payload": payload})
 
             # Ok, so we have a transient to react to
-            if self.testrun:
+            if self.testcollect:
                 if post_update:
                     print('Should send an update')
                 else:
@@ -249,20 +284,11 @@ class AstroColibriPublisher(AbsPhotoT3Unit):
                 print('*** Done ***')
 
                 # Journal submission
-                jcontent = {"reaction": "fake submission", "success": True, "testrun": True}
+                jcontent = {"reaction": "fake submission", "success": True, "testcollect": True}
 
             else:
-
-                print('DEBUG POSTING')
-                print('send', payload)
-                jcontent = self.colibriclient.firestore_post(payload)
-
-                print('got', jcontent)
-
+                jcontent = self.colibriclient.firestore_post(payload,image_path=ipath)
 
             if jcontent:
                 tviews.send(JournalAttributes(extra=jcontent))
-
-            break
-
         return None
