@@ -252,7 +252,7 @@ class BaseElasticc2Classifier(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRis
         -------
         dict
         """
-        dps = list(datapoints)
+        dps = sorted(datapoints, key=lambda dp: dp["body"].get("midPointTai", -float("inf")))
 
         # Construct the base reply. We have some magic here to fill
         class_report: dict[str,UBson] = {

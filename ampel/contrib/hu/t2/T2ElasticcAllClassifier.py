@@ -38,7 +38,7 @@ class T2ElasticcAllClassifier(BaseElasticc2Classifier):
 
     # Setting for report to construct
     classifier_name: str = 'ElasticcMonster'
-    classifier_version: str = 'v231123'
+    classifier_version: str = 'v231203'
 
 
     # Ping limit (SNIa)
