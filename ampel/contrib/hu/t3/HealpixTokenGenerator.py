@@ -45,6 +45,7 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
     #: Base URL of archive service
     archive: str = "https://ampel.zeuthen.desy.de/api/ztf/archive/v3/"
 
+
     date_str: None | str = (
         None  # Start of time window we are interested in (default: event trigger time)
     )
@@ -64,6 +65,7 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
     debug: bool = False
 
     def process(self, t3s: T3Store) -> UBson | UnitResult:
+
         # Retrieve and process map
         ah = AmpelHealpix(
             map_name=self.map_name, map_url=self.map_url, save_dir=self.map_dir

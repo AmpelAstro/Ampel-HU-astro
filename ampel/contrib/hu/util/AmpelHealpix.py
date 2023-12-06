@@ -19,6 +19,7 @@ import healpy as hp
 import numpy as np
 import requests
 from astropy.time import Time
+from astropy.io.fits import Header
 
 
 class AmpelHealpix:
@@ -83,6 +84,7 @@ class AmpelHealpix:
             for header in headers
             if header[0] == "DATE-OBS"
         ][0]
+
         nside = int(hp.npix2nside(len(hpx)))
 
         # Downgrade resolution 
@@ -113,6 +115,12 @@ class AmpelHealpix:
         return b64encode(
             blake2b(sorted_credible_levels, digest_size=7).digest()
         ).decode("utf-8")
+
+    def get_triggertime(self):
+
+        if self.trigger_time is None:
+            self.process_map()
+        return self.trigger_time
 
     def get_pixelmask(self, pvalue_limit):
         """

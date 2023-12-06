@@ -4,8 +4,11 @@
 # License:             BSD-3-Clause
 # Author:              S. Reusch <simeon.reusch@desy.de>
 # Date:                07.05.2023
-# Last Modified Date:  07.05.2023
-# Last Modified By:    S. Reusch
+# Last Modified Date:  06.12.2023
+# Last Modified By:    A. Ernst <ernstand@physik.hu-berlin.de>
+
+import os
+from astropy.io.fits import Header
 
 from ampel.protocol.AmpelAlertProtocol import AmpelAlertProtocol
 from ampel.ztf.t0.DecentFilter import DecentFilter
@@ -33,12 +36,12 @@ class PredetectionFilter(DecentFilter):
             {"attribute": "magpsf", "operator": "is not", "value": None}
         ]
 
-        #if self.map_name is not None:
-            #ah = AmpelHealpix(
-            #map_name=self.map_name, map_url="", save_dir=self.map_dir
-            #)
-            #map_hash = ah.process_map()
-            #self.trigger_jd = ah.trigger_time
+        if self.map_name is not None:
+            ah = AmpelHealpix(
+                map_name=self.map_name, map_url="", save_dir=self.map_dir
+                )
+            # map_hash = ah.process_map()
+            self.trigger_jd = ah.get_triggertime()
             
 
     def process(self, alert: AmpelAlertProtocol) -> None | bool | int:

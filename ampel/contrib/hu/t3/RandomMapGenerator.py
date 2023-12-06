@@ -113,7 +113,7 @@ class RandomMapGenerator(AbsT3PlainUnit):
     def save_map(self):
         """Save generated map with header as .fits.gz"""
 
-        file_name = f"{self.save_dir}/{self.map_name}.fits.gz"
+        file_name = f"{self.save_dir}{self.map_name}.fits.gz"
 
         print("Saving map: ", file_name)
 

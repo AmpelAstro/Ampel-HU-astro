@@ -111,7 +111,7 @@ class T2RunPossis(T2RunSncosmo):
                 )
             )
 
-        print("T2RUNPOSSIS::", self.possis_models)
+        #print("T2RUNPOSSIS::", self.possis_models)
 
         for model_ind, model_dict in self.possis_models.items():
             model_gen = model_dict["model_gen"]
@@ -144,7 +144,7 @@ class T2RunPossis(T2RunSncosmo):
                 f"{model_gen}/nph1.0e+06_mejdyn{mej_dyn:05.3f}_mejwind{mej_wind:05.3f}_phi{phi}.txt",
             )
 
-            print(model_url)
+            #print(model_url)
 
             # Find file
             with urlopen(model_url) as fh:
@@ -157,7 +157,8 @@ class T2RunPossis(T2RunSncosmo):
                 t_i = float(line3[1])
                 t_f = float(line3[2])
                 model_cos_theta = np.linspace(0, 1, nobs)  # 11 viewing angles
-                print(cos_theta, model_cos_theta)
+                
+                #print(cos_theta, model_cos_theta)
                 phase = np.linspace(t_i, t_f, ntime)  # epochs
 
                 # Limit to one angle
@@ -240,7 +241,7 @@ class T2RunPossis(T2RunSncosmo):
 
         for model_ind in self.possis_models.keys():
 
-            print("T2RUNPOSSIS evaluating::", model_ind)
+            #print("T2RUNPOSSIS evaluating::", model_ind)
 
             self.sncosmo_model = self.sncosmo_data[model_ind]["sncosmo_model"]
             self.fit_params = self.sncosmo_data[model_ind]["fit_params"]
@@ -276,7 +277,7 @@ class T2RunPossis(T2RunSncosmo):
 
             result_dict[model_ind] = model_results
 
-        print("T2RUNPOSSIS::", result_dict)
+        #print("T2RUNPOSSIS::", result_dict)
 
         # Restart sncosmo processing
         #return super().process(compound, datapoints, t2_views)

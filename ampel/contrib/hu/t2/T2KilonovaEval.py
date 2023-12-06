@@ -193,7 +193,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
 
         # check if possis fits exist and pick the one with reduced chisquare closest to 1
         for k, model_ind in enumerate(t2res.keys()):
-            print("Evaluating possis model::", model_ind)
+            #print("Evaluating possis model::", model_ind)
 
             success = (
                 t2res[model_ind]["sncosmo_result"]["success"]
@@ -229,7 +229,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             return info  # doesnt make sense to continue analysis if no values available
   
 
-        print(list(t2res.keys()))
+        #print(list(t2res.keys()))
         best_res = t2res[list(t2res.keys())[best_ind]]
 
         info = {"pass": 0, "model": best_res["model_name"], "rejects": [], "chisquares": chisq_dict}
