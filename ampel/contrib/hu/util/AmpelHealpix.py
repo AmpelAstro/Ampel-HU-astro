@@ -67,7 +67,7 @@ class AmpelHealpix:
         Load map and determine prob values.
         """
 
-        #print(os.path.join(self.save_dir, self.map_name))
+        print(os.path.join(self.save_dir, self.map_name))
 
 
         # Process map
@@ -100,7 +100,8 @@ class AmpelHealpix:
         
         #print(self.dist)
         self.dist_unc = [header[1] for header in headers if header[0] == "DISTSTD"][0]
-
+        
+        self.seed = [header[1] for header in headers if header[0] == "SEED"][0]
 
         # Find credible levels
         idx = np.flipud(np.argsort(hpx))

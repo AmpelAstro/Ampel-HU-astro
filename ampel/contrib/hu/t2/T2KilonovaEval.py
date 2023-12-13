@@ -51,7 +51,8 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                 "T2PropagateStockInfo",
                 "T2HealpixProb",
                 "T2CatalogMatch",
-                "T2TabulatorRiseDecline"
+                "T2TabulatorRiseDecline",
+                "T2MatchGRB"
             ]
         ]
     ]
@@ -73,8 +74,11 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
     # probability contour evaluation
     prob_sigma_rewards = [3, 1, 0]
 
+    # grb matching
+    grb_mult: float = 3
+
     # Lightcurve (using redshift, so that needs to be there)
-    min_absmag: float = -20
+    min_absmag: float = -20 # AB magnitude -16 +- 4 DOI 10.3847/1538-4357/ac8e60
     max_absmag: float = -12  #
     min_ndet: int = 1
     min_ndet_postul: int = 0  # and if it has this minimum nr of detection after the last significant (max_maglim) UL.
@@ -233,7 +237,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         best_res = t2res[list(t2res.keys())[best_ind]]
 
         info = {"pass": 0, "model": best_res["model_name"], "rejects": [], "chisquares": chisq_dict}
-
+        print("T2KILONOVAEVAL:: ", best_res["fit_metrics"])
         info["possis_abspeak"] = best_res["fit_metrics"]["restpeak_model_absmag_B"]
         info["possis_obspeak"] = best_res["fit_metrics"]["obspeak_model_B"]
         info["possis_chisq"] = best_res["sncosmo_result"]["chisq"]
@@ -627,6 +631,24 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         # print(t2res.keys())
         return info
 
+    def inspect_grbmatch(self, t2res: dict[str, Any]) -> None | dict[str, Any]:
+
+        info = {"pass": 0, "rejects": []}
+
+        matches = t2res["temporal_grb"]       
+        spatial_matches = []
+        match_points = 0
+        for match in matches:
+            #print("T2KILONOVAEVAL:: ", match)
+            if match["separation"] <= self.grb_mult * match["err"]:
+                match_points += 1
+                spatial_matches.append(match)
+        info["pass"] += match_points
+        info["grb_spatial"] = spatial_matches
+        if match_points == 0:
+            info["rejects"].append("no_grb_match")
+        return info
+
     def inspect_distance(
         self, t2res: dict[str, Any], input_info: dict[str, Any]
     ) -> None | dict[str, Any]:
@@ -702,6 +724,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         # print("PROB CONTOUR REWARD", type(prob_cont), prob_cont, reward)
 
         info["pass"] += reward
+        info["rejects"].append(["prob", reward])
         return info
     
     def inspect_risedecline(self, t2res: dict[str, Any]
@@ -710,7 +733,8 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         Propagate parameters from T2TabulatorRiseDecline"""
 
         info = {"pass": 0, "rise_decline": t2res}
-        info["pass"] = t2res["bool_rise"] + t2res["bool_fall"] + t2res["bool_peaked"]
+        info["pass"] = t2res["bool_fall"] + t2res["bool_peaked"]
+        
         return info
 
     # MANDATORY
@@ -773,6 +797,13 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                         info.update(pinfo)
                 else:
                     info.update(pinfo)
+            
+            if t2_view.unit == "T2MatchGRB":
+                ginfo = self.inspect_grbmatch(t2_res)
+                if len(ginfo["rejects"]) > 0:
+                    rejects.extend(ginfo["rejects"])
+                kilonovaness += ginfo["pass"]
+                info.update(ginfo)
 
             if t2_view.unit == "T2CatalogMatch":
                 # print(info("Catalog match {}".format(t2_res.keys)))
@@ -788,6 +819,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                 #print("T2RISEDECLINE STUFF", t2_res)
                 rdinfo = self.inspect_risedecline(t2_res)
                 kilonovaness += rdinfo["pass"]
+                lc_kilonovaness = rdinfo["pass"]
                 info.update(rdinfo)
 
             # Propagate map info
@@ -809,6 +841,8 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                     dist_kilonovaness = dinfo["pass"]
                 if t2_res.get("cumprob"):
                     probinfo = self.inspect_prob(t2_res, info)
+                    if len(probinfo["rejects"]) > 0:
+                        rejects.extend(probinfo["rejects"])
                     info.update(probinfo)
                     kilonovaness += probinfo["pass"]
 
@@ -817,8 +851,8 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         lc_info = self.inspect_lc(light_curve)
         if lc_info:
             info.update(lc_info)
-            kilonovaness += lc_info["pass"]
-            lc_kilonovaness = lc_info["pass"]
+            #kilonovaness += lc_info["pass"]
+            #lc_kilonovaness = lc_info["pass"]
             if len(lc_info["rejects"]) > 0:
                 rejects.extend(lc_info["rejects"])
 

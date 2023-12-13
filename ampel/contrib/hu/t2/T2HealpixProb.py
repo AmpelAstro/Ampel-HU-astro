@@ -55,6 +55,8 @@ class T2HealpixProb(AbsStateT2Unit, AbsTabulatedT2Unit):
         # Load and process map
         self.healpix_map = AmpelHealpix(map_name=map_info.get('map_name'), map_url=map_info.get('map_url'), save_dir = map_info.get('map_dir'))
         self.map_hash = self.healpix_map.process_map()
+        self.seed = self.healpix_map.seed
+        print("T2HEALPIXPRB:: SEED:: ", self.seed)
         if not self.map_hash==map_info['hash']:
             raise ValueError("Healpix hash changed - modified map?")
         
@@ -123,6 +125,8 @@ class T2HealpixProb(AbsStateT2Unit, AbsTabulatedT2Unit):
         map_dist, map_dist_unc = self.healpix_map.get_mapdist()
         out_dict["map_dist"] = map_dist
         out_dict["map_dist_unc"] = map_dist_unc
+
+        out_dict["seed"] = self.seed
 
 
         return out_dict

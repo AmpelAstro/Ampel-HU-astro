@@ -10,6 +10,7 @@
 import io
 import os
 import re
+import numpy as np
 from collections.abc import Generator
 from functools import reduce
 from typing import Any, Optional, Union
@@ -96,6 +97,8 @@ class TransientTablePublisher(AbsPhotoT3Unit):
     save_base_info: bool = False
 
     fmt: str = "csv"
+    write_mode: str = "a"
+    rename_files: bool = False
 
     file_name: str = "TransientTable"
     slack_channel: None | str = None
@@ -203,6 +206,14 @@ class TransientTablePublisher(AbsPhotoT3Unit):
         # Convert
         df = pd.DataFrame.from_dict(table_rows)
 
+        #if "map_name" in df.columns and "map_seed" in df.columns:
+            #df["map_name"] = np.char.replace(np.array(df["map_name"], dtype=str), "random", "random"+df["map_seed"])
+
+        print(df["map_name"].iloc[0])
+        if "random" in df["map_name"].iloc[0] and self.rename_files:
+            print("transienttablepublisher:: ", df["map_seed"].iloc[0])
+            self.file_name += "_" + str(int(df["map_seed"].iloc[0]))
+
         # sort dataframe by key
         if self.sort_by_key in df.keys():
             df = df.sort_values(by=self.sort_by_key, ascending=self.sort_ascending)
@@ -215,12 +226,13 @@ class TransientTablePublisher(AbsPhotoT3Unit):
             with open(full_path + "." + self.fmt, "w") as tmp_file:
                 tmp_file.close()
             if self.fmt == "csv":
-                df.to_csv(full_path + ".csv", sep=";")
+                print(self.write_mode)
+                df.to_csv(full_path + ".csv", sep=";", mode=self.write_mode)
             elif self.fmt == "latex":
                 df.to_latex(full_path + ".tex")
             elif self.fmt == "json":
                 json_dumps = df.to_json(indent=2)
-                with open(full_path + ".json", "w") as json_file:
+                with open(full_path + ".json", self.write_mode) as json_file:
                     json_file.write(json_dumps)
                     json_file.close()
             self.logger.info("Exported", extra={"path": full_path})

@@ -77,6 +77,10 @@ class RandomMapGenerator(AbsT3PlainUnit):
 
         if self.seed:
             np.random.seed(self.seed)
+        else: 
+            self.seed = np.random.random_integers(0, 2147483647)
+            print("RANDOMMAPGENERATOR:: ", self.seed)
+            np.random.seed(self.seed)
 
         self.longitude = np.random.uniform(self.long_range[0], self.long_range[1])
         self.latitude = np.random.uniform(self.lat_range[0], self.lat_range[1])
@@ -113,13 +117,18 @@ class RandomMapGenerator(AbsT3PlainUnit):
     def save_map(self):
         """Save generated map with header as .fits.gz"""
 
-        file_name = f"{self.save_dir}{self.map_name}.fits.gz"
+        file_name = f"{self.save_dir}{(self.map_name).replace('.fits.gz', '')}.fits.gz"
 
         print("Saving map: ", file_name)
 
+        hdr_simple = []
+        hdr_simple.append(("SIMPLE", "T"))
+
         hdr = []
+        
         hdr.append(("DISTMEAN", self.distance))
         hdr.append(("DISTSTD", self.dist_unc))
+        hdr.append(("SEED", self.seed))
 
         trigger_time = atime.Time(self.trigger_time, format="gps")
 
