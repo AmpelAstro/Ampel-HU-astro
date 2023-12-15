@@ -4,8 +4,8 @@
 # License:             BSD-3-Clause
 # Author:              jnordin@physik.hu-berlin.de
 # Date:                06.05.2021
-# Last Modified Date:  05.12.2021
-# Last Modified By:    jnordin@physik.hu-berlin.de
+# Last Modified Date:  15.12.2023
+# Last Modified By:    alice.townsend@physik.hu-berlin.de
 
 from functools import reduce
 from typing import Any, Optional, Union
@@ -76,6 +76,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
 
     name_filter: dict[str, str] = {'ZTF name': 'ZTF', 'TNS ID': 'TNS'}
     include_stock: bool = False
+    include_pos: bool = True
     include_channels: bool = True
     # Add also transients lacking any T2 info
     save_base_info: bool = False
@@ -139,6 +140,12 @@ class TransientTablePublisher(AbsPhotoT3Unit):
 
             if self.include_stock:
                 basetdict['stock'] = tran_view.id
+            if self.include_pos:
+                lcurve = tran_view.get_lightcurves()
+                if lcurve is not None:
+                    pos = lcurve[0].get_pos(ret = 'brightest')
+                    basetdict['ra'] = pos[0]
+                    basetdict['dec'] = pos[1]
             if self.include_channels and tran_view.stock:
                 channels = tran_view.stock.get("channel")
                 # Allow for both single (most common) and duplacte channels.
