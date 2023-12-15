@@ -144,8 +144,9 @@ class TransientTablePublisher(AbsPhotoT3Unit):
                 lcurve = tran_view.get_lightcurves()
                 if lcurve is not None:
                     pos = lcurve[0].get_pos(ret = 'brightest')
-                    basetdict['ra'] = pos[0]
-                    basetdict['dec'] = pos[1]
+                    if pos is not None:
+                        basetdict['ra'] = pos[0]
+                        basetdict['dec'] = pos[1]
             if self.include_channels and tran_view.stock:
                 channels = tran_view.stock.get("channel")
                 # Allow for both single (most common) and duplacte channels.
