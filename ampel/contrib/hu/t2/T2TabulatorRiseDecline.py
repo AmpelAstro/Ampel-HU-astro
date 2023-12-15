@@ -8,10 +8,11 @@
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 from typing import Any, Union, TYPE_CHECKING, Sequence, Iterable
-import os
+import os, re
 import numpy as np
 from astropy.table import Table
 from scipy.optimize import curve_fit
+#import light_curve
 
 from ampel.types import UBson
 from ampel.abstract.AbsStateT2Unit import AbsStateT2Unit
@@ -25,18 +26,26 @@ from ampel.content.T1Document import T1Document
 
 
 
-def getMag(tab: Table, err=False):
+
+def getMag(tab: Table, err=False, time=False):
     """
     Shorthand to getting the magnitude from flux.
     """
 
-    m = -2.5* np.log10(tab['flux']) + tab['zp']
+    iPos = (tab['flux']>0)
+    m = -2.5* np.log10(tab['flux'][iPos]) + tab['zp'][iPos]
     if err:
         # Simple symmetric method
-        merr = 2.5 / np.log(10) * (tab['fluxerr']/tab['flux'])
-        return m, merr
+        merr = 2.5 / np.log(10) * (tab['fluxerr'][iPos]/tab['flux'][iPos])
+        if time:
+            return m, merr, tab['time'][iPos]
+        else:
+            return m, merr
     else:
-        return m
+        if time:
+            return m, tab['time'][iPos]
+        else:
+            return m
 
 def getMeanflux(tab: Table, jdstart, jdend):
     """
@@ -50,6 +59,7 @@ def getMeanflux(tab: Table, jdstart, jdend):
     for band in set(tt['band']):
         btt = tt[tt['band']==band]
         means[band] = np.average( btt['flux'], weights=1./btt['fluxerr']**2)
+#        means[band] = 1
         used_bands.append(band)
     return means, used_bands
 
@@ -57,7 +67,7 @@ def getBandBits(bands: Sequence):
     """
     Return number quantifying which bands are included.
     """
-    bandval = {'lsstu':1, 'lsstg':2, 'lsstr':4, 'lssti':8, 'lsstz':16, 'lssty':32}
+    bandval = {'lsstu':1, 'lsstg':2, 'lsstr':4, 'lssti':8, 'lsstz':16, 'lssty':32, 'ztfg': 64, 'ztfr': 128, 'ztfi': 256}
     index = 0
     for band in bands:
         index += bandval[band]
@@ -123,12 +133,14 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
     sigma_det: float = 5.
     sigma_slope: float = 3. # Threshold for having detected a slope
     color_list: Sequence[Sequence[str]] = [['lsstu','lsstg'], ['lsstg','lsstr'],
-                        ['lsstr','lssti'], ['lssti','lsstz'],['lsstz','lssty']]
+                        ['lsstr','lssti'], ['lssti','lsstz'],['lsstz','lssty'],['ztg','ztfr'],['ztfr','ztfi']]
     max_tgap: int = 30
 
     # Cut the lightcurve if longer than this limit.
     # Motivated by worse classification for longer (inbalanced training?)
-    max_ndet: int = 20
+    #max_ndet: int = 20
+    # For new training round, change this
+    max_ndet: int = 200000
 
     if TYPE_CHECKING:
         logger: LoggerProtocol
@@ -164,18 +176,19 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
                 try:
                     fit, cov=curve_fit(linearFunc,riset['time']-tscale,riset['flux'],
                                         sigma=riset['fluxerr'],absolute_sigma=True)
+                    banddata['rise_slope_'+band] = fit[1]
+                    banddata['rise_slopesig_'+band] = fit[1] / np.sqrt(cov[1][1])
                 except RuntimeError as exc:
-                    raise FitFailed from exc
-                banddata['rise_slope_'+band] = fit[1]
-                banddata['rise_slopesig_'+band] = fit[1] / np.sqrt(cov[1][1])
+                    self.logger.info('Risetime curve fit failed.')
             if len(fallt)>1:
                 try:
                     fit, cov=curve_fit(linearFunc,fallt['time']-tscale,fallt['flux'],
                                         sigma=fallt['fluxerr'],absolute_sigma=True)
+                    banddata['fall_slope_'+band] = fit[1]
+                    banddata['fall_slopesig_'+band] = fit[1] / np.sqrt(cov[1][1])
                 except RuntimeError as exc:
-                    raise FitFailed from exc
-                banddata['fall_slope_'+band] = fit[1]
-                banddata['fall_slopesig_'+band] = fit[1] / np.sqrt(cov[1][1])
+                    self.logger.info('Falltime curve fit failed.')
+
 
         # In v1 we also had a requirement that a sufficient time should have
         # passed after peak, such that we "should" have seen a decline.
@@ -198,14 +211,14 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
 
         # If the transient has both a rise and a fall we can
         # define a central peak
-        if banddata['bool_rise'] and banddata['bool_fall']:
-            banddata['bool_peaked'] = True
-            # Use jd of all bands for which we could estimate rise+fall
-            banddata['jd_peak'] = np.median(
-                                [ banddata['jd_peak_'+band]
+        if banddata['bool_rise'] and banddata['bool_fall'] and (
+            len(peakjds := [ banddata['jd_peak_'+band]
                                        for band in set(ftable['band'])
                                   if 'rise_slope_'+band in banddata and
-                                     'fall_slope_'+band in banddata] )
+                                     'fall_slope_'+band in banddata])>0):
+            banddata['bool_peaked'] = True
+            # Use jd of all bands for which we could estimate rise+fall
+            banddata['jd_peak'] = np.median( peakjds  )
         else:
             banddata['bool_peaked'] = False
 
@@ -220,13 +233,50 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
         """
         Limit to some _total_ set of significant detections.
         """
-        sig_mask = (flux_table['flux']) / flux_table['fluxerr']>self.sigma_det
+        sig_mask = np.abs( (flux_table['flux']) / flux_table['fluxerr'] ) >self.sigma_det
         sig_time = list( flux_table['time'][sig_mask] )
         if len(sig_time)>self.max_ndet:
             max_time = sorted(sig_time)[self.max_ndet]
             flux_table = flux_table[ flux_table['time']<=max_time ]
 
         return flux_table
+
+
+    def average_filtervalues(self, features: dict[str, Any], matchlist: list[str] = []) -> dict[str, Any]:
+        """
+        Many (most) features calculated per band or color, with available filter/color varying from object
+        to object.
+
+        This method will attempt to average over any filter or color-specific fields available and create an averaged entry.
+
+        A base matchlist is created based on significant bands. (plus potentially an input matchlist)
+
+        """
+
+        mymatchlist = ['_{}_'.format(band) for band in self.significant_bands]
+        # Ignore the colors for now, would need to rework how these averages are described.
+        #mymatchlist.extend(
+        #	['{}-{}_'.format(col[0],col[1]) for col in self.color_list]
+        #    )
+        mymatchlist.extend(matchlist)
+
+        matchedvalues = {}
+        # Can this be redone to avoid nested loop?
+        for match in mymatchlist:
+            p = re.compile(match)
+            for key, val in features.items():
+                stub = p.sub('_',key)    # Name of averaged entry in return dict
+                if stub==key:            # Match string not found
+                    continue
+                if not stub in matchedvalues:
+                    matchedvalues[stub] = []
+                matchedvalues[stub].append(val)
+
+        return {k:np.nanmean(v) for k, v in matchedvalues.items()}
+
+
+
+
 
 
 
@@ -236,15 +286,14 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
         # Output dict that we will start to populate
         o: dict[str, Any] = {}
 
-        # Step 1. Base determinations based on combined detections
-        self.logger.debug("Starting joint band RiseDeclineStat estimations")
 
         # Create subset of table with significant detections in significant bands
         band_mask = [bandobs in self.significant_bands for bandobs in flux_table['band'] ]
-        sig_mask = (flux_table['flux']) / flux_table['fluxerr']>self.sigma_det
+        sig_mask = np.abs( (flux_table['flux']) / flux_table['fluxerr'] )>self.sigma_det
         det_table = flux_table[band_mask & sig_mask]
-
+        # Calculate fraction negative detection (we no longer cut only because of this)
         o['ndet'] = len(det_table)
+
         if o['ndet']==0:
             o['success'] = False
             o['cause'] = "No data survive significance criteria."
@@ -255,8 +304,11 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
 
             return o
 
+        o['frac_pos'] = np.sum(det_table['flux']>0) / o['ndet']
+
         o["jd_det"] = det_table['time'].min()
         o["jd_last"] = det_table['time'].max()
+        o["t_lc"] = o["jd_last"] - o["jd_det"]
 
         # Get the max time of obs in signifant bands prior to jd_det
         if flux_table[band_mask]['time'].min()<o['jd_det']:
@@ -265,13 +317,25 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
         else:
             o["t_predetect"] = None
 
+        # Magnitude and color calculations below assume detections are positive
+        if flux_table[flux_table['time']==o["jd_det"]]['flux']<0 or flux_table[flux_table['time']==o["jd_last"]]['flux']<0:
+            # Did we succeed with feature calculation or not?
+            o['success'] = True
+            return o
+
+
         o["mag_det"] = float( getMag(flux_table[flux_table['time']==o["jd_det"]]) )
         o["band_det_id"] = getBandBits( [flux_table[flux_table['time']==o["jd_det"]]['band'][0]] )
 
         o["mag_last"] = float( getMag(flux_table[flux_table['time']==o["jd_last"]]) )
         o["band_last_id"] = getBandBits( [flux_table[flux_table['time']==o["jd_last"]]['band'][0]] )
 
-        o["t_lc"] = o["jd_last"] - o["jd_det"]
+        # Check fails irregularly
+        try:
+            o["mag_min"] = float( getMag(flux_table[flux_table['flux'] == max(flux_table['flux']) ]))
+        except TypeError:
+            self.logger.info("Mag min extraction failed.")
+
 
         # Check for non-signficant obs between det and last
         ultab = flux_table[band_mask & ~sig_mask]
@@ -292,7 +356,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
         # If there is a peak we additionally check whether this is within t_cadence
         # days of detector or last, and call this fastrise and fastfall
         o['bool_fastrise'], o['bool_fastfall'] = None, None
-        if o['bool_peaked']:
+        if o.get('bool_peaked',False):
             if np.abs(o['jd_det']-o['jd_peak'])<self.t_cadence:
                 o['bool_fastrise'] = True
             else:
@@ -335,7 +399,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
             if fluxdict.get(colbands[0],-1)>0 and fluxdict.get(colbands[1],-1)>0:
                 o[f"{colbands[0]}-{colbands[1]}_last"] = -2.5 * np.log10(fluxdict[colbands[0]] / fluxdict[colbands[1]])
         # Peak colors, if found
-        if o['bool_peaked']:
+        if o.get('bool_peaked',False):
             fluxdict, fluxbands =  getMeanflux(flux_table, o["jd_peak"]-self.t_cadence/2,
                                                 o["jd_peak"]+self.t_cadence/2)
             o['peak_bands'] = getBandBits(fluxbands)
@@ -348,10 +412,96 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
         return o
 
 
-class T2TabulatorRiseDecline(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRiseDeclineBase):
+
+
+'''
+class BaseLightCurveFeatures(AmpelBaseModel):
+    """
+    Calculate various features of the light curve using the light-curve
+    package described in https://ui.adsabs.harvard.edu/abs/2021MNRAS.502.5147M%2F/abstract
+
+    Lifted from T2LightCurveFeatures
+    Installed as  python3 -mpip install light-curve
+
+    This v2 contains feature selection and choice of flux as unit based on most common features to influence
+    a binary tree classifier (compare rank_tabulator_features and previous version of this unit).
+    Also decided to require 4 detection in a band for using.
+    """
+
+    #: Features to extract from the light curve.
+    #: See: https://docs.rs/light-curve-feature/0.2.2/light_curve_feature/features/index.html
+    lightcurve_features_flux: dict[str, None | dict[str, Any]] = {
+        "Eta": None,                                                               # 2
+        "MaximumSlope": None,                                                      # 2
+        "Periodogram":{"peaks": 1},                                                # 4?
+        "Skew": None,                                                              # 3
+        "StandardDeviation": None,                                                 # 2
+        "ExcessVariance": None,                                                    # 2
+        "LinearFit": None,                                                         # 3
+        "AndersonDarlingNormal":None,                                              # 4
+        "Kurtosis": None,                                                          # 4
+        "StetsonK": None,                                                          # 2
+    }
+
+    #: Bandpasses to use
+    lightcurve_bands: dict[str, Any] = {"ztfg": "ztfg", "ztfr": "ztfr", "ztfi": "ztfi",
+    		"lsstu":"lsstu","lsstg":"lsstg","lsstr":"lsstr","lssti":"lssti","lsstz":"lsstz","lssty":"lssty"}
+
+    def init_lightcurve_extractor(self) -> None:
+        self.fluxextractor = light_curve.Extractor(
+            *(getattr(light_curve, k)(**(v or {})) for k, v in self.lightcurve_features_flux.items())
+        )
+
+
+    def post_init(self) -> None:
+        self.init_lightcurve_extractor()
+
+
+    def extract_lightcurve_features(self, flux_table: Table) -> dict[str,float]:
+        result = {}
+        #
+        for band, fid in self.lightcurve_bands.items():
+            if (
+                in_band := flux_table[flux_table['band']==fid]
+            ) is None:
+                continue
+
+            # Conversion to mag not used if features determined in flux space
+            # m, merr, mtime = getMag(in_band, err=True, time=True)
+
+
+
+            # We wrap this in a try statement, since there are a few ways these can fail, typically with poor data in one or another aspect
+            try:
+                # Flux based, requires at least 4 detections
+                if len(in_band['flux'])>=4:
+                    lcout = {
+                                f"{k}_{band}_flux": v
+                                for k, v in zip(
+                                    self.fluxextractor.names, self.fluxextractor(in_band['time'], in_band['flux'], in_band['fluxerr'])
+                                )
+                            }
+                    result.update(lcout)
+            except ValueError:
+                self.logger.info('lightkurve extract fail')
+                pass
+
+
+        return result
+
+'''
+
+class T2TabulatorRiseDecline(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRiseDeclineBase,): # BaseLightCurveFeatures):
 
     plot_prob: float = 0.
     path_testplot: str = "/home/jnordin/tmp/t2test/"
+
+
+#    def __init__(self, **kwargs):
+#        super().__init__(**kwargs)
+#    def super().post_init(self):
+#        super().__init__(**kwargs)
+
 
     def test_plot(self, name, table, t2result):
         """
@@ -455,8 +605,20 @@ class T2TabulatorRiseDecline(AbsStateT2Unit, AbsTabulatedT2Unit, T2TabulatorRise
         # Calculate get_features
         features = self.compute_stats(flux_table)
 
+        # Calculate light_curve features
+        #lcfeat = self.extract_lightcurve_features(flux_table)
+        #features.update(lcfeat)
+        #features.update(
+        #    self.extract_lightcurve_features(flux_table)
+        #    )
+
+        # Create averaged values
+        avgfeat = self.average_filtervalues(features)
+        features.update(avgfeat)
+
+
         #if self.do_testplot:
-        if features['success'] and np.random.uniform()<self.plot_prob:
+        if features.get('success') and np.random.uniform()<self.plot_prob:
             self.test_plot(compound.get('stock'), flux_table, features)
 
         return features
