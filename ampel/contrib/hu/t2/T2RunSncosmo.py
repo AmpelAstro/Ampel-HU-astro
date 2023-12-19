@@ -402,6 +402,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
 
         # Obtain photometric table
         sncosmo_table = self.get_flux_table(datapoints)
+        print("T2RUNSNCOSMO:: ", sncosmo_table)
         sncosmo_table = sncosmo_table[
             (sncosmo_table["time"] >= jdstart) & (sncosmo_table["time"] <= jdend)
         ]

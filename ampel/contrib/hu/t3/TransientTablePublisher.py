@@ -210,9 +210,13 @@ class TransientTablePublisher(AbsPhotoT3Unit):
             #df["map_name"] = np.char.replace(np.array(df["map_name"], dtype=str), "random", "random"+df["map_seed"])
 
         print(df["map_name"].iloc[0])
-        if "random" in df["map_name"].iloc[0] and self.rename_files:
+        if "random" in df["map_name"].iloc[0] or self.rename_files:
             print("transienttablepublisher:: ", df["map_seed"].iloc[0])
-            self.file_name += "_" + str(int(df["map_seed"].iloc[0]))
+            tmp_seed_name = df["map_seed"].iloc[0]
+            if type(tmp_seed_name) == str:
+                self.file_name += "_" + tmp_seed_name
+            else:
+                self.file_name += "_" + str(int(tmp_seed_name))
 
         # sort dataframe by key
         if self.sort_by_key in df.keys():

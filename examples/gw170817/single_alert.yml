@@ -1,26 +1,28 @@
 name: ligo-kilonova
 parameters:
 - name: map_url_var
-  value: https://box.hu-berlin.de/d/1545d8b265cc496bac48/files/?p=%2Fsim_98.13_58.62_1223725912.7.fits.gz&dl=1
+  value: https://google.com #https://box.hu-berlin.de/d/1545d8b265cc496bac48/files/?p=%2Fsim_98.13_58.62_1223725912.7.fits.gz&dl=1
 - name: map_name_var
-  value: simulated #sim_98.13_58.62_1223725912.7.fits.gz
+  value: gw170817.fits.gz #sim_98.13_58.62_1223725912.7.fits.gz
 - name: map_token_var
-  value: simulated.fits.gz_token #sim_98.13_58.62_1223725912.7.fits.gz_token
+  value: gw170817.fits.gz_token #sim_98.13_58.62_1223725912.7.fits.gz_token
+- name: map_dir_var
+  value: ./
 - name: alert_dir
   value: /mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/gw170817/alerts
 - name: trigger_jd_var
-  value: 2458863.682951
+  value: 2457983.028727
 - name: export_fmt
-  value: json
+  value: csv
 - name: transienttable_path
-  value: ./TransientTable.json
+  value: ./TransientTable.csv
 
 mongo:
-  prefix: remote
+  prefix: gw170817
   reset: true
 
 channel:
-- name: remote
+- name: gw170817
   access: [ZTF, ZTF_PUB, ZTF_PRIV]
   policy: []
 
@@ -76,7 +78,7 @@ task:
             extension: "json"
     shaper: ZiGWDataPointShaper
     directives:
-    - channel: remote
+    - channel: gw170817
       # filter:
         # config:
           # passing_rate: 1
@@ -140,6 +142,11 @@ task:
                 tabulator:
                   - unit: ZTFT2Tabulator
               unit: T2HealpixProb
+            - config: &matchgrb_config
+                trigger_jd: "{{ job.parameters.trigger_jd_var }}"
+                map_dir: "{{ job.parameters.map_dir_var }}"
+                map_name: "{{ job.parameters.map_name_var }}"
+              unit: T2MatchGRB
             - config: &risedecline_config
                 t_cadence: 3.
                 significant_bands: 
@@ -297,18 +304,30 @@ task:
               unit: T2DigestRedshifts
             - config: &possis_config
                 possis_models:
-                  bns_m3_3comp:
+                  bns_maurice_1:
                     model_gen: bns_m3_3comp
                     mej_dyn: 0.01
+                    mej_wind: 0.03
+                    phi: 30
+                    cos_theta: 0.1
+                  bns_maurice_2:
+                    model_gen: bns_m3_3comp
+                    mej_dyn: 0.005
                     mej_wind: 0.09
-                    phi: 45
-                    cos_theta: 0.3
-                  bns_m3_3comp_1:
+                    phi: 30
+                    cos_theta: 0.1
+                  bns_maurice_3:
                     model_gen: bns_m3_3comp
                     mej_dyn: 0.01
+                    mej_wind: 0.03
+                    phi: 30
+                    cos_theta: 0.9
+                  bns_maurice_4:
+                    model_gen: bns_m3_3comp
+                    mej_dyn: 0.005
                     mej_wind: 0.09
-                    phi: 90
-                    cos_theta: 0.3
+                    phi: 30
+                    cos_theta: 0.9
                 explosion_time_jd: TriggerTime
                 max_ampelz_group: 7
                 redshift_kind: T2DigestRedshifts
@@ -322,7 +341,10 @@ task:
             - config:
                 max_redshift: 0.2
                 min_ndet: 2
+                #lc_filters: null
                 t2_dependency:
+                - config: *matchgrb_config
+                  unit: T2MatchGRB
                 - config: *digest_redshift_config
                   unit: T2DigestRedshifts
                 - unit: T2PropagateStockInfo
@@ -371,7 +393,7 @@ task:
               select:
                 unit: T3StockSelector
                 config:
-                  channel: remote
+                  channel: gw170817
               load:
                 unit: T3SimpleDataLoader
                 config:
@@ -380,7 +402,7 @@ task:
                     - T1
                     - T2DOC
                     - DATAPOINT
-                  channel: remote
+                  channel: gw170817
           stage:
             unit: T3SimpleStager
             config:
@@ -397,6 +419,7 @@ task:
                     fmt: "{{ job.parameters.export_fmt }}"
                     local_path: ./
                     move_files: false
+                    rename_files: true # REMEMBER TO CHANGE THIS FOR CLUSTER STUFF OR ARTIFACT BREAKS
                     table_schema:
                       T2KilonovaEval:
                         'ampel_z':
@@ -413,6 +436,8 @@ task:
                           - possis_ndof
                         'chisquares':
                           - chisquares
+                        'grb_spatial':
+                          - grb_spatial
                         'kilonovaness':
                           - kilonovaness
                         'rejects':
@@ -440,6 +465,9 @@ task:
                         'rise_decline':
                           - rise_decline
                     transient_table_schema:
+                      T2MatchGRB:
+                        'grb_temporal':
+                          - temporal_grb
                       T2HealpixProb:
                         'map_area':
                           - map_area
@@ -449,6 +477,10 @@ task:
                           - map_dist_unc
                         'map_name':
                           - map_name
+                        'trigger_time':
+                          - trigger_time
+                        'map_seed':
+                          - seed
                       T2PropagateStockInfo:
                         'trigger_time':
                           - trigger_time

@@ -101,7 +101,11 @@ class AmpelHealpix:
         #print(self.dist)
         self.dist_unc = [header[1] for header in headers if header[0] == "DISTSTD"][0]
         
-        self.seed = [header[1] for header in headers if header[0] == "SEED"][0]
+        seed_list = [header[1] for header in headers if header[0] == "SEED"]
+        if len(seed_list) > 0: 
+            self.seed = seed_list[0]
+        else:
+            self.seed = self.map_name.replace(".fits.gz", "").replace(",", "_")
 
         # Find credible levels
         idx = np.flipud(np.argsort(hpx))

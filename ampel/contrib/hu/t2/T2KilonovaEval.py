@@ -115,10 +115,10 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
     # Cut to apply to all the photopoints in the light curve.
     # This will affect most operations, i.e. evaluating the position,
     # computing number of detections ecc.
-    lc_filters: list[dict[str, Any]] = [
-        {"attribute": "sharpnr", "operator": ">=", "value": -10.15},
-        {"attribute": "magfromlim", "operator": ">", "value": 0},
-    ]
+    lc_filters: None or list[dict[str, Any]] = None #[
+    #     {"attribute": "sharpnr", "operator": ">=", "value": -10.15},
+    #     {"attribute": "magfromlim", "operator": ">", "value": 0},
+    # ]
 
     # Catalogs
     # catalogs =["GLADEv23",
@@ -269,6 +269,8 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         pps = lc.get_photopoints(
             filters=self.lc_filters
         )  # pps: photopoints from lightcurve w filters
+
+        print("T2KILONOVAEVAL LEN PPS:: ", len(pps))
 
         assert pps is not None
         info: dict[str, Any] = {"pass": 0, "rejects": []}
@@ -756,8 +758,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         -------
         dict
 
-        Containing transient info, and in particular the 'action' key. This will be set to true
-        for transients passing all selection criteria.
+        
 
         """
 

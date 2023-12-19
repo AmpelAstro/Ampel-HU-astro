@@ -258,7 +258,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
         #mymatchlist.extend(
         #	['{}-{}_'.format(col[0],col[1]) for col in self.color_list]
         #    )
-       	mymatchlist.extend(matchlist)
+        mymatchlist.extend(matchlist)
 
         matchedvalues = {}
         # Can this be redone to avoid nested loop?
