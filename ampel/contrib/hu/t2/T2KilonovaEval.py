@@ -83,7 +83,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
     min_ndet: int = 1
     min_ndet_postul: int = 0  # and if it has this minimum nr of detection after the last significant (max_maglim) UL.
     min_age: float = 0.01  # require 2 detections separated by 15 minutes
-    max_age: float = 3.0
+    max_age: float = 10.0 # only input either 3 days of data or data until current day so age should not be as hard
     # min_mag_sigma_diff: float = 2 # consider lc decreasing if two consecutive detections including uncertainty are more than x sigma apart
     mag_dec_diff: float = 0.4  # consider lc decreasing if two consecutive detections' magnitude difference more than this
     # Min age of detection history
@@ -221,7 +221,10 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                     best_redchisq = tmp_redchisq
                     best_ind = k
                 
-                chisq_dict[model_ind] = {"chisq": t2res[model_ind]["sncosmo_result"]["chisq"], "ndof": t2res[model_ind]["sncosmo_result"]["ndof"]}
+                chisq_dict[model_ind] = {"chisq": t2res[model_ind]["sncosmo_result"]["chisq"], 
+                                         "ndof": t2res[model_ind]["sncosmo_result"]["ndof"],
+                                         }
+                chisq_dict[model_ind].update(t2res[model_ind]["fit_metrics"])
 
         #print("T2KILONOVAEVAL::", chisq_dict)
 
@@ -569,7 +572,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             self.logger.info("No PS1 check as no data found.")
 
         # cut on median RB and DRB score
-        rbs = [pp["body"]["rb"] for pp in pps]
+        rbs = [pp["body"]["rb"] for pp in pps if "rb" in pp["body"].keys()]
         if np.median(rbs) < self.rb_minmed:
             self.logger.info(
                 "Rejected (RB)",

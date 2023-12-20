@@ -56,7 +56,7 @@ task:
               map_url: "{{ job.parameters.map_url_var }}"
               map_dir: ./
               # date_str: "2022-01-15" # 2020-02-13
-              delta_time: 3
+              delta_time: 12
               archive_token:
                 label: ztf/archive/token
 
@@ -80,8 +80,7 @@ task:
     directives:
     - channel: gw170817
       # filter:
-        # config:
-          # passing_rate: 1
+      #   config:
       #     trigger_jd: "{{ job.parameters.trigger_jd_var }}"
       #     gaia_excessnoise_sig_max: 999
       #     gaia_plx_signif: 3
@@ -106,8 +105,13 @@ task:
       #     max_elong: 2
       #     max_magdiff: 1
       #     max_nbad: 2
-        # on_stock_match: bypass
-        # unit: RandFilter
+      #   on_stock_match: bypass
+      #   unit: PredetectionFilter
+      filter:
+        config:
+          passing_rate: 1.0
+        on_stock_match: bypass
+        unit: RandFilter
       ingest:
         stock_t2:
           - unit: T2PropagateStockInfo
