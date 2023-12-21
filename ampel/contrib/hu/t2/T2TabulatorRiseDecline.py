@@ -336,6 +336,10 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
         except TypeError:
             self.logger.info("Mag min extraction failed.")
 
+        try:
+            o["jd_min"] = float( flux_table['time'][np.argmax(flux_table['flux'])])
+        except TypeError:
+            self.logger.info("JD at mag min extraction failed.")
 
         # Check for non-signficant obs between det and last
         ultab = flux_table[band_mask & ~sig_mask]
