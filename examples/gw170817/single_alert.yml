@@ -345,7 +345,7 @@ task:
             - config:
                 max_redshift: 0.2
                 min_ndet: 2
-                #lc_filters: null
+                lc_filters: []
                 t2_dependency:
                 - config: *matchgrb_config
                   unit: T2MatchGRB

@@ -3,6 +3,7 @@
 # repeats same file 5 times then moves on
 
 import os
+import sys
 import subprocess
 import shlex
 import numpy as np
@@ -14,14 +15,16 @@ import astropy.time as atime
 
 # directory where ampel job should be run (NEEDS .tmp FOLDER)
 #execute_directory="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/weizmann"
-execute_directory="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/ligo-kilonova"
-execute_directory="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/ligo-simulated"
-execute_directory="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/O3_offset"
+#execute_directory="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/ligo-kilonova"
+#execute_directory="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/ligo-simulated"
+#execute_directory="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/O3_offset"
+execute_directory="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/random"
 
 # directory where jobfiles are found
 #jobfile_save_dir="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/examples/calibrateKilonovaEval_jobfiles/"
 #jobfile_save_dir="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/examples/weizmann_jobfiles/"
-jobfile_save_dir="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/examples/O3_offset_jobfiles/"
+jobfile_save_dir="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/examples/simulated_maps/"
+#jobfile_save_dir="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/examples/O3_offset_jobfiles/"
 
 #jobfiles_to_execute_file = os.listdir(jobfile_save_dir)
 # list of names of jobfiles to run
@@ -33,7 +36,9 @@ conf_file = "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-H
 #vault file to use
 vault_file = "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/vault.yaml"
 
-print(jobfile_names)
+
+jobfile =  "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/examples/remote/random_healpix_clu.yml"
+print(jobfile)
 
 
 def execute_jobfile(job_call, execute_directory):
@@ -99,15 +104,25 @@ def execute_jobfile(job_call, execute_directory):
 
 
 if __name__=="__main__":
-    for jobfile_name in jobfile_names[:8]:
+    # for jobfile_name in jobfile_names[:5]:
 
-        jobfile = os.path.join(jobfile_save_dir, jobfile_name)
+    #     jobfile = os.path.join(jobfile_save_dir, jobfile_name)
 
-        print(f"################################################ \n################################################ \n\n\t\tNEXT JOBFILE\n\t{jobfile_name}\n\n################################################ \n################################################ \n")
+    #     print(f"################################################ \n################################################ \n\n\t\tNEXT JOBFILE\n\t{jobfile_name}\n\n################################################ \n################################################ \n")
+
+    #     job_call = "" #f"cd {execute_directory};"
+    #     job_call += f"ampel job --schema {jobfile} --config {conf_file} --secrets {vault_file}"
+
+    #     execute_jobfile(job_call, execute_directory)
+
+    times = int(sys.argv[1])
+
+    for k in range(times):
+
+        print(f"################################################ \n################################################ \n\n\t\tNEXT JOBFILE\n\t{jobfile}\n\n################################################ \n################################################ \n")
+        print (k, "/", times)
 
         job_call = "" #f"cd {execute_directory};"
         job_call += f"ampel job --schema {jobfile} --config {conf_file} --secrets {vault_file}"
 
         execute_jobfile(job_call, execute_directory)
-
-

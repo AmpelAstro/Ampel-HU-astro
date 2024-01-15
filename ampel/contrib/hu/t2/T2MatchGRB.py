@@ -23,6 +23,8 @@ class T2MatchGRB(AbsStateT2Unit, AbsTabulatedT2Unit):
     map_dir: str or None = "./"
     map_name: str or None = None
 
+    event_list = []
+
     ra: float = 0
     dec: float = 0
     radius: float = 100000
@@ -48,13 +50,14 @@ class T2MatchGRB(AbsStateT2Unit, AbsTabulatedT2Unit):
         print("T2MATCHGRB:: ", self.before_iso, self.after_iso, self.trigger_jd)
 
         # get GRB events in timeframe
-        self.astrocolibri_allsky()
+        #self.astrocolibri_allsky()
 
     def process(
         self,
         compound: T1Document,
         datapoints: Iterable[DataPoint],
     ) -> Union[UBson, UnitResult]:
+
         
         tmp_skycoord = None
 
@@ -122,8 +125,10 @@ class T2MatchGRB(AbsStateT2Unit, AbsTabulatedT2Unit):
 
         # Perform the POST request
         response = requests.post(
-            url, headers=headers, data=json.dumps(body), timeout=20
+            url, headers=headers, data=json.dumps(body), #timeout=20
         )
+
+        print(response.status_code)
 
         # Process the response
         if response.status_code == 200:

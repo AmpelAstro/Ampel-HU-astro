@@ -78,8 +78,12 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
     grb_mult: float = 3
 
     # Lightcurve (using redshift, so that needs to be there)
+    ideal_absmag: float = -15.5 # from gw170817
+    absmag_range_rewards: list = [(0.5, 5), (2, 2), (4, 1)]
     min_absmag: float = -20 # AB magnitude -16 +- 4 DOI 10.3847/1538-4357/ac8e60
     max_absmag: float = -12  #
+    min_obsmag: float = 19 #  Arxive: aa40689
+    max_obsmag: float = 21
     min_ndet: int = 1
     min_ndet_postul: int = 0  # and if it has this minimum nr of detection after the last significant (max_maglim) UL.
     min_age: float = 0.01  # require 2 detections separated by 15 minutes
@@ -94,6 +98,10 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
     min_n_filters: int = 1
     # Require a detection in one of these filters (e.g. ZTF I-band more often spurious)
     det_filterids: list[int] = [1, 2, 3]  # default to any of them
+
+    # possis
+    max_red_chisquares: list[float] = [7.5, 22, 40]
+    chisqu_rewards: list[int] = [3, 2, 1]
     
     # Below are copied from filter - not sure is needed, but kept for legacy
     # Minimal galactic latitide
@@ -115,10 +123,10 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
     # Cut to apply to all the photopoints in the light curve.
     # This will affect most operations, i.e. evaluating the position,
     # computing number of detections ecc.
-    lc_filters: None or list[dict[str, Any]] = None #[
-    #     {"attribute": "sharpnr", "operator": ">=", "value": -10.15},
-    #     {"attribute": "magfromlim", "operator": ">", "value": 0},
-    # ]
+    lc_filters: None or list[dict[str, Any]] = [
+         {"attribute": "sharpnr", "operator": ">=", "value": -10.15},
+         {"attribute": "magfromlim", "operator": ">", "value": 0},
+     ]
 
     # Catalogs
     # catalogs =["GLADEv23",
@@ -241,10 +249,22 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
 
         info = {"pass": 0, "model": best_res["model_name"], "rejects": [], "chisquares": chisq_dict}
         print("T2KILONOVAEVAL:: ", best_res["fit_metrics"])
+
+        
+
         info["possis_abspeak"] = best_res["fit_metrics"]["restpeak_model_absmag_B"]
         info["possis_obspeak"] = best_res["fit_metrics"]["obspeak_model_B"]
         info["possis_chisq"] = best_res["sncosmo_result"]["chisq"]
         info["possis_ndof"] = best_res["sncosmo_result"]["ndof"]
+        if info["possis_ndof"] != 0:
+            info["red_chisqu"] = info["possis_chisq"] / info["possis_ndof"]
+        else:
+            info["red_chisqu"] = -99
+
+        for k, max_red_chisqu in enumerate(self.max_red_chisquares):
+            if info["red_chisqu"] <= max_red_chisqu and info["red_chisqu"] >= 0.75:
+                info["pass"] += self.chisqu_rewards[k]
+                break
 
         # redundant since we only consider fits with positive ndof
         # if info["possis_ndof"] < 0:
@@ -254,8 +274,16 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         #     return info
         # info["pass"] += 1
 
-        if self.min_absmag < info["possis_abspeak"] < self.max_absmag:
+        if self.min_obsmag < info["possis_obspeak"] < self.max_obsmag:
             info["pass"] += 1
+        else:
+            criterium_name = "obsmag"
+            info["rejects"].append(criterium_name)
+
+        for range, reward in self.absmag_range_rewards: 
+            if self.ideal_absmag - range < info["possis_abspeak"] < self.ideal_absmag + range:
+                info["pass"] += reward
+                break
         else:
             criterium_name = "absmag"
             info["rejects"].append(criterium_name)
@@ -267,6 +295,8 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         Verify whether the transient lightcurve fulfill criteria for submission.
 
         """
+
+        print("T2KILONOVAEVAL INSPECT LC:: ", self.lc_filters)
 
         # apply cut on history: consider photophoints which are sharp enough
         pps = lc.get_photopoints(
@@ -410,9 +440,13 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
 
         if ulims and len(ulims) > 0:
             last_ulim_jd = sorted([x["body"]["jd"] for x in ulims])[-1]
+            if self.lc_filters == None:
+                tmp_filters = [{"attribute": "jd", "operator": ">=", "value": last_ulim_jd}]
+            else:
+                tmp_filters = self.lc_filters + [{"attribute": "jd", "operator": ">=", "value": last_ulim_jd}]
             pps_after_ndet = lc.get_photopoints(
-                filters=self.lc_filters
-                + [{"attribute": "jd", "operator": ">=", "value": last_ulim_jd}]
+                filters=tmp_filters #self.lc_filters
+                #+ [{"attribute": "jd", "operator": ">=", "value": last_ulim_jd}]
             )
             info["pass"] += 1
             # Check if there are enough positive detection after the last significant UL
