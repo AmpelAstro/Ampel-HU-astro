@@ -49,8 +49,8 @@ class T2MatchGRB(AbsStateT2Unit, AbsTabulatedT2Unit):
 
         print("T2MATCHGRB:: ", self.before_iso, self.after_iso, self.trigger_jd)
 
-        # get GRB events in timeframe
-        #self.astrocolibri_allsky()
+        ## get GRB events in timeframe
+        self.astrocolibri_allsky()
 
     def process(
         self,
@@ -106,7 +106,7 @@ class T2MatchGRB(AbsStateT2Unit, AbsTabulatedT2Unit):
         }
 
         # Base URL of the API
-        url = "https://astro-colibri.science/cone_search"
+        url = "https://astro-colibri.science/latest_transients"
 
         # Request parameters (headers, body)
         headers = {"Content-Type": "application/json"}
@@ -115,12 +115,7 @@ class T2MatchGRB(AbsStateT2Unit, AbsTabulatedT2Unit):
             "time_range": {
                 "max": self.after_iso,
                 "min": self.before_iso,
-            },
-            "properties": {
-                "type": "cone",
-                "position": {"ra": self.ra, "dec": self.dec},
-                "radius": self.radius,
-            },
+            }
         }
 
         # Perform the POST request
