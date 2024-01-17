@@ -47,7 +47,7 @@ class T2MatchGRB(AbsStateT2Unit, AbsTabulatedT2Unit):
             atime.Time(self.trigger_jd, format="jd") + aunits.day * self.after_time
         ).iso
 
-        print("T2MATCHGRB:: ", self.before_iso, self.after_iso, self.trigger_jd)
+        #print("T2MATCHGRB:: ", self.before_iso, self.after_iso, self.trigger_jd)
 
         ## get GRB events in timeframe
         self.astrocolibri_allsky()

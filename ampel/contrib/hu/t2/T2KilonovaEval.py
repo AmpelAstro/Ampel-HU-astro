@@ -454,7 +454,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                 pps_after_ndet is not None
                 and len(pps_after_ndet) < self.min_ndet_postul
             ):
-                self.logger.info(
+                self.logger.debug(
                     "not enough consecutive detections after last significant UL.",
                     extra={"NDet": len(pps), "lastUlimJD": last_ulim_jd},
                 )
@@ -467,7 +467,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
 
             # Check that there is a recent ul
             if (most_recent_detection - last_ulim_jd) > self.maglim_maxago:
-                self.logger.info(
+                self.logger.debug(
                     "No recent UL.",
                     extra={
                         "lastDet": most_recent_detection,
@@ -481,7 +481,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                 info["pass"] += 1
             info["last_UL"] = most_recent_detection - last_ulim_jd
         else:
-            self.logger.info("no UL")
+            self.logger.debug("no UL")
             criterium_name = "no_UL"
             info["rejects"].append(criterium_name)
             # return None
@@ -489,14 +489,14 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         # cut on number of filters
         used_filters = set([pp["body"]["fid"] for pp in pps])
         if len(used_filters) < self.min_n_filters:
-            self.logger.info("Rejected", extra={"nbr_filt": len(used_filters)})
+            self.logger.debug("Rejected", extra={"nbr_filt": len(used_filters)})
             info["rejects"].append("min_n_filters")
             # return None
         else:
             info["pass"] += 1
         # cut on which filters used
         if used_filters.isdisjoint(self.det_filterids):
-            self.logger.info(
+            self.logger.debug(
                 "Rejected (wrong filter det)", extra={"det_filters": used_filters}
             )
             criterium_name = "wrong_filter"
@@ -508,7 +508,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         mags = [pp["body"]["magpsf"] for pp in pps]
         peak_mag = min(mags)
         if peak_mag > self.min_peak_mag or peak_mag < self.max_peak_mag:
-            self.logger.info("Rejected", extra={"peak_mag": peak_mag})
+            self.logger.debug("Rejected", extra={"peak_mag": peak_mag})
             criterium_name = "peak_mag"
             info["rejects"].append(criterium_name)
             # return None
@@ -547,7 +547,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         coordinates = SkyCoord(ra, dec, unit="deg")
         b = coordinates.galactic.b.deg
         if abs(b) < self.min_gal_lat:
-            self.logger.info("Rejected (galactic plane)", extra={"gal_lat_b": b})
+            self.logger.debug("Rejected (galactic plane)", extra={"gal_lat_b": b})
             criterium_name = "min_gal_lat"
             info["rejects"].append(criterium_name)
             # return None
@@ -570,7 +570,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
 
         # TODO: Note that this discards a transient if it was ever close to a ss object!
         if np.any(close_to_sso):
-            self.logger.info(
+            self.logger.debug(
                 "Rejected (close to solar system object)",
                 extra={"ssdistnr": ssdist.tolist()},
             )
@@ -590,7 +590,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                 np.array(sgscore1) > self.ps1_sgveto_sgth,
             )
             if np.any(is_ps1_star):
-                self.logger.info(
+                self.logger.debug(
                     "Rejected (PS1 SG cut)",
                     extra={"distpsnr1": distpsnr1, "sgscore1": sgscore1},
                 )
@@ -603,12 +603,12 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                     "pass"
                 ] += 0  # TODO: think about whether optional checks should be rewarded more
         else:
-            self.logger.info("No PS1 check as no data found.")
+            self.logger.debug("No PS1 check as no data found.")
 
         # cut on median RB and DRB score
         rbs = [pp["body"]["rb"] for pp in pps if "rb" in pp["body"].keys()]
         if np.median(rbs) < self.rb_minmed:
-            self.logger.info(
+            self.logger.debug(
                 "Rejected (RB)",
                 extra={"median_rb": np.median(rbs)},
             )
@@ -616,7 +616,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             info["rejects"].append(criterium_name)
             # return None
         elif (len(rbs) == 0) and self.rb_minmed > 0:
-            self.logger.info("Rejected (No rb info)")
+            self.logger.debug("Rejected (No rb info)")
             criterium_name = "no_rb_info"
             info["rejects"].append(criterium_name)
             # return None
@@ -627,7 +627,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         # drb might not exist
         drbs = [pp["body"]["drb"] for pp in pps if "drb" in pp["body"]]
         if len(drbs) > 0 and np.median(drbs) < self.drb_minmed:
-            self.logger.info(
+            self.logger.debug(
                 "Rejected (dRB)",
                 extra={"median_drd": np.median(drbs)},
             )
@@ -635,7 +635,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             info["rejects"].append(criterium_name)
             # return None
         elif (len(drbs) == 0) and self.drb_minmed > 0:
-            self.logger.info("Rejected (No drb info)")
+            self.logger.debug("Rejected (No drb info)")
             criterium_name = "no_drb_info"
             info["rejects"].append(criterium_name)
             # return None
@@ -645,7 +645,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         info["drb"] = np.median(drbs)
 
         # Transient passed pure LC criteria
-        self.logger.info("Passed T2infantCatalogEval", extra=info)
+        self.logger.debug("Passed T2infantCatalogEval", extra=info)
         return info
 
     def inspect_catmatch(self, t2res: dict[str, Any]) -> None | dict[str, Any]:
@@ -811,7 +811,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
 
         # Check t2 ouputs
         for t2_view in t2_views:
-            self.logger.info("Parsing t2 results from {}".format(t2_view.unit))
+            self.logger.debug("Parsing t2 results from {}".format(t2_view.unit))
             t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
 
             # Redshift
