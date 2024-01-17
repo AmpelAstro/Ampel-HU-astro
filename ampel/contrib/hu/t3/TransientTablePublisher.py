@@ -227,8 +227,13 @@ class TransientTablePublisher(AbsPhotoT3Unit):
 
         # Local save
         if self.local_path is not None:
-            full_path = os.path.join(self.local_path, self.dir_name, self.file_name)
-            print(full_path)
+            path_name = os.path.join(self.local_path, self.dir_name)
+            #print("PATHNAME::", path_name)
+            if not os.path.exists(path_name):
+                os.makedirs(path_name, exist_ok=True)
+            full_path = os.path.join(path_name, self.file_name)
+            #print("FILE PATH::", full_path)
+
             with open(full_path + "." + self.fmt, "w") as tmp_file:
                 tmp_file.close()
             if self.fmt == "csv":
