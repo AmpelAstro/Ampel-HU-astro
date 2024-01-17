@@ -38,7 +38,7 @@ class AmpelHealpix:
     ):
         self.map_name = map_name
         self.map_url = map_url
-        print(self.map_url)
+        #print(self.map_url)
         if save_dir:
             self.save_dir = save_dir
         self.nside = nside
@@ -50,9 +50,9 @@ class AmpelHealpix:
 
     def _get_map(self, clobber=False) -> int:
         path = os.path.join(self.save_dir, self.map_name)
-        print(path)
+        #print(path)
         if os.path.exists(path) and not clobber:
-            print("Map exists and found")
+            print("Map exists and found: ", path)
             return 1
 
         # Retrieve mapfile.
@@ -67,7 +67,7 @@ class AmpelHealpix:
         Load map and determine prob values.
         """
 
-        print(os.path.join(self.save_dir, self.map_name))
+        #print(os.path.join(self.save_dir, self.map_name))
 
 
         # Process map

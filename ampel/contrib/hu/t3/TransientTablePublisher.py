@@ -209,9 +209,9 @@ class TransientTablePublisher(AbsPhotoT3Unit):
         #if "map_name" in df.columns and "map_seed" in df.columns:
             #df["map_name"] = np.char.replace(np.array(df["map_name"], dtype=str), "random", "random"+df["map_seed"])
 
-        print(df["map_name"].iloc[0])
+        #print(df["map_name"].iloc[0])
         if "random" in df["map_name"].iloc[0] or self.rename_files:
-            print("transienttablepublisher:: ", df["map_seed"].iloc[0])
+            #print("transienttablepublisher:: ", df["map_seed"].iloc[0])
             tmp_seed_name = df["map_seed"].iloc[0]
             if type(tmp_seed_name) == str:
                 self.file_name += "_" + tmp_seed_name
@@ -230,7 +230,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
             with open(full_path + "." + self.fmt, "w") as tmp_file:
                 tmp_file.close()
             if self.fmt == "csv":
-                print(self.write_mode)
+                #print(self.write_mode)
                 df.to_csv(full_path + ".csv", sep=";", mode=self.write_mode)
             elif self.fmt == "latex":
                 df.to_latex(full_path + ".tex")
@@ -261,13 +261,13 @@ class TransientTablePublisher(AbsPhotoT3Unit):
                     "_rev_" + skymap_name[skymap_name.find(",") + 1 :]
                 )  # find "," and add rev version after that
 
-            print("TMP FILES MOVED TO " + skymap_dir_name)
+            print("TransientTablePublisher: TMP FILES MOVED TO " + skymap_dir_name)
 
             if self.local_path is not None:
                 skymap_directory = os.path.join(
                     self.local_path + "/../" + skymap_dir_name
                 )
-                print(skymap_directory)
+                #print(skymap_directory)
                 os.makedirs(skymap_directory, exist_ok=True)
                 for file in files_local_path:
                     if file.find(".fits.gz") == -1:
