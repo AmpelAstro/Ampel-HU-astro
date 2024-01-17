@@ -120,7 +120,7 @@ class T2MatchGRB(AbsStateT2Unit, AbsTabulatedT2Unit):
 
         # Perform the POST request
         response = requests.post(
-            url, headers=headers, data=json.dumps(body), #timeout=20
+            url, headers=headers, data=json.dumps(body), timeout=20
         )
 
         #print("T2MATCHGRB::", response.status_code)

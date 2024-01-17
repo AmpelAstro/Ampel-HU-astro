@@ -100,7 +100,8 @@ class TransientTablePublisher(AbsPhotoT3Unit):
     write_mode: str = "a"
     rename_files: bool = False
 
-    file_name: str = "TransientTable"
+    dir_name: str = "TransientTable"
+    file_name: str = dir_name
     slack_channel: None | str = None
     slack_token: None | NamedSecret[str]
     local_path: None | str = None
@@ -226,7 +227,8 @@ class TransientTablePublisher(AbsPhotoT3Unit):
 
         # Local save
         if self.local_path is not None:
-            full_path = os.path.join(self.local_path, self.file_name)
+            full_path = os.path.join(self.local_path, self.dir_name, self.file_name)
+            print(full_path)
             with open(full_path + "." + self.fmt, "w") as tmp_file:
                 tmp_file.close()
             if self.fmt == "csv":
