@@ -248,7 +248,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         best_res = t2res[list(t2res.keys())[best_ind]]
 
         info = {"pass": 0, "model": best_res["model_name"], "rejects": [], "chisquares": chisq_dict}
-        print("T2KILONOVAEVAL:: ", best_res["fit_metrics"])
+        #print("T2KILONOVAEVAL:: ", best_res["fit_metrics"])
 
         
 
@@ -296,14 +296,14 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
 
         """
 
-        print("T2KILONOVAEVAL INSPECT LC:: ", self.lc_filters)
+        #print("T2KILONOVAEVAL INSPECT LC:: ", self.lc_filters)
 
         # apply cut on history: consider photophoints which are sharp enough
         pps = lc.get_photopoints(
             filters=self.lc_filters
         )  # pps: photopoints from lightcurve w filters
 
-        print("T2KILONOVAEVAL LEN PPS:: ", len(pps))
+        #print("T2KILONOVAEVAL LEN PPS:: ", len(pps))
 
         assert pps is not None
         info: dict[str, Any] = {"pass": 0, "rejects": []}

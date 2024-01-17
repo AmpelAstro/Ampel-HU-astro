@@ -4,8 +4,8 @@
 # License:             BSD-3-Clause
 # Author:              jnordin@physik.hu-berlin.de
 # Date:                06.05.2021
-# Last Modified Date:  26.04.2022
-# Last Modified By:    simeon.reusch@desy.de
+# Last Modified Date:  16.01.2024
+# Last Modified By:    ernstand@physik.hu-berlin.de
 
 import io
 import os
