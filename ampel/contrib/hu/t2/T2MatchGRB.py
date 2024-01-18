@@ -19,9 +19,9 @@ from astropy.coordinates import SkyCoord
 
 
 class T2MatchGRB(AbsStateT2Unit, AbsTabulatedT2Unit):
-    trigger_jd: float or None = 0
-    map_dir: str or None = "./"
-    map_name: str or None = None
+    trigger_jd: float | None = 0
+    map_dir: str | None = "./"
+    map_name: str | None = None
 
     ra: float = 0
     dec: float = 0

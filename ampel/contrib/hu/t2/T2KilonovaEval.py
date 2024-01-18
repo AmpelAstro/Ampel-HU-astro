@@ -115,7 +115,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
     # Cut to apply to all the photopoints in the light curve.
     # This will affect most operations, i.e. evaluating the position,
     # computing number of detections ecc.
-    lc_filters: None or list[dict[str, Any]] = None #[
+    lc_filters: None | list[dict[str, Any]] = None #[
     #     {"attribute": "sharpnr", "operator": ">=", "value": -10.15},
     #     {"attribute": "magfromlim", "operator": ">", "value": 0},
     # ]

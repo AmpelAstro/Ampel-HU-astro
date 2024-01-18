@@ -23,9 +23,9 @@ class PredetectionFilter(DecentFilter):
     (trigger_jd), e.g. for kilonova searches in GW follow up.
     """
 
-    trigger_jd: float or None = 0
-    map_dir: str or None = "./"
-    map_name: str or None = None
+    trigger_jd: float | None = 0
+    map_dir: str | None = "./"
+    map_name: str | None = None
 
     def post_init(self):
         super().post_init()

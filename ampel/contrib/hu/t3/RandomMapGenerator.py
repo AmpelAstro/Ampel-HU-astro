@@ -37,7 +37,7 @@ class RandomMapGenerator(AbsT3PlainUnit):
 
     nside: int = 32
 
-    seed: int or None = None
+    seed: int | None = None
 
     min_date: str = "2019-06-12"
     max_date: str = "2023-10-01"
