@@ -11,7 +11,7 @@ from setuptools import find_namespace_packages, setup
 
 setup(
     name="ampel-hu-astro",
-    version="0.8.3-alpha.16",
+    version="0.8.3-alpha.20",
     packages=find_namespace_packages(),
     package_data={
         "": ["*.json", "py.typed"],  # include any package containing *.json files
@@ -30,11 +30,11 @@ setup(
 	python_requires = '>=3.10,<3.11',
     install_requires=[
         'ampel-interface>=0.8.7,<0.9',
-        'ampel-core>=0.8.5,<0.9',
-        'ampel-plot>=0.8.3.post2,<0.9',
+        'ampel-core>=0.8.6,<0.9',
+        'ampel-plot>=0.8.3.post3,<0.9',
         'ampel-photometry>=0.8.3a0,<0.9',
-        'ampel-alerts>=0.8.3a0,<0.9',
-        'ampel-ztf>=0.8.4,<0.9',
+        'ampel-alerts>=0.8.4,<0.9',
+        'ampel-ztf>=0.8.5,<0.9',
         "sncosmo",
         "iminuit",
         "sfdmap",

@@ -25,12 +25,11 @@ channel:
 task:
 
 - title: ingest
-
-  unit: AlertConsumer
+  template: ingest_lsst_alerts
   config:
-    iter_max: 100
-    compiler_opts: LSSTCompilerOptions
-
+    channel: Elasticc
+    extra:
+      iter_max: 100
     supplier:
       unit: LSSTAlertSupplier
       config:
@@ -40,80 +39,63 @@ task:
             folder: 5000alertsdir/NITE60562
             extension: "*avro.gz"
           unit: ElasticcDirAlertLoader
-
-    shaper: {unit: LSSTDataPointShaper}
-
-    directives:
-    - channel: Elasticc
-
-      filter:
-        unit: ReallySimpleLSSTFilter
-        on_stock_match: bypass
-        config:
-          min_ndet: 10
-          min_tspan: 0
-          max_tspan: 10000
-
+    filter:
+      unit: ReallySimpleLSSTFilter
+      on_stock_match: bypass
+      config:
+        min_ndet: 10
+        min_tspan: 0
+        max_tspan: 10000
+    t2_compute:
+    - unit: T2ElasticcRedshiftSampler
       ingest:
-          mux:
-            unit: LSSTMongoMuxer
-            insert:
-              point_t2:
-              - unit: T2ElasticcRedshiftSampler
-                ingest:
-                  filter: LSSTObjFilter
-                  select: last
-                  sort: diaObjectId
-              - unit: T2GetDiaObject
-                config:
-                  params:
-                  - diaObjectId
-                  - simVersion
-                ingest:
-                  filter: LSSTObjFilter
-                  select: last
-                  sort: diaObjectId
-            combine:
-            - unit: LSSTT1Combiner
-              state_t2:
-
-
-              - unit: T2RunSncosmo
-                config:
-                  sncosmo_model_name: salt2
-                  redshift_kind: T2ElasticcRedshiftSampler
-                  max_ampelz_group: 7
-                  tabulator:
-                    - unit: LSSTT2Tabulator
-                      config:
-                        zp: 31.4
-                  t2_dependency:
-                    - unit: T2ElasticcRedshiftSampler
-                  plot_props:
-                    file_name:
-                      format_str: "%s_%s_%s.svg"
-                      arg_keys:
-                        - stock
-                        - model
-                        - redshift_kind
-                    title:
-                      format_str: "%s %s %s"
-                      arg_keys:
-                        - stock
-                        - model
-                        - redshift_kind
-                    fig_text:
-                      format_str: "%s %s \nz-source %s \nchisq %.2f ndof %s"
-                      arg_keys:
-                        - stock
-                        - model
-                        - redshift_kind
-                        - chisq
-                        - ndof
-                    width: 10
-                    height: 6
-                    id_mapper: null
-                    disk_save: /home/jnordin/tmp/elasticc
+        filter: LSSTObjFilter
+        select: last
+        sort: diaObjectId
+    - unit: T2GetDiaObject
+      config:
+        params:
+        - diaObjectId
+        - simVersion
+      ingest:
+        filter: LSSTObjFilter
+        select: last
+        sort: diaObjectId
+    - unit: T2RunSncosmo
+      config:
+        sncosmo_model_name: salt2
+        redshift_kind: T2ElasticcRedshiftSampler
+        max_ampelz_group: 7
+        tabulator:
+          - unit: LSSTT2Tabulator
+            config:
+              zp: 31.4
+        t2_dependency:
+          - unit: T2ElasticcRedshiftSampler
+        plot_props:
+          file_name:
+            format_str: "%s_%s_%s.svg"
+            arg_keys:
+              - model
+              - redshift_kind
+          title:
+            format_str: "%s %s %s"
+            arg_keys:
+              - stock
+              - model
+              - redshift_kind
+          fig_text:
+            format_str: "%s %s \nz-source %s \nchisq %.2f ndof %s"
+            arg_keys:
+              - stock
+              - model
+              - redshift_kind
+              - chisq
+              - ndof
+          width: 10
+          height: 6
+          id_mapper: null
+          disk_save: /home/jnordin/tmp/elasticc
 
   inputs:
     artifacts:

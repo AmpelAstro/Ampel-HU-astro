@@ -19,6 +19,7 @@
 - ampel.contrib.hu.t2.T2RunSncosmo
 - ampel.contrib.hu.t2.T2CatalogMatchLocal
 - ampel.contrib.hu.t2.T2DigestRedshifts
+- ampel.contrib.hu.t2.T2LoadRedshift
 - ampel.contrib.hu.t2.T2BayesianBlocks
 - ampel.contrib.hu.t2.T2DustEchoEval
 - ampel.contrib.hu.t2.T2RunPossis

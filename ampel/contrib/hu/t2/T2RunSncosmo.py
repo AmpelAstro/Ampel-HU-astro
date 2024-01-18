@@ -84,6 +84,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
 
     # Redshift usage options. Current options
     # T2MatchBTS : Use the redshift published by BTS and  synced by that T2.
+    # T2LoadRedshift: Use the redshift from a separate df.
     # T2DigestRedshifts : Use the best redshift as parsed by DigestRedshift.
     # None : run sncosmo template fit with redshift as free parameter OR use backup_z if set
     redshift_kind: None | str
@@ -129,6 +130,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         "T2ElasticcRedshiftSampler",
         "T2DigestRedshifts",
         "T2MatchBTS",
+        "T2LoadRedshift",
         "T2PhaseLimit",
         "T2XgbClassifier"]]]
 
@@ -197,7 +199,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         z_weights: Optional[list[float]] = None
 
 
-        if self.redshift_kind in ['T2MatchBTS', 'T2DigestRedshifts', 'T2ElasticcRedshiftSampler']:
+        if self.redshift_kind in ['T2MatchBTS', 'T2LoadRedshift', 'T2DigestRedshifts', 'T2ElasticcRedshiftSampler']:
             for t2_view in t2_views:
                 if not t2_view.unit == self.redshift_kind:
                     continue
@@ -208,6 +210,11 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                     if 'bts_redshift' in t2_res.keys() and not t2_res['bts_redshift'] == '-':
                         z = [float(t2_res['bts_redshift'])]
                         z_source = "BTS"
+                elif self.redshift_kind == 'T2LoadRedshift':
+                    print(t2_res.keys)
+                    if 'T2LoadRedshift_z' in t2_res.keys():
+                        z = [float(t2_res['T2LoadRedshift_z'])]
+                        z_source = "T2LoadRedshift"
                 elif self.redshift_kind == 'T2DigestRedshifts':
                     if ('ampel_z' in t2_res.keys() and t2_res['ampel_z'] is not None
                             and t2_res['group_z_nbr'] <= self.max_ampelz_group):
@@ -375,6 +382,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         t2_records: List of T2Records from the following units (if available)
         T2DigestRedshifts (redshift parsed from catalogs)
         T2MatchBTS (redshifts synced from BTS page)
+        T2LoadRedshift (redshift from .csv file)
         T2PhaseLimit (fit time-limits as determined from lightcurve)
 
         Returns

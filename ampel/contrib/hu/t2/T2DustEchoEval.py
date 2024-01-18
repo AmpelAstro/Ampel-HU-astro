@@ -405,13 +405,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                     excess_region["strength_sjoert"].append(
                         t2_res[key]["strength_sjoert"]
                     )
-                    excess_region["strength"].append(
-                        abs(
-                            t2_res[key]["baseline"]
-                            - excess_region["max_mag"][fid - 1]
-                        )
-                        / baseline_sigma
-                    )
+                    excess_region["strength"].append(t2_res[key]["max_sigma_excess_region"])
 
                     if self.flux:
                         excess_region["e_rise"].append(
@@ -465,13 +459,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                     excess_region["strength_sjoert"].append(
                         t2_res[key]["strength_sjoert"]
                     )
-                    excess_region["strength"].append(
-                        abs(
-                            t2_res[key]["baseline"]
-                            - excess_region["max_mag"][fid - 1]
-                        )
-                        / baseline_sigma
-                    )
+                    excess_region["strength"].append(t2_res[key]["max_sigma_excess_region"])
 
                     excess_region["e_rise"].append("nan")
                     excess_region["e_fade"].append("nan")

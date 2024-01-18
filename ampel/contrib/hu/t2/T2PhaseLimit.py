@@ -50,6 +50,10 @@ class T2PhaseLimit(AbsStateT2Unit, AbsTabulatedT2Unit):
 
 	# Max magnitude to consider (constant low flux can correspond to flux in reference)
 	max_flux : float
+	
+	# Constrain time-range of flux above these ranges
+	risedec_fractions: list = []
+
 
 	# Plot
 	plot_suffix: Optional[str]
@@ -66,6 +70,45 @@ class T2PhaseLimit(AbsStateT2Unit, AbsTabulatedT2Unit):
 				max_mag = kwargs.pop("max_mag")
 			kwargs["max_flux"] = self._magtoflux(max_mag)
 		super().__init__(*args, **kwargs)
+
+
+
+	def _get_risedec(self, bandflux, fracs) -> dict:
+		"""
+		
+		Determine the rise and decline time within a certain flux fraction, relative to a peak time.
+		"""
+		rcinfo = {}
+		
+		fmax = max(bandflux["flux"])
+		
+		bandtpeak = bandflux["time"][(bandflux["flux"]==fmax)]
+		
+		# Rise
+		rflux = bandflux[(bandflux["time"]<bandtpeak)]
+		
+		for frac in fracs:
+		    fmask = (rflux["flux"] < fmax*(1-frac))
+		    if sum(fmask)==0:
+		        # No measurement, limit
+		        rcinfo['rise_'+str(frac)+'_limit'] = float( bandtpeak-min(rflux["time"] ) ) 
+		    else:
+		        rcinfo['rise_'+str(frac)] = float( bandtpeak-max(rflux["time"][fmask]) )
+
+		# Declline
+		dflux = bandflux[(bandflux["time"]>bandtpeak)]
+		
+		for frac in fracs:
+		    fmask = (dflux["flux"] < fmax*(1-frac))
+		    if sum(fmask)==0:
+		        # No measurement, limit
+		        rcinfo['fall_'+str(frac)+'_limit'] = float( max(dflux["time"]) - bandtpeak )
+		    else:
+		        rcinfo['fall_'+str(frac)] = float( min(dflux["time"][fmask]) - bandtpeak )
+		        
+		return rcinfo
+
+
 
 	def process(self,
 		compound: T1Document,
@@ -92,13 +135,8 @@ class T2PhaseLimit(AbsStateT2Unit, AbsTabulatedT2Unit):
 		}
 		"""
 
-		# Starting set of dates (with positive flux )
-		# jd_ispos = light_curve.get_tuples( 'jd', 'isdiffpos',
-		# 	filters = [{'attribute' : 'magpsf', 'operator' : '<', 'value' : self.max_mag},
-		# 		{'attribute' : 'magpsf', 'operator' : '>', 'value' : 0} ]
-		# 	 )
 		flux_table = self.get_flux_table(datapoints)
-
+		
 		#
 		fflux_table = flux_table[
 							(flux_table["flux"]<self.max_flux) &
@@ -162,6 +200,14 @@ class T2PhaseLimit(AbsStateT2Unit, AbsTabulatedT2Unit):
 		else:
 			t_start = t_median - self.half_time
 			t_end = t_median + self.half_time
+
+		# Investigate rise/fall ranges - use significant flux detections for this
+		risedec_dict = {}
+		if flux_peak is not None:
+		    for band in np.unique(fflux_table["band"]):
+		        # Get flux subset below flux limit
+		        risedec_dict['risedec_{}'.format(band)] = self._get_risedec(fflux_table[(fflux_table["band"]==band)], self.risedec_fractions)
+
 
 		# Investigate negative flux
 		neg_frac_bands = []
@@ -227,4 +273,4 @@ class T2PhaseLimit(AbsStateT2Unit, AbsTabulatedT2Unit):
 		return {'t_start' : t_start, 't_end' : t_end,
 			't_masked_duration' : t_masked_duration, 't_peak':t_peak,
 			't_median' : t_median, 'flux_peak' : flux_peak,
-			'n_remaining' : n_remaining, 't2eval' : t2eval }
+			'n_remaining' : n_remaining, 't2eval' : t2eval , 't_risedec': risedec_dict}

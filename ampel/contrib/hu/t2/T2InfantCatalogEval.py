@@ -61,7 +61,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
     min_age: float = 0
     # range of peak magnitudes for submission
     min_peak_mag: float = 20
-    max_peak_mag: float = 16
+    max_peak_mag: float = 14
     # Reported detections in at least this many filters
     min_n_filters: int = 1
     # Require a detection in one of these filters (e.g. ZTF I-band more often spurious)
@@ -103,7 +103,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         for catname in self.redshift_catalogs:
             catinfo = cat_res.get(catname, False)
             if (
-                catinfo and
+                catinfo and isinstance( catinfo.get('z',None), float) and 
                 (self.min_redshift < catinfo["z"] < self.max_redshift) and
                 (self.min_dist < catinfo["dist2transient"] < self.max_dist)
             ):
@@ -131,7 +131,6 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
                 info[f"{catname}_dist2transient"] = catinfo["dist2transient"]
 
         if len(zmatchs) == 0:
-            self.logger.info("No z match.")
             return None
         info['zs'] = zmatchs
 

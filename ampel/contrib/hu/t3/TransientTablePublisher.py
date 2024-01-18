@@ -4,8 +4,8 @@
 # License:             BSD-3-Clause
 # Author:              jnordin@physik.hu-berlin.de
 # Date:                06.05.2021
-# Last Modified Date:  26.04.2022
-# Last Modified By:    simeon.reusch@desy.de
+# Last Modified Date:  15.12.2023
+# Last Modified By:    alice.townsend@physik.hu-berlin.de
 
 import io
 import os
@@ -92,6 +92,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
     sort_by_key: str | None = "kilonovaness"
     sort_ascending: bool = False
 
+    include_pos: bool = True
     include_channels: bool = True
     # Add also transients lacking any T2 info
     save_base_info: bool = False
@@ -180,6 +181,13 @@ class TransientTablePublisher(AbsPhotoT3Unit):
                     ztf_id = ZTFIdMapper.to_ext_id(stock_id)
                     basetdict["ztf_id"] = ztf_id
 
+            if self.include_pos:
+                lcurve = tran_view.get_lightcurves()
+                if lcurve is not None:
+                    pos = lcurve[0].get_pos(ret = 'brightest')
+                    if pos is not None:
+                        basetdict['ra'] = pos[0]
+                        basetdict['dec'] = pos[1]
             if self.include_channels and tran_view.stock:
                 channels = tran_view.stock.get("channel")
                 # Allow for both single (most common) and duplacte channels.
