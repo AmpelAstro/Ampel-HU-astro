@@ -505,7 +505,7 @@ class TNSTalker(AbsT3ReviewUnit):
 
         sc = WebClient(token=self.slack_token.get())
 
-        tstamp = datetime.datetime.today().strftime("%Y-%m-%d-%X")
+        tstamp = datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y-%m-%d-%X")
         atlist = list(atreports.values())
         last = 0
         for ic, atrep in enumerate(chunks(atlist, self.max_slackmsg_size)):

@@ -218,7 +218,7 @@ class RapidLco(RapidBase):
             react_dict["requests"][0]["configurations"][0]["target"]["ra"] = str(ra)
             react_dict["requests"][0]["configurations"][0]["target"]["dec"] = str(dec)
             # Some keys are not necessarily there
-            timenow = datetime.datetime.utcnow()
+            timenow = datetime.datetime.now(tz=datetime.timezone.utc)
             if "start" in react_dict["requests"][0]["windows"][0].keys():
                 dtime = datetime.timedelta(days=submit_info["start_delay"])
                 react_dict["requests"][0]["windows"][0]["start"] = "%s" % (

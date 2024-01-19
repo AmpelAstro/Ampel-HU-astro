@@ -59,7 +59,7 @@ class SlackSummaryPublisher(AbsT3ReviewUnit):
         if len(frames) == 0 and self.quiet:
             return
 
-        date = str(datetime.date.today())
+        date = str(datetime.datetime.now(tz=datetime.timezone.utc).date())
 
         sc = WebClient(self.slack_token.get())
 

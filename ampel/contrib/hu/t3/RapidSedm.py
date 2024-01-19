@@ -99,8 +99,10 @@ class RapidSedm(RapidBase):
             "latest_mag"
         ]  # Assuming that the object is not declining?
         react_dict["obj_name"] = to_ztf_id(tran_view.id)
-        react_dict["inidate"] = datetime.datetime.utcnow()
-        react_dict["enddate"] = datetime.datetime.utcnow() + datetime.timedelta(days=2)
+        react_dict["inidate"] = datetime.datetime.now(tz=datetime.timezone.utc)
+        react_dict["enddate"] = datetime.datetime.now(
+            tz=datetime.timezone.utc
+        ) + datetime.timedelta(days=2)
 
         # We are still in debug stage, turn down priority
         # react_dict['priority'] = 1

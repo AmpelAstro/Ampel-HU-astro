@@ -32,7 +32,7 @@ class TNSMirrorUpdater(AbsOpsUnit):
     dry_run: bool = False
 
     def run(self, beacon: None | dict[str, Any] = None) -> None | dict[str, Any]:
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(tz=datetime.timezone.utc)
         last_run = beacon["updated"] if beacon else now - datetime.timedelta(days=7)
 
         async def fetch():

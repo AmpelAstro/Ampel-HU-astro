@@ -103,7 +103,7 @@ class VOEventPublisher(AbsPhotoT3Unit):
                 stream_id=self.vovent_streamid,
                 role=self.voevent_role,
             )
-            vp.set_who(v, datetime.datetime.utcnow())
+            vp.set_who(v, datetime.datetime.now(tz=datetime.timezone.utc))
             vp.set_author(
                 v,
                 title=f"Results from {channel} channel",
