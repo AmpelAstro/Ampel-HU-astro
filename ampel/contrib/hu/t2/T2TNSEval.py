@@ -295,7 +295,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         # TODO: Evaluate whether we should use the filters, and do a check for sufficient number of datapoints remaining
         # distpsnr1, sgscore1 = zip(*lc.get_tuples('distpsnr1', 'sgscore1', filters=self.lc_filters))
         if tups := lc.get_tuples("distpsnr1", "sgscore1"):
-            distpsnr1, sgscore1 = zip(*tups)
+            distpsnr1, sgscore1 = zip(*tups, strict=False)
         else:
             return False
         is_ps1_star = np.logical_and(
@@ -369,7 +369,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
 
         # tag noisy gaia
         if tups := lc.get_tuples("distpsnr1", "sgscore1", filters=self.lc_filters):
-            distpsnr1, sgscore1 = zip(*tups)
+            distpsnr1, sgscore1 = zip(*tups, strict=False)
             galaxylike_ps1 = np.logical_and(
                 np.array(distpsnr1) < 1.5, np.array(sgscore1) < 0.5
             )

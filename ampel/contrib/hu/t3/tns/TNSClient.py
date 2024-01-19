@@ -117,7 +117,7 @@ class TNSClient:
         else:
             return False
 
-    async def search(self, exclude=set(), **params):
+    async def search(self, exclude: None | set[str] = None, **params):
         semaphore = asyncio.Semaphore(self.maxParallelRequests)
         async with ClientSession(
             headers={

@@ -78,7 +78,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
 
         group_z: list[list[float]] = [[], [], [], [], [], [], []]
         group_dist: list[list[float]] = [[], [], [], [], [], [], []]
-        for lsname, lsdata in t2_res.items():
+        for lsdata in t2_res.values():
             if lsdata is None:
                 continue
 

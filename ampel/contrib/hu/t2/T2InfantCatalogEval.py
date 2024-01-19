@@ -290,7 +290,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         # Note that we for this check do *not* use the lightcurve filter criteria
         # TODO: Evaluate whether we should use the filters, and do a check for sufficient number of datapoints remaining
         if psdata := lc.get_tuples("distpsnr1", "sgscore1"):
-            distpsnr1, sgscore1 = zip(*psdata)
+            distpsnr1, sgscore1 = zip(*psdata, strict=False)
             is_ps1_star = np.logical_and(
                 np.array(distpsnr1) < self.ps1_sgveto_rad,
                 np.array(sgscore1) > self.ps1_sgveto_sgth,

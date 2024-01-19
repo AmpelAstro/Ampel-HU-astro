@@ -200,7 +200,7 @@ class NeoWisePhotometryAlertSupplier(BaseAlertSupplier):
 
         all_ids = b""
         pps = []
-        for index, row in df_W1.iterrows():
+        for _, row in df_W1.iterrows():
             pp = dict(row)
             pp_hash = blake2b(encode(pp), digest_size=7).digest()
             if self.counter:
@@ -211,7 +211,7 @@ class NeoWisePhotometryAlertSupplier(BaseAlertSupplier):
 
             all_ids += pp_hash
             pps.append(ReadOnlyDict(pp))
-        for index, row in df_W2.iterrows():
+        for _, row in df_W2.iterrows():
             pp = dict(row)
             pp_hash = blake2b(encode(pp), digest_size=7).digest()
             if self.counter:

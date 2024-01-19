@@ -187,7 +187,7 @@ class RapidLco(RapidBase):
         # Look for coordinates in the T2 info dicts.
         # Assuming ra and dec exists in there
         ra, dec = None, None
-        for t2unit, t2info in info.items():
+        for t2info in info.values():
             if "ra" in t2info.keys():
                 ra = t2info["ra"]
             if "dec" in t2info.keys():

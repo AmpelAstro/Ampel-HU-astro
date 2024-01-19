@@ -80,7 +80,7 @@ class TNSSession(BaseUrlSession):
 class TNSClient:
     """Send Bulk TNS Request."""
 
-    def __init__(self, baseURL, logger: LoggerProtocol, token: TNSToken, options={}):
+    def __init__(self, baseURL, logger: LoggerProtocol, token: TNSToken):
         """
         :param baseURL: Base URL of the TNS API
         :param options: (Default value = {})

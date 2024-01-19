@@ -658,7 +658,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
             )
 
             handles, labels = ax[0].get_legend_handles_labels()
-            by_label = dict(zip(labels, handles))
+            by_label = dict(zip(labels, handles, strict=False))
             ax[0].legend(
                 by_label.values(),
                 by_label.keys(),

@@ -326,6 +326,7 @@ class T2RiseDeclineBase(AmpelBaseModel):
         for coljd, colname in zip(
             [o["jd_det"], o["jd_last"], o["jd_max"]],
             ["col_det", "col_last", "col_peak"],
+            strict=False,
         ):
             self.logger.debug(f"Checking col {colname} at jd {coljd}")
             # Check if time defined (e.g. if peak not known)

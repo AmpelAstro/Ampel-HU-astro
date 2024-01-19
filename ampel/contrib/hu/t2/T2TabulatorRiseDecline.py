@@ -279,7 +279,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
         return flux_table
 
     def average_filtervalues(
-        self, features: dict[str, Any], matchlist: list[str] = []
+        self, features: dict[str, Any], matchlist: Iterable[str] = tuple()
     ) -> dict[str, Any]:
         """
         Many (most) features calculated per band or color, with available filter/color varying from object
@@ -549,6 +549,7 @@ class BaseLightCurveFeatures(LogicalUnit, AmpelBaseModel):
                             self.fluxextractor(
                                 in_band["time"], in_band["flux"], in_band["fluxerr"]
                             ),
+                            strict=False,
                         )
                     }
                     result.update(lcout)

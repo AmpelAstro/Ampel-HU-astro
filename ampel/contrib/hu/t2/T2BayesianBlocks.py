@@ -207,7 +207,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
     def baye_block_levels_with_changing_baseline(
         self, df, baye_block, baseline, baseline_sigma
     ):
-        for nu, mag in enumerate(baye_block.sort_values(by="mag")["mag"]):
+        for mag in baye_block.sort_values(by="mag")["mag"]:
             #  idx = baye_block.index.tolist()[nu]
             idx = baye_block.index[baye_block["mag"] == mag].tolist()[0]
             if np.isnan(baye_block["mag.err"][idx]):
@@ -261,7 +261,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
         return excess_regions
 
     def outliers(self, excess_regions, df, baye_block, measurements_nu):
-        for nu, value in enumerate(excess_regions):
+        for value in excess_regions:
             if len(value) == 1:
                 if measurements_nu[value[0]] == 1.0:
                     if (
@@ -284,7 +284,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
     def description(self, excess_regions: list, measurements_nu: dict) -> list:
         # 0: The excess region has one baye block with one measurement, 1: The excess region has one baye block with multiple measurements, 2: The excess region has multiple baye blocks
         description = []
-        for nu, value in enumerate(excess_regions):
+        for value in excess_regions:
             if len(value) == 1:
                 if measurements_nu[value[0]] == 1.0:
                     description.append(0)

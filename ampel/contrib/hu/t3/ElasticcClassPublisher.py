@@ -206,7 +206,7 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
             tran_views: tuple[TransientView, ...]
             t1_links: tuple[int, ...]
             class_reports: tuple[dict, ...]
-            tran_views, t1_links, class_reports = zip(*chunk)
+            tran_views, t1_links, class_reports = zip(*chunk, strict=False)
 
             if self.dry_run:
                 continue
@@ -233,8 +233,8 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
             # if as expected store to journal that transfer is complete.
             # if not as expected, log what data is available and possible
             # a t3 document with this content??
-            for tran_view, t1_link, class_report in zip(
-                tran_views, t1_links, class_reports
+            for tran_view, t1_link, _ in zip(
+                tran_views, t1_links, class_reports, strict=False
             ):
                 if desc_response["success"]:
                     gen.send(

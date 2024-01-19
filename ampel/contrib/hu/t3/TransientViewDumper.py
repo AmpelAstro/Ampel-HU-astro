@@ -84,7 +84,7 @@ class TransientViewDumper(AbsPhotoT3Unit):
         self, transients: Generator[TransientView, T3Send, None], t3s: T3Store
     ) -> UBson | UnitResult:
         count = 0
-        for count, tran_view in enumerate(transients, 1):
+        for count, tran_view in enumerate(transients, 1):  # noqa: B007
             print("TransientViewDumper:")
             print(type(tran_view))
             self.outfile.write(self.encoder.encode(tran_view).encode("utf-8"))

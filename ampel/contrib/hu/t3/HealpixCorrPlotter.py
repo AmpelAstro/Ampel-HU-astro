@@ -143,7 +143,7 @@ class HealpixCorrPlotter(AbsPhotoT3Unit):
         # while retaining PathCollection for adjustText and changing marker type.
         annotations = []
         targetpoints = []
-        for i, row in df.iterrows():
+        for _, row in df.iterrows():
             # Determine marker type (decided by d.o.f.)
             marker = None
             for minfo in self.ndof_marker:
@@ -255,8 +255,10 @@ class HealpixCorrPlotter(AbsPhotoT3Unit):
 
         # Could there be multiple healpix journal entries? I guess it cannot be ruled out
         # FIXME: extra info should probably be in .extra, not mixed into the top level of JournalRecord
-        hpixs = [  # type: ignore[typeddict-item]
-            el["healpix"] for el in tran.stock["journal"] if "healpix" in el.keys()
+        hpixs = [
+            el["healpix"]  # type: ignore[typeddict-item]
+            for el in tran.stock["journal"]
+            if "healpix" in el
         ]
         if len(hpixs) == 0:
             self.logger.info("No healpix info")

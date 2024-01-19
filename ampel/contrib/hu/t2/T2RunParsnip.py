@@ -482,7 +482,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             integrated_probabilities = z_probabilities.dot(probabilities)
             integrated_probabilities /= np.sum(integrated_probabilities)
             t2_output["marginal_lc_classifications"] = dict(
-                zip(types, integrated_probabilities)
+                zip(types, integrated_probabilities, strict=False)
             )
             # Find the best redshifts
             t2_output["z_at_minchi"] = z[np.argmax(z_probabilities)]

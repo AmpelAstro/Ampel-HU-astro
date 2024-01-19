@@ -113,7 +113,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
         """
 
         table_rows: list[dict[str, Any]] = []
-        for k, tran_view in enumerate(gen, 1):
+        for tran_view in gen:
             basetdict: dict[str, Any] = {}
             # Assemble t2 information bound to the transient (e.g. Point T2s)
             for t2unit, table_entries in self.transient_table_schema.items():

@@ -319,8 +319,8 @@ def get_macaroon(
     user: helpers.BasicAuth,
     path: str,
     validity: str,
-    activity: list[str] = [],
-    ip: list[str] = [],
+    activity: None | list[str] = None,
+    ip: None | list[str] = None,
     host: str = "globe-door.ifh.de",
     port: int = 2880,
 ):

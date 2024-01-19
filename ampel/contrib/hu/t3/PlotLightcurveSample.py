@@ -211,7 +211,7 @@ class PlotLightcurveSample(AbsPhotoT3Unit):
         """
 
         table_rows: list[dict[str, Any]] = []
-        for k, tran_view in enumerate(gen, 1):
+        for tran_view in gen:
             sninfo: dict[str, UBson] = {}
             # Collect base information applying to all states
             # If here, add stock info (name, channel etcs)

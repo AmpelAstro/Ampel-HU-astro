@@ -281,7 +281,7 @@ class T2XgbClassifier(AbsTiedStateT2Unit):
             }
 
         # Find which tree to use
-        for b, dbin in enumerate(self.det_ranges):
+        for b, dbin in enumerate(self.det_ranges):  # noqa: B007
             if t2data["ndet"] >= dbin[0] and t2data["ndet"] <= dbin[1]:
                 break
 
