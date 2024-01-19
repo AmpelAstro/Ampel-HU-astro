@@ -217,7 +217,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
         if "random" in df["map_name"].iloc[0] or self.rename_files:
             # print("transienttablepublisher:: ", df["map_seed"].iloc[0])
             tmp_seed_name = df["map_seed"].iloc[0]
-            if type(tmp_seed_name) == str:
+            if isinstance(tmp_seed_name, str):
                 self.file_name += "_" + tmp_seed_name
             else:
                 self.file_name += "_" + str(int(tmp_seed_name))

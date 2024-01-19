@@ -489,7 +489,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         sncosmo_result["data_mask"] = sncosmo_result["data_mask"].tolist()
         try:
             sncosmo_result["covariance"] = sncosmo_result["covariance"].tolist()
-        except:
+        except KeyError:
             sncosmo_result["covariance"] = []
 
         # For filtering purposes we want a proper dict

@@ -240,7 +240,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
 
         abort, abort_maps = False, {}
         for t2_view in t2_views:
-            if not t2_view.unit in self.abort_map.keys():
+            if t2_view.unit not in self.abort_map.keys():
                 continue
             self.logger.debug("Parsing t2 results from {}".format(t2_view.unit))
             t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res

@@ -1,4 +1,5 @@
 import logging
+from contextlib import suppress
 
 import numpy
 from astropy.time import Time
@@ -77,10 +78,8 @@ class TNSMirrorDB:
         doc["pos"] = cls.geojson_key(doc.pop("radeg"), doc.pop("decdeg"))
         for k in ["ra", "dec"]:
             del doc[k]
-        try:
+        with suppress(ValueError):
             doc["discoverydate"] = Time(doc["discoverydate"]).datetime
-        except:
-            pass
         return doc
 
     @staticmethod

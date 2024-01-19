@@ -63,8 +63,8 @@ class T2PhaseLimit(AbsStateT2Unit, AbsTabulatedT2Unit):
         return 10 ** (-((mag) - 25) / 2.5)
 
     def __init__(self, *args, **kwargs):
-        if not "max_flux" in kwargs:
-            if not "max_mag" in kwargs:
+        if "max_flux" not in kwargs:
+            if "max_mag" not in kwargs:
                 max_mag = 22.5  # previous default value
             else:
                 max_mag = kwargs.pop("max_mag")

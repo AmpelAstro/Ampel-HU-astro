@@ -399,7 +399,7 @@ class RcfFilter(AbsAlertFilter):
         bright_detections = 0
         for al in alert.datapoints:
             if (
-                not "isdiffpos" in al.keys()
+                "isdiffpos" not in al.keys()
                 or al["isdiffpos"] == "f"
                 or al["isdiffpos"] == "0"
             ):

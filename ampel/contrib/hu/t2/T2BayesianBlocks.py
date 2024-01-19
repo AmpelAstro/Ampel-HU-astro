@@ -32,6 +32,8 @@ from ampel.view.LightCurve import LightCurve
 from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper
 from ampel.ztf.util.ZTFNoisifiedIdMapper import ZTFNoisifiedIdMapper
 
+# ruff: noqa: E712
+
 
 class T2BayesianBlocks(AbsLightCurveT2Unit):
     """

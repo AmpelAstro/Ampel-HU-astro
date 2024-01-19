@@ -451,7 +451,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
 
         if ulims and len(ulims) > 0:
             last_ulim_jd = sorted([x["body"]["jd"] for x in ulims])[-1]
-            if self.lc_filters == None:
+            if self.lc_filters is None:
                 tmp_filters = [
                     {"attribute": "jd", "operator": ">=", "value": last_ulim_jd}
                 ]

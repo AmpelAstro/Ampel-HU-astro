@@ -307,7 +307,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
                 stub = p.sub("_", key)  # Name of averaged entry in return dict
                 if stub == key:  # Match string not found
                     continue
-                if not stub in matchedvalues:
+                if stub not in matchedvalues:
                     matchedvalues[stub] = []
                 matchedvalues[stub].append(val)
 

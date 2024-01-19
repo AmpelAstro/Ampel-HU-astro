@@ -83,7 +83,7 @@ class HealpixCorrPlotter(AbsPhotoT3Unit):
                 assert isinstance(t2info, dict)
                 if self.model_name and not t2info["model_name"] == self.model_name:
                     continue
-                if not "fit_metrics" in t2info:
+                if "fit_metrics" not in t2info:
                     continue
                 tinfo["z"] = t2info["z"]
                 if t2info["z_source"] in [
@@ -154,7 +154,7 @@ class HealpixCorrPlotter(AbsPhotoT3Unit):
                 continue
                 # Determine outline (decided by redshift origin)
             markeredgecolor = "None"
-            if row["z_sharp"] == True:
+            if row["z_sharp"]:
                 markeredgecolor = "k"
                 # Determine whether to annotate (decided target region)
             if (

@@ -275,7 +275,7 @@ class T2XgbClassifier(AbsTiedStateT2Unit):
                 "imodel": -1,
                 "cause": "No sig. det",
             }
-        if t2data["success"] == False:
+        if not t2data["success"]:
             return {
                 "model": self.model_prefix,
                 "xgbsuccess": False,

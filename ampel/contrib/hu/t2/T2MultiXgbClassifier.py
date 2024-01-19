@@ -210,7 +210,7 @@ class T2MultiXgbClassifier(
 
         # If we did not find chained results from TabulatorRiseDecline,
         # then run the feature extraction
-        if not "ndet" in t2data.keys():
+        if "ndet" not in t2data.keys():
             flux_table = self.get_flux_table(datapoints)
 
             # Cut the flux table if requested
@@ -261,7 +261,7 @@ class T2MultiXgbClassifier(
                 "imodel": -1,
                 "cause": "No sig. det",
             }
-        if t2data["success"] == False:
+        if not t2data["success"]:
             return {
                 "model": "directEval",
                 "xgbsuccess": False,

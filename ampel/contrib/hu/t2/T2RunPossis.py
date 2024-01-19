@@ -250,7 +250,7 @@ class T2RunPossis(T2RunSncosmo):
             # Check if model explosion time should be fixed from t2
             if isinstance(self.explosion_time_jd, str):
                 for t2_view in t2_views:
-                    if not t2_view.unit in ["T2PropagateStockInfo", "T2HealpixProb"]:
+                    if t2_view.unit not in ["T2PropagateStockInfo", "T2HealpixProb"]:
                         continue
                     self.logger.debug("Parsing t2 results from {}".format(t2_view.unit))
                     t2_res = (
@@ -258,7 +258,7 @@ class T2RunPossis(T2RunSncosmo):
                         if isinstance(res := t2_view.get_payload(), list)
                         else res
                     )
-                    if not "trigger_time" in t2_res.keys():
+                    if "trigger_time" not in t2_res.keys():
                         self.logger.info("No explosion time", extra={"t2res": t2_res})
                         return UnitResult(code=DocumentCode.T2_MISSING_INFO)
                     self.explosion_time_jd = float(t2_res["trigger_time"])

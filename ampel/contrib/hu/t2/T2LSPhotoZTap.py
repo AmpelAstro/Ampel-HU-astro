@@ -300,7 +300,7 @@ class T2LSPhotoZTap(AbsPointT2Unit):
 
         # Return a T2 result (dict-like)
         if len(match_list) > 0:
-            if return_all == True:
+            if return_all:
                 return {
                     "T2LSPhotoZTap{}".format(k): item
                     for k, item in enumerate(match_list)

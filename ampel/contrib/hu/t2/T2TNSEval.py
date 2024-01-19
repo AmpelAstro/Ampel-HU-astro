@@ -280,7 +280,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         ssdist = np.array(
             [pp["body"]["ssdistnr"] for pp in pps if "ssdistnr" in pp["body"]]
         )
-        ssdist[ssdist == None] = -999
+        ssdist[ssdist == None] = -999  # noqa: E711
 
         close_to_sso = np.logical_and(ssdist < self.ssdistnr_max, ssdist > 0)
         if np.any(close_to_sso):

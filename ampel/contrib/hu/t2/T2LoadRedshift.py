@@ -37,15 +37,12 @@ class T2LoadRedshift(AbsLightCurveT2Unit):
 
         self.z_df = None
 
-        try:
-            df = pd.read_csv(self.df_path)
-            df["synced_at"] = datetime.now(tz_util.utc).timestamp()
-            cols = df.columns
-            newcols = {col: "T2LoadRedshift_" + col for col in cols}
-            df.rename(columns=newcols, inplace=True)
-            self.z_df = df
-        except:
-            print("T2LoadRedshift: check file location.")
+        df = pd.read_csv(self.df_path)
+        df["synced_at"] = datetime.now(tz_util.utc).timestamp()
+        cols = df.columns
+        newcols = {col: "T2LoadRedshift_" + col for col in cols}
+        df.rename(columns=newcols, inplace=True)
+        self.z_df = df
 
     def process(self, light_curve: LightCurve) -> UBson | UnitResult:
         """
