@@ -23,72 +23,74 @@ from ampel.enum.DocumentCode import DocumentCode
 
 
 class T2PS1ThumbExtCat(AbsTiedPointT2Unit):
-	"""
-	Retrieve panstarrs images at datapoint location and for each tied extcat catalog matching result:
-	- create a new image
-	- mark the datapoint location
-	- mark the matched location from the catalog
+    """
+    Retrieve panstarrs images at datapoint location and for each tied extcat catalog matching result:
+    - create a new image
+    - mark the datapoint location
+    - mark the matched location from the catalog
 
-	A dict structure containing each image as a compressed svg is returned.
-	"""
+    A dict structure containing each image as a compressed svg is returned.
+    """
 
-	t2_dependency: Sequence[UnitModel[Literal['T2CatalogMatch']]]
+    t2_dependency: Sequence[UnitModel[Literal["T2CatalogMatch"]]]
 
-	cmaps: Sequence[str] = ["cividis"]
-	band: str | Sequence[str] = "g"
-	plot_props: PlotProperties = PlotProperties(
-		tags = ["THUMBPRINT", "PANSTARRS"],
-		file_name = FormatModel(
-			format_str = "%s_%s_%s_ps1_thumb.svg",
-			arg_keys = ["stock", "band", "catalog"]
-		),
-		title = FormatModel(
-			format_str = "%s %s (%s band) ",
-			arg_keys = ["stock", "catalog", "band"]
-		),
-		id_mapper = "ZTFIdMapper"
-	)
+    cmaps: Sequence[str] = ["cividis"]
+    band: str | Sequence[str] = "g"
+    plot_props: PlotProperties = PlotProperties(
+        tags=["THUMBPRINT", "PANSTARRS"],
+        file_name=FormatModel(
+            format_str="%s_%s_%s_ps1_thumb.svg", arg_keys=["stock", "band", "catalog"]
+        ),
+        title=FormatModel(
+            format_str="%s %s (%s band) ", arg_keys=["stock", "catalog", "band"]
+        ),
+        id_mapper="ZTFIdMapper",
+    )
 
+    def process(
+        self, datapoint: DataPoint, t2_views: Sequence[T2DocView]
+    ) -> UBson | UnitResult:
+        """ """
 
-	def process(self, datapoint: DataPoint, t2_views: Sequence[T2DocView]) -> UBson | UnitResult:
-		""" """
+        # That would be a config error
+        if not t2_views[0].is_point_type():
+            return UnitResult(code=DocumentCode.T2_UNEXPECTED_DEPENDENCY)
 
-		# That would be a config error
-		if not t2_views[0].is_point_type():
-			return UnitResult(code=DocumentCode.T2_UNEXPECTED_DEPENDENCY)
+        cat_results = t2_views[0].get_payload()
+        if not isinstance(cat_results, dict):
+            return UnitResult(code=DocumentCode.T2_UNEXPECTED_DEPENDENCY)
 
-		cat_results = t2_views[0].get_payload()
-		if not isinstance(cat_results, dict):
-			return UnitResult(code=DocumentCode.T2_UNEXPECTED_DEPENDENCY)
+        if "data" not in cat_results:
+            return UnitResult(code=DocumentCode.T2_MISSING_INFO)
 
-		if 'data' not in cat_results:
-			return UnitResult(code=DocumentCode.T2_MISSING_INFO)
+        pt = T2PanStarrThumbPrint.get_ps1_target(datapoint, self.band)
+        plots = []
 
-		pt = T2PanStarrThumbPrint.get_ps1_target(datapoint, self.band)
-		plots = []
+        for cat_name, cat_res in cat_results["data"].items():
+            if not cat_res:
+                continue
 
-		for cat_name, cat_res in cat_results['data'].items():
+            for band in ampel_iter(self.band):
+                for cmap in ampel_iter(self.cmaps):
+                    plots.append(
+                        create_plot_record(
+                            pt.show(
+                                ellipse=False,
+                                band=band,
+                                cmap=cmap,
+                                show=False,
+                                show_target=False,
+                                show_coord=(cat_res["ra"], cat_res["dec"]),
+                            ),
+                            self.plot_props,
+                            extra={
+                                "band": band,
+                                "stock": datapoint["stock"][0],  # type: ignore[index]
+                                "catalog": cat_name,
+                                "cmap": cmap,
+                            },
+                            logger=self.logger,
+                        )
+                    )
 
-			if not cat_res:
-				continue
-
-			for band in ampel_iter(self.band):
-				for cmap in ampel_iter(self.cmaps):
-					plots.append(
-						create_plot_record(
-							pt.show(
-								ellipse=False, band=band, cmap=cmap, show=False,
-								show_target = False, show_coord = (cat_res['ra'], cat_res['dec'])
-							),
-							self.plot_props,
-							extra = {
-								"band": band,
-								"stock": datapoint["stock"][0], # type: ignore[index]
-								"catalog": cat_name,
-								"cmap": cmap
-							},
-							logger = self.logger
-						)
-					)
-
-		return {'data': {'plots': plots}}
+        return {"data": {"plots": plots}}

@@ -87,7 +87,6 @@ class T2RiseDeclineBase(AmpelBaseModel):
     del_duplicate_rows: bool = True
 
     def compute_stats(self, light_curve: LightCurve) -> dict[str, Any]:
-
         # Output dict that we will start to populate
         o: dict[str, Any] = {}
 
@@ -216,16 +215,13 @@ class T2RiseDeclineBase(AmpelBaseModel):
             )
             o["bool_peaked"] = False
         else:
-            if (o["mag_last"] - min_mag) > np.sqrt(
-                min_mag_err ** 2 + last_mag_err ** 2
-            ):
+            if (o["mag_last"] - min_mag) > np.sqrt(min_mag_err**2 + last_mag_err**2):
                 o["bool_peaked"] = True
             else:
                 o["bool_peaked"] = False
 
         # If we concluded a peak was there, collect info
         if o["bool_peaked"]:
-
             self.logger.debug("Calculating peak based statistics")
             o["jd_max"] = min_mag_jd
             o["mag_peak"] = min_mag
@@ -234,7 +230,7 @@ class T2RiseDeclineBase(AmpelBaseModel):
             # Other chracteristics
             # Did it not rise at all?
             if (o["mag_det"] - o["mag_peak"]) > np.sqrt(
-                det_mag_err ** 2 + min_mag_err ** 2
+                det_mag_err**2 + min_mag_err**2
             ):
                 o["bool_norise"] = False
             else:
@@ -247,7 +243,7 @@ class T2RiseDeclineBase(AmpelBaseModel):
 
             # Did it not rise at all from first detection detection?
             if (o["mag_det"] - o["mag_last"]) > np.sqrt(
-                det_mag_err ** 2 + last_mag_err ** 2
+                det_mag_err**2 + last_mag_err**2
             ):
                 o["bool_norise"] = False
             else:
@@ -280,7 +276,6 @@ class T2RiseDeclineBase(AmpelBaseModel):
             filter_det = dets[dets["filter"] == filtid]
 
             if o["bool_peaked"]:
-
                 filter_det_rise = filter_det[filter_det["jd"] <= o["jd_max"]]
                 filter_det_fall = filter_det[filter_det["jd"] >= o["jd_max"]]
 
@@ -354,7 +349,6 @@ class T2RiseDeclineBase(AmpelBaseModel):
 
 
 class T2RiseDeclineStat(AbsLightCurveT2Unit, T2RiseDeclineBase):
-
     do_testplot: bool = False
     path_testplot: str = "/home/jnordin/tmp/t2test/"
 
@@ -407,5 +401,4 @@ class T2RiseDeclineStat(AbsLightCurveT2Unit, T2RiseDeclineBase):
         plt.clf()
 
     def process(self, light_curve: LightCurve) -> UBson | UnitResult:
-
         return self.compute_stats(light_curve)

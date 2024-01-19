@@ -170,7 +170,6 @@ class RapidLco(RapidBase):
         },
     }
 
-
     def react(
         self, tran_view: TransientView, info: None | dict[str, Any]
     ) -> tuple[bool, dict[str, Any]]:
@@ -187,10 +186,10 @@ class RapidLco(RapidBase):
         # Assuming ra and dec exists in there
         ra, dec = None, None
         for t2unit, t2info in info.items():
-            if 'ra' in t2info.keys():
-                ra = t2info['ra']
-            if 'dec' in t2info.keys():
-                dec = t2info['dec']
+            if "ra" in t2info.keys():
+                ra = t2info["ra"]
+            if "dec" in t2info.keys():
+                dec = t2info["dec"]
         if ra is None or dec is None:
             # Look at the response
             self.logger.info(
@@ -200,14 +199,12 @@ class RapidLco(RapidBase):
                 },
             )
 
-
         # Step through all LCO submit forms
         success = True  # Will be set to false if any submit fails
         submitted = []
         responses = []
 
         for submit_name, submit_info in self.lco_payload.items():
-
             # Create submit dictionary
             react_dict = recursive_unfreeze(submit_info["api_form"])
 
@@ -223,12 +220,12 @@ class RapidLco(RapidBase):
             if "start" in react_dict["requests"][0]["windows"][0].keys():
                 dtime = datetime.timedelta(days=submit_info["start_delay"])
                 react_dict["requests"][0]["windows"][0]["start"] = "%s" % (
-                    (timenow + dtime)
+                    timenow + dtime
                 )
             if "end" in react_dict["requests"][0]["windows"][0].keys():
                 dtime = datetime.timedelta(days=submit_info["end_delay"])
                 react_dict["requests"][0]["windows"][0]["end"] = "%s" % (
-                    (timenow + dtime)
+                    timenow + dtime
                 )
 
             self.logger.debug(

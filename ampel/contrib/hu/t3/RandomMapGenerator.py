@@ -77,7 +77,7 @@ class RandomMapGenerator(AbsT3PlainUnit):
 
         if self.seed:
             np.random.seed(self.seed)
-        else: 
+        else:
             self.seed = np.random.random_integers(0, 2147483647)
             print("RANDOMMAPGENERATOR:: ", self.seed)
             np.random.seed(self.seed)
@@ -124,8 +124,8 @@ class RandomMapGenerator(AbsT3PlainUnit):
         hdr_simple = []
         hdr_simple.append(("SIMPLE", "T"))
 
-        hdr: list[tuple[str,float|int|str|None]] = []
-        
+        hdr: list[tuple[str, float | int | str | None]] = []
+
         hdr.append(("DISTMEAN", self.distance))
         hdr.append(("DISTSTD", self.dist_unc))
         hdr.append(("SEED", self.seed))

@@ -37,12 +37,9 @@ class PredetectionFilter(DecentFilter):
         ]
 
         if self.map_name is not None:
-            ah = AmpelHealpix(
-                map_name=self.map_name, map_url="", save_dir=self.map_dir
-                )
+            ah = AmpelHealpix(map_name=self.map_name, map_url="", save_dir=self.map_dir)
             # map_hash = ah.process_map()
             self.trigger_jd = ah.get_triggertime()
-            
 
     def process(self, alert: AmpelAlertProtocol) -> None | bool | int:
         """

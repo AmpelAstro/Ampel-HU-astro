@@ -16,8 +16,11 @@ from collections.abc import Generator
 from xml.etree import ElementTree
 from aiohttp import ClientSession, helpers, TCPConnector
 from aiohttp.client_exceptions import (
-    ClientConnectionError, ClientConnectorError, ClientConnectorSSLError,
-    ClientResponseError, ServerDisconnectedError
+    ClientConnectionError,
+    ClientConnectorError,
+    ClientConnectorSSLError,
+    ClientResponseError,
+    ServerDisconnectedError,
 )
 
 from ampel.types import UBson
@@ -71,13 +74,11 @@ class DCachePublisher(AbsT3ReviewUnit):
         assert self.resource
         self.base_dest = self.resource["dcache"] + self.base_dir
 
-
     def serialize(self, tran_view: SnapView | dict[str, Any]) -> bytes:
         buf = io.BytesIO()
         with gzip.GzipFile(fileobj=buf, mode="w") as f:
             f.write(self.encoder.encode(tran_view).encode("utf-8"))
         return buf.getvalue()
-
 
     async def create_directory(self, request, path_parts) -> None:
         path = []
@@ -96,19 +97,16 @@ class DCachePublisher(AbsT3ReviewUnit):
                         resp.raise_for_status()
             self.existing_paths.add(tuple(path))
 
-
     async def put(self, request, url, data, timeout=1.0):
         if self.dry_run:
             return
         await request("PUT", url, data=data)
-
 
     async def exists(self, request, url):
         if self.dry_run:
             return
         resp = await request("HEAD", url, raise_for_status=False)
         return resp.status in {200, 201, 204}
-
 
     @staticmethod
     def is_permanent_error(exc):
@@ -119,10 +117,13 @@ class DCachePublisher(AbsT3ReviewUnit):
         else:
             return False
 
-
     def _on_backoff(self, details):
         exc_typ, exc, _ = sys.exc_info()
-        err = traceback.format_exception_only(exc_typ, exc)[-1].rstrip("\n") if exc else None
+        err = (
+            traceback.format_exception_only(exc_typ, exc)[-1].rstrip("\n")
+            if exc
+            else None
+        )
         self.logger.warn(
             "backoff",
             extra={
@@ -133,10 +134,13 @@ class DCachePublisher(AbsT3ReviewUnit):
             },
         )
 
-
     def _on_giveup(self, details):
         exc_typ, exc, _ = sys.exc_info()
-        err = traceback.format_exception_only(exc_typ, exc)[-1].rstrip("\n") if exc else None
+        err = (
+            traceback.format_exception_only(exc_typ, exc)[-1].rstrip("\n")
+            if exc
+            else None
+        )
         self.logger.warn(
             "gave up",
             extra={
@@ -146,9 +150,7 @@ class DCachePublisher(AbsT3ReviewUnit):
             },
         )
 
-
     async def publish_transient(self, request, tran_view: SnapView) -> str:
-
         assert isinstance(tran_view.id, int)
         ztf_name = to_ztf_id(tran_view.id)
         # group such that there are a maximum of 17576 in the same directory
@@ -160,7 +162,6 @@ class DCachePublisher(AbsT3ReviewUnit):
         await self.put(request, fname, data=self.serialize(tran_view))
 
         return fname
-
 
     async def send_requests(self, unbound_tasks):
         """
@@ -209,9 +210,9 @@ class DCachePublisher(AbsT3ReviewUnit):
                 tasks = [task(request) for task in unbound_tasks]
                 return await asyncio.gather(*tasks)
 
-
-    def process(self, gen: Generator[SnapView, JournalAttributes, None], t3s: T3Store) -> UBson | UnitResult:
-
+    def process(
+        self, gen: Generator[SnapView, JournalAttributes, None], t3s: T3Store
+    ) -> UBson | UnitResult:
         """
         Publish a transient batch
         """
@@ -238,7 +239,6 @@ class DCachePublisher(AbsT3ReviewUnit):
 
         return None
 
-
     async def publish_manifest(self, request) -> None:
         prefix = os.path.join(self.base_dest, self.channel)
         manifest_dir = os.path.join(prefix, "manifest")
@@ -247,7 +247,7 @@ class DCachePublisher(AbsT3ReviewUnit):
             request,
             list(
                 os.path.split(
-                    prefix[len(os.path.commonprefix((self.base_dest, manifest_dir))):]
+                    prefix[len(os.path.commonprefix((self.base_dest, manifest_dir))) :]
                 )
             ),
         )
@@ -268,7 +268,9 @@ class DCachePublisher(AbsT3ReviewUnit):
                     previous = os.path.join(manifest_dir, date + ".json.gz")
                     self.logger.info(f"Moving {latest} to {previous}")
                     await request(
-                        "MOVE", latest, headers={"Destination": previous},
+                        "MOVE",
+                        latest,
+                        headers={"Destination": previous},
                     )
 
         # Write a new manifest with a link to previous manifest.
@@ -296,7 +298,9 @@ class DCachePublisher(AbsT3ReviewUnit):
         ) as response:
             authz = await response.json()
         await request(
-            "PUT", os.path.join(prefix, "macaroon"), data=authz["macaroon"],
+            "PUT",
+            os.path.join(prefix, "macaroon"),
+            data=authz["macaroon"],
         )
         self.logger.info(f"Access token: {authz}")
 

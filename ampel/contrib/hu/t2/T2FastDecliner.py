@@ -31,20 +31,20 @@ class T2FastDecliner(AbsLightCurveT2Unit):
 
     min_declinerate: float = 0.1
     min_trange: float = 0.1
-    max_trange: float = 2.
+    max_trange: float = 2.0
     filter_keys: dict[str, str] = {"1": "g", "2": "R"}
 
     def process(self, light_curve: LightCurve) -> UBson | UnitResult:
-
         # For each filter, check datapoints for latest datapoints
-        t2_output: dict[str,UBson] = {'fast_decliner': False}
+        t2_output: dict[str, UBson] = {"fast_decliner": False}
         for filt_id, filt_name in self.filter_keys.items():
-            pps = light_curve.get_ntuples( ["jd", "magpsf", "sigmapsf"],
-                 filters = [
+            pps = light_curve.get_ntuples(
+                ["jd", "magpsf", "sigmapsf"],
+                filters=[
                     {"attribute": "fid", "operator": "==", "value": int(filt_id)},
-                ]
+                ],
             )
-            if pps is None or len(pps)<2:
+            if pps is None or len(pps) < 2:
                 continue
             # Simple diffs of two most resent observations
             pps = sorted(pps, key=lambda d: d[0])
@@ -53,9 +53,12 @@ class T2FastDecliner(AbsLightCurveT2Unit):
             decline_rate = delta_mag / delta_t
 
             # Create output structure, annotating if lc "fast declining"
-            t2_output[filt_name] = {'delta_t': delta_t, 'decline_rate': decline_rate}
-            if (delta_t>self.min_trange and delta_t<self.max_trange and
-                    decline_rate>self.min_declinerate):
-                t2_output['fast_decliner'] = True
+            t2_output[filt_name] = {"delta_t": delta_t, "decline_rate": decline_rate}
+            if (
+                delta_t > self.min_trange
+                and delta_t < self.max_trange
+                and decline_rate > self.min_declinerate
+            ):
+                t2_output["fast_decliner"] = True
 
         return t2_output

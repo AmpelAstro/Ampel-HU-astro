@@ -185,10 +185,10 @@ class TransientTablePublisher(AbsPhotoT3Unit):
             if self.include_pos:
                 lcurve = tran_view.get_lightcurves()
                 if lcurve is not None:
-                    pos = lcurve[0].get_pos(ret = 'brightest')
+                    pos = lcurve[0].get_pos(ret="brightest")
                     if pos is not None:
-                        basetdict['ra'] = pos[0]
-                        basetdict['dec'] = pos[1]
+                        basetdict["ra"] = pos[0]
+                        basetdict["dec"] = pos[1]
             if self.include_channels and tran_view.stock:
                 channels = tran_view.stock.get("channel")
                 # Allow for both single (most common) and duplacte channels.
@@ -215,12 +215,12 @@ class TransientTablePublisher(AbsPhotoT3Unit):
         # Convert
         df = pd.DataFrame.from_dict(table_rows)
 
-        #if "map_name" in df.columns and "map_seed" in df.columns:
-            #df["map_name"] = np.char.replace(np.array(df["map_name"], dtype=str), "random", "random"+df["map_seed"])
+        # if "map_name" in df.columns and "map_seed" in df.columns:
+        # df["map_name"] = np.char.replace(np.array(df["map_name"], dtype=str), "random", "random"+df["map_seed"])
 
-        #print(df["map_name"].iloc[0])
+        # print(df["map_name"].iloc[0])
         if "random" in df["map_name"].iloc[0] or self.rename_files:
-            #print("transienttablepublisher:: ", df["map_seed"].iloc[0])
+            # print("transienttablepublisher:: ", df["map_seed"].iloc[0])
             tmp_seed_name = df["map_seed"].iloc[0]
             if type(tmp_seed_name) == str:
                 self.file_name += "_" + tmp_seed_name
@@ -231,21 +231,23 @@ class TransientTablePublisher(AbsPhotoT3Unit):
         if self.sort_by_key in df.keys():
             df = df.sort_values(by=self.sort_by_key, ascending=self.sort_ascending)
         else:
-            self.logger.warn(f"Cannot sort table by {self.sort_by_key} - legal keys: {df.keys()}") 
+            self.logger.warn(
+                f"Cannot sort table by {self.sort_by_key} - legal keys: {df.keys()}"
+            )
 
         # Local save
         if self.local_path is not None:
             path_name = os.path.join(self.local_path, self.dir_name)
-            #print("PATHNAME::", path_name)
+            # print("PATHNAME::", path_name)
             if not os.path.exists(path_name):
                 os.makedirs(path_name, exist_ok=True)
             full_path = os.path.join(path_name, self.file_name)
-            #print("FILE PATH::", full_path)
+            # print("FILE PATH::", full_path)
 
             with open(full_path + "." + self.fmt, "w") as tmp_file:
                 tmp_file.close()
             if self.fmt == "csv":
-                #print(self.write_mode)
+                # print(self.write_mode)
                 df.to_csv(full_path + ".csv", sep=";", mode=self.write_mode)
             elif self.fmt == "latex":
                 df.to_latex(full_path + ".tex")
@@ -270,7 +272,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
             skymap_name = df[map_name_key][
                 0
             ]  # need to change if for some reason several maps get saved in same file
-            skymap_dir_name = skymap_name #[: skymap_name.find(".")]  # bare name
+            skymap_dir_name = skymap_name  # [: skymap_name.find(".")]  # bare name
             if skymap_name[-1] != "z":  # if non trivial rev version (hacky)
                 skymap_dir_name += (
                     "_rev_" + skymap_name[skymap_name.find(",") + 1 :]
@@ -282,7 +284,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
                 skymap_directory = os.path.join(
                     self.local_path + "/../" + skymap_dir_name
                 )
-                #print(skymap_directory)
+                # print(skymap_directory)
                 os.makedirs(skymap_directory, exist_ok=True)
                 for file in files_local_path:
                     if file.find(".fits.gz") == -1:

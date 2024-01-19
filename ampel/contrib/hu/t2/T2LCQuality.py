@@ -195,7 +195,6 @@ class T2LCQuality(AbsLightCurveT2Unit):
         # run on the single bands individually
         out_dict = {}
         for fid in self.filter_ids:
-
             self.logger.debug(
                 f"computing light curve quality for filter id {fid} "
                 f"({self.filter_names[fid]}-band)"

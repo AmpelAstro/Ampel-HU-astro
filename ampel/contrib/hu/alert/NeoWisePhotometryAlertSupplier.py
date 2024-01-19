@@ -78,13 +78,12 @@ class NeoWisePhotometryAlertSupplier(BaseAlertSupplier):
         df["W2_flux_density_ul"].replace(1.0, "True", inplace=True)
 
         if "timewise_metadata" in d[1].keys():
-
             # calculate reduced chi2
             timewise_metadata = d[1]["timewise_metadata"]
             for b in ["W1", "W2"]:
                 timewise_metadata[f"{b}_red_chi2"] = (
-                    timewise_metadata[f"{b}_chi2_to_med_flux_density"] /
-                    (timewise_metadata[f"{b}_N_datapoints_flux_density"] - 1)
+                    timewise_metadata[f"{b}_chi2_to_med_flux_density"]
+                    / (timewise_metadata[f"{b}_N_datapoints_flux_density"] - 1)
                     if timewise_metadata[f"{b}_N_datapoints_flux_density"] > 1
                     else np.nan
                 )

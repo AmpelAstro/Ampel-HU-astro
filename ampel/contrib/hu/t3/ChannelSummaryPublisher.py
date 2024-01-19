@@ -37,15 +37,12 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
     base_url: str = "https://desycloud.desy.de/remote.php/webdav/AMPEL/ZTF"
     auth: NamedSecret[list] = NamedSecret(label="desycloud/valery")
 
-
     def post_init(self) -> None:
-
         self.summary: dict[str, Any] = {}
         self._jd_range = [float("inf"), -float("inf")]
         self._channels: set[ChannelId] = set()
         self.session = requests.Session()
         self.session.auth = HTTPBasicAuth(*self.auth.get())
-
 
     def extract_from_transient_view(
         self, tran_view: TransientView
@@ -80,8 +77,9 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
 
         return out
 
-
-    def process(self, gen: Generator[TransientView, T3Send, None], t3s: None | T3Store = None) -> UBson | UnitResult:
+    def process(
+        self, gen: Generator[TransientView, T3Send, None], t3s: None | T3Store = None
+    ) -> UBson | UnitResult:
         """
         load the stats from the alerts
         """
@@ -99,12 +97,11 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
         self.done()
         return None
 
-
     @backoff.on_exception(
         backoff.expo,
         (TimeoutError, requests.exceptions.HTTPError),
-        giveup=lambda exc: isinstance(exc, requests.exceptions.HTTPError) and
-        exc.response.status_code not in {400, 403, 405, 423, 500}
+        giveup=lambda exc: isinstance(exc, requests.exceptions.HTTPError)
+        and exc.response.status_code not in {400, 403, 405, 423, 500},
     )
     def done(self) -> None:
         """"""
@@ -141,7 +138,7 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
         outfile = StringIO()
         outfile.write(AmpelEncoder(lossy=True).encode(self.summary))
         outfile.write("\n")
-        mb = len(outfile.getvalue().encode()) / 2.0 ** 20
+        mb = len(outfile.getvalue().encode()) / 2.0**20
         self.logger.info(
             "{}: {} transients {:.1f} MB".format(filename, len(self.summary), mb)
         )

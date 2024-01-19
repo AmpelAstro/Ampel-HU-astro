@@ -358,7 +358,6 @@ class RcfFilter(AbsAlertFilter):
         return False
 
     def process(self, alert: AmpelAlertProtocol) -> None | bool | int:
-
         # BASE REQUIREMENTS
 
         codes = self.RejectionCode
@@ -395,11 +394,15 @@ class RcfFilter(AbsAlertFilter):
             return codes.min_ssdistnr
 
         # find first detection date (with pos. detection)
-        jd_first_pps = 10 ** 30
+        jd_first_pps = 10**30
         m_peak = 100
         bright_detections = 0
         for al in alert.datapoints:
-            if not 'isdiffpos' in al.keys() or al["isdiffpos"] == "f" or al["isdiffpos"] == "0":
+            if (
+                not "isdiffpos" in al.keys()
+                or al["isdiffpos"] == "f"
+                or al["isdiffpos"] == "0"
+            ):
                 continue
             if al["jd"] < jd_first_pps:
                 jd_first_pps = al["jd"]

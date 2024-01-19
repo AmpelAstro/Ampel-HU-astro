@@ -18,40 +18,47 @@ from ampel.abstract.AbsAlertFilter import AbsAlertFilter
 
 class SimpleDecentFilter(AbsAlertFilter):
     """
-	General-purpose filter devloped alongside DecentFilter but without use of external catalogs.
-	It selects alerts based on:
-	* numper of previous detections
-	* positive subtraction flag
-	* loose cuts on image quality (fwhm, elongation, number of bad pixels, and the
-	difference between PSF and aperture magnitude)
-	* distance to known SS objects
-	* (d) real-bogus
-	* Whether it seems a PS source exists at the transient position (as per alert properties).
-	"""
+    General-purpose filter devloped alongside DecentFilter but without use of external catalogs.
+    It selects alerts based on:
+    * numper of previous detections
+    * positive subtraction flag
+    * loose cuts on image quality (fwhm, elongation, number of bad pixels, and the
+    difference between PSF and aperture magnitude)
+    * distance to known SS objects
+    * (d) real-bogus
+    * Whether it seems a PS source exists at the transient position (as per alert properties).
+    """
 
-	# history
-    min_ndet: int = 2 # number of previous detections
-    min_tspan: float = 0.02 # minimum duration of alert detection history [days]
-    max_tspan: float = 25. # maximum duration of alert detection history [days]
-    min_archive_tspan: float = 0. # minimum duration of alert detection history [days]
-    max_archive_tspan: float = 10**5. # maximum duration of alert detection history [days]
+    # history
+    min_ndet: int = 2  # number of previous detections
+    min_tspan: float = 0.02  # minimum duration of alert detection history [days]
+    max_tspan: float = 25.0  # maximum duration of alert detection history [days]
+    min_archive_tspan: float = 0.0  # minimum duration of alert detection history [days]
+    max_archive_tspan: float = (
+        10**5.0
+    )  # maximum duration of alert detection history [days]
 
     # Image quality
-    min_drb: float = 0. # deep learning real bogus score
-    min_rb: float = 0.3 # real bogus score
-    max_fwhm: float = 5. # sexctrator FWHM (assume Gaussian) [pix]
-    max_elong: float = 1.4 # Axis ratio of image: aimage / bimage
-    max_magdiff: float = 0.4 # Difference: magap - magpsf [mag]
-    max_nbad: int = 0 # number of bad pixels in a 5 x 5 pixel stamp
+    min_drb: float = 0.0  # deep learning real bogus score
+    min_rb: float = 0.3  # real bogus score
+    max_fwhm: float = 5.0  # sexctrator FWHM (assume Gaussian) [pix]
+    max_elong: float = 1.4  # Axis ratio of image: aimage / bimage
+    max_magdiff: float = 0.4  # Difference: magap - magpsf [mag]
+    max_nbad: int = 0  # number of bad pixels in a 5 x 5 pixel stamp
 
     # astro
-    min_sso_dist: float = 20. # distance to nearest solar system object [arcsec]
-    min_gal_lat: float = 0. # minium distance from galactic plane. Set to negative to disable cut.
-    ps1_sgveto_rad: float = 2. # maximum distance to closest PS1 source for SG score veto [arcsec]
-    ps1_sgveto_th: float = 0.8 # maximum allowed SG score for PS1 source within PS1_SGVETO_RAD
-    ps1_confusion_rad: float = 1. # reject alerts if the three PS1 sources are all within this radius [arcsec]
-    ps1_confusion_sg_tol: float = 0.5 # and if the SG score of all of these 3 sources is within this tolerance to 0.5
-
+    min_sso_dist: float = 20.0  # distance to nearest solar system object [arcsec]
+    min_gal_lat: float = (
+        0.0  # minium distance from galactic plane. Set to negative to disable cut.
+    )
+    ps1_sgveto_rad: float = (
+        2.0  # maximum distance to closest PS1 source for SG score veto [arcsec]
+    )
+    ps1_sgveto_th: float = (
+        0.8  # maximum allowed SG score for PS1 source within PS1_SGVETO_RAD
+    )
+    ps1_confusion_rad: float = 1.0  # reject alerts if the three PS1 sources are all within this radius [arcsec]
+    ps1_confusion_sg_tol: float = 0.5  # and if the SG score of all of these 3 sources is within this tolerance to 0.5
 
     def post_init(self):
         # feedback
@@ -79,8 +86,7 @@ class SimpleDecentFilter(AbsAlertFilter):
         )
 
         # How to filter for detections in alert
-        self.filter_pps = [{'attribute': 'magpsf', 'operator': 'is not', 'value': None}]
-
+        self.filter_pps = [{"attribute": "magpsf", "operator": "is not", "value": None}]
 
     def _alert_has_keys(self, photop) -> bool:
         """
@@ -95,14 +101,12 @@ class SimpleDecentFilter(AbsAlertFilter):
                 return False
         return True
 
-
     def get_galactic_latitude(self, transient):
         """
         compute galactic latitude of the transient
         """
         coordinates = SkyCoord(transient["ra"], transient["dec"], unit="deg")
         return coordinates.galactic.b.deg
-
 
     def is_star_in_PS1(self, transient) -> bool:
         """
@@ -116,7 +120,6 @@ class SimpleDecentFilter(AbsAlertFilter):
             transient["distpsnr1"] < self.ps1_sgveto_rad
             and transient["sgscore1"] > self.ps1_sgveto_th
         )
-
 
     def is_confused_in_PS1(self, transient) -> bool:
         """
@@ -148,7 +151,6 @@ class SimpleDecentFilter(AbsAlertFilter):
 
         return sg_confused and very_close
 
-
     # Override
     def process(self, alert: AmpelAlertProtocol) -> None | bool | int:
         """
@@ -159,11 +161,10 @@ class SimpleDecentFilter(AbsAlertFilter):
         * or a custom combination of T2 unit names
         """
 
-
         # CUT ON THE HISTORY OF THE ALERT
         #################################
 
-        detection_jds = alert.get_values('jd',filters=self.filter_pps)
+        detection_jds = alert.get_values("jd", filters=self.filter_pps)
         npp = len(detection_jds)
         if npp < self.min_ndet:
             # self.logger.debug("rejected: %d photopoints in alert (minimum required %d)"% (npp, self.min_ndet))
@@ -178,11 +179,10 @@ class SimpleDecentFilter(AbsAlertFilter):
             self.logger.info(None, extra={"tSpan": det_tspan})
             return None
 
-
         # IMAGE QUALITY CUTS
         ####################
 
-        latest = alert.datapoints[0]   # Assuming alert structure where det comes first
+        latest = alert.datapoints[0]  # Assuming alert structure where det comes first
         if not self._alert_has_keys(latest):
             return None
 
@@ -196,7 +196,7 @@ class SimpleDecentFilter(AbsAlertFilter):
             self.logger.info(None, extra={"rb": latest["rb"]})
             return None
 
-        if (latest.get("drb")):
+        if latest.get("drb"):
             if self.min_drb > 0.0 and latest["drb"] < self.min_drb:
                 # self.logger.debug("rejected: RB score %.2f below threshod (%.2f)"% (latest['rb'], self.min_rb))
                 self.logger.info(None, extra={"drb": latest["drb"]})
@@ -218,12 +218,11 @@ class SimpleDecentFilter(AbsAlertFilter):
             return None
 
         # cut on archive length
-        if 'jdendhist' in latest.keys() and 'jdstarthist' in latest.keys():
-            archive_tspan = latest['jdendhist'] - latest['jdstarthist']
+        if "jdendhist" in latest.keys() and "jdstarthist" in latest.keys():
+            archive_tspan = latest["jdendhist"] - latest["jdstarthist"]
             if not (self.min_archive_tspan < archive_tspan < self.max_archive_tspan):
-                self.logger.info(None, extra={'archive_tspan': archive_tspan})
+                self.logger.info(None, extra={"archive_tspan": archive_tspan})
                 return None
-
 
         # ASTRONOMY
         ###########

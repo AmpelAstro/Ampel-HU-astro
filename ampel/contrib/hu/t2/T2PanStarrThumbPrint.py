@@ -9,7 +9,7 @@
 
 from typing import Union
 from collections.abc import Sequence
-from pymage.panstarrs import PS1Target # type: ignore[import]
+from pymage.panstarrs import PS1Target  # type: ignore[import]
 from ampel.types import UBson
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.util.collections import ampel_iter
@@ -20,56 +20,56 @@ from ampel.model.PlotProperties import PlotProperties, FormatModel
 
 
 class T2PanStarrThumbPrint(AbsPointT2Unit):
-	"""
-	Retrieve panstarrs images at datapoint location and save
-	these as compressed svg into the returned dict.
+    """
+    Retrieve panstarrs images at datapoint location and save
+    these as compressed svg into the returned dict.
 
-	:param band: example: ["g", "r", "i", "z", "y"]
-	"""
+    :param band: example: ["g", "r", "i", "z", "y"]
+    """
 
-	cmaps: Sequence[str] = ["cividis"]
-	band: str | Sequence[str] = "g"
-	plot_props: PlotProperties = PlotProperties(
-		tags = ["THUMBPRINT", "PANSTARRS"],
-		file_name = FormatModel(
-			format_str = "%s_%s_ps1_thumb.svg",
-			arg_keys = ["stock", "band"]
-		),
-		title = FormatModel(
-			format_str = "%s (%s band) ",
-			arg_keys = ["stock", "band"]
-		),
-		id_mapper = "ZTFIdMapper"
-	)
+    cmaps: Sequence[str] = ["cividis"]
+    band: str | Sequence[str] = "g"
+    plot_props: PlotProperties = PlotProperties(
+        tags=["THUMBPRINT", "PANSTARRS"],
+        file_name=FormatModel(
+            format_str="%s_%s_ps1_thumb.svg", arg_keys=["stock", "band"]
+        ),
+        title=FormatModel(format_str="%s (%s band) ", arg_keys=["stock", "band"]),
+        id_mapper="ZTFIdMapper",
+    )
 
+    def process(self, datapoint: DataPoint) -> UBson | UnitResult:
+        """ """
 
-	def process(self, datapoint: DataPoint) -> UBson | UnitResult:
-		""" """
+        pt = self.get_ps1_target(datapoint, self.band)
+        return {
+            "data": {
+                "plots": [
+                    create_plot_record(
+                        pt.show(
+                            ellipse=False,
+                            band=band,
+                            show_target=False,
+                            cmap=cmap,
+                            show=False,
+                        ),
+                        self.plot_props,
+                        extra={
+                            "band": band,
+                            "stock": datapoint["stock"][0],
+                            "cmap": cmap,
+                        },  # type: ignore
+                        logger=self.logger,
+                    )
+                    for cmap in ampel_iter(self.cmaps)
+                    for band in ampel_iter(self.band)
+                ]
+            }
+        }
 
-		pt = self.get_ps1_target(datapoint, self.band)
-		return {
-			'data': {
-				'plots': [
-					create_plot_record(
-						pt.show(ellipse=False, band=band, show_target=False, cmap=cmap, show=False),
-						self.plot_props,
-						extra = {"band": band, "stock": datapoint["stock"][0], "cmap": cmap}, # type: ignore
-						logger = self.logger
-					)
-					for cmap in ampel_iter(self.cmaps)
-					for band in ampel_iter(self.band)
-				]
-			}
-		}
-
-
-	@staticmethod
-	def get_ps1_target(datapoint: DataPoint, band: str | Sequence[str]) -> PS1Target:
-
-		pt = PS1Target(None)
-		pt.set_coordinate(
-			datapoint["body"]["ra"],
-			datapoint["body"]["dec"]
-		)
-		pt.download_cutout(filters=band)
-		return pt
+    @staticmethod
+    def get_ps1_target(datapoint: DataPoint, band: str | Sequence[str]) -> PS1Target:
+        pt = PS1Target(None)
+        pt.set_coordinate(datapoint["body"]["ra"], datapoint["body"]["dec"])
+        pt.download_cutout(filters=band)
+        return pt

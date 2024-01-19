@@ -14,6 +14,7 @@ import gzip
 import json
 from pathlib import Path
 
+
 class WiseFileAlertLoader(AbsAlertLoader[BytesIO]):
     """
     Load alerts from one of more files.
@@ -23,7 +24,6 @@ class WiseFileAlertLoader(AbsAlertLoader[BytesIO]):
     file: str
 
     def __init__(self, **kwargs) -> None:
-    
         super().__init__(**kwargs)
 
         if not self.file:
@@ -32,16 +32,16 @@ class WiseFileAlertLoader(AbsAlertLoader[BytesIO]):
         if self.logger:
             self.logger.info(f"Registering {len(self.file)} file(s) to load")
 
-        if Path(self.file).suffix == '.json':
-            self.lc = json.loads(open(self.file, "r").read() ) 
+        if Path(self.file).suffix == ".json":
+            self.lc = json.loads(open(self.file, "r").read())
             self.lc_content = iter(self.lc.items())
-        elif Path(self.file).suffix == '.gz':
-            self.lc = json.loads(gzip.open(self.file, "r").read() )
+        elif Path(self.file).suffix == ".gz":
+            self.lc = json.loads(gzip.open(self.file, "r").read())
             self.lc_content = iter(self.lc.items())
 
     def __iter__(self):
         return self
 
     def __next__(self) -> BytesIO:
-        output = json.dumps(next(self.lc_content)).encode('utf-8')
+        output = json.dumps(next(self.lc_content)).encode("utf-8")
         return BytesIO(output)

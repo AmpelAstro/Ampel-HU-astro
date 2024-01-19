@@ -16,10 +16,12 @@ from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 from ampel.contrib.hu.t2.T2RiseDeclineStat import T2RiseDeclineBase
 import ampel.contrib.hu.t2.xgb_trees as xgb_trees
 
+
 class XgbTreeParam(TypedDict):
     max_duration: float
     max_predetect: float
     min_detmag: float
+
 
 class T2BrightSNProb(AbsLightCurveT2Unit, T2RiseDeclineBase):
     """
@@ -56,9 +58,7 @@ class T2BrightSNProb(AbsLightCurveT2Unit, T2RiseDeclineBase):
         # Load the (large) set of trees
         self.xgb_tree = xgb_trees.xgboost_tree()
 
-
     def process(self, light_curve: LightCurve) -> UBson | UnitResult:
-
         # Output dict that we will start to populate
         o = self.compute_stats(light_curve)
 

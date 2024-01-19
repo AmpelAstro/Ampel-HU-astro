@@ -57,9 +57,7 @@ class RapidBase(AbsPhotoT3Unit):
     # List of T2 unit names which should be collected for reaction
     t2info_from: list[str] = []
 
-
     def post_init(self) -> None:
-
         self.name = "RapidBase"
         self.logger.info(f"Initialized T3 RapidBase instance {self.name}")
 
@@ -67,15 +65,15 @@ class RapidBase(AbsPhotoT3Unit):
         for k in self.__annotations__:
             self.logger.info(f"Using {k}={getattr(self, k)}")
 
-
-    def process(self, gen: Generator[TransientView, T3Send, None], t3s: None | T3Store = None) -> UBson | UnitResult:
+    def process(
+        self, gen: Generator[TransientView, T3Send, None], t3s: None | T3Store = None
+    ) -> UBson | UnitResult:
         """
         Loop through transients and check for TNS names and/or candidates to submit
         """
 
         # We will here loop through transients and react individually
         for tv in gen:
-
             transientinfo = self.collect_info(tv)
             self.logger.info("reacting", extra={"tranId": tv.id})
 
@@ -91,7 +89,6 @@ class RapidBase(AbsPhotoT3Unit):
 
         return None
 
-
     def react(
         self, tran_view: TransientView, info: None | dict[str, Any]
     ) -> tuple[bool, None | dict[str, Any]]:
@@ -102,11 +99,10 @@ class RapidBase(AbsPhotoT3Unit):
         raise NotImplementedError("No real reaction implemented in RapidBase")
         return self.test_react(tran_view, info)
 
-
     def test_react(
         self, tran_view: TransientView, info: None | dict[str, Any]
     ) -> tuple[bool, None | dict[str, Any]]:
-        """ Trigger a test slack report """
+        """Trigger a test slack report"""
 
         success = False
 
@@ -116,7 +112,6 @@ class RapidBase(AbsPhotoT3Unit):
         from slack import WebClient
         from slack.errors import SlackClientError
         from slack.web.slack_response import SlackResponse
-
 
         sc = WebClient(self.slack_token.get())
         assert isinstance(tran_view.id, int)
@@ -144,7 +139,6 @@ class RapidBase(AbsPhotoT3Unit):
         jcontent = {"reaction": description, "success": success}
 
         return success, jcontent
-
 
     def collect_info(self, tran_view: TransientView) -> None | dict[str, Any]:
         """

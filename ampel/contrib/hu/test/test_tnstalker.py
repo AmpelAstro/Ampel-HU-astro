@@ -6,20 +6,20 @@ from ampel.contrib.hu.t3.tns.TNSToken import TNSToken
 from ampel.contrib.hu.t3.TNSTalker import TNSClient, TNS_BASE_URL_SANDBOX
 from ampel.log.AmpelLogger import AmpelLogger
 
+
 @pytest.fixture
 def tns_token():
     if not (api_key := environ.get("TNS_API_KEY")):
         raise pytest.skip("Test requires env var TNS_API_KEY")
     return TNSToken(
-        id = 59228,
-        name = "ZTF_AMPEL_COMPLETE",
-        api_key = api_key,
+        id=59228,
+        name="ZTF_AMPEL_COMPLETE",
+        api_key=api_key,
     )
 
 
 @pytest.fixture
 def test_client(tns_token):
-
     return TNSClient(TNS_BASE_URL_SANDBOX, AmpelLogger.get_logger(), tns_token)
 
 

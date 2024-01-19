@@ -48,7 +48,6 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
     def process(
         self, light_curve: LightCurve, t2_views: Sequence[T2DocView]
     ) -> UBson | UnitResult:
-
         assert self.data_type in ["ztf_alert", "ztf_fp", "wise"]
 
         self.ztfid: None | str = None
@@ -126,11 +125,14 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                     for key in self.filters_lc:
                         excess_region["max_mag"] = t2_res[key]["baseline"]
                 else:
-
-                    if t2_res["start_excess"] is not None or t2_res["size_excess"] > 1.0:
-
+                    if (
+                        t2_res["start_excess"] is not None
+                        or t2_res["size_excess"] > 1.0
+                    ):
                         if t2_res["coincide_peak_block"] == -1:
-                            t2_output["description"].append("No coincide excess regions")
+                            t2_output["description"].append(
+                                "No coincide excess regions"
+                            )
 
                         elif not t2_output.get("description") and all(
                             min(t2_res[key]["max_mag_excess_region"])
@@ -139,7 +141,9 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                             > intensity_high_limit
                             for key in self.filters_lc
                         ):
-                            t2_output["description"].append("Very low or high magnitude")
+                            t2_output["description"].append(
+                                "Very low or high magnitude"
+                            )
 
                         elif all(
                             max(flatten(t2_res[key]["sigma_from_baseline"]))
@@ -187,7 +191,9 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                                         >= 1095.0
                                         and t2_res[key]["nu_of_excess_blocks"][idx] <= 1
                                     ):
-                                        t2_output["description"].append("Stage transition")
+                                        t2_output["description"].append(
+                                            "Stage transition"
+                                        )
 
                                     else:
                                         # fist check if there is a baseline before increase
@@ -212,7 +218,9 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
 
                                         # if diff is None or (diff is not None and len([value for value in difference if value > 0]) == 1):
                                         if diff is None:
-                                            t2_output["description"].append("Only declination")
+                                            t2_output["description"].append(
+                                                "Only declination"
+                                            )
                                             excess_region["baseline_jd"].append(0)
                                             excess_region["start_baseline_jd"].append(0)
                                             excess_region["baseline_mag"].append(0)
@@ -245,17 +253,19 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                                             baseline_mag = t2_res[key][
                                                 "mag_edge_baseline"
                                             ][position]
-                                            t2_output[
-                                                "description"
-                                            ].append("Baseline before excess region")
+                                            t2_output["description"].append(
+                                                "Baseline before excess region"
+                                            )
 
                                             excess_region["baseline_jd"].append(
                                                 baseline_jd
                                             )
-                                            start_baseline_jd = t2_res[
-                                                key
-                                            ]["jd_baseline_regions"][position]
-                                            excess_region["start_baseline_jd"].append(start_baseline_jd[0])
+                                            start_baseline_jd = t2_res[key][
+                                                "jd_baseline_regions"
+                                            ][position]
+                                            excess_region["start_baseline_jd"].append(
+                                                start_baseline_jd[0]
+                                            )
 
                                             excess_region["baseline_mag"].append(
                                                 baseline_mag
@@ -288,14 +298,14 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                                             and t2_res[key]["description"][idx] == 0
                                         ):
                                             maybe_interesting = True
-                                            t2_output[
-                                                "description"
-                                            ].append("Excess region with one data point in the end of LC")
+                                            t2_output["description"].append(
+                                                "Excess region with one data point in the end of LC"
+                                            )
 
                                         elif t2_res[key]["description"][idx] != 0:
-                                            t2_output[
-                                                "description"
-                                            ].append("Excess region exists")
+                                            t2_output["description"].append(
+                                                "Excess region exists"
+                                            )
 
                                         excess_jd = t2_res[key]["jd_excess_regions"][
                                             idx
@@ -310,7 +320,9 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                                         t2_res[key]["baseline"]
                                     )
                     else:
-                        t2_output["description"].append("Only baseline")  # no excess region
+                        t2_output["description"].append(
+                            "Only baseline"
+                        )  # no excess region
 
                         for key in self.filters_lc:
                             excess_region["max_mag"].append(t2_res[key]["baseline"])
@@ -399,13 +411,13 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
 
                     baseline_rms = t2_res[key]["baseline_rms"]
                     baseline_sigma = t2_res[key]["baseline_sigma"]
-                    excess_region["significance"].append(
-                        t2_res[key]["significance"]
-                    )
+                    excess_region["significance"].append(t2_res[key]["significance"])
                     excess_region["strength_sjoert"].append(
                         t2_res[key]["strength_sjoert"]
                     )
-                    excess_region["strength"].append(t2_res[key]["max_sigma_excess_region"])
+                    excess_region["strength"].append(
+                        t2_res[key]["max_sigma_excess_region"]
+                    )
 
                     if self.flux:
                         excess_region["e_rise"].append(
@@ -453,13 +465,13 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                     # fix: baseline_rms never used
                     baseline_rms = t2_res[key]["baseline_rms"]
                     baseline_sigma = t2_res[key]["baseline_sigma"]
-                    excess_region["significance"].append(
-                        t2_res[key]["significance"]
-                    )
+                    excess_region["significance"].append(t2_res[key]["significance"])
                     excess_region["strength_sjoert"].append(
                         t2_res[key]["strength_sjoert"]
                     )
-                    excess_region["strength"].append(t2_res[key]["max_sigma_excess_region"])
+                    excess_region["strength"].append(
+                        t2_res[key]["max_sigma_excess_region"]
+                    )
 
                     excess_region["e_rise"].append("nan")
                     excess_region["e_fade"].append("nan")
@@ -682,7 +694,6 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
             ax[1].text(pos[0][0], pos[0][-1] - 0.58, "e-folding fade", fontsize=21)
 
             for fid, key in enumerate(self.filters_lc, 1):
-
                 if has_data[fid] is False:
                     continue
 

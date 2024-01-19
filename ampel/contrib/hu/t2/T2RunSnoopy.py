@@ -14,7 +14,7 @@ import os
 
 
 import numpy as np
-import snpy # type: ignore[import]
+import snpy  # type: ignore[import]
 from astropy.table import Table
 from sfdmap import SFDMap  # type: ignore[import]
 
@@ -62,7 +62,6 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
     # Useful for lensing studies, or when trying multiple values
     scale_z: Optional[float]
 
-
     # TODO: Additional snoopy parameters and Bounds
     # Snoopy can also be run in emcee fit mode, where priors can be included.
 
@@ -86,25 +85,23 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
 
     # The snoopy filter naming scheme is not consistent with the observatories.
     # This is used to map from ampel fid to snoopy filter name
-    filter_name_map: dict = {1:'ztf_g', 2:'ztf_r', 3:'ztf_i'}
+    filter_name_map: dict = {1: "ztf_g", 2: "ztf_r", 3: "ztf_i"}
 
     # Which units should this be changed to
-    t2_dependency: Sequence[StateT2Dependency[Literal[
-                            "T2DigestRedshifts", "T2MatchBTS", "T2PhaseLimit"]]]
-
+    t2_dependency: Sequence[
+        StateT2Dependency[Literal["T2DigestRedshifts", "T2MatchBTS", "T2PhaseLimit"]]
+    ]
 
     def post_init(self) -> None:
         """
         Retrieve models.
         """
 
-
         # Setup model, with or without MW correction
         if self.apply_mwcorrection:
             self.dustmap = SFDMap()
 
-
-    def _get_redshift(self, t2_views) -> tuple[Optional[float],Optional[str]]:
+    def _get_redshift(self, t2_views) -> tuple[Optional[float], Optional[str]]:
         """
         Can potentially also be replaced with some sort of T2DigestRershift tabulator?
 
@@ -115,23 +112,30 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
         z: Optional[float] = None
         z_source: Optional[str] = None
 
-
-        if self.redshift_kind in ['T2MatchBTS', 'T2DigestRedshifts']:
+        if self.redshift_kind in ["T2MatchBTS", "T2DigestRedshifts"]:
             for t2_view in t2_views:
                 if not t2_view.unit == self.redshift_kind:
                     continue
-                self.logger.debug('Parsing t2 results from {}'.format(t2_view.unit))
-                t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
+                self.logger.debug("Parsing t2 results from {}".format(t2_view.unit))
+                t2_res = (
+                    res[-1] if isinstance(res := t2_view.get_payload(), list) else res
+                )
                 # Parse this
-                if self.redshift_kind == 'T2MatchBTS':
-                    if 'bts_redshift' in t2_res.keys() and not t2_res['bts_redshift'] == '-':
-                        z = float(t2_res['bts_redshift'])
+                if self.redshift_kind == "T2MatchBTS":
+                    if (
+                        "bts_redshift" in t2_res.keys()
+                        and not t2_res["bts_redshift"] == "-"
+                    ):
+                        z = float(t2_res["bts_redshift"])
                         z_source = "BTS"
-                elif self.redshift_kind == 'T2DigestRedshifts':
-                    if ('ampel_z' in t2_res.keys() and t2_res['ampel_z'] is not None
-                            and t2_res['group_z_nbr'] <= self.max_ampelz_group):
-                        z = float(t2_res['ampel_z'])
-                        z_source = "AMPELz_group" + str(t2_res['group_z_nbr'])
+                elif self.redshift_kind == "T2DigestRedshifts":
+                    if (
+                        "ampel_z" in t2_res.keys()
+                        and t2_res["ampel_z"] is not None
+                        and t2_res["group_z_nbr"] <= self.max_ampelz_group
+                    ):
+                        z = float(t2_res["ampel_z"])
+                        z_source = "AMPELz_group" + str(t2_res["group_z_nbr"])
         else:
             # Check if there is a fixed z set for this run, otherwise keep as free parameter
             if self.backup_z:
@@ -147,8 +151,7 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
 
         return z, z_source
 
-
-    def _get_phaselimit(self, t2_views) -> tuple[Optional[float],Optional[float]]:
+    def _get_phaselimit(self, t2_views) -> tuple[Optional[float], Optional[float]]:
         """
         Can potentially also be replaced with some sort of tabulator?
 
@@ -162,18 +165,18 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
             jdstart = -np.inf
             jdend = np.inf
         else:
-
             for t2_view in t2_views:
                 # So far only knows how to parse phases from T2PhaseLimit
-                if not t2_view.unit == 'T2PhaseLimit':
+                if not t2_view.unit == "T2PhaseLimit":
                     continue
-                self.logger.debug('Parsing t2 results from {}'.format(t2_view.unit))
-                t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
-                jdstart = t2_res['t_start']
-                jdend = t2_res['t_end']
+                self.logger.debug("Parsing t2 results from {}".format(t2_view.unit))
+                t2_res = (
+                    res[-1] if isinstance(res := t2_view.get_payload(), list) else res
+                )
+                jdstart = t2_res["t_start"]
+                jdend = t2_res["t_end"]
 
         return jdstart, jdend
-
 
     def _get_snoopy_lcs(self, snpy_sn, light_curve, jdstart, jdend) -> dict:
         """
@@ -188,34 +191,33 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
 
         # Limit phase range
         jd_filter = [
-            {'attribute': 'jd', 'operator': '>=', 'value': jdstart},
-            {'attribute': 'jd', 'operator': '<=', 'value': jdend}
+            {"attribute": "jd", "operator": ">=", "value": jdstart},
+            {"attribute": "jd", "operator": "<=", "value": jdend},
         ]
 
         # Check each filter for match
         lcs = {}
         for f_ampel, f_snoopy in self.filter_name_map.items():
-            dp_filter = [{'attribute': 'fid', 'operator':'==', 'value': f_ampel}]
+            dp_filter = [{"attribute": "fid", "operator": "==", "value": f_ampel}]
             dp_filter.extend(jd_filter)
-            dps = light_curve.get_ntuples(('jd', 'magpsf', 'sigmapsf'),
-                        filters=dp_filter)
+            dps = light_curve.get_ntuples(
+                ("jd", "magpsf", "sigmapsf"), filters=dp_filter
+            )
             # Sort tuples based on jd
             dps = sorted(dps)
             df = np.asarray(dps)
-            jd, mag, sigmamag = df[:,0], df[:,1], df[:,2]
-            if len(jd)>0:
+            jd, mag, sigmamag = df[:, 0], df[:, 1], df[:, 2]
+            if len(jd) > 0:
                 lcs[f_snoopy] = snpy.lc(snpy_sn, f_snoopy, jd, mag, sigmamag)
 
         return lcs
 
-
-
     # ==================== #
     # AMPEL T2 MANDATORY   #
     # ==================== #
-    def process(self,
-                light_curve: LightCurve, t2_views: Sequence[T2DocView]
-                ) -> Union[UBson, UnitResult]:
+    def process(
+        self, light_curve: LightCurve, t2_views: Sequence[T2DocView]
+    ) -> Union[UBson, UnitResult]:
         """
 
         Fit the parameters of the specified snoopy model to the light_curve
@@ -244,17 +246,17 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
 
         # Obtain redshift
         z, z_source = self._get_redshift(t2_views)
-        t2_output['z'] = z
-        t2_output['z_source'] = z_source
+        t2_output["z"] = z
+        t2_output["z_source"] = z_source
         # A source class of None indicates that a redshift source was required, but not found.
         if z is None or z_source is None:
             return t2_output
 
         # Check for phase limits
         (jdstart, jdend) = self._get_phaselimit(t2_views)
-        t2_output['jdstart'] = jdstart
-        t2_output['jdend'] = jdend
-        if t2_output['jdstart'] is None:
+        t2_output["jdstart"] = jdstart
+        t2_output["jdend"] = jdend
+        if t2_output["jdstart"] is None:
             return t2_output
 
         # Initialize SN
@@ -263,14 +265,20 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
         assert isinstance(light_curve.stock_id, int)
         if self.apply_mwcorrection:
             transient_mwebv = self.dustmap.ebv(ra, dec)
-            snoopy_sn = snpy.sn(name=ZTFIdMapper.to_ext_id(light_curve.stock_id),
-                        z=z, ra=ra, dec=dec, EBVgal=transient_mwebv)
+            snoopy_sn = snpy.sn(
+                name=ZTFIdMapper.to_ext_id(light_curve.stock_id),
+                z=z,
+                ra=ra,
+                dec=dec,
+                EBVgal=transient_mwebv,
+            )
         else:
-            snoopy_sn = snpy.sn(name=ZTFIdMapper.to_ext_id(light_curve.stock_id),
-                        z=z, ra=ra, dec=dec)
+            snoopy_sn = snpy.sn(
+                name=ZTFIdMapper.to_ext_id(light_curve.stock_id), z=z, ra=ra, dec=dec
+            )
 
         snoopy_sn.choose_model(self.snoopy_model_name)
-        snoopy_sn.replot = 0 # default plot is off
+        snoopy_sn.replot = 0  # default plot is off
 
         # Obtain and add photometric table
         lc_dict = self._get_snoopy_lcs(snoopy_sn, light_curve, jdstart, jdend)
@@ -282,20 +290,20 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
         snoopy_sn.fit()
 
         # Collect output
-        t2_output['parameters'] = snoopy_sn.parameters
-        t2_output['errors'] = snoopy_sn.errors
-
-
+        t2_output["parameters"] = snoopy_sn.parameters
+        t2_output["errors"] = snoopy_sn.errors
 
         # Save plot
         if self.plot_dir:
             # Construct name
-            fname = os.path.join(self.plot_dir,'{}_snoopy_{}.png'.format(
-                    ZTFIdMapper.to_ext_id(light_curve.stock_id), self.snoopy_model_name))
+            fname = os.path.join(
+                self.plot_dir,
+                "{}_snoopy_{}.png".format(
+                    ZTFIdMapper.to_ext_id(light_curve.stock_id), self.snoopy_model_name
+                ),
+            )
             p = snoopy_sn.plot(outfile=fname)
         if self.plot_draw:
             p = snoopy_sn.plot()
-
-
 
         return t2_output

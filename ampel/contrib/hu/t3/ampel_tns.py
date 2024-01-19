@@ -40,35 +40,41 @@ httpErrors = {
     429: "Error 429: Rate Limit Exceeded.",
 }
 
+
 class TNSSession(BaseUrlSession):
     def __init__(self, token: TNSToken, baseURL: str = TNS_BASE_URL_REAL) -> None:
         self.token = token
         super().__init__(baseURL)
-        self.headers["User-Agent"] = (
-            "tns_marker"
-            + json.dumps(
-                {"tns_id": self.token.id, "name": self.token.name, "type": "bot"}
-            )
+        self.headers["User-Agent"] = "tns_marker" + json.dumps(
+            {"tns_id": self.token.id, "name": self.token.name, "type": "bot"}
         )
 
-    def post(self, method: str, payload: str | dict[str,Any], payload_key="data", **kwargs) -> Response:
+    def post(
+        self, method: str, payload: str | dict[str, Any], payload_key="data", **kwargs
+    ) -> Response:
         for _ in range(10):
-            if (response := super().post(
-                method,
-                files=[
-                    ("api_key", (None, self.token.api_key)),
-                    (payload_key, (None, json.dumps(payload)))
-                ],
-                **kwargs
-            )).status_code != 429:
+            if (
+                response := super().post(
+                    method,
+                    files=[
+                        ("api_key", (None, self.token.api_key)),
+                        (payload_key, (None, json.dumps(payload))),
+                    ],
+                    **kwargs,
+                )
+            ).status_code != 429:
                 return response
             # back off according to rate-limit headers (see https://www.wis-tns.org/content/tns-newsfeed#comment-wrapper-26286)
-            delay = response.headers["x-cone-rate-limit-reset" if response.url.endswith('search') else "x-rate-limit-reset"]
+            delay = response.headers[
+                "x-cone-rate-limit-reset"
+                if response.url.endswith("search")
+                else "x-rate-limit-reset"
+            ]
             time.sleep(int(delay))
         else:
             response.raise_for_status()
             # unreachable
-            return None # type: ignore[return-value]
+            return None  # type: ignore[return-value]
 
 
 class TNSClient:
@@ -91,7 +97,7 @@ class TNSClient:
         :return d: json response converted to python dict
         """
 
-        d : dict[str, Any] = {}
+        d: dict[str, Any] = {}
         # What response did we get?
         message = None
         status = r.status_code
@@ -133,7 +139,7 @@ class TNSClient:
         # Construct the JSON response and return it.
         self.logger.info("TNS bulk submit: " + "got response (or timed out)")
         return self.jsonResponse(r)
-    
+
     def addBulkReport(self, report):
         """
         Send the report to the TNS
@@ -156,7 +162,7 @@ class TNSClient:
                 logger.error("Cannot find the data key. Something is wrong.")
 
         return reportId
-    
+
     def sendReports(self, reports: list[dict]):
         """
         Based on a lists of reportlists, send to TNS.
@@ -170,7 +176,6 @@ class TNSClient:
         logger = self.logger
         reportresult = {}
         for atreport in reports:
-
             # Submit a report
             for _ in range(MAX_LOOP):
                 reportid = self.addBulkReport(atreport)
@@ -197,7 +202,7 @@ class TNSClient:
             # In any case, nothing in the submit is posted.
             # Hence only checking first element
             bad_request = None
-            for key_atprop in ['ra','decl','discovery_datetime']:
+            for key_atprop in ["ra", "decl", "discovery_datetime"]:
                 if key_atprop in response[0].keys():
                     try:
                         bad_request = response[0][key_atprop]["value"]["5"]["message"]
@@ -205,11 +210,8 @@ class TNSClient:
                     except KeyError:
                         pass
             if bad_request is not None:
-                logger.info( bad_request )
+                logger.info(bad_request)
                 continue
-
-
-
 
             # Parse reply for evaluation
             for k, v in atreport["at_report"].items():
@@ -223,13 +225,13 @@ class TNSClient:
                     ]
                 elif "101" in response[k].keys():
                     logger.info(
-                        "Already existing with name %s" % (response[k]["101"]["objname"])
+                        "Already existing with name %s"
+                        % (response[k]["101"]["objname"])
                     )
                     reportresult[v["internal_name"]] = [
                         "TNS pre-existing",
                         {"TNSName": response[k]["101"]["objname"]},
                     ]
-                    
 
         return reportresult
 
@@ -243,7 +245,9 @@ class TNSClient:
         """
         self.logger.info("TNS bulk submit: " + "looking for reply report")
         # every TNS endpoint wraps its arguments in `data`, except bulk-report-reply
-        r = self.session.post(AT_REPORT_REPLY, report_id, payload_key="report_id", timeout=300)
+        r = self.session.post(
+            AT_REPORT_REPLY, report_id, payload_key="report_id", timeout=300
+        )
         self.logger.info("TNS bulk submit: " + "got report (or timed out)")
         return self.jsonResponse(r)
 
@@ -270,28 +274,30 @@ class TNSClient:
             try:
                 response = reply["data"]["feedback"]["at_report"]
             except KeyError:
-                logger.error("TNS bulk submit: cannot find the response feedback payload.")
+                logger.error(
+                    "TNS bulk submit: cannot find the response feedback payload."
+                )
 
         # This is a bad request. Still propagate the response for analysis.
         if reply and "id_code" in reply.keys() and reply["id_code"] == 400:
             try:
                 response = reply["data"]["feedback"]["at_report"]
             except KeyError:
-                logger.error("TNS bulk submit: cannot find the response feedback payload.")
-
+                logger.error(
+                    "TNS bulk submit: cannot find the response feedback payload."
+                )
 
         logger.info(f"TNS bulk submit: got response {response}")
 
         return response
-    
+
     def getInternalName(self, tns_name: str):
         """
         formerly tnsInternal
         """
 
         response = self.session.post(
-            "get/object",
-            {"objname": tns_name, "photometry": 0, "spectra": 0}
+            "get/object", {"objname": tns_name, "photometry": 0, "spectra": 0}
         )
         parsed = self.jsonResponse(response)
 
@@ -299,14 +305,16 @@ class TNSClient:
             return [], "No internal TNS name"
 
         return parsed["data"]["reply"]["internal_names"], "Got internal name response"
-    
-    def search(self, ra: float, dec: float, matchradius: float=5.) -> tuple[list[str], str]:
+
+    def search(
+        self, ra: float, dec: float, matchradius: float = 5.0
+    ) -> tuple[list[str], str]:
         """
         formerly tnsName
         """
         r = self.session.post(
             "get/search",
-            {"ra": ra, "dec": dec, "radius": matchradius, "units": "arcsec"}
+            {"ra": ra, "dec": dec, "radius": matchradius, "units": "arcsec"},
         )
         parsed = self.jsonResponse(r)
 
@@ -316,8 +324,8 @@ class TNSClient:
             return [], "Error: No TNS names in response"
 
         return tnsnames, "Found TNS name(s)"
-    
-    def getNames(self, ra: float, dec: float, matchradius: float=5.):
+
+    def getNames(self, ra: float, dec: float, matchradius: float = 5.0):
         """
         Get names of the first TNS object at location
 
@@ -332,7 +340,9 @@ class TNSClient:
         if len(tnsnames) >= 1:
             tns_name = tnsnames[0]
             if len(tnsnames) > 1:
-                logger.debug("Multipe TNS names, choosing first", extra={"tns_names": tnsnames})
+                logger.debug(
+                    "Multipe TNS names, choosing first", extra={"tns_names": tnsnames}
+                )
         else:
             # No TNS name, then no need to look for internals
             return None, None
@@ -340,5 +350,5 @@ class TNSClient:
 
         # Look for internal name (note that we skip the prefix)
         internal_names, *_ = self.getInternalName(tns_name[2:])
-        
+
         return tns_name, internal_names

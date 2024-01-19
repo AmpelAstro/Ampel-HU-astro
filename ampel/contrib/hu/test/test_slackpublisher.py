@@ -26,7 +26,10 @@ def t3_transient_views() -> list[TransientView]:
             stock=StockDocument(
                 {"stock": stock_id, "channel": ["CHANNYCHAN"]},
             ),
-            t0=[DataPoint(id=i, stock=stock_id, body={}, channel=[], meta=[]) for i in range(10)],
+            t0=[
+                DataPoint(id=i, stock=stock_id, body={}, channel=[], meta=[])
+                for i in range(10)
+            ],
             t2=[
                 T2DocView(
                     stock=stock_id,
@@ -67,7 +70,6 @@ def t3_transient_views() -> list[TransientView]:
 
 
 def test_slacksummary(t3_transient_views: list[TransientView], mocker):
-
     unit = SlackSummaryPublisher(
         **{
             "cols": [
@@ -99,19 +101,19 @@ def test_slacksummary(t3_transient_views: list[TransientView], mocker):
     mocker.patch("requests.post")
     mocker.patch("slack_sdk.WebClient.api_call")
 
-    unit.process(iter(t3_transient_views), T3Store()) # type: ignore[arg-type]
+    unit.process(iter(t3_transient_views), T3Store())  # type: ignore[arg-type]
 
     api_call = WebClient.api_call
-    api_call.assert_called_once() # type: ignore[attr-defined]
+    api_call.assert_called_once()  # type: ignore[attr-defined]
     assert (
-        "MEH!" in api_call.call_args[1]["json"]["text"] # type: ignore[attr-defined]
+        "MEH!" in api_call.call_args[1]["json"]["text"]  # type: ignore[attr-defined]
     ), "Text matches number of transients selected"
 
-    requests.post.assert_called() # type: ignore[attr-defined]
-    assert len(requests.post.call_args_list) == 2, "2 explicit requests issued" # type: ignore[attr-defined]
+    requests.post.assert_called()  # type: ignore[attr-defined]
+    assert len(requests.post.call_args_list) == 2, "2 explicit requests issued"  # type: ignore[attr-defined]
 
     # Verify summary
-    content = requests.post.call_args_list[0][1]["files"]["file"] # type: ignore[attr-defined]
+    content = requests.post.call_args_list[0][1]["files"]["file"]  # type: ignore[attr-defined]
     with StringIO(content) as f:
         reader = csv.DictReader(f)
         rows = list(reader)
@@ -129,9 +131,9 @@ def test_slacksummary(t3_transient_views: list[TransientView], mocker):
     assert len(rows) == len(t3_transient_views), "1 row per transient"
 
     # Verify photometry dump
-    content = requests.post.call_args_list[1][1]["files"]["file"] # type: ignore[attr-defined]
+    content = requests.post.call_args_list[1][1]["files"]["file"]  # type: ignore[attr-defined]
     with StringIO(content) as f:
         rows = list(csv.DictReader(f))
-    assert (
-        len(rows) == sum(len(v.t0 or []) for v in t3_transient_views)
+    assert len(rows) == sum(
+        len(v.t0 or []) for v in t3_transient_views
     ), "1 row per photopoint"

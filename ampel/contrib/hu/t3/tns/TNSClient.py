@@ -92,7 +92,11 @@ class TNSClient:
 
     def _on_backoff(self, details):
         exc_typ, exc, _ = sys.exc_info()
-        err = traceback.format_exception_only(exc_typ, exc)[-1].rstrip("\n") if exc else None
+        err = (
+            traceback.format_exception_only(exc_typ, exc)[-1].rstrip("\n")
+            if exc
+            else None
+        )
         self.logger.warn(
             "backoff",
             extra={"exc": err, "wait": details["wait"], "tries": details["tries"]},
@@ -100,7 +104,11 @@ class TNSClient:
 
     def _on_giveup(self, details):
         exc_typ, exc, _ = sys.exc_info()
-        err = traceback.format_exception_only(exc_typ, exc)[-1].rstrip("\n") if exc else None
+        err = (
+            traceback.format_exception_only(exc_typ, exc)[-1].rstrip("\n")
+            if exc
+            else None
+        )
         self.logger.warn("gave up", extra={"exc": err, "tries": details["tries"]})
 
     @staticmethod

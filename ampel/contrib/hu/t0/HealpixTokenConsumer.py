@@ -151,7 +151,6 @@ class HealpixTokenConsumer(AlertConsumer):
         )
         fblocks = self._fbh.filter_blocks
 
-
         if any_filter:
             filter_results: list[tuple[int, bool | int]] = []
         else:
@@ -212,7 +211,7 @@ class HealpixTokenConsumer(AlertConsumer):
                             if res[1]:
                                 filter_results.append(res)  # type: ignore[arg-type]
                             else:
-                                #print("Alert rejected.")
+                                # print("Alert rejected.")
                                 rejected_count += 1
 
                         # Unrecoverable (logging related) errors
@@ -286,7 +285,7 @@ class HealpixTokenConsumer(AlertConsumer):
                             "map_hash": self.map_hash,
                             "map_dist": healpix_map.dist,
                             "map_dist_unc": healpix_map.dist_unc,
-                            #"map_area": healpix_map.get_maparea()
+                            # "map_area": healpix_map.get_maparea()
                         },
                     }
 
@@ -359,7 +358,7 @@ class HealpixTokenConsumer(AlertConsumer):
                 signal(SIGINT, chatty_interrupt)
                 signal(SIGTERM, chatty_interrupt)
 
-            #print("Rejected count: ", rejected_count)
+            # print("Rejected count: ", rejected_count)
 
         # Executed if SIGINT was sent during supplier execution
         except KeyboardInterrupt:

@@ -30,7 +30,7 @@ def _to_datapoint(d):
         body=d,
         tag=[_ampel_photo_flags[f] for f in d.pop("alTags") if f in _ampel_photo_flags],
         channel=[],
-        meta=[]
+        meta=[],
     )
 
 
@@ -63,7 +63,7 @@ def assert_equivalent(left, right):
 
 
 def test_t2brightsnprob(lightcurve):
-    monitor = T2BrightSNProb(logger=AmpelLogger.get_logger()) # type: ignore[call-arg]
+    monitor = T2BrightSNProb(logger=AmpelLogger.get_logger())  # type: ignore[call-arg]
     monitor.post_init()
     assert_equivalent(
         monitor.process(lightcurve),

@@ -32,7 +32,6 @@ class T2MatchGRB(AbsStateT2Unit, AbsTabulatedT2Unit):
     after_time: float = 3  # in days
 
     def post_init(self):
-        
         # need to get trigger_time of GW event from healpix map
         if self.map_name is not None or self.trigger_jd is None:
             ah = AmpelHealpix(map_name=self.map_name, map_url="", save_dir=self.map_dir)
@@ -47,7 +46,7 @@ class T2MatchGRB(AbsStateT2Unit, AbsTabulatedT2Unit):
             atime.Time(self.trigger_jd, format="jd") + aunits.day * self.after_time
         ).iso
 
-        #print("T2MATCHGRB:: ", self.before_iso, self.after_iso, self.trigger_jd)
+        # print("T2MATCHGRB:: ", self.before_iso, self.after_iso, self.trigger_jd)
 
         ## get GRB events in timeframe
         self.astrocolibri_allsky()
@@ -57,11 +56,9 @@ class T2MatchGRB(AbsStateT2Unit, AbsTabulatedT2Unit):
         compound: T1Document,
         datapoints: Iterable[DataPoint],
     ) -> Union[UBson, UnitResult]:
-
-        
         tmp_skycoord = None
 
-        results: dict[str,list[dict[str,Any]]] = { "temporal_grb": [] }
+        results: dict[str, list[dict[str, Any]]] = {"temporal_grb": []}
 
         # get alert coordinates
         for point in datapoints:
@@ -72,24 +69,23 @@ class T2MatchGRB(AbsStateT2Unit, AbsTabulatedT2Unit):
                     frame="icrs",
                 )
                 break
-        
+
         if tmp_skycoord is None:
             self.logger.info("No coordinates to compare.")
             return results
 
         # for all grb events in timeframe, check if alert coordinates overlap within 1 sigma
         for grb_event in self.event_list:
-            #print(grb_event)
+            # print(grb_event)
             tmp_sep = tmp_skycoord.separation(grb_event["skycoord"])
-            #print(tmp_sep)
-            #if tmp_sep.value <= grb_event["err"]:
-            
+            # print(tmp_sep)
+            # if tmp_sep.value <= grb_event["err"]:
 
             append_match = grb_event.copy()
             append_match["separation"] = tmp_sep.value
             append_match.pop("skycoord", None)
             results["temporal_grb"].append(append_match)
-        #print("T2MATCHGRB results:: ", results)
+        # print("T2MATCHGRB results:: ", results)
         return results
 
     def astrocolibri_allsky(self) -> None:
@@ -115,7 +111,7 @@ class T2MatchGRB(AbsStateT2Unit, AbsTabulatedT2Unit):
             "time_range": {
                 "max": self.after_iso,
                 "min": self.before_iso,
-            }
+            },
         }
 
         # Perform the POST request
@@ -123,7 +119,7 @@ class T2MatchGRB(AbsStateT2Unit, AbsTabulatedT2Unit):
             url, headers=headers, data=json.dumps(body), timeout=20
         )
 
-        #print("T2MATCHGRB::", response.status_code)
+        # print("T2MATCHGRB::", response.status_code)
 
         # Process the response
         if response.status_code == 200:
@@ -137,7 +133,7 @@ class T2MatchGRB(AbsStateT2Unit, AbsTabulatedT2Unit):
             )
             return
 
-        event_list: list[dict[str,Any]] = []
+        event_list: list[dict[str, Any]] = []
         for event in events:
             if event["source_name"] == "":
                 continue
@@ -159,4 +155,4 @@ class T2MatchGRB(AbsStateT2Unit, AbsTabulatedT2Unit):
             tmp_dict["source_name"] = event["source_name"]
             event_list.append(tmp_dict)
         self.event_list = event_list
-        #print("T2MATCHGRB:: ", event_list)
+        # print("T2MATCHGRB:: ", event_list)

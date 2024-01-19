@@ -45,11 +45,10 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
     #: Base URL of archive service
     archive: str = "https://ampel.zeuthen.desy.de/api/ztf/archive/v3/"
 
-
     date_str: None | str = (
         None  # Start of time window we are interested in (default: event trigger time)
     )
-    date_format: str = "iso" #"%Y-%m-%d"
+    date_format: str = "iso"  # "%Y-%m-%d"
     delta_time: None | float = (
         None  # Length of time window in days (default: until now)
     )
@@ -65,7 +64,6 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
     debug: bool = False
 
     def process(self, t3s: T3Store) -> UBson | UnitResult:
-
         # Retrieve and process map
         ah = AmpelHealpix(
             map_name=self.map_name, map_url=self.map_url, save_dir=self.map_dir
@@ -123,15 +121,15 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
         hp_area = ah.get_maparea(self.pvalue_limit)
 
         candidate_dict = {
-                "rb": {"$gt": 0.3},
-                "magpsf": {"$gt": 15},
-                "ndethist": {"$gt": 0, "$lte": 10},
-                "jdstarthist": {"$gt": start_jd}
-            }
-        
+            "rb": {"$gt": 0.3},
+            "magpsf": {"$gt": 15},
+            "ndethist": {"$gt": 0, "$lte": 10},
+            "jdstarthist": {"$gt": start_jd},
+        }
+
         candidate_dict.update(self.candidate)
 
-# TODO: candidate optional input, jdstarthis = start_jd + epsilon
+        # TODO: candidate optional input, jdstarthis = start_jd + epsilon
         query_dict = {
             "jd": {"$gt": start_jd, "$lt": end_jd},
             "regions": healpix_regions,
@@ -144,13 +142,12 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
             "jd": {"$gt": start_jd, "$lt": end_jd},
             "regions": healpix_regions,
         }
-        endpoint_count = 'https://ampel.zeuthen.desy.de/api/ztf/archive/v3/alerts/healpix/skymap/count'
-        response_count = session.post(endpoint_count, json=count_query_dict )
+        endpoint_count = "https://ampel.zeuthen.desy.de/api/ztf/archive/v3/alerts/healpix/skymap/count"
+        response_count = session.post(endpoint_count, json=count_query_dict)
         alert_count_nofilter = response_count.json()["count"]
-        #print("ALERT COUNT NO FILTER", alert_count_nofilter)
+        # print("ALERT COUNT NO FILTER", alert_count_nofilter)
 
-
-        #print("HEALPIXTOKENGENERATOR::", query_dict)
+        # print("HEALPIXTOKENGENERATOR::", query_dict)
 
         response = session.post(
             "streams/from_query",
@@ -163,8 +160,6 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
             token = rd.pop("resume_token")
         except KeyError as exc:
             raise ValueError(f"Unexpected response: {rd}") from exc
-
-        
 
         # wait for query to finish - is this needed, or handled by alert consumer?
         t0 = time.time()
@@ -181,7 +176,7 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
             )
         self.logger.info("Stream created", extra=response.json())
 
-        #print("TOKENGENERATOR AAAAAAAAAAAAAAAAA::", response.json()["remaining"]["items"])
+        # print("TOKENGENERATOR AAAAAAAAAAAAAAAAA::", response.json()["remaining"]["items"])
         if response.json().get("remaining"):
             queried_alerts = response.json()["remaining"]["items"]
         else:
@@ -196,7 +191,7 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
             "jd": ah.trigger_time,
             "map_area": hp_area,
             "alert_count_nofilter": alert_count_nofilter,
-            "alert_count_query": queried_alerts
+            "alert_count_query": queried_alerts,
         }
 
         r = Resource(name=self.map_name, value=resource)

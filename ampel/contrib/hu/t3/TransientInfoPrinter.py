@@ -19,68 +19,68 @@ from ampel.util.pretty import prettyjson
 
 
 class TransientInfoPrinter(AbsPhotoT3Unit):
+    logfile: None | str  # logging (INFO and onwards) goes to this file.
 
-	logfile: None | str	# logging (INFO and onwards) goes to this file.
+    def post_init(self) -> None:
+        self.count = 0
 
-	def post_init(self) -> None:
+        # log to file if so configured
+        if self.logfile:
+            fh = logging.FileHandler(self.logfile)
+            fh.setLevel(logging.INFO)
+            self.logger.addHandler(fh)  # type: ignore
+            self.logger.info("Added logging handle to: {logfile}")
 
-		self.count = 0
+    def process(
+        self, gen: Generator[TransientView, T3Send, None], t3s: None | T3Store = None
+    ) -> UBson | UnitResult:
+        self.logger.info("Printing transients info")
+        self.logger.info("=" * 80)
+        count = 0
 
-		# log to file if so configured
-		if self.logfile:
-			fh = logging.FileHandler(self.logfile)
-			fh.setLevel(logging.INFO)
-			self.logger.addHandler(fh) # type: ignore
-			self.logger.info("Added logging handle to: {logfile}")
+        for tran_view in gen:
+            count += 1
+            TransientInfoPrinter._print_info(tran_view, self.logger)
+            self.logger.info("=" * 80)
 
+        self.logger.info(f"Printed info for {count} transients")
 
-	def process(self, gen: Generator[TransientView, T3Send, None], t3s: None | T3Store = None) -> UBson | UnitResult:
+        return None
 
-		self.logger.info("Printing transients info")
-		self.logger.info("=" * 80)
-		count = 0
+    @staticmethod
+    def _print_info(tran: TransientView, logger: Any) -> None:
+        logger.info(f"Ampel ID: {tran.id}")  # type: ignore
+        if tran.extra and "name" in tran.extra:
+            logger.info(f"Transient names: {tran.extra['name']}")
 
-		for tran_view in gen:
-			count += 1
-			TransientInfoPrinter._print_info(tran_view, self.logger)
-			self.logger.info("=" * 80)
+        if tran.stock:
+            logger.info(f"Channel: {tran.stock['channel']}")
 
-		self.logger.info(f"Printed info for {count} transients")
+        created = tran.get_time_created()
+        updated = tran.get_time_updated()
 
-		return None
+        logger.info(
+            "Created: %s" % (created if created is not None else "Not available")
+        )
+        logger.info(
+            "Modified: %s" % (updated if updated is not None else "Not available")
+        )
 
+        if tran.stock:
+            logger.info(f"Tags: {tran.stock['tag']}")
 
-	@staticmethod
-	def _print_info(tran: TransientView, logger: Any) -> None:
+        logger.info("Content: %s" % tran.content_summary())
 
-		logger.info(f"Ampel ID: {tran.id}") # type: ignore
-		if tran.extra and 'name' in tran.extra:
-			logger.info(f"Transient names: {tran.extra['name']}")
+        if tran.extra:
+            logger.info(f"Extra: {tran.extra}")
 
-		if tran.stock:
-			logger.info(f"Channel: {tran.stock['channel']}")
+        if tran.stock:
+            # should be timely sorted
+            logger.info("Journal:")
+            for el in tran.stock["journal"]:
+                logger.info(prettyjson(el))
 
-		created = tran.get_time_created()
-		updated = tran.get_time_updated()
-
-		logger.info("Created: %s" % (created if created is not None else 'Not available'))
-		logger.info("Modified: %s" % (updated if updated is not None else 'Not available'))
-
-		if tran.stock:
-			logger.info(f"Tags: {tran.stock['tag']}")
-
-		logger.info("Content: %s" % tran.content_summary())
-
-		if tran.extra:
-			logger.info(f"Extra: {tran.extra}")
-
-		if tran.stock:
-			# should be timely sorted
-			logger.info("Journal:")
-			for el in tran.stock['journal']:
-				logger.info(prettyjson(el))
-
-		if tran.logs:
-			logger.info("Logs:")
-			for le in tran.logs:
-				logger.info(" " + str(le))
+        if tran.logs:
+            logger.info("Logs:")
+            for le in tran.logs:
+                logger.info(" " + str(le))

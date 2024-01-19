@@ -32,7 +32,6 @@ class TNSMirrorUpdater(AbsOpsUnit):
     dry_run: bool = False
 
     def run(self, beacon: None | dict[str, Any] = None) -> None | dict[str, Any]:
-
         now = datetime.datetime.utcnow()
         last_run = beacon["updated"] if beacon else now - datetime.timedelta(days=7)
 
@@ -50,7 +49,7 @@ class TNSMirrorUpdater(AbsOpsUnit):
             TNSMirrorDB(
                 MongoClient(
                     self.context.config.get("resource.extcats", str, raise_exc=True),
-                    **self.extcats_auth.get()
+                    **self.extcats_auth.get(),
                 ),
                 logger=self.logger,
             ).add_sources(new_reports)
