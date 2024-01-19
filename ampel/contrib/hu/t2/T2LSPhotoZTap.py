@@ -8,10 +8,11 @@
 # Last Modified By  : jnordin
 
 from collections import OrderedDict
+from collections.abc import Sequence
 from functools import partial
 from io import BytesIO
 from math import acos, cos, pi, sin
-from typing import Any, Sequence, Union
+from typing import Any
 
 import backoff
 import numpy as np
@@ -199,7 +200,7 @@ class T2LSPhotoZTap(AbsPointT2Unit):
     ) -> Sequence[
         dict[str, Any]
     ]:  # Does one need to add List[None] here for empty returns?
-        self.logger.debug("Querying %s %s" % (ra, dec))
+        self.logger.debug(f"Querying {ra} {dec}")
 
         # Original qery, using the wrong path (and also a lot of dependencies)
         ## should be possible to adjust this:
@@ -212,18 +213,15 @@ class T2LSPhotoZTap(AbsPointT2Unit):
         # New manual:
         headers = {"X-DL-AuthToken": (self.token)}
         sql = self.query % (ra, dec, float(self.match_radius) / 3600)
-        qfmt = "csv"
-        async_ = False
         timeout = 300
-        dburl = "%s/query?sql=%s&ofmt=%s&async=%s" % (
-            self.datalab_query_url,
-            sql,
-            qfmt,
-            async_,
+        r = requests.get(
+            f"{self.datalab_query_url}/query",
+            params={"sql": sql, "qfmt": "csv", "async": "0"},
+            headers=headers,
+            timeout=timeout,
         )
-        r = requests.get(dburl, headers=headers, timeout=timeout)
         if not r.ok:
-            self.logger.debug("DL query failed at %s %s" % (ra, dec))
+            self.logger.debug(f"DL query failed at {ra} {dec}" % (ra, dec))
             return []
 
         # First convert to string and then to dict
@@ -257,7 +255,7 @@ class T2LSPhotoZTap(AbsPointT2Unit):
 
         return match_dict
 
-    def process(self, datapoint: DataPoint) -> Union[UBson, UnitResult]:
+    def process(self, datapoint: DataPoint) -> UBson | UnitResult:
         return_all: bool = (
             False  # whether to return all matches or closest match (default)
         )
@@ -301,10 +299,7 @@ class T2LSPhotoZTap(AbsPointT2Unit):
         # Return a T2 result (dict-like)
         if len(match_list) > 0:
             if return_all:
-                return {
-                    "T2LSPhotoZTap{}".format(k): item
-                    for k, item in enumerate(match_list)
-                }
+                return {f"T2LSPhotoZTap{k}": item for k, item in enumerate(match_list)}
             else:
                 min_dist = min(match_list, key=lambda x: x["dist2transient"])
                 return {"T2LSPhotoZTap": min_dist}

@@ -829,7 +829,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
 
         # Check t2 ouputs
         for t2_view in t2_views:
-            self.logger.debug("Parsing t2 results from {}".format(t2_view.unit))
+            self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
             t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
 
             # Redshift

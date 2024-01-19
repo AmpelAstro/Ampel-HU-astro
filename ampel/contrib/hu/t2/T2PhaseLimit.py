@@ -9,7 +9,8 @@
 
 import gc
 import os
-from typing import Any, Iterable, Optional, Union
+from collections.abc import Iterable
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -56,8 +57,8 @@ class T2PhaseLimit(AbsStateT2Unit, AbsTabulatedT2Unit):
     risedec_fractions: list = []
 
     # Plot
-    plot_suffix: Optional[str]
-    plot_dir: Optional[str]
+    plot_suffix: None | str
+    plot_dir: None | str
 
     def _magtoflux(self, mag: float) -> float:
         return 10 ** (-((mag) - 25) / 2.5)
@@ -118,7 +119,7 @@ class T2PhaseLimit(AbsStateT2Unit, AbsTabulatedT2Unit):
         self,
         compound: T1Document,
         datapoints: Iterable[DataPoint],
-    ) -> Union[UBson, UnitResult]:
+    ) -> UBson | UnitResult:
         """
         Iteratively reject datapoints with outlying phase estimate.
         Once completed, check whether remaining data is compatible with expectations.
@@ -221,7 +222,7 @@ class T2PhaseLimit(AbsStateT2Unit, AbsTabulatedT2Unit):
         if flux_peak is not None:
             for band in np.unique(fflux_table["band"]):
                 # Get flux subset below flux limit
-                risedec_dict["risedec_{}".format(band)] = self._get_risedec(
+                risedec_dict[f"risedec_{band}"] = self._get_risedec(
                     fflux_table[(fflux_table["band"] == band)], self.risedec_fractions
                 )
 
@@ -276,9 +277,7 @@ class T2PhaseLimit(AbsStateT2Unit, AbsTabulatedT2Unit):
 
             plt.tight_layout()
             plt.savefig(
-                os.path.join(
-                    self.plot_dir, "t2phaselimit_%s.%s" % (tname, self.plot_suffix)
-                )
+                os.path.join(self.plot_dir, f"t2phaselimit_{tname}.{self.plot_suffix}")
             )
 
             plt.close("fig")

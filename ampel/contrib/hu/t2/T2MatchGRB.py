@@ -1,5 +1,6 @@
 import json
-from typing import Any, Iterable, Union
+from collections.abc import Iterable
+from typing import Any
 
 import astropy.time as atime
 import astropy.units as aunits
@@ -52,7 +53,7 @@ class T2MatchGRB(AbsStateT2Unit, AbsTabulatedT2Unit):
         self,
         compound: T1Document,
         datapoints: Iterable[DataPoint],
-    ) -> Union[UBson, UnitResult]:
+    ) -> UBson | UnitResult:
         tmp_skycoord = None
 
         results: dict[str, list[dict[str, Any]]] = {"temporal_grb": []}

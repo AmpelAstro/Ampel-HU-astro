@@ -33,7 +33,7 @@ class WiseFileAlertLoader(AbsAlertLoader[BytesIO]):
             self.logger.info(f"Registering {len(self.file)} file(s) to load")
 
         if Path(self.file).suffix == ".json":
-            self.lc = json.loads(open(self.file, "r").read())
+            self.lc = json.loads(open(self.file).read())
             self.lc_content = iter(self.lc.items())
         elif Path(self.file).suffix == ".gz":
             self.lc = json.loads(gzip.open(self.file, "r").read())

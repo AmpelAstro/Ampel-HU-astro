@@ -287,8 +287,7 @@ class TNSTalker(AbsT3ReviewUnit):
         # and if you don't find any, go and ask TNS again.
         tns_name_new, tns_internals_new = self._find_tns_tran_names(tran_view)
         self.logger.debug(
-            "Find tns names added to the ampel name list: %s internal %s"
-            % (tns_name_new, tns_internals_new)
+            f"Find tns names added to the ampel name list: {tns_name_new} internal {tns_internals_new}"
         )
         if tns_name_new is None:
             tns_name_new, tns_internals_new = self._query_tns_names(tran_view, ra, dec)
@@ -392,7 +391,7 @@ class TNSTalker(AbsT3ReviewUnit):
             # find the TNS name, either from the journal, from tran_names, or
             # from TNS itself. If new names are found, create a new JournalUpdate
             tns_name, tns_internals, jup = self.find_tns_name(tran_view, ra, dec)
-            self.logger.debug("TNS got %s internals %s" % (tns_name, tns_internals))
+            self.logger.debug(f"TNS got {tns_name} internals {tns_internals}")
 
             if tns_name is not None:
                 # Chech whether this ID has been submitted (note that we do not check

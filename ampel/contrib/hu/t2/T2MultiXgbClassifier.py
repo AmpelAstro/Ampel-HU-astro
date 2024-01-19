@@ -9,7 +9,7 @@
 
 import os
 from collections.abc import Sequence
-from typing import Dict, Literal, Union
+from typing import Literal
 
 import numpy as np
 import xgboost as xgb
@@ -153,7 +153,7 @@ class T2MultiXgbClassifier(
         compound: T1Document,
         datapoints: Sequence[DataPoint],
         t2_views: Sequence[T2DocView],
-    ) -> Union[UBson, UnitResult]:
+    ) -> UBson | UnitResult:
         """
 
         Extract results from TabulatorRiseDecline and apply suitable model.
@@ -171,7 +171,7 @@ class T2MultiXgbClassifier(
         t2data = {}
         # Parse t2views - should not be more than one.
         for t2_view in t2_views:
-            self.logger.debug("Parsing t2 results from {}".format(t2_view.unit))
+            self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
             # So far only knows how to parse phases from T2TabulatorRiseDecline
             if t2_view.unit == "T2TabulatorRiseDecline":
                 t2_res = (
@@ -270,7 +270,7 @@ class T2MultiXgbClassifier(
             }
 
         # Loop through and apply all models
-        t2out: Dict[str, UBson] = {"model": "multiXgb"}
+        t2out: dict[str, UBson] = {"model": "multiXgb"}
         classifications = t2out["classifications"] = {}
         for modelid, model in self._classifiers.items():
             # Run model

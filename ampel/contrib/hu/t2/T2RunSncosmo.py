@@ -12,7 +12,7 @@ import copy
 import errno
 import os
 from collections.abc import Sequence
-from typing import Literal, Optional
+from typing import Literal
 
 import backoff
 import numpy as np
@@ -194,9 +194,9 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         """
 
         # Examine T2s for eventual information
-        z: Optional[list[float]] = None
-        z_source: Optional[str] = None
-        z_weights: Optional[list[float]] = None
+        z: None | list[float] = None
+        z_source: None | str = None
+        z_weights: None | list[float] = None
 
         if self.redshift_kind in [
             "T2MatchBTS",
@@ -207,7 +207,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             for t2_view in t2_views:
                 if not t2_view.unit == self.redshift_kind:
                     continue
-                self.logger.debug("Parsing t2 results from {}".format(t2_view.unit))
+                self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
                 t2_res = (
                     res[-1] if isinstance(res := t2_view.get_payload(), list) else res
                 )
@@ -250,7 +250,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
 
         if (z is not None) and (z_source is not None) and self.scale_z:
             z = [onez * self.scale_z for onez in z]
-            z_source += " + scaled {}".format(self.scale_z)
+            z_source += f" + scaled {self.scale_z}"
 
         # TODO: return the list instead of this
         # return z, z_source, z_weights
@@ -286,7 +286,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                 # So far only knows how to parse phases from T2PhaseLimit
                 if not t2_view.unit == "T2PhaseLimit":
                     continue
-                self.logger.debug("Parsing t2 results from {}".format(t2_view.unit))
+                self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
                 t2_res = (
                     res[-1] if isinstance(res := t2_view.get_payload(), list) else res
                 )
@@ -330,7 +330,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             (sncosmo_table["flux"] / sncosmo_table["fluxerr"]) > detection_sigma
         )[0]
         # table might not be ordered
-        lc_metrics["phase_{}sigma".format(detection_sigma)] = np.min(
+        lc_metrics[f"phase_{detection_sigma}sigma"] = np.min(
             sncosmo_table["phase"][i_first]
         )
 
@@ -426,7 +426,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             (sncosmo_table["time"] >= jdstart) & (sncosmo_table["time"] <= jdend)
         ]
 
-        self.logger.debug("Sncosmo table {}".format(sncosmo_table))
+        self.logger.debug(f"Sncosmo table {sncosmo_table}")
 
         # Fitting section
         # To handle multiple redshifts, fitting section below should be put into function.
@@ -477,7 +477,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             t2_output["run_error"] = True
             return t2_output
 
-        self.logger.debug("Run results {}".format(sncosmo_result))
+        self.logger.debug(f"Run results {sncosmo_result}")
 
         # Derive model metrics
         t2_output["fit_metrics"] = self._get_fit_metrics(

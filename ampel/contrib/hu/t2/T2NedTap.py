@@ -176,7 +176,7 @@ class T2NedTap(AbsPointT2Unit):
         return UnitResult(tag=tags, body={"data": data})
 
     def _load_mongo_export(self, fpath, match) -> None | dict:
-        with open(fpath, "r") as f:
+        with open(fpath) as f:
             for l in f:
                 if match in l:
                     return json.loads(l)

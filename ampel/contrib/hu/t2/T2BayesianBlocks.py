@@ -10,7 +10,8 @@
 import itertools
 import math
 import os
-from typing import Any, Dict, Optional, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 import matplotlib.pyplot as plt  # type: ignore
 import more_itertools as mit
@@ -58,7 +59,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
     debug: bool = False
 
-    debug_dir: Optional[str]
+    debug_dir: None | str
 
     # in case of ZTF: Must be called 'ZTF_g', 'ZTF_r', 'ZTF_i'
     filters: Sequence[str]
@@ -66,7 +67,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
     # Work with fluxes instead of magnitude
     flux: bool = False
     #
-    plot_props: Optional[PlotProperties]
+    plot_props: None | PlotProperties
     # Color of filters for the plots
 
     PlotColor: Sequence[str] = ["red", "blue"]
@@ -470,7 +471,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
         ################################
         ######## Bayesian blocks #######
-        output_per_filter: Dict[str, Any] = {}
+        output_per_filter: dict[str, Any] = {}
 
         self.filters_lc = self.filters
 
@@ -493,7 +494,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     "mag_edge",
                 ]
             )
-            output: Dict[str, Any] = {
+            output: dict[str, Any] = {
                 "mag_edge_excess": [],
                 "max_mag_excess_region": [],
                 "max_jd_excess_region": [],
@@ -1205,7 +1206,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 plt.xticks(fontsize=20)
                 plt.yticks(fontsize=20)
 
-                locals()[str("ax") + str(passband)] = fig.add_subplot(
+                locals()["ax" + str(passband)] = fig.add_subplot(
                     len(self.filters_lc) + 1, 1, fid + 1, sharex=ax
                 )
 
@@ -1218,7 +1219,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 else:
                     alpha = 1
 
-                locals()[str("ax") + str(passband)] = plt.errorbar(
+                locals()["ax" + str(passband)] = plt.errorbar(
                     df[df["Outlier"] == False]["mjd"],
                     df[df["Outlier"] == False]["mag"],
                     yerr=df[df["Outlier"] == False]["mag.err"],
@@ -1231,7 +1232,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     elinewidth=3,
                     capsize=0,
                 )
-                locals()[str("ax") + str(passband)] = plt.errorbar(
+                locals()["ax" + str(passband)] = plt.errorbar(
                     df[df["Outlier"] == True]["mjd"],
                     df[df["Outlier"] == True]["mag"],
                     yerr=df[df["Outlier"] == True]["mag.err"],
@@ -1262,7 +1263,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                         if self.data_type in ["ztf_fp", "ztf_fp_noisy"]:
                             linestyle = "dashdot"
 
-                    locals()[str("ax") + str(passband)] = plt.hlines(
+                    locals()["ax" + str(passband)] = plt.hlines(
                         value,
                         baye_block["mjd_start"][nu],
                         baye_block["mjd_end"][nu],
@@ -1270,14 +1271,14 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                         linestyles=linestyle,
                         linewidth=linewidth,
                     )
-                    locals()[str("ax") + str(passband)] = plt.hlines(
+                    locals()["ax" + str(passband)] = plt.hlines(
                         value + baye_block["mag.err"][nu],
                         baye_block["mjd_start"][nu],
                         baye_block["mjd_end"][nu],
                         color=color_block,
                         linestyles="dashed",
                     )
-                    locals()[str("ax") + str(passband)] = plt.hlines(
+                    locals()["ax" + str(passband)] = plt.hlines(
                         value - baye_block["mag.err"][nu],
                         baye_block["mjd_start"][nu],
                         baye_block["mjd_end"][nu],
@@ -1288,9 +1289,9 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 if self.flux == False:
                     plt.gca().invert_yaxis()
 
-                locals()[str("ax") + str(passband)] = plt.gca()
+                locals()["ax" + str(passband)] = plt.gca()
                 for sp in ["left", "bottom", "top", "right"]:
-                    locals()[str("ax") + str(passband)].spines[sp].set_linewidth(3)
+                    locals()["ax" + str(passband)].spines[sp].set_linewidth(3)
 
                 plt.tick_params(axis="both", which="major", pad=22, length=10, width=3)
                 plt.xticks(fontsize=20)

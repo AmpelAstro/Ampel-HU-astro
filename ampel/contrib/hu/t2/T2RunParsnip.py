@@ -10,7 +10,8 @@
 import gc
 import os
 import warnings
-from typing import Literal, Optional, Sequence
+from collections.abc import Sequence
+from typing import Literal
 
 import backoff
 import matplotlib.pyplot as plt
@@ -80,23 +81,23 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
     # Name (in case standard) or path to parsnip model to load
     parsnip_model: str
     # Path to classifier to apply to lightcurve fit. If not set, no classification will be done.
-    parsnip_classifier: Optional[str]
+    parsnip_classifier: None | str
 
     # Redshift usage options. Current options
     # T2MatchBTS : Use the redshift published by BTS and  synced by that T2.
     # T2DigestRedshifts : Use the best redshift as parsed by DigestRedshift.
     # T2ElasticcRedshiftSampler: Use a list of redshifts and weights from the sampler.
     # None : run sncosmo template fit with redshift as free parameter OR use backup_z if set
-    redshift_kind: Optional[str]
+    redshift_kind: None | str
     # If loading redshifts from DigestRedshifts, provide the max ampel z group to make use of.
     # (note that filtering based on this can also be done for a potential t3)
     max_ampelz_group: int = 3
     # It is also possible to use fixed redshift whenever a dynamic redshift kind is not possible
     # This could be either a single value or a list
-    fixed_z: Optional[float | Sequence[float]]
+    fixed_z: None | float | Sequence[float]
     # Finally, the provided lens redshift might be multiplied with a scale
     # Useful for lensing studies, or when trying multiple values
-    scale_z: Optional[float]
+    scale_z: None | float
 
     max_fit_z: None | float = None
 
@@ -119,10 +120,10 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
     # T2PhaseLimit : use the jdmin jdmax provided in this unit output
     # None : use full datapoint range
     # (T2BayesianBlocks should be added)
-    phaseselect_kind: Optional[str]
+    phaseselect_kind: None | str
 
     # Abort veto (if fulfilled, skip run)
-    abort_map: Optional[dict[str, list]]
+    abort_map: None | dict[str, list]
 
     # Zeropoint parameters
     # These are separately set in the Parsnip model settings. The zeropoint
@@ -132,8 +133,8 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
     default_zeropoint: float = 25.0  # Default parsnip value
 
     # Save / plot parameters
-    plot_suffix: Optional[str]
-    plot_dir: Optional[str]
+    plot_suffix: None | str
+    plot_dir: None | str
 
     # Which units should this be changed to
     t2_dependency: Sequence[
@@ -164,7 +165,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
 
     def _get_redshift(
         self, t2_views
-    ) -> tuple[Optional[list[float]], Optional[str], Optional[list[float]]]:
+    ) -> tuple[None | list[float], None | str, None | list[float]]:
         """
         Can potentially also be replaced with some sort of T2DigestRershift tabulator?
 
@@ -172,9 +173,9 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         """
 
         # Examine T2s for eventual information
-        z: Optional[list[float]] = None
-        z_source: Optional[str] = None
-        z_weights: Optional[list[float]] = None
+        z: None | list[float] = None
+        z_source: None | str = None
+        z_weights: None | list[float] = None
 
         if self.redshift_kind in [
             "T2MatchBTS",
@@ -184,7 +185,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             for t2_view in t2_views:
                 if not t2_view.unit == self.redshift_kind:
                     continue
-                self.logger.debug("Parsing t2 results from {}".format(t2_view.unit))
+                self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
                 t2_res = (
                     res[-1] if isinstance(res := t2_view.get_payload(), list) else res
                 )
@@ -222,7 +223,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
 
         if (z is not None) and (z_source is not None) and self.scale_z:
             z = [onez * self.scale_z for onez in z]
-            z_source += " + scaled {}".format(self.scale_z)
+            z_source += f" + scaled {self.scale_z}"
 
         return z, z_source, z_weights
 
@@ -242,7 +243,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         for t2_view in t2_views:
             if t2_view.unit not in self.abort_map.keys():
                 continue
-            self.logger.debug("Parsing t2 results from {}".format(t2_view.unit))
+            self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
             t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
             abort_maps.update(t2_res)
 
@@ -252,15 +253,15 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
 
         return (abort, abort_maps)
 
-    def _get_phaselimit(self, t2_views) -> tuple[Optional[float], Optional[float]]:
+    def _get_phaselimit(self, t2_views) -> tuple[None | float, None | float]:
         """
         Can potentially also be replaced with some sort of tabulator?
 
         """
 
         # Examine T2s for eventual information
-        jdstart: Optional[float] = None
-        jdend: Optional[float] = None
+        jdstart: None | float = None
+        jdend: None | float = None
 
         if self.phaseselect_kind is None:
             jdstart = -np.inf
@@ -270,7 +271,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                 # So far only knows how to parse phases from T2PhaseLimit
                 if not t2_view.unit == "T2PhaseLimit":
                     continue
-                self.logger.debug("Parsing t2 results from {}".format(t2_view.unit))
+                self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
                 t2_res = (
                     res[-1] if isinstance(res := t2_view.get_payload(), list) else res
                 )
@@ -384,7 +385,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         sncosmo_table = sncosmo_table[
             (sncosmo_table["time"] >= jdstart) & (sncosmo_table["time"] <= jdend)
         ]
-        self.logger.debug("Sncosmo table {}".format(sncosmo_table))
+        self.logger.debug(f"Sncosmo table {sncosmo_table}")
 
         # Adjust zeropoint - does this matter? and should we have changed it?
         run_zeropoints = set(sncosmo_table["zp"])
@@ -510,9 +511,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             parsnip.plot_light_curve(lc_dataset.light_curves[0], self.model, ax=ax)
             plt.tight_layout()
             plt.savefig(
-                os.path.join(
-                    self.plot_dir, "t2parsnip_%s.%s" % (tname, self.plot_suffix)
-                )
+                os.path.join(self.plot_dir, f"t2parsnip_{tname}.{self.plot_suffix}")
             )
 
             plt.close("fig")

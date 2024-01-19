@@ -9,7 +9,8 @@
 
 import os
 import re
-from typing import TYPE_CHECKING, Any, Iterable, Sequence, Union
+from collections.abc import Iterable, Sequence
+from typing import TYPE_CHECKING, Any
 
 import light_curve
 import numpy as np
@@ -23,8 +24,6 @@ from ampel.base.LogicalUnit import LogicalUnit
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
 from ampel.protocol.LoggerProtocol import LoggerProtocol
-from ampel.struct.UnitResult import UnitResult
-from ampel.types import UBson
 
 
 def getMag(tab: Table, err=False, time=False):
@@ -292,7 +291,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
 
         """
 
-        mymatchlist = ["_{}_".format(band) for band in self.significant_bands]
+        mymatchlist = [f"_{band}_" for band in self.significant_bands]
         # Ignore the colors for now, would need to rework how these averages are described.
         # mymatchlist.extend(
         # ['{}-{}_'.format(col[0],col[1]) for col in self.color_list]
@@ -663,7 +662,7 @@ class T2TabulatorRiseDecline(
         self,
         compound: T1Document,
         datapoints: Iterable[DataPoint],
-    ) -> Union[UBson, UnitResult]:
+    ) -> dict[str, Any]:
         """
         Process datapoints belonging to one state of one transient.
         A commong Table is generated which is used as input

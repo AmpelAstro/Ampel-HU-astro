@@ -8,7 +8,7 @@
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
 from collections.abc import Sequence
-from typing import Literal, Union
+from typing import Literal
 
 import numpy as np
 
@@ -775,7 +775,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
         compound: T1Document,
         datapoints: Sequence[DataPoint],
         t2_views: Sequence[T2DocView],
-    ) -> Union[UBson, UnitResult]:
+    ) -> UBson | UnitResult:
         """
 
         Extract and combine results.
@@ -826,7 +826,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
 
         # Parse t2views - should not be more than one.
         for t2_view in t2_views:
-            self.logger.debug("Parsing t2 results from {}".format(t2_view.unit))
+            self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
             # Xgb results either from multiple instances of T2XgbClassifier...
             if t2_view.unit == "T2XgbClassifier":
                 t2_res = (

@@ -54,4 +54,4 @@ class TNSName:
         return name
 
     def __repr__(self):
-        return "TNSName({},{})".format(self.year, self.number)
+        return f"TNSName({self.year},{self.number})"

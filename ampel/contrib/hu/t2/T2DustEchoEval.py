@@ -8,7 +8,8 @@
 # Last Modified By  : Jannis <jannis.necker@desy.de>
 
 import os
-from typing import Any, Literal, Sequence
+from collections.abc import Sequence
+from typing import Any, Literal
 
 import matplotlib.pyplot as plt  # type: ignore
 import numpy as np
@@ -105,7 +106,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
         for t2_view in t2_views:
             self.filters_lc = self.filters
             if t2_view.unit == "T2BayesianBlocks":
-                self.logger.debug("Parsing t2 results from {}".format(t2_view.unit))
+                self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
                 t2_res = (
                     res[-1] if isinstance(res := t2_view.get_payload(), list) else res
                 )

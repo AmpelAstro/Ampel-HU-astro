@@ -454,9 +454,9 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
             for ipp, pp in enumerate(pps[: self.nphot_submit]):
                 photdict = {  # TODO: do we need to round the numerical values?
                     "obsdate": pp["body"]["jd"],
-                    "flux": float("{0:.2f}".format(pp["body"]["magpsf"])),
-                    "flux_error": float("{0:.2f}".format(pp["body"]["sigmapsf"])),
-                    "limiting_flux": float("{0:.2f}".format(pp["body"]["diffmaglim"])),
+                    "flux": float("{:.2f}".format(pp["body"]["magpsf"])),
+                    "flux_error": float("{:.2f}".format(pp["body"]["sigmapsf"])),
+                    "limiting_flux": float("{:.2f}".format(pp["body"]["diffmaglim"])),
                     "filter_value": TNSFILTERID.get(pp["body"]["fid"]),
                 }
                 if pp["body"]["jd"] < atdict["discovery_datetime"]:

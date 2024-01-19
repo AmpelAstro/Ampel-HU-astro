@@ -9,7 +9,7 @@
 
 import datetime
 from collections.abc import Generator
-from typing import TYPE_CHECKING, Any, Literal, Optional
+from typing import TYPE_CHECKING, Any, Literal
 
 import voeventparse as vp
 from astropy.time import Time
@@ -54,7 +54,7 @@ class VOEventPublisher(AbsPhotoT3Unit):
     fname = "voevent.xml"
 
     def process(
-        self, gen: Generator[TransientView, T3Send, None], t3s: Optional[T3Store] = None
+        self, gen: Generator[TransientView, T3Send, None], t3s: None | T3Store = None
     ) -> None:
         """
         Loop through provided TransientViews and extract data according to the
@@ -70,7 +70,7 @@ class VOEventPublisher(AbsPhotoT3Unit):
             assert channels is not None
             channel = (
                 channels[0]
-                if isinstance(channels, (list, tuple)) and len(channels) == 1
+                if isinstance(channels, list | tuple) and len(channels) == 1
                 else "/".join([str(c) for c in channels])
             )
 
@@ -106,7 +106,7 @@ class VOEventPublisher(AbsPhotoT3Unit):
             vp.set_who(v, datetime.datetime.utcnow())
             vp.set_author(
                 v,
-                title="Results from {} channel".format(channel),
+                title=f"Results from {channel} channel",
                 contactName="ampel-info@desy.de",
             )
             v.Description = "Generated through https://github.com/AmpelProject/Ampel-HU-astro/ampel/contrib/hu/t3/VOEventPublisher.py"
@@ -130,9 +130,7 @@ class VOEventPublisher(AbsPhotoT3Unit):
             )
 
             # Add collected results
-            vp.add_how(
-                v, descriptions=["{}: {}".format(k, v) for k, v in t2dict.items()]
-            )
+            vp.add_how(v, descriptions=[f"{k}: {v}" for k, v in t2dict.items()])
             vp.add_why(v)
             v.Why.Description = "Selected based on AMPEL T2s: {}".format(
                 " ".join(self.why_schema.keys())
@@ -140,7 +138,7 @@ class VOEventPublisher(AbsPhotoT3Unit):
 
             with open(self.fname, "wb") as fw:
                 vp.dump(v, fw)
-            with open(self.fname, "r") as fr:
+            with open(self.fname) as fr:
                 for l in fr.readlines():
                     print(l.rstrip())
 

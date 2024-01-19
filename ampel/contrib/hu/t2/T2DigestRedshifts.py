@@ -109,7 +109,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
                     # Group V
                     group_z[4].append(lsdata["z_spec"])
                     group_dist[4].append(lsdata["dist2transient"])
-            self.logger.debug("LS debug spec: %s yield %s" % (lsdata, group_z))
+            self.logger.debug(f"LS debug spec: {lsdata} yield {group_z}")
 
             # Now, photometric redshifts
             if lsdata["z_phot_median"] is not None and lsdata["z_phot_median"] > -1:
@@ -129,7 +129,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
                     # Group VII
                     group_z[6].append(lsdata["z_phot_median"])
                     group_dist[6].append(lsdata["dist2transient"])
-            self.logger.debug("LS debug phot: %s yield %s" % (lsdata, group_z))
+            self.logger.debug(f"LS debug phot: {lsdata} yield {group_z}")
 
         return group_z, group_dist
 
@@ -347,7 +347,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
 
         # Loop through t2_views and collect information.
         for t2_view in t2_views:
-            self.logger.debug("Parsing t2 results from {}".format(t2_view.unit))
+            self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
             t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
             # v0.8:
             # t2_res =  t2_view.get_data()
@@ -362,9 +362,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
             elif t2_view.unit == "T2MatchBTS":
                 new_zs = self._get_matchbts_groupz(t2_res)
             else:
-                self.logger.error(
-                    "No instructions for dealing with {}".format(t2_view.unit)
-                )
+                self.logger.error(f"No instructions for dealing with {t2_view.unit}")
                 return UnitResult(code=DocumentCode.T2_MISSING_INFO)
 
             for k in range(7):
@@ -372,7 +370,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
                     group_redshifts[k].extend(new_zs[k])
                 if len(new_dists[k]) > 0:
                     group_distances[k].extend(new_dists[k])
-            self.logger.debug("group_z after %s: %s" % (t2_view.unit, group_redshifts))
+            self.logger.debug(f"group_z after {t2_view.unit}: {group_redshifts}")
 
         # Check for best match
         t2_output: dict[str, UBson] = {

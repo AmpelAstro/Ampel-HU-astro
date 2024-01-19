@@ -96,7 +96,7 @@ class TransientViewDumper(AbsPhotoT3Unit):
         else:
             assert isinstance(self.buffer, BytesIO)
             mb = len(self.buffer.getvalue()) / 2.0**20
-            self.logger.info("{:.1f} MB of gzipped JSONy goodness".format(mb))
+            self.logger.info(f"{mb:.1f} MB of gzipped JSONy goodness")
             auth = HTTPBasicAuth(**self.desycloud_auth.get())
 
             self.session.put(

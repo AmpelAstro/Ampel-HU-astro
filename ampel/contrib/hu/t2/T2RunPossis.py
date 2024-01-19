@@ -9,7 +9,8 @@
 
 
 import copy
-from typing import Literal, Sequence, Union
+from collections.abc import Sequence
+from typing import Literal
 from urllib.parse import urljoin
 from urllib.request import urlopen
 
@@ -227,7 +228,7 @@ class T2RunPossis(T2RunSncosmo):
         compound: T1Document,
         datapoints: Sequence[DataPoint],
         t2_views: Sequence[T2DocView],
-    ) -> Union[UBson, UnitResult]:
+    ) -> UBson | UnitResult:
         """
         Load model and fit the loaded model to the data provided as a LightCurve.
         If requested, retrieve redshift and explosion time from t2_views.
@@ -252,7 +253,7 @@ class T2RunPossis(T2RunSncosmo):
                 for t2_view in t2_views:
                     if t2_view.unit not in ["T2PropagateStockInfo", "T2HealpixProb"]:
                         continue
-                    self.logger.debug("Parsing t2 results from {}".format(t2_view.unit))
+                    self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
                     t2_res = (
                         res[-1]
                         if isinstance(res := t2_view.get_payload(), list)

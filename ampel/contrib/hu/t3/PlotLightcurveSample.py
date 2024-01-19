@@ -10,7 +10,7 @@
 import os
 import re
 from collections.abc import Generator
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -18,7 +18,6 @@ import seaborn as sns
 
 from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
 from ampel.struct.T3Store import T3Store
-from ampel.struct.UnitResult import UnitResult
 from ampel.types import T3Send, UBson
 from ampel.view.TransientView import TransientView
 
@@ -54,15 +53,15 @@ class PlotLightcurveSample(AbsPhotoT3Unit):
     # model (T2RunParsnip) or model_name (T2RunSncosmo)
     unit_name: str = "T2RunSncosmo"
     lc_model: str
-    model_config: Optional[int]
+    model_config: None | int
 
     # Which parameters to plot (correlate)
-    param: List[str]
-    param_bounds: Optional[Dict[str, List[float]]]
+    param: list[str]
+    param_bounds: None | dict[str, list[float]]
     include_absmag: bool = False
 
     # Which BTS classes should be highlighted (with key as title)?
-    bts_classes: Dict[str, List[str]] = {
+    bts_classes: dict[str, list[str]] = {
         "SN Ia": ["SN Ia", "SN Ia-91T"],
         "SN II": ["SN II", "SN IIP", "SN IIb", "SN IIb", "SN IIn"],
         "SN Ibc": ["SN Ic-BL", "SN Ib/c", "SN Ic", "SN Ib", "SN Ibn"],
@@ -73,13 +72,13 @@ class PlotLightcurveSample(AbsPhotoT3Unit):
 
     ## Methods for filtering data
     # Limit results to one of the two redshift sources (BTS, AMPELz)
-    z_source: Optional[str]
+    z_source: None | str
     # If an ampel_z_group is provided, only use values at or lower than this value
-    max_ampelz_group: Optional[int]
+    max_ampelz_group: None | int
     # Cut on a minimal number of df
-    min_dof: Optional[int]
+    min_dof: None | int
     # Cut on an allowed range of chisq / dof
-    chidof_range: Optional[List[float]]
+    chidof_range: None | list[float]
 
     # Output parametrs
     plot_dir: str  # Plots will be stored here. Can be made Optional w db save
@@ -205,8 +204,8 @@ class PlotLightcurveSample(AbsPhotoT3Unit):
             return None  # Explicit, nothing found.
 
     def process(
-        self, gen: Generator[TransientView, T3Send, None], t3s: Optional[T3Store] = None
-    ) -> Union[UBson, UnitResult]:
+        self, gen: Generator[TransientView, T3Send, None], t3s: None | T3Store = None
+    ) -> None:
         """
         Loop through provided TransientViews and retrieve data to plot.
         """
@@ -223,7 +222,7 @@ class PlotLightcurveSample(AbsPhotoT3Unit):
                     sninfo[label] = list(filter(r.match, names))  # type: ignore[arg-type]
                     # Avoid list when possible
                     if (
-                        isinstance((item := sninfo[label]), (list, tuple))
+                        isinstance((item := sninfo[label]), list | tuple)
                         and len(item) == 1
                     ):
                         sninfo[label] = item[0]

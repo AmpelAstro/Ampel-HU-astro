@@ -227,7 +227,7 @@ class SlackSummaryPublisher(AbsT3ReviewUnit):
             frame.update(
                 {str(channel): True for channel in (transient.stock["channel"] or [])}
             )
-            channels.update((str(c) for c in transient.stock["channel"] or []))
+            channels.update(str(c) for c in transient.stock["channel"] or [])
 
             frames.append(frame)
 

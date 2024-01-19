@@ -106,7 +106,7 @@ class RapidSedm(RapidBase):
         # react_dict['priority'] = 1
 
         self.logger.debug(
-            "SEDM trigger for %s w dict %s" % (to_ztf_id(tran_view.id), react_dict)
+            f"SEDM trigger for {to_ztf_id(tran_view.id)} w dict {react_dict}"
         )
 
         # Make the post

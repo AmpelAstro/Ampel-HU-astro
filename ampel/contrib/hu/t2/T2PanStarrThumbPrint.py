@@ -43,6 +43,11 @@ class T2PanStarrThumbPrint(AbsPointT2Unit):
         """ """
 
         pt = self.get_ps1_target(datapoint, self.band)
+        stock_id = (
+            datapoint["stock"]
+            if isinstance(datapoint["stock"], int)
+            else datapoint["stock"][0]
+        )
         return {
             "data": {
                 "plots": [
@@ -57,9 +62,9 @@ class T2PanStarrThumbPrint(AbsPointT2Unit):
                         self.plot_props,
                         extra={
                             "band": band,
-                            "stock": datapoint["stock"][0],
+                            "stock": stock_id,
                             "cmap": cmap,
-                        },  # type: ignore
+                        },
                         logger=self.logger,
                     )
                     for cmap in ampel_iter(self.cmaps)

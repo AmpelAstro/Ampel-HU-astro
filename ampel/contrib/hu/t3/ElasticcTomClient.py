@@ -7,7 +7,8 @@
 # Last Modified Date:  11.04.2022
 # Last Modified By:    jno <jnordin@physik.hu-berlin.de>
 
-from typing import Any, Dict, Sequence, Union
+from collections.abc import Sequence
+from typing import Any
 
 import backoff
 import requests
@@ -95,8 +96,8 @@ class ElasticcTomClient:
     )
     def tom_post(
         self,
-        classification: Union[ElasticcClassification, list[ElasticcClassification]],
-    ) -> Dict[Any, Any]:
+        classification: ElasticcClassification | list[ElasticcClassification],
+    ) -> dict[Any, Any]:
         response = self.session.put(
             f"{self.tom_url}/elasticc/brokermessage/",
             json=classification,

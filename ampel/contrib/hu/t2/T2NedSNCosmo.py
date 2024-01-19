@@ -68,9 +68,9 @@ class T2NedSNCosmo(AbsTiedLightCurveT2Unit, T2SNCosmo):
     require_tags: None | AnyOf[Tag] | AllOf[Tag] = None
 
     # mandatory
-    def process(
+    def process(  # type: ignore[override]
         self, light_curve: LightCurve, t2_views: list[T2DocView]
-    ) -> UBson | UnitResult:  # type: ignore[override]
+    ) -> UBson | UnitResult:
         """
         :param light_curve: see "ampel.view.LightCurve" docstring for more info.
         """
@@ -139,10 +139,10 @@ class T2NedSNCosmo(AbsTiedLightCurveT2Unit, T2SNCosmo):
             if isinstance(r, int):
                 ret.append(r)
 
-            elif isinstance(r, (dict, UnitResult)):
+            elif isinstance(r, dict | UnitResult):
                 if isinstance(r, UnitResult):
                     d: dict = r.body  # type: ignore
-                    if isinstance(r.tag, (int, str)):
+                    if isinstance(r.tag, int | str):
                         tags.append(r.tag)
                     elif isinstance(r.tag, list):
                         tags += r.tag

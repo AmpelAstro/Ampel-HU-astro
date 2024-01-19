@@ -7,9 +7,9 @@
 # Last Modified Date:  11.04.2022
 # Last Modified By:    jno <jnordin@physik.hu-berlin.de>
 
-from collections.abc import Generator
+from collections.abc import Generator, Iterable
 from itertools import islice
-from typing import TYPE_CHECKING, Iterable, TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit, T3Send
 from ampel.contrib.hu.t3.ElasticcTomClient import ElasticcTomClient

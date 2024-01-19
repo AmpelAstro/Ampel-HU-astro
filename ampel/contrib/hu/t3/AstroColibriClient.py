@@ -12,7 +12,7 @@
 
 import base64
 import json
-from typing import Any, Dict
+from typing import Any
 
 import backoff
 import requests
@@ -98,7 +98,7 @@ class AstroColibriClient:
     )
     def firestore_post(
         self, data: AstroColibriPost, image_path: str | None = None
-    ) -> Dict[Any, Any]:
+    ) -> dict[Any, Any]:
         # Upload image file if provided
         if image_path is not None:
             lc_url = self.store_image(image_path)

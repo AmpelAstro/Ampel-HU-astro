@@ -183,7 +183,7 @@ class T2RiseDeclineBase(AmpelBaseModel):
             else:
                 o["bool_pure"] = True
             # Latest upper limit prior to detection
-            if np.any((ulims["jd"] < o["jd_det"])):
+            if np.any(ulims["jd"] < o["jd_det"]):
                 o["t_predetect"] = (
                     o["jd_det"] - ulims["jd"][(ulims["jd"] < o["jd_det"])].max()
                 )
@@ -388,11 +388,7 @@ class T2RiseDeclineStat(AbsLightCurveT2Unit, T2RiseDeclineBase):
         plt.ylabel("Mag")
 
         # Create text string
-        title = "ndet: %s rb %.2f drb %.2f " % (
-            outdict["ndet"],
-            outdict["rb_med"],
-            outdict["drb_med"],
-        )
+        title = f'ndet: {outdict["ndet"]} rb {outdict["rb_med"]:.2f} drb {outdict["drb_med"]:.2f} '
 
         for boolprop in ["peaked", "pure", "rising", "norise", "hasgaps"]:
             if outdict[f"bool_{boolprop}"]:

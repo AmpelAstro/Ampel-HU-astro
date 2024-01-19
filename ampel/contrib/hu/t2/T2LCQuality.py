@@ -205,7 +205,7 @@ class T2LCQuality(AbsLightCurveT2Unit):
             filters: list[dict[str, Any]] = [
                 {"attribute": "fid", "operator": "==", "value": fid}
             ]
-            if isinstance(self.lc_filter, (list, tuple)):
+            if isinstance(self.lc_filter, list | tuple):
                 filters += self.lc_filter
             elif isinstance(self.lc_filter, dict):
                 filters += [self.lc_filter]

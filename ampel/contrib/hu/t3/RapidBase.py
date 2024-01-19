@@ -116,10 +116,7 @@ class RapidBase(AbsPhotoT3Unit):
         sc = WebClient(self.slack_token.get())
         assert isinstance(tran_view.id, int)
         ztf_name = to_ztf_id(tran_view.id)
-        msg = "Ampel RapidReact says: Look up %s. Provided info %s" % (
-            ztf_name,
-            info,
-        )
+        msg = f"Ampel RapidReact says: Look up {ztf_name}. Provided info {info}"
         api = sc.chat_postMessage(
             channel=self.slack_channel,
             text=msg,

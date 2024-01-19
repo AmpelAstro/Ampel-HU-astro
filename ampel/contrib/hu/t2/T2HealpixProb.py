@@ -7,7 +7,8 @@
 # Last Modified Date:  28.03.2021
 # Last Modified By:    jn <jnordin@physik.hu-berlin.de>
 
-from typing import Any, Iterable, Union
+from collections.abc import Iterable
+from typing import Any
 
 from numpy import mean
 
@@ -67,7 +68,7 @@ class T2HealpixProb(AbsStateT2Unit, AbsTabulatedT2Unit):
         self,
         compound: T1Document,
         datapoints: Iterable[DataPoint],
-    ) -> Union[UBson, UnitResult]:
+    ) -> UBson | UnitResult:
         """
         :returns: cumulative probability in Healpix:
 

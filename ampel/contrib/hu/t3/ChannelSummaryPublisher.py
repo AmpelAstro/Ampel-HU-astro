@@ -142,10 +142,8 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
         outfile.write(AmpelEncoder(lossy=True).encode(self.summary))
         outfile.write("\n")
         mb = len(outfile.getvalue().encode()) / 2.0**20
-        self.logger.info(
-            "{}: {} transients {:.1f} MB".format(filename, len(self.summary), mb)
-        )
+        self.logger.info(f"{filename}: {len(self.summary)} transients {mb:.1f} MB")
         if not self.dry_run:
             self.session.put(
-                "{}/{}".format(basedir, filename), data=outfile.getvalue()
+                f"{basedir}/{filename}", data=outfile.getvalue()
             ).raise_for_status()

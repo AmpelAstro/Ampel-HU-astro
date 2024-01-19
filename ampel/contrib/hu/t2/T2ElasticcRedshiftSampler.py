@@ -7,7 +7,7 @@
 # Last Modified Date: 12.04.2022
 # Last Modified By  : jnordin@physik.hu-berlin.de
 
-from typing import TypedDict, Union, cast
+from typing import TypedDict, cast
 
 import numpy as np
 
@@ -181,7 +181,7 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
     # ==================== #
     # AMPEL T2 MANDATORY   #
     # ==================== #
-    def process(self, datapoint: DataPoint) -> Union[UBson, UnitResult]:
+    def process(self, datapoint: DataPoint) -> UBson | UnitResult:
         """
 
         Parses the provided datapoint for information regarding

@@ -9,7 +9,7 @@
 
 import os
 from collections.abc import Sequence
-from typing import Literal, Union
+from typing import Literal
 
 import numpy as np
 import xgboost as xgb
@@ -18,7 +18,6 @@ from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
 from ampel.model.StateT2Dependency import StateT2Dependency
-from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
 from ampel.view.T2DocView import T2DocView
 
@@ -170,9 +169,7 @@ class T2XgbClassifier(AbsTiedStateT2Unit):
         for dbin in self.det_ranges:
             fname = os.path.join(
                 self.model_folder,
-                self.model_prefix
-                + "ndet{}_{}".format(dbin[0], dbin[1])
-                + self.model_type,
+                self.model_prefix + f"ndet{dbin[0]}_{dbin[1]}" + self.model_type,
             )
             model = xgb.XGBClassifier()
             model.load_model(fname=fname)
@@ -183,7 +180,7 @@ class T2XgbClassifier(AbsTiedStateT2Unit):
         compound: T1Document,
         datapoints: Sequence[DataPoint],
         t2_views: Sequence[T2DocView],
-    ) -> Union[UBson, UnitResult]:
+    ) -> dict[str, UBson]:
         """
 
         Extract results from TabulatorRiseDecline and apply suitable model.
@@ -201,7 +198,7 @@ class T2XgbClassifier(AbsTiedStateT2Unit):
         t2data = {}
         # Parse t2views - should not be more than one.
         for t2_view in t2_views:
-            self.logger.debug("Parsing t2 results from {}".format(t2_view.unit))
+            self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
             # So far only knows how to parse phases from T2TabulatorRiseDecline
             if t2_view.unit == "T2TabulatorRiseDecline":
                 t2_res = (

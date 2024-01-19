@@ -10,7 +10,6 @@
 
 import copy
 import errno
-from typing import Union
 
 # from astropy.time import Time
 import backoff
@@ -57,9 +56,7 @@ class TDESource(sncosmo.Source):
         self._parameters: np.ndarray = np.array([1.584, 2.278, 4.0, 1e-25])
 
     @staticmethod
-    def _planck_lam(
-        self, wave: np.ndarray, T: np.ndarray
-    ) -> Union[np.float64, np.ndarray]:
+    def _planck_lam(self, wave: np.ndarray, T: np.ndarray) -> np.float64 | np.ndarray:
         """
         Calculate the spectral radiance of a blackbody
         :wave: np.ndarray, array containing wavelength in AA
@@ -83,14 +80,14 @@ class TDESource(sncosmo.Source):
         return bb
 
     @staticmethod
-    def _cc_bol_lam(self, wave: Union[float, np.ndarray], T: np.ndarray):
+    def _cc_bol_lam(self, wave: float | np.ndarray, T: np.ndarray):
         bb = self._planck_lam(self, wave, T)
         bb = bb * u.sr
 
         return bb
 
     @staticmethod
-    def _gauss(x: float, sigma: Union[float, np.float64]) -> Union[float, np.float64]:
+    def _gauss(x: float, sigma: float | np.float64) -> float | np.float64:
         """
         Calculate a Gaussian
         """

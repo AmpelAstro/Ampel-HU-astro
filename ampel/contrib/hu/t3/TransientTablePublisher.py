@@ -11,7 +11,7 @@ import io
 import os
 import re
 from collections.abc import Generator
-from typing import Any, Optional, Union
+from typing import Any
 
 import backoff
 import pandas as pd
@@ -20,8 +20,7 @@ import requests
 from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.struct.T3Store import T3Store
-from ampel.struct.UnitResult import UnitResult
-from ampel.types import T3Send, UBson
+from ampel.types import T3Send
 from ampel.util.mappings import get_by_path
 from ampel.view.TransientView import TransientView
 
@@ -105,8 +104,8 @@ class TransientTablePublisher(AbsPhotoT3Unit):
     move_files: bool = True
 
     def process(
-        self, gen: Generator[TransientView, T3Send, None], t3s: Optional[T3Store] = None
-    ) -> Union[UBson, UnitResult]:
+        self, gen: Generator[TransientView, T3Send, None], t3s: None | T3Store = None
+    ) -> None:
         #    def process(self, gen: Generator[SnapView, T3Send, None], t3s: T3Store) -> None:
         """
         Loop through provided TransientViews and extract data according to the
@@ -159,7 +158,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
                     basetdict[label] = list(filter(r.match, names))  # type: ignore[arg-type]
                     # Avoid list when possible
                     if (
-                        isinstance((item := basetdict[label]), (list, tuple))
+                        isinstance((item := basetdict[label]), list | tuple)
                         and len(item) == 1
                     ):
                         basetdict[label] = item[0]
@@ -189,7 +188,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
                 # Allow for both single (most common) and duplacte channels.
                 basetdict["channels"] = (
                     channels[0]
-                    if isinstance(channels, (list, tuple)) and len(channels) == 1
+                    if isinstance(channels, list | tuple) and len(channels) == 1
                     else channels
                 )
 

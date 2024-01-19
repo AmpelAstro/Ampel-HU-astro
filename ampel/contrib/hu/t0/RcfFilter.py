@@ -8,7 +8,7 @@
 # Last Modified By  : j. nordin <j.nordin@physik.hu-berlin.de>
 
 import enum
-from typing import Any, Dict
+from typing import Any
 
 from astropy.coordinates import SkyCoord
 
@@ -68,7 +68,7 @@ class RcfFilter(AbsAlertFilter):
         is_bright_star = -11
         is_variable_star = -12
 
-    def _alert_has_keys(self, alert: Dict[str, Any]) -> bool:
+    def _alert_has_keys(self, alert: dict[str, Any]) -> bool:
         """
         check that given photopoint contains all the keys needed to filter
         """
@@ -81,7 +81,7 @@ class RcfFilter(AbsAlertFilter):
                 return False
         return True
 
-    def get_galactic_latitude(self, alert: Dict[str, Any]) -> float:
+    def get_galactic_latitude(self, alert: dict[str, Any]) -> float:
         """
         compute galactic latitude of the transient
         """
@@ -89,7 +89,7 @@ class RcfFilter(AbsAlertFilter):
         b = coordinates.galactic.b.deg
         return b
 
-    def previous_pointsource(self, alert: Dict[str, Any], age: float) -> bool:
+    def previous_pointsource(self, alert: dict[str, Any], age: float) -> bool:
         """
         Sets of cases under which a previous source likely existed.
 
@@ -119,7 +119,7 @@ class RcfFilter(AbsAlertFilter):
         # No clause fulfilled
         return False
 
-    def is_not_real(self, alert: Dict[str, Any], age: float) -> bool:
+    def is_not_real(self, alert: dict[str, Any], age: float) -> bool:
         """
         # Require a high RB score.
         # Generally requires >0.2, but is more stringent if close to a bright catalogued star.
@@ -231,7 +231,7 @@ class RcfFilter(AbsAlertFilter):
         # Passed tests
         return False
 
-    def is_bright_star(self, alert: Dict[str, Any], age: float) -> bool:
+    def is_bright_star(self, alert: dict[str, Any], age: float) -> bool:
         """
         # Could this be residuals from a bright star?
         * Rejected as a bright star if any of:
@@ -264,7 +264,7 @@ class RcfFilter(AbsAlertFilter):
         return False
 
     def is_variable_star(
-        self, alert: Dict[str, Any], age: float, m_peak: float, bright_detections: int
+        self, alert: dict[str, Any], age: float, m_peak: float, bright_detections: int
     ) -> bool:
         """
         Rejected as a variable source if any of:
@@ -415,8 +415,7 @@ class RcfFilter(AbsAlertFilter):
         age = latest["jd"] - latest["jdstarthist"]
 
         self.logger.debug(
-            "%s age %s m now %.2f m peak %.2f nbr previous bright %s"
-            % (alert.id, age, latest["magpsf"], m_peak, bright_detections),
+            f"{alert.id} age {age} m now {latest['magpsf']:.2f} m peak {m_peak:.2f} nbr previous bright {bright_detections}",
             extra={"age": age},
         )
         if age < self.min_age:

@@ -8,7 +8,8 @@
 # Last Modified By:   jn <jnordin@physik.hu-berlin.de>
 
 import os
-from typing import Any, Generator, Literal, Union
+from collections.abc import Generator
+from typing import Any, Literal
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -21,8 +22,7 @@ from matplotlib.patches import Patch
 
 from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
 from ampel.struct.T3Store import T3Store
-from ampel.struct.UnitResult import UnitResult
-from ampel.types import T3Send, UBson
+from ampel.types import T3Send
 from ampel.view.TransientView import TransientView
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 
@@ -63,7 +63,7 @@ class HealpixCorrPlotter(AbsPhotoT3Unit):
 
     def process(
         self, gen: Generator[TransientView, T3Send, None], t3s: T3Store | None = None
-    ) -> Union[UBson, UnitResult]:
+    ) -> None:
         self.logger.info("Printing transients info")
         self.logger.info("=" * 80)
         count = 0
@@ -255,9 +255,9 @@ class HealpixCorrPlotter(AbsPhotoT3Unit):
 
         # Could there be multiple healpix journal entries? I guess it cannot be ruled out
         # FIXME: extra info should probably be in .extra, not mixed into the top level of JournalRecord
-        hpixs = [
+        hpixs = [  # type: ignore[typeddict-item]
             el["healpix"] for el in tran.stock["journal"] if "healpix" in el.keys()
-        ]  # type: ignore[typeddict-item]
+        ]
         if len(hpixs) == 0:
             self.logger.info("No healpix info")
             return stockinfo

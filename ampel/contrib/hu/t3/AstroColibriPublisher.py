@@ -161,7 +161,7 @@ class AstroColibriPublisher(AbsPhotoT3Unit):
         if not view.stock:
             return False
         # Check whether the name is found in the name collection
-        if len((names := view.stock.get("name", []))) > 0:
+        if len(names := view.stock.get("name", [])) > 0:
             # Will only be able to require TNS name through format
             # dddd
             for name in names:
@@ -188,7 +188,7 @@ class AstroColibriPublisher(AbsPhotoT3Unit):
                 import random
 
                 # Generate random name (assuming publishing to dev AC)
-                tns_name = "AmpelRand{}".format(random.randint(1, 999))
+                tns_name = f"AmpelRand{random.randint(1, 999)}"
             else:
                 # Find TNS name (required for AstroColibri posting)
                 # Currently assumes that this is stored either in the

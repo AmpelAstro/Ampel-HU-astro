@@ -10,7 +10,7 @@
 
 import os
 from collections.abc import Sequence
-from typing import Literal, Optional, Union
+from typing import Literal
 
 import numpy as np
 import snpy  # type: ignore[import]
@@ -49,15 +49,15 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
     # T2MatchBTS : Use the redshift published by BTS and  synced by that T2.
     # T2DigestRedshifts : Use the best redshift as parsed by DigestRedshift.
     # None : use backup_z as fixed redshift
-    redshift_kind: Optional[str]
+    redshift_kind: None | str
     # If loading redshifts from DigestRedshifts, provide the max ampel z group to make use of.
     # (note that filtering based on this can also be done for a potential t3)
     max_ampelz_group: int = 3
     # It is also possible to use fixed redshift whenever a dynamic redshift kind is not available
-    backup_z: Optional[float]
+    backup_z: None | float
     # Finally, the provided lens redshift might be multiplied with a scale
     # Useful for lensing studies, or when trying multiple values
-    scale_z: Optional[float]
+    scale_z: None | float
 
     # TODO: Additional snoopy parameters and Bounds
     # Snoopy can also be run in emcee fit mode, where priors can be included.
@@ -72,11 +72,11 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
     # T2PhaseLimit : use the jdmin jdmax provided in this unit output
     # None : use full datapoint range
     # (T2BayesianBlocks should be added)
-    phaseselect_kind: Optional[str]
+    phaseselect_kind: None | str
 
     # Plot behaviour. Default is to not produce any plots.
     # If set, will store png to this directory.
-    plot_dir: Optional[str]
+    plot_dir: None | str
     # If true, will "draw" matplotlib figure to current env.
     plot_draw: bool = False
 
@@ -98,7 +98,7 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
         if self.apply_mwcorrection:
             self.dustmap = SFDMap()
 
-    def _get_redshift(self, t2_views) -> tuple[Optional[float], Optional[str]]:
+    def _get_redshift(self, t2_views) -> tuple[None | float, None | str]:
         """
         Can potentially also be replaced with some sort of T2DigestRershift tabulator?
 
@@ -106,14 +106,14 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
         """
 
         # Examine T2s for eventual information
-        z: Optional[float] = None
-        z_source: Optional[str] = None
+        z: None | float = None
+        z_source: None | str = None
 
         if self.redshift_kind in ["T2MatchBTS", "T2DigestRedshifts"]:
             for t2_view in t2_views:
                 if not t2_view.unit == self.redshift_kind:
                     continue
-                self.logger.debug("Parsing t2 results from {}".format(t2_view.unit))
+                self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
                 t2_res = (
                     res[-1] if isinstance(res := t2_view.get_payload(), list) else res
                 )
@@ -144,19 +144,19 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
 
         if (z is not None) and (z_source is not None) and self.scale_z:
             z *= self.scale_z
-            z_source += " + scaled {}".format(self.scale_z)
+            z_source += f" + scaled {self.scale_z}"
 
         return z, z_source
 
-    def _get_phaselimit(self, t2_views) -> tuple[Optional[float], Optional[float]]:
+    def _get_phaselimit(self, t2_views) -> tuple[None | float, None | float]:
         """
         Can potentially also be replaced with some sort of tabulator?
 
         """
 
         # Examine T2s for eventual information
-        jdstart: Optional[float] = None
-        jdend: Optional[float] = None
+        jdstart: None | float = None
+        jdend: None | float = None
 
         if self.phaseselect_kind is None:
             jdstart = -np.inf
@@ -166,7 +166,7 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
                 # So far only knows how to parse phases from T2PhaseLimit
                 if not t2_view.unit == "T2PhaseLimit":
                     continue
-                self.logger.debug("Parsing t2 results from {}".format(t2_view.unit))
+                self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
                 t2_res = (
                     res[-1] if isinstance(res := t2_view.get_payload(), list) else res
                 )
@@ -214,7 +214,7 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
     # ==================== #
     def process(
         self, light_curve: LightCurve, t2_views: Sequence[T2DocView]
-    ) -> Union[UBson, UnitResult]:
+    ) -> UBson | UnitResult:
         """
 
         Fit the parameters of the specified snoopy model to the light_curve

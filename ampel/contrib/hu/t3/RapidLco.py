@@ -237,7 +237,7 @@ class RapidLco(RapidBase):
             # Make a test to validate
             testreply = requests.post(
                 "https://observe.lco.global/api/requestgroups/validate/",
-                headers={"Authorization": "Token {}".format(self.lco_api.get())},
+                headers={"Authorization": f"Token {self.lco_api.get()}"},
                 json=react_dict,
             )
 
@@ -253,7 +253,7 @@ class RapidLco(RapidBase):
             # Submit full trigger
             response = requests.post(
                 "https://observe.lco.global/api/requestgroups/",
-                headers={"Authorization": "Token {}".format(self.lco_api.get())},
+                headers={"Authorization": f"Token {self.lco_api.get()}"},
                 json=react_dict,
             )
 
