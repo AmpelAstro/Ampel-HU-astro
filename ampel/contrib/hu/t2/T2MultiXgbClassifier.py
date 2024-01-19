@@ -236,24 +236,22 @@ class T2MultiXgbClassifier(
                         "cause": "No pos det",
                         "direct_eval": "AGN",
                     }
-                else:
-                    # Low redshifts are (typically) either uLens or EB.
-                    # The former have a large fraction of neg det (if any)
-                    nfrac = float(t2data["nnegdet"]) / t2data["alldet"]
-                    if nfrac > 0.2:
-                        return {
-                            "model": "directEval",
-                            "xgbsuccess": False,
-                            "cause": "No pos det",
-                            "direct_eval": "uLens",
-                        }
-                    else:
-                        return {
-                            "model": "directEval",
-                            "xgbsuccess": False,
-                            "cause": "No pos det",
-                            "direct_eval": "EB",
-                        }
+                # Low redshifts are (typically) either uLens or EB.
+                # The former have a large fraction of neg det (if any)
+                nfrac = float(t2data["nnegdet"]) / t2data["alldet"]
+                if nfrac > 0.2:
+                    return {
+                        "model": "directEval",
+                        "xgbsuccess": False,
+                        "cause": "No pos det",
+                        "direct_eval": "uLens",
+                    }
+                return {
+                    "model": "directEval",
+                    "xgbsuccess": False,
+                    "cause": "No pos det",
+                    "direct_eval": "EB",
+                }
             # Otherwise, not much to go by
             return {
                 "model": "directEval",

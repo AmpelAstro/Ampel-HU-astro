@@ -397,8 +397,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
 
         if len(remarks["remarks"]) == 0:
             return None
-        else:
-            return remarks
+        return remarks
 
     def get_lightcurve_info(self, lc: LightCurve) -> None | dict[str, Any]:
         """
@@ -525,6 +524,4 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         if catremarks is not None:
             atdict.update(catremarks)
 
-        t2result = {"tns_candidate": True, "tns_eval": "Good", "atdict": atdict}
-
-        return t2result
+        return {"tns_candidate": True, "tns_eval": "Good", "atdict": atdict}

@@ -316,62 +316,54 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
         if output_per_filter[base_filter].get("nu_of_excess_regions") in [0, None]:
             return coincide_region
 
+        if self.flux:
+            idx = np.argmax(output_per_filter[base_filter]["max_mag_excess_region"])
         else:
-            if self.flux:
-                idx = np.argmax(output_per_filter[base_filter]["max_mag_excess_region"])
-            else:
-                idx = np.argmin(output_per_filter[base_filter]["max_mag_excess_region"])
-            start_region = output_per_filter[base_filter]["jd_excess_regions"][idx][0]
-            end_region = output_per_filter[base_filter]["jd_excess_regions"][idx][-1]
+            idx = np.argmin(output_per_filter[base_filter]["max_mag_excess_region"])
+        start_region = output_per_filter[base_filter]["jd_excess_regions"][idx][0]
+        end_region = output_per_filter[base_filter]["jd_excess_regions"][idx][-1]
 
-            # now we select the other filters
-            for compare_filter in compare_filters:
-                if output_per_filter[compare_filter].get("nu_of_excess_regions") in [
-                    0,
-                    None,
-                ]:
-                    return coincide_region
+        # now we select the other filters
+        for compare_filter in compare_filters:
+            if output_per_filter[compare_filter].get("nu_of_excess_regions") in [
+                0,
+                None,
+            ]:
+                return coincide_region
 
+            if int(output_per_filter[compare_filter].get("nu_of_excess_regions")) > 0:
+                if self.flux:
+                    idx = np.argmax(
+                        output_per_filter[compare_filter]["max_mag_excess_region"]
+                    )
+                else:
+                    idx = np.argmin(
+                        output_per_filter[compare_filter]["max_mag_excess_region"]
+                    )
                 if (
-                    int(output_per_filter[compare_filter].get("nu_of_excess_regions"))
-                    > 0
+                    (
+                        output_per_filter[compare_filter]["jd_excess_regions"][idx][-1]
+                        >= start_region
+                        >= output_per_filter[compare_filter]["jd_excess_regions"][idx][
+                            0
+                        ]
+                    )
+                    or (
+                        output_per_filter[compare_filter]["jd_excess_regions"][idx][-1]
+                        >= end_region
+                        >= output_per_filter[compare_filter]["jd_excess_regions"][idx][
+                            0
+                        ]
+                    )
+                    or (
+                        start_region
+                        <= output_per_filter[compare_filter]["jd_excess_regions"][idx][
+                            0
+                        ]
+                        <= end_region
+                    )
                 ):
-                    if self.flux:
-                        idx = np.argmax(
-                            output_per_filter[compare_filter]["max_mag_excess_region"]
-                        )
-                    else:
-                        idx = np.argmin(
-                            output_per_filter[compare_filter]["max_mag_excess_region"]
-                        )
-                    if (
-                        (
-                            output_per_filter[compare_filter]["jd_excess_regions"][idx][
-                                -1
-                            ]
-                            >= start_region
-                            >= output_per_filter[compare_filter]["jd_excess_regions"][
-                                idx
-                            ][0]
-                        )
-                        or (
-                            output_per_filter[compare_filter]["jd_excess_regions"][idx][
-                                -1
-                            ]
-                            >= end_region
-                            >= output_per_filter[compare_filter]["jd_excess_regions"][
-                                idx
-                            ][0]
-                        )
-                        or (
-                            start_region
-                            <= output_per_filter[compare_filter]["jd_excess_regions"][
-                                idx
-                            ][0]
-                            <= end_region
-                        )
-                    ):
-                        coincide_region += 1
+                    coincide_region += 1
         return coincide_region
 
     @staticmethod
@@ -522,11 +514,10 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             elif self.data_type == "ztf_alert":
                 if self.flux:
                     raise ValueError("Not implemented yet")
-                else:
-                    phot_tuple = light_curve.get_ntuples(
-                        ["jd", "magpsf", "sigmapsf"],
-                        {"attribute": "fid", "operator": "==", "value": fid},
-                    )
+                phot_tuple = light_curve.get_ntuples(
+                    ["jd", "magpsf", "sigmapsf"],
+                    {"attribute": "fid", "operator": "==", "value": fid},
+                )
             elif self.data_type == "wise":
                 if self.flux:
                     if self.Npoints:

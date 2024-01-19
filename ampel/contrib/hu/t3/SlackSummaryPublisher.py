@@ -271,59 +271,58 @@ def calculate_excitement(n_transients, date, thresholds, n_alerts=np.nan):
 
         return message
 
+    if not np.isnan(n_alerts):
+        message += " In total, " + str(n_alerts) + " alerts were ingested. \n"
     else:
-        if not np.isnan(n_alerts):
-            message += " In total, " + str(n_alerts) + " alerts were ingested. \n"
-        else:
-            message += "\n"
+        message += "\n"
 
-        if n_transients == 0:
-            message += (
-                "TRAGEDY! Sadly, it seems that no transients passed the "
-                "filters last night"
-            )
-            return message
+    if n_transients == 0:
+        message += (
+            "TRAGEDY! Sadly, it seems that no transients passed the "
+            "filters last night"
+        )
+        return message
 
-        elif n_transients == 1:
-            message += (
-                "LONE WOLF! It seems that there was just one transient"
-                " which passed the filters. Guess it's better than "
-                "nothing... :shrug: \n ~The results are summarised "
-                "below.~ That one result is shown below."
-            )
-            return message
+    if n_transients == 1:
+        message += (
+            "LONE WOLF! It seems that there was just one transient"
+            " which passed the filters. Guess it's better than "
+            "nothing... :shrug: \n ~The results are summarised "
+            "below.~ That one result is shown below."
+        )
+        return message
 
-        elif n_transients < thresholds["Low"]:
-            message += (
-                "MEH! We only found " + str(n_transients) + " "
-                "transients last night. :unamused: That's "
-                "disappointing. Hopefully we get more tomorrow!"
-            )
+    if n_transients < thresholds["Low"]:
+        message += (
+            "MEH! We only found " + str(n_transients) + " "
+            "transients last night. :unamused: That's "
+            "disappointing. Hopefully we get more tomorrow!"
+        )
 
-        elif n_transients < thresholds["Mid"]:
-            message += (
-                "NOT BAD! We found " + str(n_transients) + " "
-                "transients last night. :slightly_smiling_face: "
-                "Let's keep up the good work!"
-            )
+    elif n_transients < thresholds["Mid"]:
+        message += (
+            "NOT BAD! We found " + str(n_transients) + " "
+            "transients last night. :slightly_smiling_face: "
+            "Let's keep up the good work!"
+        )
 
-        elif n_transients < thresholds["High"]:
-            message += (
-                "IMPRESSIVE! We found "
-                + str(n_transients)
-                + " transients last night. :grin: That's exciting! Good "
-                "luck to anyone trying to check all of those by hand..."
-            )
+    elif n_transients < thresholds["High"]:
+        message += (
+            "IMPRESSIVE! We found "
+            + str(n_transients)
+            + " transients last night. :grin: That's exciting! Good "
+            "luck to anyone trying to check all of those by hand..."
+        )
 
-        else:
-            message += (
-                "WOW!!! We found "
-                + str(n_transients)
-                + " transients last night. :tada: That's loads! Now we "
-                "just need to figure out what to do with all of them..."
-            )
+    else:
+        message += (
+            "WOW!!! We found "
+            + str(n_transients)
+            + " transients last night. :tada: That's loads! Now we "
+            "just need to figure out what to do with all of them..."
+        )
 
-        message += "\n The results are summarised below. "
+    message += "\n The results are summarised below. "
 
     return message
 

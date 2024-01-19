@@ -203,7 +203,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
 
         self.logger.info("", extra={"table_count": len(table_rows)})
         if len(table_rows) == 0:
-            return None
+            return
 
         # Export assembled information
         # Convert
@@ -287,7 +287,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
                             continue
                         os.replace(tmp_file_path, os.path.join(skymap_directory, file))
 
-        return None
+        return
 
     @backoff.on_exception(
         backoff.expo,

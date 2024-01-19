@@ -177,11 +177,10 @@ class TNSTalker(AbsT3ReviewUnit):
                 "TNS submitted", extra={"tnsSender": self.tns_api_key.get()["name"]}
             )
             return True
-        else:
-            self.logger.info(
-                "Not TNS submitted", extra={"tnsSender": self.tns_api_key.get()["name"]}
-            )
-            return False
+        self.logger.info(
+            "Not TNS submitted", extra={"tnsSender": self.tns_api_key.get()["name"]}
+        )
+        return False
 
     def _query_tns_names(
         self, tran_view: TransientView, ra: float, dec: float
@@ -485,7 +484,7 @@ class TNSTalker(AbsT3ReviewUnit):
         if not atreports:
             self.logger.info("No atreports collected.")
             return
-        elif self.slack_token is None:
+        if self.slack_token is None:
             return
 
         # TODO: to help debugging and verification, we post the collected atreports

@@ -86,8 +86,7 @@ class RcfFilter(AbsAlertFilter):
         compute galactic latitude of the transient
         """
         coordinates = SkyCoord(alert["ra"], alert["dec"], unit="deg")
-        b = coordinates.galactic.b.deg
-        return b
+        return coordinates.galactic.b.deg
 
     def previous_pointsource(self, alert: dict[str, Any], age: float) -> bool:
         """

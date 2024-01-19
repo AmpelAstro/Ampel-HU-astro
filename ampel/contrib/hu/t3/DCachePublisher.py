@@ -114,7 +114,7 @@ class DCachePublisher(AbsT3ReviewUnit):
 
     async def exists(self, request, url):
         if self.dry_run:
-            return
+            return None
         resp = await request("HEAD", url, raise_for_status=False)
         return resp.status in {200, 201, 204}
 
@@ -122,10 +122,9 @@ class DCachePublisher(AbsT3ReviewUnit):
     def is_permanent_error(exc):
         if isinstance(exc, ClientResponseError):
             return exc.code not in {403, 423, 500}
-        elif isinstance(exc, ClientConnectorSSLError):
+        if isinstance(exc, ClientConnectorSSLError):
             return True
-        else:
-            return False
+        return False
 
     def _on_backoff(self, details):
         exc_typ, exc, _ = sys.exc_info()

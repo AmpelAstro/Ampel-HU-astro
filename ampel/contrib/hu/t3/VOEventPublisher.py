@@ -142,4 +142,4 @@ class VOEventPublisher(AbsPhotoT3Unit):
                 for l in fr.readlines():
                     print(l.rstrip())
 
-        return None
+        return

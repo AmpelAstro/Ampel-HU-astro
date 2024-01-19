@@ -301,4 +301,4 @@ class AstroColibriPublisher(AbsPhotoT3Unit):
 
             if jcontent:
                 tviews.send(JournalAttributes(extra=jcontent))
-        return None
+        return

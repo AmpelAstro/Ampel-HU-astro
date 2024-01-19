@@ -7,7 +7,7 @@ from ampel.contrib.hu.t3.TNSTalker import TNS_BASE_URL_SANDBOX, TNSClient
 from ampel.log.AmpelLogger import AmpelLogger
 
 
-@pytest.fixture
+@pytest.fixture()
 def tns_token():
     if not (api_key := environ.get("TNS_API_KEY")):
         raise pytest.skip("Test requires env var TNS_API_KEY")
@@ -18,7 +18,7 @@ def tns_token():
     )
 
 
-@pytest.fixture
+@pytest.fixture()
 def test_client(tns_token):
     return TNSClient(TNS_BASE_URL_SANDBOX, AmpelLogger.get_logger(), tns_token)
 
@@ -49,7 +49,7 @@ def test_tnsclient_backoff(test_client: TNSClient):
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_tnsclient_backoff_async(tns_token):
     from ampel.contrib.hu.t3.tns import TNSClient as TNSMirrorClient
 

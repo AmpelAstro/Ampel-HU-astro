@@ -114,8 +114,7 @@ class TNSClient:
             d = r.json()
         except ValueError as e:
             self.logger.error("TNS bulk submit", exc_info=e)
-            d = {}
-            return d
+            return {}
 
         # If so, what error messages if any did we get?
         self.logger.info(json.dumps(d, indent=4, sort_keys=True))

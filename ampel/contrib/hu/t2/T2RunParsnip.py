@@ -313,8 +313,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         """
         if self.classifier is not None:
             return self.classifier.classify(predictions)
-        else:
-            raise RuntimeError("No classifier configured")
+        raise RuntimeError("No classifier configured")
 
     @backoff.on_exception(
         backoff.constant,

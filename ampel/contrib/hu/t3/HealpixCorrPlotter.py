@@ -238,7 +238,7 @@ class HealpixCorrPlotter(AbsPhotoT3Unit):
             self.logger.info(f"Saving plot to {pdf}")
             plt.savefig(pdf)
 
-        return None
+        return
 
     def _get_stock_info(self, tran: TransientView) -> dict[Any, Any]:
         """

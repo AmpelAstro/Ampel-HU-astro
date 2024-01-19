@@ -110,7 +110,7 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
         """"""
         if len(self._channels) == 0:
             return
-        elif len(self._channels) > 1:
+        if len(self._channels) > 1:
             raise ValueError(
                 f"Got multiple channels ({list(self._channels)}) in summary"
             )

@@ -531,8 +531,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                         if phot_tuple is None:
                             has_data[fid] = False
                             continue
-                        else:
-                            has_data[fid] = True
+                        has_data[fid] = True
 
                     elif self.data_type == "wise":
                         phot_tuple = light_curve.get_ntuples(

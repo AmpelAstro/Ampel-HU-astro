@@ -61,8 +61,7 @@ async def tns_post(
                 )
                 await asyncio.sleep(wait)
                 continue
-            else:
-                break
+            break
         resp.raise_for_status()
         return await resp.json()
 
@@ -114,8 +113,7 @@ class TNSClient:
     def is_permanent_error(exc):
         if isinstance(exc, ClientResponseError):
             return exc.code not in {500, 429}
-        else:
-            return False
+        return False
 
     async def search(self, exclude: None | set[str] = None, **params):
         semaphore = asyncio.Semaphore(self.maxParallelRequests)

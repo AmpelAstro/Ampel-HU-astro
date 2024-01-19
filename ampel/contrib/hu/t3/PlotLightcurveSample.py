@@ -200,8 +200,7 @@ class PlotLightcurveSample(AbsPhotoT3Unit):
                 params["absmag"] = t2body["fit_metrics"]["restpeak_model_absmag_B"]
                 # params['absmag_err'] = -2.5 / np.log(10) * df['x0_err'] / df['x0']
             return params
-        else:
-            return None  # Explicit, nothing found.
+        return None  # Explicit, nothing found.
 
     def process(
         self, gen: Generator[TransientView, T3Send, None], t3s: None | T3Store = None
@@ -315,4 +314,4 @@ class PlotLightcurveSample(AbsPhotoT3Unit):
         if self.save_table:
             df.to_csv(os.path.join(self.plot_dir, "plot_lightcurvesample.csv"))
 
-        return None
+        return

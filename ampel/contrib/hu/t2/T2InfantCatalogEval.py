@@ -312,7 +312,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
                 extra={"median_rd": np.median(rbs)},
             )
             return None
-        elif (len(rbs) == 0) and self.rb_minmed > 0:
+        if (len(rbs) == 0) and self.rb_minmed > 0:
             self.logger.info("Rejected (No rb info)")
             return None
         info["rb"] = np.median(rbs)
@@ -325,7 +325,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
                 extra={"median_drd": np.median(drbs)},
             )
             return None
-        elif (len(drbs) == 0) and self.drb_minmed > 0:
+        if (len(drbs) == 0) and self.drb_minmed > 0:
             self.logger.info("Rejected (No drb info)")
             return None
 

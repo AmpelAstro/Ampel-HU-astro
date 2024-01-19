@@ -34,7 +34,7 @@ def _to_datapoint(d):
     )
 
 
-@pytest.fixture
+@pytest.fixture()
 def lightcurve() -> LightCurve:
     with open(join(dirname(__file__), "lightcurve.ZTF18abmjvpb.json")) as f:
         blob = json.load(f)

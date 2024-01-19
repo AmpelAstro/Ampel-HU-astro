@@ -38,13 +38,10 @@ def getMag(tab: Table, err=False, time=False):
         merr = 2.5 / np.log(10) * (tab["fluxerr"][iPos] / tab["flux"][iPos])
         if time:
             return m, merr, tab["time"][iPos]
-        else:
-            return m, merr
-    else:
-        if time:
-            return m, tab["time"][iPos]
-        else:
-            return m
+        return m, merr
+    if time:
+        return m, tab["time"][iPos]
+    return m
 
 
 def getMeanflux(tab: Table, jdstart, jdend):
@@ -172,8 +169,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
         """
 
         def linearFunc(x, intercept, slope):
-            y = intercept + slope * x
-            return y
+            return intercept + slope * x
 
         banddata = {}
         tscale = np.mean(ftable["time"])

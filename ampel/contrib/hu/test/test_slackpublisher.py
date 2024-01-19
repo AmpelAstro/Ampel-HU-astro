@@ -17,7 +17,7 @@ from ampel.view.TransientView import TransientView
 from ampel.ztf.util.ZTFIdMapper import to_ampel_id
 
 
-@pytest.fixture
+@pytest.fixture()
 def t3_transient_views() -> list[TransientView]:
     return [
         TransientView(

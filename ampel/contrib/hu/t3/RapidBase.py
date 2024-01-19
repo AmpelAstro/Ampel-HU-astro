@@ -126,8 +126,7 @@ class RapidBase(AbsPhotoT3Unit):
         assert isinstance(api, SlackResponse)
         if not api["ok"]:
             raise SlackClientError(api["error"])
-        else:
-            success = True
+        success = True
 
         description = "Sent SLACK msg"
         self.logger.info(description, extra={"channel": self.slack_channel})

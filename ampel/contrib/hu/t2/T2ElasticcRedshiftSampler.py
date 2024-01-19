@@ -163,7 +163,7 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
         ):
             # The easy case, only have first galaxy
             return (1.0, 0.0, hostinfo["hostgal_snsep"])
-        elif (
+        if (
             hostinfo.get("hostgal_snsep", -99) < 0
             and hostinfo.get("hostgal2_snsep", -99) < 0
         ):
@@ -175,8 +175,7 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
         # distances, but skipping for now.
         if hostgal_sigsep < hostgal2_sigsep:
             return (1.0, 0.0, hostinfo["hostgal_snsep"])
-        else:
-            return (0.0, 1.0, hostinfo["hostgal2_snsep"])
+        return (0.0, 1.0, hostinfo["hostgal2_snsep"])
 
     # ==================== #
     # AMPEL T2 MANDATORY   #

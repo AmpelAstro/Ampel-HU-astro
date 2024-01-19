@@ -74,9 +74,9 @@ class T2Observability(AbsLightCurveT2Unit):
                 altitude=pos.alt,
             )
             return self._observatories[name]
-        else:
-            self.logger.debug(f"Observatory {name} already exists.")
-            return obs
+
+        self.logger.debug(f"Observatory {name} already exists.")
+        return obs
 
     def process(self, light_curve: LightCurve) -> UBson | UnitResult:
         """

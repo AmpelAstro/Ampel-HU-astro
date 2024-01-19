@@ -45,8 +45,7 @@ class T2GetLensSNParameters(T2RunSncosmo):
             after = myList[pos]
             if after - myNumber < myNumber - before:
                 return after
-            else:
-                return before
+            return before
 
         for band in np.unique(sncosmo_table["band"]):
             table_name = str(band) + "cut"
@@ -99,46 +98,45 @@ class T2GetLensSNParameters(T2RunSncosmo):
             band2_table = str(band2) + "cut"
             if band1 not in sncosmo_table["band"] or band2 not in sncosmo_table["band"]:
                 return None, None
-            elif (
+            if (
                 epoch not in globals()[band1_table]["epoch"]
                 or epoch not in globals()[band2_table]["epoch"]
             ):
                 return None, None
-            else:
-                colour = -2.5 * np.log10(
+            colour = -2.5 * np.log10(
+                globals()[band1_table][
+                    np.where(globals()[band1_table]["epoch"] == epoch)
+                ]["flux"]
+                / globals()[band2_table][
+                    np.where(globals()[band2_table]["epoch"] == epoch)
+                ]["flux"]
+            )
+            unc1 = (
+                2.5
+                * 0.434
+                * (
                     globals()[band1_table][
                         np.where(globals()[band1_table]["epoch"] == epoch)
+                    ]["fluxerr"]
+                    / globals()[band1_table][
+                        np.where(globals()[band1_table]["epoch"] == epoch)
                     ]["flux"]
+                )
+            )
+            unc2 = (
+                2.5
+                * 0.434
+                * (
+                    globals()[band2_table][
+                        np.where(globals()[band2_table]["epoch"] == epoch)
+                    ]["fluxerr"]
                     / globals()[band2_table][
                         np.where(globals()[band2_table]["epoch"] == epoch)
                     ]["flux"]
                 )
-                unc1 = (
-                    2.5
-                    * 0.434
-                    * (
-                        globals()[band1_table][
-                            np.where(globals()[band1_table]["epoch"] == epoch)
-                        ]["fluxerr"]
-                        / globals()[band1_table][
-                            np.where(globals()[band1_table]["epoch"] == epoch)
-                        ]["flux"]
-                    )
-                )
-                unc2 = (
-                    2.5
-                    * 0.434
-                    * (
-                        globals()[band2_table][
-                            np.where(globals()[band2_table]["epoch"] == epoch)
-                        ]["fluxerr"]
-                        / globals()[band2_table][
-                            np.where(globals()[band2_table]["epoch"] == epoch)
-                        ]["flux"]
-                    )
-                )
-                unc = (unc1**2 + unc2**2) ** 0.5
-                return colour.data[0], unc.data[0]
+            )
+            unc = (unc1**2 + unc2**2) ** 0.5
+            return colour.data[0], unc.data[0]
 
         (
             lc_metrics["r_i_colour_peak"],
@@ -185,19 +183,18 @@ class T2GetLensSNParameters(T2RunSncosmo):
             band1_table = str(band1) + "cut"
             if band1 not in sncosmo_table["band"]:
                 return None
-            elif epoch not in globals()[band1_table]["epoch"]:
+            if epoch not in globals()[band1_table]["epoch"]:
                 return None
-            else:
-                obs_mag = (
-                    -2.5
-                    * np.log10(
-                        globals()[band1_table][
-                            np.where(globals()[band1_table]["epoch"] == epoch)
-                        ]["flux"]
-                    )
-                    + 25
+            obs_mag = (
+                -2.5
+                * np.log10(
+                    globals()[band1_table][
+                        np.where(globals()[band1_table]["epoch"] == epoch)
+                    ]["flux"]
                 )
-                return obs_mag.data[0]
+                + 25
+            )
+            return obs_mag.data[0]
 
         lc_metrics["obsmag_ztfg_peak"] = calculate_obsmag_peak("ztfg", "t0")
         lc_metrics["obsmag_ztfr_peak"] = calculate_obsmag_peak("ztfr", "t0")

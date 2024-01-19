@@ -300,8 +300,6 @@ class T2LSPhotoZTap(AbsPointT2Unit):
         if len(match_list) > 0:
             if return_all:
                 return {f"T2LSPhotoZTap{k}": item for k, item in enumerate(match_list)}
-            else:
-                min_dist = min(match_list, key=lambda x: x["dist2transient"])
-                return {"T2LSPhotoZTap": min_dist}
-        else:
-            return {"T2LSPhotoZTap": None}
+            min_dist = min(match_list, key=lambda x: x["dist2transient"])
+            return {"T2LSPhotoZTap": min_dist}
+        return {"T2LSPhotoZTap": None}
