@@ -309,5 +309,3 @@ class PlotLightcurveSample(AbsPhotoT3Unit):
 
         if self.save_table:
             df.to_csv(os.path.join(self.plot_dir, "plot_lightcurvesample.csv"))
-
-        return

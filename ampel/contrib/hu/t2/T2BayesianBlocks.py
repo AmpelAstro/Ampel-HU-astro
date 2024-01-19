@@ -17,12 +17,12 @@ import matplotlib.pyplot as plt  # type: ignore
 import more_itertools as mit
 import numpy as np
 import pandas as pd  # type: ignore
-import uncertainties.unumpy as unumpy  # type: ignore
 from astropy.stats import bayesian_blocks  # type: ignore
 from nltk import flatten  # type: ignore
 from numpy.typing import ArrayLike
 from scipy.signal import find_peaks  # type: ignore
 from sklearn.metrics import mean_squared_error  # type: ignore
+from uncertainties import unumpy  # type: ignore
 
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 from ampel.model.PlotProperties import PlotProperties
@@ -554,39 +554,38 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                                 },
                             ],
                         )
+                elif self.Npoints:
+                    phot_tuple = light_curve.get_ntuples(
+                        ["jd", "magpsf", "sigmapsf", "mag_Npoints"],
+                        [
+                            {
+                                "attribute": "filter",
+                                "operator": "==",
+                                "value": passband,
+                            },
+                            {
+                                "attribute": "mag_ul",
+                                "operator": "==",
+                                "value": "False",
+                            },
+                        ],
+                    )
                 else:
-                    if self.Npoints:
-                        phot_tuple = light_curve.get_ntuples(
-                            ["jd", "magpsf", "sigmapsf", "mag_Npoints"],
-                            [
-                                {
-                                    "attribute": "filter",
-                                    "operator": "==",
-                                    "value": passband,
-                                },
-                                {
-                                    "attribute": "mag_ul",
-                                    "operator": "==",
-                                    "value": "False",
-                                },
-                            ],
-                        )
-                    else:
-                        phot_tuple = light_curve.get_ntuples(
-                            ["jd", "magpsf", "sigmapsf"],
-                            [
-                                {
-                                    "attribute": "filter",
-                                    "operator": "==",
-                                    "value": passband,
-                                },
-                                {
-                                    "attribute": "mag_ul",
-                                    "operator": "==",
-                                    "value": "False",
-                                },
-                            ],
-                        )
+                    phot_tuple = light_curve.get_ntuples(
+                        ["jd", "magpsf", "sigmapsf"],
+                        [
+                            {
+                                "attribute": "filter",
+                                "operator": "==",
+                                "value": passband,
+                            },
+                            {
+                                "attribute": "mag_ul",
+                                "operator": "==",
+                                "value": "False",
+                            },
+                        ],
+                    )
 
             output_per_filter[passband] = []
 
@@ -721,31 +720,30 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     (baseline, baseline_sigma) = self.get_baseline(df, baye_block)
                     baseline = baseline_init
                     baseline_sigma = baseline_init_sigma
-                else:
-                    if self.data_type == "wise":
-                        (
-                            baye_block,
-                            baseline,
-                            baseline_sigma,
-                            baseline_rms,
-                        ) = self.baye_block_levels_with_changing_baseline(
-                            df,
-                            baye_block,
-                            baseline_init,
-                            baseline_init_sigma,
-                        )
-                    elif self.data_type in ["ztf_fp", "ztf_fp_noisy"]:
-                        (
-                            baye_block,
-                            baseline,
-                            baseline_sigma,
-                            baseline_rms,
-                        ) = self.baye_block_levels(
-                            df,
-                            baye_block,
-                            baseline_init,
-                            baseline_init_sigma,
-                        )
+                elif self.data_type == "wise":
+                    (
+                        baye_block,
+                        baseline,
+                        baseline_sigma,
+                        baseline_rms,
+                    ) = self.baye_block_levels_with_changing_baseline(
+                        df,
+                        baye_block,
+                        baseline_init,
+                        baseline_init_sigma,
+                    )
+                elif self.data_type in ["ztf_fp", "ztf_fp_noisy"]:
+                    (
+                        baye_block,
+                        baseline,
+                        baseline_sigma,
+                        baseline_rms,
+                    ) = self.baye_block_levels(
+                        df,
+                        baye_block,
+                        baseline_init,
+                        baseline_init_sigma,
+                    )
 
                 baye_block[str(sigma_discr)] = (baye_block["mag"] - baseline) / np.sqrt(
                     baseline_sigma**2 + baye_block["mag.err"] ** 2

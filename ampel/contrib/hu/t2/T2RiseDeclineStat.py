@@ -216,11 +216,10 @@ class T2RiseDeclineBase(AmpelBaseModel):
                 "Latest detection too close to peak light to calculate peak stats"
             )
             o["bool_peaked"] = False
+        elif (o["mag_last"] - min_mag) > np.sqrt(min_mag_err**2 + last_mag_err**2):
+            o["bool_peaked"] = True
         else:
-            if (o["mag_last"] - min_mag) > np.sqrt(min_mag_err**2 + last_mag_err**2):
-                o["bool_peaked"] = True
-            else:
-                o["bool_peaked"] = False
+            o["bool_peaked"] = False
 
         # If we concluded a peak was there, collect info
         if o["bool_peaked"]:
@@ -309,18 +308,17 @@ class T2RiseDeclineBase(AmpelBaseModel):
                     o[f"slope_fall_{band}"] = p[0]
                 else:
                     o[f"slope_fall_{band}"] = None
+            # Will use all the data to fit rise parameter, set others to none
+            elif o["bool_norise"] or filter_det["jd"].size < 2:
+                o[f"slope_rise_{band}"] = None
             else:
-                # Will use all the data to fit rise parameter, set others to none
-                if o["bool_norise"] or filter_det["jd"].size < 2:
-                    o[f"slope_rise_{band}"] = None
-                else:
-                    p = np.polyfit(
-                        filter_det["jd"],
-                        filter_det["magpsf"],
-                        1,
-                        w=1.0 / filter_det["sigmapsf"],
-                    )
-                    o[f"slope_rise_{band}"] = p[0]
+                p = np.polyfit(
+                    filter_det["jd"],
+                    filter_det["magpsf"],
+                    1,
+                    w=1.0 / filter_det["sigmapsf"],
+                )
+                o[f"slope_rise_{band}"] = p[0]
 
         # Colors at specific phases
         for coljd, colname in zip(

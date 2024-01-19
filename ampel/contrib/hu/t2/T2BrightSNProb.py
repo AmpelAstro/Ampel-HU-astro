@@ -11,8 +11,8 @@ from typing import TypedDict
 
 import numpy as np
 
-import ampel.contrib.hu.t2.xgb_trees as xgb_trees
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
+from ampel.contrib.hu.t2 import xgb_trees
 from ampel.contrib.hu.t2.T2RiseDeclineStat import T2RiseDeclineBase
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson

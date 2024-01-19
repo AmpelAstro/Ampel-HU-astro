@@ -356,10 +356,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
 
             if t2_view.unit == "T2LSPhotoZTap":
                 new_zs, new_dists = self._get_lsphotoz_groupz(t2_res)
-            elif (
-                t2_view.unit == "T2CatalogMatch"
-                or t2_view.unit == "T2CatalogMatchLocal"
-            ):
+            elif t2_view.unit in {"T2CatalogMatch", "T2CatalogMatchLocal"}:
                 new_zs, new_dists = self._get_catalogmatch_groupz(t2_res)
             elif t2_view.unit == "T2MatchBTS":
                 new_zs = self._get_matchbts_groupz(t2_res)

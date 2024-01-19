@@ -994,13 +994,12 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
             else:
                 # Only submit prior version here
                 class_report["classifications"] = pprior_classifications
+        # Done with prob collection, decide what to submit
+        elif self.multiple_classifiers:
+            classifications.extend(parsnip_classifications)
         else:
-            # Done with prob collection, decide what to submit
-            if self.multiple_classifiers:
-                classifications.extend(parsnip_classifications)
-            else:
-                # Only submit parsnip
-                class_report["classifications"] = parsnip_classifications
+            # Only submit parsnip
+            class_report["classifications"] = parsnip_classifications
 
         # Return report
         return {

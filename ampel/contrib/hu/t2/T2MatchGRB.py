@@ -127,7 +127,7 @@ class T2MatchGRB(AbsStateT2Unit, AbsTabulatedT2Unit):
             # print(events)  # only show transient events. You can also access catalog sources
         else:
             self.logger.info(
-                "Astrocolibri: Request did NOT succeed : ", response.status_code
+                f"Astrocolibri: Request did NOT succeed : {response.status_code}"
             )
             return
 

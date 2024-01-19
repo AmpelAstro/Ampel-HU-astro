@@ -285,7 +285,7 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
             if self.nbr_samples == 1:
                 t2_output["z_samples"] = [dp.get(f"{prefix}050", -1)]
                 t2_output["z_weights"] = [1.0]
-            if self.nbr_samples == 3 or self.nbr_samples == 5:
+            if self.nbr_samples in (3, 5):
                 t2_output["z_samples"], t2_output["z_weights"] = [], []
                 for weight_quantiles in QUANT_WEIGHTS[self.nbr_samples]:
                     weight = weight_quantiles["w"]

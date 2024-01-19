@@ -233,17 +233,16 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                     z = t2_res["z_samples"]
                     z_source = t2_res["z_source"]
                     z_weights = t2_res["z_weights"]
-        else:
-            # Check if there is a fixed z set for this run, otherwise keep as free parameter
-            if self.fixed_z is not None:
-                if isinstance(self.fixed_z, float):
-                    z = [self.fixed_z]
-                else:
-                    z = list(self.fixed_z)
-                z_source = "Fixed"
+        # Check if there is a fixed z set for this run, otherwise keep as free parameter
+        elif self.fixed_z is not None:
+            if isinstance(self.fixed_z, float):
+                z = [self.fixed_z]
             else:
-                z = None
-                z_source = "Fitted"
+                z = list(self.fixed_z)
+            z_source = "Fixed"
+        else:
+            z = None
+            z_source = "Fitted"
 
         if (z is not None) and (z_source is not None) and self.scale_z:
             z = [onez * self.scale_z for onez in z]

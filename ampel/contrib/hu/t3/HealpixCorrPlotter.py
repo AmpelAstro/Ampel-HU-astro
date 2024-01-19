@@ -12,11 +12,10 @@ from collections.abc import Generator
 from typing import Any, Literal
 
 import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
 import numpy as np
 import pandas as pd
 from adjustText import adjust_text
-from matplotlib import cm
+from matplotlib import cm, ticker
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
@@ -237,8 +236,6 @@ class HealpixCorrPlotter(AbsPhotoT3Unit):
             pdf = os.path.join(self.debug_dir, "test.pdf")
             self.logger.info(f"Saving plot to {pdf}")
             plt.savefig(pdf)
-
-        return
 
     def _get_stock_info(self, tran: TransientView) -> dict[Any, Any]:
         """

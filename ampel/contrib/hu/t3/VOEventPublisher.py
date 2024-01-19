@@ -141,5 +141,3 @@ class VOEventPublisher(AbsPhotoT3Unit):
             with open(self.fname) as fr:
                 for l in fr.readlines():
                     print(l.rstrip())
-
-        return

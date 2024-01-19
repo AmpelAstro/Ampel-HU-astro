@@ -105,9 +105,8 @@ class T2NedSNCosmo(AbsTiedLightCurveT2Unit, T2SNCosmo):
                 for t in self.require_tags.all_of:
                     if t not in t2_view.tag:
                         return UnitResult(code=30)
-            else:
-                if not [t for t in self.require_tags.any_of if t not in t2_view.tag]:
-                    return UnitResult(code=30)
+            elif not [t for t in self.require_tags.any_of if t not in t2_view.tag]:
+                return UnitResult(code=30)
 
         ret: list[Any] = []
         # Assimilate T2NedTag tags into the T2SNCosmo doc tags for convenience

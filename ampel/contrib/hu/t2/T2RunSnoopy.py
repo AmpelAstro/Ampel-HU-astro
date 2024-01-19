@@ -129,14 +129,13 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
                 ):
                     z = float(t2_res["ampel_z"])
                     z_source = "AMPELz_group" + str(t2_res["group_z_nbr"])
+        # Check if there is a fixed z set for this run, otherwise keep as free parameter
+        elif self.backup_z:
+            z = self.backup_z
+            z_source = "Fixed"
         else:
-            # Check if there is a fixed z set for this run, otherwise keep as free parameter
-            if self.backup_z:
-                z = self.backup_z
-                z_source = "Fixed"
-            else:
-                z = None
-                z_source = "Fitted"
+            z = None
+            z_source = "Fitted"
 
         if (z is not None) and (z_source is not None) and self.scale_z:
             z *= self.scale_z

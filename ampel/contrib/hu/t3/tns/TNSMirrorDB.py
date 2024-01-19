@@ -42,8 +42,7 @@ class TNSMirrorDB:
             return
 
         ops = []
-        for doc in docs:
-            doc = self.apply_schema(doc)
+        for doc in map(self.apply_schema, docs):
             ops.append(UpdateOne({"_id": doc["_id"]}, {"$set": doc}, upsert=True))
 
         try:

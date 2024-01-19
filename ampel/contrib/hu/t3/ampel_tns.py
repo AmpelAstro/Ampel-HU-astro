@@ -71,10 +71,9 @@ class TNSSession(BaseUrlSession):
                 else "x-rate-limit-reset"
             ]
             time.sleep(int(delay))
-        else:
-            response.raise_for_status()
-            # unreachable
-            return None  # type: ignore[return-value]
+        response.raise_for_status()
+        # unreachable
+        return None  # type: ignore[return-value]
 
 
 class TNSClient:
