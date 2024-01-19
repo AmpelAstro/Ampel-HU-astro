@@ -4,8 +4,8 @@
 # License:             BSD-3-Clause
 # Author:              jnordin@physik.hu-berlin.de
 # Date:                06.05.2021
-# Last Modified Date:  15.12.2023
-# Last Modified By:    alice.townsend@physik.hu-berlin.de
+# Last Modified Date:  16.01.2024
+# Last Modified By:    ernstand@physik.hu-berlin.de
 
 import io
 import os
@@ -101,7 +101,8 @@ class TransientTablePublisher(AbsPhotoT3Unit):
     write_mode: str = "a"
     rename_files: bool = False
 
-    file_name: str = "TransientTable"
+    dir_name: str = "TransientTable"
+    file_name: str = dir_name
     slack_channel: None | str = None
     slack_token: None | NamedSecret[str]
     local_path: None | str = None
@@ -217,9 +218,9 @@ class TransientTablePublisher(AbsPhotoT3Unit):
         #if "map_name" in df.columns and "map_seed" in df.columns:
             #df["map_name"] = np.char.replace(np.array(df["map_name"], dtype=str), "random", "random"+df["map_seed"])
 
-        print(df["map_name"].iloc[0])
+        #print(df["map_name"].iloc[0])
         if "random" in df["map_name"].iloc[0] or self.rename_files:
-            print("transienttablepublisher:: ", df["map_seed"].iloc[0])
+            #print("transienttablepublisher:: ", df["map_seed"].iloc[0])
             tmp_seed_name = df["map_seed"].iloc[0]
             if type(tmp_seed_name) == str:
                 self.file_name += "_" + tmp_seed_name
@@ -234,11 +235,17 @@ class TransientTablePublisher(AbsPhotoT3Unit):
 
         # Local save
         if self.local_path is not None:
-            full_path = os.path.join(self.local_path, self.file_name)
+            path_name = os.path.join(self.local_path, self.dir_name)
+            #print("PATHNAME::", path_name)
+            if not os.path.exists(path_name):
+                os.makedirs(path_name, exist_ok=True)
+            full_path = os.path.join(path_name, self.file_name)
+            #print("FILE PATH::", full_path)
+
             with open(full_path + "." + self.fmt, "w") as tmp_file:
                 tmp_file.close()
             if self.fmt == "csv":
-                print(self.write_mode)
+                #print(self.write_mode)
                 df.to_csv(full_path + ".csv", sep=";", mode=self.write_mode)
             elif self.fmt == "latex":
                 df.to_latex(full_path + ".tex")
@@ -269,13 +276,13 @@ class TransientTablePublisher(AbsPhotoT3Unit):
                     "_rev_" + skymap_name[skymap_name.find(",") + 1 :]
                 )  # find "," and add rev version after that
 
-            print("TMP FILES MOVED TO " + skymap_dir_name)
+            print("TransientTablePublisher: TMP FILES MOVED TO " + skymap_dir_name)
 
             if self.local_path is not None:
                 skymap_directory = os.path.join(
                     self.local_path + "/../" + skymap_dir_name
                 )
-                print(skymap_directory)
+                #print(skymap_directory)
                 os.makedirs(skymap_directory, exist_ok=True)
                 for file in files_local_path:
                     if file.find(".fits.gz") == -1:

@@ -77,6 +77,9 @@ pickleshare = "^0.7.5"
 backcall = "^0.2.0"
 avro = "^1.11.3"
 planobs = "^0.7.3"
+gcn-kafka = "^0.3.3"
+xmltodict = "^0.13.0"
+plotly = "^5.18.0"
 
 [tool.poetry.dev-dependencies]
 mypy = "^1.6.1"
