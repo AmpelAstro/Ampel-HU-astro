@@ -128,10 +128,7 @@ class TDESource(sncosmo.Source):
 
         t_evo = self._temp_evolution(phase=phase)
 
-        if np.ndim(phase) == 0:
-            phase_iter = np.asarray(phase)
-        else:
-            phase_iter = phase
+        phase_iter = np.asarray(phase) if np.ndim(phase) == 0 else phase
 
         bb_lam = self._cc_bol_lam(self, T=t_evo, wave=wave)
 

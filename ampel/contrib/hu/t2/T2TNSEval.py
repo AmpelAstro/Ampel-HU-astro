@@ -315,7 +315,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
             return False
 
         # cut on median dRB score
-        drbs = [pp["body"]["drb"] for pp in pps if "drb" in pp["body"].keys()]
+        drbs = [pp["body"]["drb"] for pp in pps if "drb" in pp["body"]]
         if len(drbs) > 0 and np.median(drbs) < self.drb_minmed:
             return False
 

@@ -254,9 +254,12 @@ class AstroColibriPublisher(AbsPhotoT3Unit):
                 attributes.append("Young")
             # SNIa
             t2res = tview.get_t2_body(unit="T2RunParsnip")
-            if isinstance(t2res, dict) and "classification" in t2res.keys():
-                if t2res["classification"]["SNIa"] > self.snia_minprob:
-                    attributes.append("ProbSNIa")
+            if (
+                isinstance(t2res, dict)
+                and "classification" in t2res
+                and t2res["classification"]["SNIa"] > self.snia_minprob
+            ):
+                attributes.append("ProbSNIa")
             # Kilonovaness
             t2res = tview.get_t2_body(unit="T2KilonovaEval")
             if (

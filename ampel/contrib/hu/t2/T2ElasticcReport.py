@@ -810,7 +810,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
         # Get diaSourceId
         # Get the last diaSource id in datapoints
         for dp in reversed(datapoints):
-            if "diaSourceId" in dp["body"].keys():
+            if "diaSourceId" in dp["body"]:
                 class_report["diaSourceId"] = dp["body"]["diaSourceId"]
                 break
 
@@ -832,7 +832,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
                 t2_res = (
                     res[-1] if isinstance(res := t2_view.get_payload(), list) else res
                 )
-                if "prob0" in t2_res.keys():
+                if "prob0" in t2_res:
                     if t2_res["model"] == self.tree_1v2:
                         is1 = t2_res["prob0"]
                     elif t2_res["model"] == self.tree_21v22:
@@ -858,7 +858,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
                     res[-1] if isinstance(res := t2_view.get_payload(), list) else res
                 )
 
-                if "classification" in t2_res.keys():
+                if "classification" in t2_res:
                     parsnip_class = {
                         parsnip_taxonomy[parsnip_type]: prob
                         for parsnip_type, prob in t2_res["classification"].items()
@@ -931,7 +931,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
         parsnip_classifications = [
             dict(d, classifierName=self.classifier_name + "SNGuess" + "Parsnip")
             for d in classifications
-            if not d["classId"] == 1
+            if d["classId"] != 1
         ]
         for klass, parsnip_prob in parsnip_class.items():
             parsnip_classifications.append(
@@ -950,7 +950,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
             # Need to identify the host galaxy_color
             host_ug, mwebv = None, 0
             for dp in datapoints:
-                if "mwebv" in dp["body"].keys():
+                if "mwebv" in dp["body"]:
                     host_ug = self.get_hostcol(dp["body"], parsnip_z)
                     mwebv = dp["body"]["mwebv"]
                     break
@@ -972,7 +972,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
                     + "Prior",
                 )
                 for d in classifications
-                if not d["classId"] == 1
+                if d["classId"] != 1
             ]
             for klass, parsnip_prob in (parsnip_class or {}).items():
                 pprior_classifications.append(

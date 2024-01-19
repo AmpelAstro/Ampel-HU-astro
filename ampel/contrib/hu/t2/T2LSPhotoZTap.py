@@ -91,7 +91,7 @@ def convert(inp, outfmt="pandas", verbose=False, **kwargs):
     col_dict: dict[str, int] = {}
     new_s = ""
     for l in list:
-        if l in col_dict.keys():
+        if l in col_dict:
             n = col_dict[l]
             col_dict[l] = n + 1
             new_s += l + "_" + str(n) + ","
@@ -240,7 +240,7 @@ class T2LSPhotoZTap(AbsPointT2Unit):
         c = pi / 180
 
         for el in match_dict:
-            if "dec" in el.keys() and "ra" in el.keys():
+            if "dec" in el and "ra" in el:
                 el["dist2transient"] = (
                     acos(
                         sin(target_dec * c) * sin(el["dec"] * c)

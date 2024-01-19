@@ -540,7 +540,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             }
         )
         if latest_pps:
-            if not len(latest_pps) == 1:
+            if len(latest_pps) != 1:
                 criterium_name = "unique_latest_pps"
                 info["rejects"].append(criterium_name)
                 info["pass"] -= 0
@@ -577,8 +577,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             [
                 pp["body"]["ssdistnr"]
                 for pp in pps
-                if "ssdistnr" in pp["body"].keys()
-                and pp["body"]["ssdistnr"] is not None
+                if "ssdistnr" in pp["body"] and pp["body"]["ssdistnr"] is not None
             ]
         )
         close_to_sso = np.logical_and(ssdist < self.ssdistnr_max, ssdist > 0)
@@ -621,7 +620,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             self.logger.debug("No PS1 check as no data found.")
 
         # cut on median RB and DRB score
-        rbs = [pp["body"]["rb"] for pp in pps if "rb" in pp["body"].keys()]
+        rbs = [pp["body"]["rb"] for pp in pps if "rb" in pp["body"]]
         if np.median(rbs) < self.rb_minmed:
             self.logger.debug(
                 "Rejected (RB)",
@@ -848,7 +847,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                     rejects.extend(pinfo["rejects"])
                 kilonovaness += pinfo["pass"]
                 possis_kilonovaness = pinfo["pass"]
-                if "possis_abspeak" in info.keys():
+                if "possis_abspeak" in info:
                     if info["possis_chisq"] > zinfo["possis_chisq"]:
                         info.update(pinfo)
                 else:

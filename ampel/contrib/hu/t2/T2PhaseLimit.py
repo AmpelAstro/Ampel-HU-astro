@@ -65,10 +65,8 @@ class T2PhaseLimit(AbsStateT2Unit, AbsTabulatedT2Unit):
 
     def __init__(self, *args, **kwargs):
         if "max_flux" not in kwargs:
-            if "max_mag" not in kwargs:
-                max_mag = 22.5  # previous default value
-            else:
-                max_mag = kwargs.pop("max_mag")
+            # previous default value was 22.5
+            max_mag = 22.5 if "max_mag" not in kwargs else kwargs.pop("max_mag")
             kwargs["max_flux"] = self._magtoflux(max_mag)
         super().__init__(*args, **kwargs)
 
@@ -178,10 +176,7 @@ class T2PhaseLimit(AbsStateT2Unit, AbsTabulatedT2Unit):
             else:
                 break
 
-        if sum(mask) > 0:
-            t_masked_duration = np.max(jd[mask]) - np.min(jd[mask])
-        else:
-            t_masked_duration = 0
+        t_masked_duration = np.max(jd[mask]) - np.min(jd[mask]) if sum(mask) > 0 else 0
 
         # Based on the median, define course phase range
         t_start = t_median - 2 * self.half_time
@@ -236,9 +231,9 @@ class T2PhaseLimit(AbsStateT2Unit, AbsTabulatedT2Unit):
                 neg_frac_bands.append(filtid)
 
         # Evaluate
-        if any(band.endswith("g") for band in neg_frac_bands):
-            t2eval = "fail:neg_flux"
-        elif any(band.endswith("r") for band in neg_frac_bands):
+        if any(band.endswith("g") for band in neg_frac_bands) or any(
+            band.endswith("r") for band in neg_frac_bands
+        ):
             t2eval = "fail:neg_flux"
         elif t_masked_duration > 4 * self.half_time:
             t2eval = "fail:duration"

@@ -53,9 +53,10 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
 
         self.ztfid: None | str = None
 
-        if self.data_type in ["ztf_alert", "ztf_fp"]:
-            if isinstance(light_curve.stock_id, int):
-                self.ztfid = to_ztf_id(light_curve.stock_id)
+        if self.data_type in ["ztf_alert", "ztf_fp"] and isinstance(
+            light_curve.stock_id, int
+        ):
+            self.ztfid = to_ztf_id(light_curve.stock_id)
 
         self.plot_colors: dict[str, str] = {
             "Wise_W1": "red",
@@ -112,7 +113,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                 )
 
                 for key in self.filters:
-                    if key not in t2_res.keys() or t2_res.get(key) is None:
+                    if key not in t2_res or t2_res.get(key) is None:
                         self.filters_lc.remove(key)
 
                 if all(

@@ -188,9 +188,9 @@ class RapidLco(RapidBase):
         # Assuming ra and dec exists in there
         ra, dec = None, None
         for t2info in info.values():
-            if "ra" in t2info.keys():
+            if "ra" in t2info:
                 ra = t2info["ra"]
-            if "dec" in t2info.keys():
+            if "dec" in t2info:
                 dec = t2info["dec"]
         if ra is None or dec is None:
             # Look at the response
@@ -219,12 +219,12 @@ class RapidLco(RapidBase):
             react_dict["requests"][0]["configurations"][0]["target"]["dec"] = str(dec)
             # Some keys are not necessarily there
             timenow = datetime.datetime.now(tz=datetime.timezone.utc)
-            if "start" in react_dict["requests"][0]["windows"][0].keys():
+            if "start" in react_dict["requests"][0]["windows"][0]:
                 dtime = datetime.timedelta(days=submit_info["start_delay"])
                 react_dict["requests"][0]["windows"][0]["start"] = "%s" % (
                     timenow + dtime
                 )
-            if "end" in react_dict["requests"][0]["windows"][0].keys():
+            if "end" in react_dict["requests"][0]["windows"][0]:
                 dtime = datetime.timedelta(days=submit_info["end_delay"])
                 react_dict["requests"][0]["windows"][0]["end"] = "%s" % (
                     timenow + dtime

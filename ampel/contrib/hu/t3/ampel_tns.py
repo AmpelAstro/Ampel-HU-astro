@@ -119,7 +119,7 @@ class TNSClient:
         # If so, what error messages if any did we get?
         self.logger.info(json.dumps(d, indent=4, sort_keys=True))
 
-        if "id_code" in d.keys() and "id_message" in d.keys() and d["id_code"] != 200:
+        if "id_code" in d and "id_message" in d and d["id_code"] != 200:
             self.logger.info(
                 "TNS bulk submit: Bad response: code = %d, error = '%s'"
                 % (d["id_code"], d["id_message"])
@@ -202,7 +202,7 @@ class TNSClient:
             # Hence only checking first element
             bad_request = None
             for key_atprop in ["ra", "decl", "discovery_datetime"]:
-                if key_atprop in response[0].keys():
+                if key_atprop in response[0]:
                     try:
                         bad_request = response[0][key_atprop]["value"]["5"]["message"]
                         break
@@ -214,7 +214,7 @@ class TNSClient:
 
             # Parse reply for evaluation
             for k, v in atreport["at_report"].items():
-                if "100" in response[k].keys():
+                if "100" in response[k]:
                     logger.info(
                         "TNS Inserted with name %s" % (response[k]["100"]["objname"])
                     )
@@ -222,7 +222,7 @@ class TNSClient:
                         "TNS inserted",
                         {"TNSName": response[k]["100"]["objname"]},
                     ]
-                elif "101" in response[k].keys():
+                elif "101" in response[k]:
                     logger.info(
                         "Already existing with name %s"
                         % (response[k]["101"]["objname"])
@@ -263,13 +263,13 @@ class TNSClient:
 
         response = None
         # reply should be a dict
-        if reply and "id_code" in reply.keys() and reply["id_code"] == 404:
+        if reply and "id_code" in reply and reply["id_code"] == 404:
             logger.warn(
                 f"TNS bulk submit {reportId}: Unknown report. "
                 f"Perhaps the report has not yet been processed."
             )
 
-        if reply and "id_code" in reply.keys() and reply["id_code"] == 200:
+        if reply and "id_code" in reply and reply["id_code"] == 200:
             try:
                 response = reply["data"]["feedback"]["at_report"]
             except KeyError:
@@ -278,7 +278,7 @@ class TNSClient:
                 )
 
         # This is a bad request. Still propagate the response for analysis.
-        if reply and "id_code" in reply.keys() and reply["id_code"] == 400:
+        if reply and "id_code" in reply and reply["id_code"] == 400:
             try:
                 response = reply["data"]["feedback"]["at_report"]
             except KeyError:

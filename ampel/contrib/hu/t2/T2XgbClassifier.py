@@ -238,7 +238,7 @@ class T2XgbClassifier(AbsTiedStateT2Unit):
 
         if t2data["ndet"] == 0:
             # Explore whether negative detections can be used to parse type
-            if "nnegdet" in t2data.keys() and t2data["nnegdet"] > 0:
+            if "nnegdet" in t2data and t2data["nnegdet"] > 0:
                 if t2data["z"] is not None and t2data["z"] > 0.001:
                     # High redshifts are typically AGNs
                     return {
@@ -288,12 +288,7 @@ class T2XgbClassifier(AbsTiedStateT2Unit):
         # Can we find away round creating a numpy array?
         prob = self._classifiers[b].predict_proba(
             np.array(
-                [
-                    [
-                        t2data[col] if col in t2data.keys() else None
-                        for col in self.use_cols
-                    ]
-                ]
+                [[t2data[col] if col in t2data else None for col in self.use_cols]]
             )
         )
         t2out["prob0"] = float(prob[0][0])

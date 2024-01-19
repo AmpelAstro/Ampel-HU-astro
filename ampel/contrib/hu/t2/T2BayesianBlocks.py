@@ -262,23 +262,25 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
     def outliers(self, excess_regions, df, baye_block, measurements_nu):
         for value in excess_regions:
-            if len(value) == 1:
-                if measurements_nu[value[0]] == 1.0:
-                    if (
-                        baye_block["Npoints"][value[0]] == 1
-                        and baye_block["sigma_from_baseline"][value[0]] > 5.0
-                    ):
-                        df.loc[
-                            df.index[
-                                df["jd"].between(
-                                    baye_block["jd_measurement_start"][value[0]],
-                                    baye_block["jd_measurement_end"][value[0]],
-                                    inclusive="both",
-                                )
-                            ].tolist()[0],
-                            "Outlier",
-                        ] = True
-                        baye_block.loc[value[0], "level"] = "outlier"
+            if (
+                len(value) == 1
+                and measurements_nu[value[0]] == 1.0
+                and (
+                    baye_block["Npoints"][value[0]] == 1
+                    and baye_block["sigma_from_baseline"][value[0]] > 5.0
+                )
+            ):
+                df.loc[
+                    df.index[
+                        df["jd"].between(
+                            baye_block["jd_measurement_start"][value[0]],
+                            baye_block["jd_measurement_end"][value[0]],
+                            inclusive="both",
+                        )
+                    ].tolist()[0],
+                    "Outlier",
+                ] = True
+                baye_block.loc[value[0], "level"] = "outlier"
         return baye_block
 
     def description(self, excess_regions: list, measurements_nu: dict) -> list:
@@ -1360,7 +1362,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
         output_per_filter["start_excess"] = None
         output_per_filter["size_excess"] = 0
 
-        for keys in [key for key in output_per_filter.keys() if key in self.filters]:
+        for keys in [key for key in output_per_filter if key in self.filters]:
             if output_per_filter[keys].get("nu_of_excess_regions") not in [0, None]:
                 idxmax = np.argmax(output_per_filter[keys]["max_sigma_excess_region"])
                 output_per_filter["start_excess"] = output_per_filter[keys][

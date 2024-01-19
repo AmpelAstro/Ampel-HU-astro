@@ -210,7 +210,7 @@ class T2MultiXgbClassifier(
 
         # If we did not find chained results from TabulatorRiseDecline,
         # then run the feature extraction
-        if "ndet" not in t2data.keys():
+        if "ndet" not in t2data:
             flux_table = self.get_flux_table(datapoints)
 
             # Cut the flux table if requested
@@ -227,7 +227,7 @@ class T2MultiXgbClassifier(
         # No detections - none of the models will work
         if t2data["ndet"] == 0:
             # Explore whether negative detections can be used to parse type
-            if "nnegdet" in t2data.keys() and t2data["nnegdet"] > 0:
+            if "nnegdet" in t2data and t2data["nnegdet"] > 0:
                 if t2data["z"] is not None and t2data["z"] > 0.001:
                     # High redshifts are typically AGNs
                     return {

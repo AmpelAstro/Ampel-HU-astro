@@ -95,7 +95,7 @@ class T2RunPossis(T2RunSncosmo):
         Note that this could be done once at instance init.
         """
 
-        for model_ind in self.possis_models.keys():
+        for model_ind in self.possis_models:
             model_gen = self.possis_models[model_ind]["model_gen"]
             self.possis_models[model_ind]["sncosmo_model_name"] = "_".join(
                 map(
@@ -238,7 +238,7 @@ class T2RunPossis(T2RunSncosmo):
 
         result_dict = {}
 
-        for model_ind in self.possis_models.keys():
+        for model_ind in self.possis_models:
             # print("T2RUNPOSSIS evaluating::", model_ind)
 
             self.sncosmo_model = self.sncosmo_data[model_ind]["sncosmo_model"]
@@ -259,7 +259,7 @@ class T2RunPossis(T2RunSncosmo):
                         if isinstance(res := t2_view.get_payload(), list)
                         else res
                     )
-                    if "trigger_time" not in t2_res.keys():
+                    if "trigger_time" not in t2_res:
                         self.logger.info("No explosion time", extra={"t2res": t2_res})
                         return UnitResult(code=DocumentCode.T2_MISSING_INFO)
                     self.explosion_time_jd = float(t2_res["trigger_time"])

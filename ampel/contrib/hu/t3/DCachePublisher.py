@@ -184,40 +184,39 @@ class DCachePublisher(AbsT3ReviewUnit):
         )
         async with TCPConnector(
             limit=self.max_parallel_requests, ssl_context=ssl_context
-        ) as connector:
-            async with ClientSession(
-                connector=connector,
-                headers={"Authorization": f"BEARER {self.authz.get()}"},
-                raise_for_status=True,
-            ) as session:
-                # ClientSession.request is a normal function returning an
-                # async context manager. While this is kind of equivalent
-                # to a coroutine, it can't be decorated with backoff. Wrap
-                # it so it can be.
-                # Note that it is important to not actually enter the
-                # context manager here, as this would close the response
-                # on exit, causing read() to raise ClientConnectionError.
-                async def async_request(*args, **kwargs):
-                    return await session.request(*args, **kwargs)
+        ) as connector, ClientSession(
+            connector=connector,
+            headers={"Authorization": f"BEARER {self.authz.get()}"},
+            raise_for_status=True,
+        ) as session:
+            # ClientSession.request is a normal function returning an
+            # async context manager. While this is kind of equivalent
+            # to a coroutine, it can't be decorated with backoff. Wrap
+            # it so it can be.
+            # Note that it is important to not actually enter the
+            # context manager here, as this would close the response
+            # on exit, causing read() to raise ClientConnectionError.
+            async def async_request(*args, **kwargs):
+                return await session.request(*args, **kwargs)
 
-                # robustify Session.request() against transitory failures
-                request = backoff.on_exception(
-                    backoff.expo,
-                    (
-                        asyncio.TimeoutError,
-                        ClientResponseError,
-                        ClientConnectorError,
-                        ClientConnectionError,
-                        ServerDisconnectedError,
-                    ),
-                    logger=None,
-                    giveup=self.is_permanent_error,
-                    on_giveup=self._on_giveup,
-                    on_backoff=self._on_backoff,
-                )(async_request)
+            # robustify Session.request() against transitory failures
+            request = backoff.on_exception(
+                backoff.expo,
+                (
+                    asyncio.TimeoutError,
+                    ClientResponseError,
+                    ClientConnectorError,
+                    ClientConnectionError,
+                    ServerDisconnectedError,
+                ),
+                logger=None,
+                giveup=self.is_permanent_error,
+                on_giveup=self._on_giveup,
+                on_backoff=self._on_backoff,
+            )(async_request)
 
-                tasks = [task(request) for task in unbound_tasks]
-                return await asyncio.gather(*tasks)
+            tasks = [task(request) for task in unbound_tasks]
+            return await asyncio.gather(*tasks)
 
     def process(
         self, gen: Generator[SnapView, JournalAttributes, None], t3s: T3Store
@@ -268,19 +267,22 @@ class DCachePublisher(AbsT3ReviewUnit):
         async with await request(
             "PROPFIND", latest, raise_for_status=False
         ) as response:
-            if response.status < 400 and (
-                element := ElementTree.fromstring(await response.text()).find(
-                    "**/{DAV:}prop/{DAV:}creationdate"
-                )
-            ):
-                if date := element.text:
-                    previous = os.path.join(manifest_dir, date + ".json.gz")
-                    self.logger.info(f"Moving {latest} to {previous}")
-                    await request(
-                        "MOVE",
-                        latest,
-                        headers={"Destination": previous},
+            if (
+                response.status < 400
+                and (
+                    element := ElementTree.fromstring(await response.text()).find(
+                        "**/{DAV:}prop/{DAV:}creationdate"
                     )
+                )
+                and (date := element.text)
+            ):
+                previous = os.path.join(manifest_dir, date + ".json.gz")
+                self.logger.info(f"Moving {latest} to {previous}")
+                await request(
+                    "MOVE",
+                    latest,
+                    headers={"Destination": previous},
+                )
 
         # Write a new manifest with a link to previous manifest.
         await request(
@@ -339,14 +341,15 @@ def get_macaroon(
         ssl_context = ssl.create_default_context(
             capath=os.environ.get("X509_CERT_DIR", None)
         )
-        async with TCPConnector(ssl_context=ssl_context) as connector:
-            async with ClientSession(auth=user, connector=connector) as session:
-                resp = await session.post(
-                    f"https://{host}:{port}{path}",
-                    headers={"Content-Type": "application/macaroon-request"},
-                    json=body,
-                )
-                return (await resp.json())["macaroon"]
+        async with TCPConnector(ssl_context=ssl_context) as connector, ClientSession(
+            auth=user, connector=connector
+        ) as session:
+            resp = await session.post(
+                f"https://{host}:{port}{path}",
+                headers={"Content-Type": "application/macaroon-request"},
+                json=body,
+            )
+            return (await resp.json())["macaroon"]
 
     return asyncio.get_event_loop().run_until_complete(fetch())
 

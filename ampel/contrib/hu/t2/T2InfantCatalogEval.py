@@ -272,8 +272,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
             [
                 pp["body"]["ssdistnr"]
                 for pp in pps
-                if "ssdistnr" in pp["body"].keys()
-                and pp["body"]["ssdistnr"] is not None
+                if "ssdistnr" in pp["body"] and pp["body"]["ssdistnr"] is not None
             ]
         )
         close_to_sso = np.logical_and(ssdist < self.ssdistnr_max, ssdist > 0)

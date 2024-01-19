@@ -300,7 +300,7 @@ class TNSTalker(AbsT3ReviewUnit):
         jup = None
         if tns_name_new is not None:
             # what happen if you have a new name that is different from the old one?
-            if tns_name is not None and not tns_name == tns_name_new:
+            if tns_name is not None and tns_name != tns_name_new:
                 self.logger.info(
                     "Adding new TNS name",
                     extra={"tnsOld": tns_name, "tnsNew": tns_name_new},
@@ -397,17 +397,16 @@ class TNSTalker(AbsT3ReviewUnit):
                 # whether the same candidate was submitted as different ZTF name) and
                 # depending on what's already on the TNS we can chose to submit or not
                 is_ztfsubmitted = ztf_name in tns_internals
-                if is_ztfsubmitted:
-                    # Already registered under this name. Only submit if we explicitly configured to do this
-                    if not self.resubmit_tns_ztf:
-                        self.logger.info(
-                            "ztf submitted",
-                            extra={
-                                "ztfSubmitted": is_ztfsubmitted,
-                                "tnsInternals": tns_internals,
-                            },
-                        )
-                        continue
+                # Already registered under this name. Only submit if we explicitly configured to do this
+                if is_ztfsubmitted and not self.resubmit_tns_ztf:
+                    self.logger.info(
+                        "ztf submitted",
+                        extra={
+                            "ztfSubmitted": is_ztfsubmitted,
+                            "tnsInternals": tns_internals,
+                        },
+                    )
+                    continue
 
                 # Also allow for the option to not submit if someone (anyone) already did this. Not sure why this would be a good idea.
                 if not is_ztfsubmitted and not self.resubmit_tns_nonztf:
@@ -452,14 +451,14 @@ class TNSTalker(AbsT3ReviewUnit):
         tnsreplies = self.client.sendReports(atreportlist)
 
         # Now go and check and create journal updates for the cases where SN was added
-        for tran_id in atreports.keys():
+        for tran_id in atreports:
             ztf_name = to_ztf_id(tran_id)
-            if ztf_name not in tnsreplies.keys():
+            if ztf_name not in tnsreplies:
                 self.logger.info("No TNS add reply", extra={"tranId": tran_id})
                 continue
 
             # Create new journal entry assuming we submitted or found a name
-            if "TNSName" in tnsreplies[ztf_name][1].keys():
+            if "TNSName" in tnsreplies[ztf_name][1]:
                 gen.send(
                     (
                         tran_id,

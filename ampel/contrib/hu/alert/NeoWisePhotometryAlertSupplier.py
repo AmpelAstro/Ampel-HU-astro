@@ -72,7 +72,7 @@ class NeoWisePhotometryAlertSupplier(BaseAlertSupplier):
         df["W1_flux_density_ul"].replace(1.0, "True", inplace=True)
         df["W2_flux_density_ul"].replace(1.0, "True", inplace=True)
 
-        if "timewise_metadata" in d[1].keys():
+        if "timewise_metadata" in d[1]:
             # calculate reduced chi2
             timewise_metadata = d[1]["timewise_metadata"]
             for b in ["W1", "W2"]:
@@ -161,7 +161,7 @@ class NeoWisePhotometryAlertSupplier(BaseAlertSupplier):
             df_W2["mag_Npoints"] = df["W2_mag_Npoints"]
             df_W1["flux_density_Npoints"] = df["W1_flux_density_Npoints"]
             df_W2["flux_density_Npoints"] = df["W2_flux_density_Npoints"]
-        if "ra" in d[1].keys():
+        if "ra" in d[1]:
             df_W1["ra"] = d[1]["ra"]
             df_W1["dec"] = d[1]["dec"]
             df_W2["ra"] = d[1]["ra"]

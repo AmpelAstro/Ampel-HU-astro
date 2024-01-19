@@ -10,6 +10,7 @@
 import os
 import re
 from collections.abc import Generator
+from contextlib import suppress
 from typing import Any
 
 import matplotlib.pyplot as plt
@@ -95,13 +96,10 @@ class PlotLightcurveSample(AbsPhotoT3Unit):
             for t2doc in list(t2docs):
                 if not t2doc["status"] >= 0:
                     continue
-                if config is not None:
-                    if not t2doc["config"] == config:
-                        continue
-                try:
+                if config is not None and t2doc["config"] != config:
+                    continue
+                with suppress(KeyError):
                     t2results.append(t2doc["body"][-1]["result"])
-                except KeyError:
-                    pass
         return t2results
 
     def _get_parsnip_results(self, tran_view):
@@ -111,7 +109,7 @@ class PlotLightcurveSample(AbsPhotoT3Unit):
 
         t2res = self._get_t2results(tran_view, "T2RunParsnip", self.model_config)
         t2res = [t2 for t2 in t2res if self.lc_model == t2["model"]]
-        t2res = [t2 for t2 in t2res if "prediction" in t2.keys()]
+        t2res = [t2 for t2 in t2res if "prediction" in t2]
         if self.z_source:
             t2res = [
                 t2
@@ -139,10 +137,8 @@ class PlotLightcurveSample(AbsPhotoT3Unit):
         params = {}
         for pname in self.param:
             params[pname] = t2res[0]["prediction"][pname]
-            try:
+            with suppress(KeyError):
                 params[pname + "_err"] = t2res[0]["prediction"][pname + "_error"]
-            except KeyError:
-                pass
         if self.include_absmag:
             params["absmag"] = t2res[0]["prediction"]["luminosity"]
             params["absmag_err"] = t2res[0]["prediction"]["luminosity_error"]
@@ -155,9 +151,7 @@ class PlotLightcurveSample(AbsPhotoT3Unit):
         """
 
         if t2res := tran_view.get_t2_views(unit=self.unit_name):
-            t2res = [
-                t2 for t2 in t2res if t2.body and "sncosmo_result" in t2.body[-1].keys()
-            ]
+            t2res = [t2 for t2 in t2res if t2.body and "sncosmo_result" in t2.body[-1]]
             t2res = [t2 for t2 in t2res if t2.body[-1]["sncosmo_result"]["success"]]
             t2res = [t2 for t2 in t2res if self.lc_model == t2.body[-1]["model_name"]]
             if self.z_source:
@@ -231,20 +225,22 @@ class PlotLightcurveSample(AbsPhotoT3Unit):
 
             # Get AmpelZ info
             ampelz, ampelz_group = None, 99
-            if isinstance(
-                t2res := tran_view.get_latest_t2_body(unit="T2DigestRedshifts"), dict
+            if (
+                isinstance(
+                    t2res := tran_view.get_latest_t2_body(unit="T2DigestRedshifts"),
+                    dict,
+                )
+                and "ampel_z" in t2res
             ):
-                if "ampel_z" in t2res.keys():
-                    # In case of multiple entries, no way to distinguish these (would have to add config selection to get_t2results)
-                    sninfo["ampel_z_group"] = t2res["group_z_nbr"]
-                    sninfo["ampel_z"] = t2res["ampel_z"]
-            if self.max_ampelz_group:
-                if (
-                    isinstance(ampel_z_group := sninfo.get("ampel_z_group"), int)
-                    and self.max_ampelz_group < ampel_z_group
-                ):
-                    # Skip this one, z too uncertain
-                    continue
+                # In case of multiple entries, no way to distinguish these (would have to add config selection to get_t2results)
+                sninfo["ampel_z_group"] = t2res["group_z_nbr"]
+                sninfo["ampel_z"] = t2res["ampel_z"]
+            if self.max_ampelz_group and (
+                isinstance(ampel_z_group := sninfo.get("ampel_z_group"), int)
+                and self.max_ampelz_group < ampel_z_group
+            ):
+                # Skip this one, z too uncertain
+                continue
 
             # Get BTS class if available
             if isinstance(
@@ -252,7 +248,7 @@ class PlotLightcurveSample(AbsPhotoT3Unit):
             ):
                 # Get plot class from BTS matching (if any)
                 bts_class = "Unknown"
-                if "bts_type" in t2res.keys():
+                if "bts_type" in t2res:
                     for bts_name, bts_subclasses in self.bts_classes.items():
                         if t2res["bts_type"] in bts_subclasses:
                             bts_class = bts_name

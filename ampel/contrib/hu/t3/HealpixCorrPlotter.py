@@ -81,7 +81,7 @@ class HealpixCorrPlotter(AbsPhotoT3Unit):
                 continue
             for t2info in t2docs:
                 assert isinstance(t2info, dict)
-                if self.model_name and not t2info["model_name"] == self.model_name:
+                if self.model_name and t2info["model_name"] != self.model_name:
                     continue
                 if "fit_metrics" not in t2info:
                     continue

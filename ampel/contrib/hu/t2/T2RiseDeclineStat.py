@@ -116,7 +116,7 @@ class T2RiseDeclineBase(AmpelBaseModel):
             if self.del_duplicate_rows:
                 unique_jd, counts = np.unique(dets["jd"], return_counts=True)
                 double_jd = list(unique_jd[(counts > 1)])
-                if not len(double_jd) == 0:
+                if len(double_jd) != 0:
                     self.logger.info(
                         "Cuting duplicate jd photopoints at %s" % (double_jd)
                     )

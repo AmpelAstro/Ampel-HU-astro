@@ -183,7 +183,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             "T2ElasticcRedshiftSampler",
         ]:
             for t2_view in t2_views:
-                if not t2_view.unit == self.redshift_kind:
+                if t2_view.unit != self.redshift_kind:
                     continue
                 self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
                 t2_res = (
@@ -191,15 +191,12 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                 )
                 # Parse this
                 if self.redshift_kind == "T2MatchBTS":
-                    if (
-                        "bts_redshift" in t2_res.keys()
-                        and not t2_res["bts_redshift"] == "-"
-                    ):
+                    if "bts_redshift" in t2_res and t2_res["bts_redshift"] != "-":
                         z = [float(t2_res["bts_redshift"])]
                         z_source = "BTS"
                 elif self.redshift_kind == "T2DigestRedshifts":
                     if (
-                        "ampel_z" in t2_res.keys()
+                        "ampel_z" in t2_res
                         and t2_res["ampel_z"] is not None
                         and t2_res["group_z_nbr"] <= self.max_ampelz_group
                     ):
@@ -241,7 +238,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
 
         abort, abort_maps = False, {}
         for t2_view in t2_views:
-            if t2_view.unit not in self.abort_map.keys():
+            if t2_view.unit not in self.abort_map:
                 continue
             self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
             t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
@@ -269,7 +266,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         else:
             for t2_view in t2_views:
                 # So far only knows how to parse phases from T2PhaseLimit
-                if not t2_view.unit == "T2PhaseLimit":
+                if t2_view.unit != "T2PhaseLimit":
                     continue
                 self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
                 t2_res = (

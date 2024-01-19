@@ -111,7 +111,7 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
 
         if self.redshift_kind in ["T2MatchBTS", "T2DigestRedshifts"]:
             for t2_view in t2_views:
-                if not t2_view.unit == self.redshift_kind:
+                if t2_view.unit != self.redshift_kind:
                     continue
                 self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
                 t2_res = (
@@ -119,20 +119,16 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
                 )
                 # Parse this
                 if self.redshift_kind == "T2MatchBTS":
-                    if (
-                        "bts_redshift" in t2_res.keys()
-                        and not t2_res["bts_redshift"] == "-"
-                    ):
+                    if "bts_redshift" in t2_res and t2_res["bts_redshift"] != "-":
                         z = float(t2_res["bts_redshift"])
                         z_source = "BTS"
-                elif self.redshift_kind == "T2DigestRedshifts":
-                    if (
-                        "ampel_z" in t2_res.keys()
-                        and t2_res["ampel_z"] is not None
-                        and t2_res["group_z_nbr"] <= self.max_ampelz_group
-                    ):
-                        z = float(t2_res["ampel_z"])
-                        z_source = "AMPELz_group" + str(t2_res["group_z_nbr"])
+                elif self.redshift_kind == "T2DigestRedshifts" and (
+                    "ampel_z" in t2_res
+                    and t2_res["ampel_z"] is not None
+                    and t2_res["group_z_nbr"] <= self.max_ampelz_group
+                ):
+                    z = float(t2_res["ampel_z"])
+                    z_source = "AMPELz_group" + str(t2_res["group_z_nbr"])
         else:
             # Check if there is a fixed z set for this run, otherwise keep as free parameter
             if self.backup_z:
@@ -164,7 +160,7 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
         else:
             for t2_view in t2_views:
                 # So far only knows how to parse phases from T2PhaseLimit
-                if not t2_view.unit == "T2PhaseLimit":
+                if t2_view.unit != "T2PhaseLimit":
                     continue
                 self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
                 t2_res = (

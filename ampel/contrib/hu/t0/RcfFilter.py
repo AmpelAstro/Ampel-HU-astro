@@ -100,13 +100,13 @@ class RcfFilter(AbsAlertFilter):
 
         if (
             alert["sgscore1"] > 0.76
-            and 0 < alert["distpsnr1"]
+            and alert["distpsnr1"] > 0
             and alert["distpsnr1"] < 2
         ):
             return True
         if (
             alert["sgscore1"] > 0.2
-            and 0 < alert["distpsnr1"]
+            and alert["distpsnr1"] > 0
             and alert["distpsnr1"] < 1
             and alert["srmag1"] > 0
         ):
@@ -158,7 +158,7 @@ class RcfFilter(AbsAlertFilter):
             return True
         if alert["rb"] < 0.35:
             if (
-                0 < alert["neargaia"]
+                alert["neargaia"] > 0
                 and alert["neargaia"] < 1.0
                 and alert["maggaia"] > 0
                 and alert["maggaia"] < 17.0
@@ -177,7 +177,7 @@ class RcfFilter(AbsAlertFilter):
                     return True
         if alert["rb"] < 0.45:
             if (
-                0 < alert["neargaia"]
+                alert["neargaia"] > 0
                 and alert["neargaia"] < 1.5
                 and alert["maggaia"] > 0
                 and alert["maggaia"] < 15.5
@@ -197,14 +197,14 @@ class RcfFilter(AbsAlertFilter):
 
         if alert["drb"] < 0.5:
             if (
-                0 < alert["distpsnr1"]
+                alert["distpsnr1"] > 0
                 and alert["distpsnr1"] < 3.0
                 and ps1mag < 16
                 and age > 90
             ):
                 return True
             if (
-                0 < alert["distpsnr1"]
+                alert["distpsnr1"] > 0
                 and alert["distpsnr1"] < 1.1
                 and ps1mag < 18
                 and age > 90
@@ -213,14 +213,14 @@ class RcfFilter(AbsAlertFilter):
 
         if alert["drb"] < 0.8:
             if (
-                0 < alert["distpsnr1"]
+                alert["distpsnr1"] > 0
                 and alert["distpsnr1"] < 1.5
                 and ps1mag < 15.5
                 and age > 90
             ):
                 return True
             if (
-                0 < alert["distpsnr1"]
+                alert["distpsnr1"] > 0
                 and alert["distpsnr1"] < 0.8
                 and ps1mag < 17.5
                 and age > 90
@@ -241,9 +241,9 @@ class RcfFilter(AbsAlertFilter):
         """
 
         if (
-            0 < alert["neargaiabright"]
+            alert["neargaiabright"] > 0
             and alert["neargaiabright"] < 20
-            and 0 < alert["maggaiabright"]
+            and alert["maggaiabright"] > 0
             and alert["maggaiabright"] < 12
         ):
             return True
@@ -251,9 +251,9 @@ class RcfFilter(AbsAlertFilter):
         for d in ["1", "2", "3"]:
             for f in ["r", "i", "z"]:
                 if (
-                    0 < alert[f"distpsnr{d}"]
+                    alert[f"distpsnr{d}"] > 0
                     and alert[f"distpsnr{d}"] < 20
-                    and 0 < alert[f"s{f}mag{d}"]
+                    and alert[f"s{f}mag{d}"] > 0
                     and alert[f"s{f}mag{d}"] < 14
                     and alert[f"sgscore{d}"] > 0.9
                 ):
@@ -287,46 +287,42 @@ class RcfFilter(AbsAlertFilter):
         if ps1maxmag <= 0:
             ps1maxmag = 99
 
-        if m_peak == alert["magpsf"]:
-            is_at_peak = True
-        else:
-            is_at_peak = False
+        is_at_peak = m_peak == alert["magpsf"]
 
         if (
             (age > 90 and bright_detections > 2)
             or (age > 365 and bright_detections > 1)
         ) and not (is_at_peak and alert["magpsf"] < 18.5):
             if (
-                0 < alert["magnr"]
+                alert["magnr"] > 0
                 and alert["magnr"] < 19.5
-                and 0 < alert["distnr"]
+                and alert["distnr"] > 0
                 and alert["distnr"] < 0.4
             ):
                 return True
             if (
-                0 < alert["magnr"]
+                alert["magnr"] > 0
                 and alert["magnr"] < 17.5
-                and 0 < alert["distnr"]
+                and alert["distnr"] > 0
                 and alert["distnr"] < 0.8
             ):
                 return True
             if (
-                0 < alert["magnr"]
+                alert["magnr"] > 0
                 and alert["magnr"] < 15.5
-                and 0 < alert["distnr"]
+                and alert["distnr"] > 0
                 and alert["distnr"] < 1.2
             ):
                 return True
 
-        if 0 < alert["maggaia"] and 0 < alert["neargaia"]:
+        if alert["maggaia"] > 0 and alert["neargaia"] > 0:
             if alert["neargaia"] < 0.35:
                 if age > 30 and alert["maggaia"] < 17:
                     return True
                 if age > 300 and alert["maggaia"] < 19 and alert["magpsf"] > 18.5:
                     return True
-            if alert["neargaia"] < 0.20:
-                if age > 90 and alert["maggaia"] < 18:
-                    return True
+            if alert["neargaia"] < 0.20 and age > 90 and alert["maggaia"] < 18:
+                return True
 
         if (
             alert["sgscore1"] > 0.25
@@ -346,12 +342,13 @@ class RcfFilter(AbsAlertFilter):
 
         if (
             age > 90
-            and 0 < alert["distnr"]  # shouldn't this be distnr?  was distnbr
+            and alert["distnr"] > 0  # shouldn't this be distnr?  was distnbr
             and alert["distnr"] < 0.5
             and not is_at_peak
+            and alert["magnr"] > 0
+            and alert["magnr"] < (alert["magpsf"] - 1)
         ):
-            if 0 < alert["magnr"] and alert["magnr"] < (alert["magpsf"] - 1):
-                return True
+            return True
 
         # Passed tests
         return False
@@ -398,7 +395,7 @@ class RcfFilter(AbsAlertFilter):
         bright_detections = 0
         for al in alert.datapoints:
             if (
-                "isdiffpos" not in al.keys()
+                "isdiffpos" not in al
                 or al["isdiffpos"] == "f"
                 or al["isdiffpos"] == "0"
             ):

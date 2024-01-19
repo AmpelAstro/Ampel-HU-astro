@@ -175,11 +175,11 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
                         group_z[3].append(cat_match["z"])
                         group_dist[3].append(cat_match["dist2transient"])
 
-                if cat_name == "SDSS_spec":
                     # Implicit restriction as tests where done with this max matching radius
-                    if cat_match["dist2transient"] < 10:
-                        group_z[1].append(cat_match["z"])
-                        group_dist[1].append(cat_match["dist2transient"])
+
+                if cat_name == "SDSS_spec" and cat_match["dist2transient"] < 10:
+                    group_z[1].append(cat_match["z"])
+                    group_dist[1].append(cat_match["dist2transient"])
                 # Implicit restriction as tests where done with this max matching radius
                 if (
                     cat_name == "GLADEv23"
@@ -224,17 +224,16 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
                             group_z[6].append(cat_match["photoz"])
                             group_dist[6].append(cat_match["dist2transient"])
 
-                if cat_name == "wiseScosPhotoz":
-                    if (
-                        cat_match["zPhoto_Corr"] is not None
-                        and cat_match["zPhoto_Corr"] > -0.1
-                    ):
-                        if cat_match["zPhoto_Corr"] < 0.2:
-                            group_z[4].append(cat_match["zPhoto_Corr"])
-                            group_dist[4].append(cat_match["dist2transient"])
-                        else:
-                            group_z[5].append(cat_match["zPhoto_Corr"])
-                            group_dist[5].append(cat_match["dist2transient"])
+                if cat_name == "wiseScosPhotoz" and (
+                    cat_match["zPhoto_Corr"] is not None
+                    and cat_match["zPhoto_Corr"] > -0.1
+                ):
+                    if cat_match["zPhoto_Corr"] < 0.2:
+                        group_z[4].append(cat_match["zPhoto_Corr"])
+                        group_dist[4].append(cat_match["dist2transient"])
+                    else:
+                        group_z[5].append(cat_match["zPhoto_Corr"])
+                        group_dist[5].append(cat_match["dist2transient"])
 
                 if cat_name == "twoMPZ":
                     # Photoz
@@ -267,10 +266,13 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
                             group_dist[6].append(cat_match["dist2transient"])
 
                 # Implicit restriction as tests where done with this max matching radius
-                if cat_name == "NEDz" and cat_match["dist2transient"] < 10:
-                    if cat_match["z"] < 0.4:
-                        group_z[2].append(cat_match["z"])
-                        group_dist[2].append(cat_match["dist2transient"])
+                if (
+                    cat_name == "NEDz"
+                    and cat_match["dist2transient"] < 10
+                    and cat_match["z"] < 0.4
+                ):
+                    group_z[2].append(cat_match["z"])
+                    group_dist[2].append(cat_match["dist2transient"])
 
                 # Also check for manual override
                 if self.catalogmatch_override:
