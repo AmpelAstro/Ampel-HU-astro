@@ -8,15 +8,18 @@
 # Last Modified By:    simeon.reusch@desy.de
 
 
-import os
 import copy
 import errno
+import os
 from collections.abc import Sequence
 from typing import Literal, Optional
 
 import backoff
 import numpy as np
 import sncosmo  # type: ignore[import]
+from sfdmap2.sfdmap import SFDMap  # type: ignore[import]
+from sncosmo.fitting import DataQualityError
+
 from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
 from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.content.DataPoint import DataPoint
@@ -27,11 +30,7 @@ from ampel.plot.create import create_plot_record
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
 from ampel.view.T2DocView import T2DocView
-from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper
 from ampel.ztf.util.ZTFNoisifiedIdMapper import ZTFNoisifiedIdMapper
-from astropy.table import Table
-from sfdmap2.sfdmap import SFDMap  # type: ignore[import]
-from sncosmo.fitting import DataQualityError
 
 
 class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):

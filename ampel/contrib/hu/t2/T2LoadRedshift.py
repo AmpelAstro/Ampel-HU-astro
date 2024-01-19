@@ -7,18 +7,18 @@
 # Last Modified Date:  06.04.2023
 # Last Modified By:    alice.townsend@physik.hu-berlin.de
 
-import pandas as pd
 from datetime import datetime
 
-from ampel.types import UBson
-from ampel.struct.UnitResult import UnitResult
-from ampel.view.LightCurve import LightCurve
+import pandas as pd
+from bson import tz_util
 
 # from ampel.view.T2DocView import T2DocView
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
-from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper
 from ampel.enum.DocumentCode import DocumentCode
-from bson import tz_util
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
+from ampel.view.LightCurve import LightCurve
+from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper
 
 
 class T2LoadRedshift(AbsLightCurveT2Unit):

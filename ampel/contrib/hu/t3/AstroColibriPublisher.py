@@ -11,26 +11,23 @@
 # type: ignore
 
 # from itertools import islice
-from typing import TYPE_CHECKING
+import os
+import re
 from collections.abc import Generator
-from functools import partial
-import re, os
+
 import numpy as np
 from astropy.time import Time
 
-from ampel.struct.JournalAttributes import JournalAttributes
-from ampel.view.TransientView import TransientView
-from ampel.struct.T3Store import T3Store
-
-from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
 from ampel.content.JournalRecord import JournalRecord
-
 from ampel.contrib.hu.t3.AstroColibriClient import (
     AstroColibriClient,
     AstroColibriPhot,
-    AstroColibriPost,
 )
+from ampel.struct.JournalAttributes import JournalAttributes
+from ampel.struct.T3Store import T3Store
+from ampel.view.TransientView import TransientView
+from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 
 
 def dps_to_astrocolobri(dps_det: list[dict]) -> dict[str, AstroColibriPhot]:

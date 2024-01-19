@@ -12,11 +12,10 @@ import json
 import sys
 import traceback
 from functools import partial
-from typing import Dict
 
 import aiohttp
 import backoff
-from aiohttp import ClientSession, ClientTimeout
+from aiohttp import ClientSession
 from aiohttp.client_exceptions import (
     ClientConnectionError,
     ClientConnectorError,

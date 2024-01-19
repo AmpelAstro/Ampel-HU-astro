@@ -8,17 +8,18 @@
 # Last Modified By:    ernstand@physik.hu-berlin.de
 
 from collections.abc import Sequence
-from typing import Any, Literal, Union, no_type_check
+from typing import Any, Literal, no_type_check
 
 import numpy as np
+from astropy.coordinates import Distance, SkyCoord
+from astropy.cosmology import Planck15
+
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
 from ampel.view.LightCurve import LightCurve
 from ampel.view.T2DocView import T2DocView
-from astropy.coordinates import Distance, SkyCoord
-from astropy.cosmology import Planck15
 
 # from nuztf.nuztf import cat_match
 

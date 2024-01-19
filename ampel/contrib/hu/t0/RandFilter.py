@@ -8,6 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from random import uniform
+
 from ampel.abstract.AbsAlertFilter import AbsAlertFilter
 
 

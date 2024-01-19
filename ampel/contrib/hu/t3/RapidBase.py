@@ -7,17 +7,17 @@
 # Last Modified Date:  06.02.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any
 from collections.abc import Generator
+from typing import Any
 
 from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.struct.JournalAttributes import JournalAttributes
+from ampel.struct.T3Store import T3Store
 from ampel.struct.UnitResult import UnitResult
+from ampel.types import T3Send, UBson
 from ampel.view.TransientView import TransientView
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
-from ampel.types import UBson, T3Send
-from ampel.struct.T3Store import T3Store
 
 
 # get the science records for the catalog match

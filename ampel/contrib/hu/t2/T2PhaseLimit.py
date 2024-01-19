@@ -7,21 +7,19 @@
 # Last Modified Date: 21.03.2022
 # Last Modified By  : mf@physik.hu-berlin.de
 
-from typing import Dict, List, Optional, Sequence, Any, Union, Iterable
-import os
-from astropy.coordinates import SkyCoord
-import numpy as np
-from ampel.types import UBson
-from ampel.struct.UnitResult import UnitResult
-from ampel.content.DataPoint import DataPoint
-from ampel.content.T1Document import T1Document
-from ampel.view.T2DocView import T2DocView
 import gc
-import matplotlib.pyplot as plt
+import os
+from typing import Any, Iterable, Optional, Union
 
+import matplotlib.pyplot as plt
+import numpy as np
 
 from ampel.abstract.AbsStateT2Unit import AbsStateT2Unit
 from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
+from ampel.content.DataPoint import DataPoint
+from ampel.content.T1Document import T1Document
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
 
 
 class T2PhaseLimit(AbsStateT2Unit, AbsTabulatedT2Unit):

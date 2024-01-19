@@ -7,16 +7,17 @@
 # Last Modified Date:  13.12.2022
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
-from typing import Literal, Union
 from collections.abc import Sequence
+from typing import Literal, Union
+
 import numpy as np
 
-from ampel.types import UBson
-from ampel.struct.UnitResult import UnitResult
 from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
-from ampel.model.StateT2Dependency import StateT2Dependency
-from ampel.content.T1Document import T1Document
 from ampel.content.DataPoint import DataPoint
+from ampel.content.T1Document import T1Document
+from ampel.model.StateT2Dependency import StateT2Dependency
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
 from ampel.view.T2DocView import T2DocView
 
 # Tying classification output classes with ELAsTICC taxonomy classes

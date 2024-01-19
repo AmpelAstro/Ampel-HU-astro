@@ -8,25 +8,23 @@
 # Last Modified By:    mf@physik.hu-berlin.de
 
 
+import copy
+from typing import Literal, Sequence, Union
+from urllib.parse import urljoin
+from urllib.request import urlopen
+
 import numpy as np
 import sncosmo  # type: ignore[import]
 from sfdmap2.sfdmap import SFDMap  # type: ignore[import]
-from typing import Union
-import copy
-from astropy.time import Time
-from typing import Literal, Sequence
-from urllib.request import urlopen
-from urllib.parse import urljoin
 
-from ampel.types import UBson
-from ampel.struct.UnitResult import UnitResult
-from ampel.contrib.hu.t2.T2RunSncosmo import T2RunSncosmo
-from ampel.model.StateT2Dependency import StateT2Dependency
-from ampel.view.T2DocView import T2DocView
-
-from ampel.enum.DocumentCode import DocumentCode
-from ampel.content.T1Document import T1Document
 from ampel.content.DataPoint import DataPoint
+from ampel.content.T1Document import T1Document
+from ampel.contrib.hu.t2.T2RunSncosmo import T2RunSncosmo
+from ampel.enum.DocumentCode import DocumentCode
+from ampel.model.StateT2Dependency import StateT2Dependency
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
+from ampel.view.T2DocView import T2DocView
 
 
 class T2RunPossis(T2RunSncosmo):

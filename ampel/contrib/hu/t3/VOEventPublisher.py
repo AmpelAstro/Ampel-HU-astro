@@ -7,28 +7,21 @@
 # Last Modified Date:  26.09.2022
 # Last Modified By:    jno <jnordin@physik.hu-berlin.de>
 
-from itertools import islice
-from typing import Iterable, TYPE_CHECKING, Literal, Any, Optional
-from collections.abc import Generator
 import datetime
-from astropy.time import Time
-
-from ampel.types import T3Send
-from ampel.struct.StockAttributes import StockAttributes
-from ampel.struct.JournalAttributes import JournalAttributes
-from ampel.enum.DocumentCode import DocumentCode
-from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
-from ampel.secret.NamedSecret import NamedSecret
-from ampel.view.TransientView import TransientView
-from ampel.view.T2DocView import T2DocView
-from ampel.struct.T3Store import T3Store
-from ampel.util.mappings import get_by_path
+from collections.abc import Generator
+from typing import TYPE_CHECKING, Any, Literal, Optional
 
 import voeventparse as vp
+from astropy.time import Time
 
+from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
+from ampel.struct.T3Store import T3Store
+from ampel.types import T3Send
+from ampel.util.mappings import get_by_path
+from ampel.view.TransientView import TransientView
 
 if TYPE_CHECKING:
-    from ampel.content.JournalRecord import JournalRecord
+    pass
 
 
 class VOEventPublisher(AbsPhotoT3Unit):

@@ -8,22 +8,22 @@
 # Last Modified By  : Jannis <jannis.necker@desy.de>
 
 import os
+from typing import Any, Literal, Sequence
+
+import matplotlib.pyplot as plt  # type: ignore
 import numpy as np
 import pandas as pd  # type: ignore
-import matplotlib.pyplot as plt  # type: ignore
 import uncertainties.unumpy as unumpy  # type: ignore
-
 from nltk import flatten  # type: ignore
-from typing import Sequence, Literal, Any
 
-from ampel.view.LightCurve import LightCurve
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
-from ampel.model.StateT2Dependency import StateT2Dependency
-from ampel.view.T2DocView import T2DocView
-from ampel.struct.UnitResult import UnitResult
-from ampel.ztf.util.ZTFIdMapper import to_ztf_id
-from ampel.types import UBson
 from ampel.enum.DocumentCode import DocumentCode
+from ampel.model.StateT2Dependency import StateT2Dependency
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
+from ampel.view.LightCurve import LightCurve
+from ampel.view.T2DocView import T2DocView
+from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 
 
 class T2DustEchoEval(AbsTiedLightCurveT2Unit):

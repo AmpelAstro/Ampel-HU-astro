@@ -7,16 +7,13 @@
 # Last Modified Date: 28.03.2023
 # Last Modified By  : jno
 
-import re
-import json
 
-from ampel.log import AmpelLogger
 from ampel.alert.AlertConsumer import AlertConsumer
-from ampel.model.UnitModel import UnitModel
-from ampel.model.ingest.IngestDirective import IngestDirective
 from ampel.ingest.ChainedIngestionHandler import ChainedIngestionHandler
-from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
+from ampel.log import AmpelLogger
 from ampel.model.ingest.CompilerOptions import CompilerOptions
+from ampel.model.UnitModel import UnitModel
+from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
 
 
 class DynamicShaperAlertConsumer(AlertConsumer):

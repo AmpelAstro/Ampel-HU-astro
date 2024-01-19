@@ -7,32 +7,27 @@
 # Last Modified Date: 21.04.2021
 # Last Modified By  : jnordin
 
-from typing import Any, Sequence, TYPE_CHECKING, Union
+from collections import OrderedDict
+from functools import partial
+from io import BytesIO
+from math import acos, cos, pi, sin
+from typing import Any, Sequence, Union
 
+import backoff
+import numpy as np
+import requests
+from astropy.io.votable import parse_single_table
 from astropy.table import Table
-
-from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
-from ampel.content.DataPoint import DataPoint
-
-from ampel.struct.UnitResult import UnitResult
-from ampel.enum.DocumentCode import DocumentCode
-from ampel.types import UBson
-
-from math import cos, sin, acos, pi
 
 # Datalab
 from dl import authClient
-
-from collections import OrderedDict
-import numpy as np
 from pandas import read_csv
-from astropy.table import Table
-from astropy.io.votable import parse_single_table
-from functools import partial
-from io import BytesIO
 
-import backoff
-import requests
+from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
+from ampel.content.DataPoint import DataPoint
+from ampel.enum.DocumentCode import DocumentCode
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
 
 
 def convert(inp, outfmt="pandas", verbose=False, **kwargs):

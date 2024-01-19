@@ -7,15 +7,17 @@
 # Last Modified Date:  24.11.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import requests, json
+import json
+from math import acos, cos, pi, sin
 from typing import Any
-from math import cos, sin, acos, pi
 
-from ampel.types import UBson
+import requests
+
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.content.DataPoint import DataPoint
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
 
 RAD = pi / 180
 

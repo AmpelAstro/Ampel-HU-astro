@@ -7,10 +7,13 @@
 # Last Modified Date:  06.02.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import datetime, requests
-from typing import Any, Tuple
-from ampel.secret.NamedSecret import NamedSecret
+import datetime
+from typing import Any
+
+import requests
+
 from ampel.contrib.hu.t3.RapidBase import RapidBase
+from ampel.secret.NamedSecret import NamedSecret
 from ampel.view.TransientView import TransientView
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 

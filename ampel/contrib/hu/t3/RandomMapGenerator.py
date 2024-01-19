@@ -7,13 +7,12 @@
 # Last Modified Date:  30.10.2023
 # Last Modified By:    <ernstand@physik.hu-berlin.de>
 
-import numpy as np
-import pandas as pd
-import astropy as ap
-import astropy.time as atime
-from astropy import units as u
-import healpy as hp
 from typing import Tuple
+
+import astropy.time as atime
+import healpy as hp
+import numpy as np
+from astropy import units as u
 
 from ampel.abstract.AbsT3PlainUnit import AbsT3PlainUnit
 from ampel.struct.Resource import Resource

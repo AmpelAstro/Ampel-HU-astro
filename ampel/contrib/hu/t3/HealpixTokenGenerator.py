@@ -9,9 +9,9 @@
 
 import random
 import time
-from datetime import datetime
-from typing import Any
-import numpy as np
+
+from astropy.time import Time  # type: ignore
+from requests_toolbelt.sessions import BaseUrlSession
 
 from ampel.abstract.AbsT3PlainUnit import AbsT3PlainUnit
 from ampel.contrib.hu.util.AmpelHealpix import AmpelHealpix, deres
@@ -20,8 +20,6 @@ from ampel.struct.Resource import Resource
 from ampel.struct.T3Store import T3Store
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
-from astropy.time import Time  # type: ignore
-from requests_toolbelt.sessions import BaseUrlSession
 
 
 class HealpixTokenGenerator(AbsT3PlainUnit):

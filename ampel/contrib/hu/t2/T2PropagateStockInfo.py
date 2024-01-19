@@ -7,7 +7,6 @@
 # Last Modified Date: 04.01.2022
 # Last Modified By:   jnordin@physik.hu-berlin.de
 
-from functools import reduce
 from ampel.abstract.AbsStockT2Unit import AbsStockT2Unit
 
 

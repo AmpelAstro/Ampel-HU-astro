@@ -7,18 +7,21 @@
 # Last Modified Date:  27.01.2021
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
+from collections.abc import Sequence
+from typing import Any
+
 import numpy as np
 from astropy.coordinates import SkyCoord
-from typing import Any
-from collections.abc import Sequence
-from ampel.types import UBson
-from ampel.struct.UnitResult import UnitResult
-from ampel.view.LightCurve import LightCurve
-from ampel.view.T2DocView import T2DocView
+
+# T2 importing info from T3. Restructure?
+from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
 from ampel.contrib.hu.t3.ampel_tns import (
     TNSFILTERID,
-)  # T2 importing info from T3. Restructure?
-from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
+)
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
+from ampel.view.LightCurve import LightCurve
+from ampel.view.T2DocView import T2DocView
 
 
 class T2TNSEval(AbsTiedLightCurveT2Unit):

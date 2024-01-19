@@ -8,13 +8,23 @@
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 
-import asyncio, datetime, gzip, io, os, ssl, sys, time, traceback, backoff, pytz
-from contextlib import nullcontext
+import asyncio
+import datetime
+import gzip
+import io
+import os
+import ssl
+import sys
+import time
+import traceback
+from collections.abc import Generator
 from functools import partial
 from typing import Any
-from collections.abc import Generator
 from xml.etree import ElementTree
-from aiohttp import ClientSession, helpers, TCPConnector
+
+import backoff
+import pytz
+from aiohttp import ClientSession, TCPConnector, helpers
 from aiohttp.client_exceptions import (
     ClientConnectionError,
     ClientConnectorError,
@@ -23,15 +33,15 @@ from aiohttp.client_exceptions import (
     ServerDisconnectedError,
 )
 
-from ampel.types import UBson
-from ampel.struct.T3Store import T3Store
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 from ampel.secret.NamedSecret import NamedSecret
+from ampel.struct.JournalAttributes import JournalAttributes
+from ampel.struct.T3Store import T3Store
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
 from ampel.util.json import AmpelEncoder
 from ampel.view.SnapView import SnapView
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
-from ampel.struct.UnitResult import UnitResult
-from ampel.struct.JournalAttributes import JournalAttributes
 
 
 class DCachePublisher(AbsT3ReviewUnit):

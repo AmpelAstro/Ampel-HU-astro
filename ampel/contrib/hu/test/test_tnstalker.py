@@ -3,7 +3,7 @@ from os import environ
 import pytest
 
 from ampel.contrib.hu.t3.tns.TNSToken import TNSToken
-from ampel.contrib.hu.t3.TNSTalker import TNSClient, TNS_BASE_URL_SANDBOX
+from ampel.contrib.hu.t3.TNSTalker import TNS_BASE_URL_SANDBOX, TNSClient
 from ampel.log.AmpelLogger import AmpelLogger
 
 

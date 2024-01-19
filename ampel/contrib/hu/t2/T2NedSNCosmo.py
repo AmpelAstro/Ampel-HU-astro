@@ -7,19 +7,20 @@
 # Last Modified Date:  10.10.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any, Literal
 from collections.abc import Sequence
-from ampel.types import UBson, Tag
+from typing import Any, Literal
+
+from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
 from ampel.contrib.hu.t2.T2SNCosmo import T2SNCosmo
 from ampel.contrib.hu.util.ned import check_ned_res
-from ampel.model.StateT2Dependency import StateT2Dependency
-from ampel.model.operator.AnyOf import AnyOf
-from ampel.model.operator.AllOf import AllOf
 from ampel.enum.DocumentCode import DocumentCode
+from ampel.model.operator.AllOf import AllOf
+from ampel.model.operator.AnyOf import AnyOf
+from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.struct.UnitResult import UnitResult
-from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
-from ampel.view.T2DocView import T2DocView
+from ampel.types import Tag, UBson
 from ampel.view.LightCurve import LightCurve
+from ampel.view.T2DocView import T2DocView
 
 
 class T2NedSNCosmo(AbsTiedLightCurveT2Unit, T2SNCosmo):

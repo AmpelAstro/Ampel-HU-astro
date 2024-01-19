@@ -7,28 +7,24 @@
 # Last Modified Date:  2.12.2021
 # Last Modified By:    jn <jnordin@physik.hu-berlin.de>
 
-from typing import Any, ClassVar, Literal
 from functools import cached_property
-from ampel.types import UBson
+from typing import Any, ClassVar, Literal
 
-from extcats import CatalogQuery
-from pymongo import MongoClient
-from pymongo.errors import AutoReconnect
 import backoff
-
-
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
+from extcats import CatalogQuery
 from extcats.catquery_utils import get_closest, get_distances
 from numpy import asarray, degrees
+from pymongo import MongoClient
+from pymongo.errors import AutoReconnect
 
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.content.DataPoint import DataPoint
 from ampel.enum.DocumentCode import DocumentCode
-from ampel.struct.UnitResult import UnitResult
-
 from ampel.model.DPSelection import DPSelection
-
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
 from ampel.ztf.t2.T2CatalogMatch import CatalogModel
 
 

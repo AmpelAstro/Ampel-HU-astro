@@ -3,10 +3,10 @@ from os.path import dirname, join
 
 import pytest
 
+from ampel.content.DataPoint import DataPoint
 from ampel.contrib.hu.t2.T2BrightSNProb import T2BrightSNProb
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.view.LightCurve import LightCurve
-from ampel.content.DataPoint import DataPoint
 from ampel.ztf.util.ZTFIdMapper import to_ampel_id
 
 _ampel_flags = {

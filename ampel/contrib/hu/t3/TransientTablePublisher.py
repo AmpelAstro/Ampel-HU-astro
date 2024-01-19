@@ -10,24 +10,19 @@
 import io
 import os
 import re
-import numpy as np
 from collections.abc import Generator
-from functools import reduce
 from typing import Any, Optional, Union
-
-import json
 
 import backoff
 import pandas as pd
 import requests
+
 from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
-from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.struct.T3Store import T3Store
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import T3Send, UBson
 from ampel.util.mappings import get_by_path
-from ampel.view.SnapView import SnapView
 from ampel.view.TransientView import TransientView
 
 

@@ -7,11 +7,9 @@
 # Last Modified Date:  26.09.2022
 # Last Modified By:    Jakob Nordin <jnordin@physik.hu-berlin.de>
 
-from astropy.table import Table
-from typing import Any, TYPE_CHECKING
-from ampel.types import UBson
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
 from ampel.view.LightCurve import LightCurve
 
 

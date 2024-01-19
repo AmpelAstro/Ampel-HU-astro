@@ -7,7 +7,6 @@
 # Last Modified Date:  14.09.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Tuple
 from ampel.protocol.LoggerProtocol import LoggerProtocol
 
 

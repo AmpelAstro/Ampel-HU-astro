@@ -7,22 +7,17 @@
 # Last Modified Date:
 # Last Modified By  :
 
-from typing import Any, Literal, Dict, List, Optional, Sequence, Any, Tuple
-import sys, os
-from bson import encode
+import sys
 from hashlib import blake2b
-from ampel.ztf.util.ZTFIdMapper import to_ampel_id
-from ampel.view.ReadOnlyDict import ReadOnlyDict
-from ampel.alert.BaseAlertSupplier import BaseAlertSupplier
-from ampel.alert.AmpelAlert import AmpelAlert
-from ampel.protocol.AmpelAlertProtocol import AmpelAlertProtocol
-from ampel.types import Tag
+from typing import Literal
+
 import numpy as np
 import pandas as pd
-import astropy
-import json
-from astropy.io import ascii
-from io import BytesIO
+from bson import encode
+
+from ampel.alert.AmpelAlert import AmpelAlert
+from ampel.alert.BaseAlertSupplier import BaseAlertSupplier
+from ampel.view.ReadOnlyDict import ReadOnlyDict
 
 
 class NeoWisePhotometryAlertSupplier(BaseAlertSupplier):

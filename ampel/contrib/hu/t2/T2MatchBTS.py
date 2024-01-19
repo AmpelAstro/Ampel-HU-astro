@@ -7,22 +7,21 @@
 # Last Modified Date:  13.12.2021
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
-from typing import Union
-import requests
-import backoff
-import pandas as pd
 import io
 from datetime import datetime
 
-from ampel.types import UBson
-from ampel.struct.UnitResult import UnitResult
-from ampel.view.LightCurve import LightCurve
+import backoff
+import pandas as pd
+import requests
+from bson import tz_util
 
 # from ampel.view.T2DocView import T2DocView
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
-from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper
 from ampel.enum.DocumentCode import DocumentCode
-from bson import tz_util
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
+from ampel.view.LightCurve import LightCurve
+from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper
 
 
 class T2MatchBTS(AbsLightCurveT2Unit):

@@ -8,10 +8,12 @@
 # Last Modified By:    jno <firstname.lastname@gmail.com>
 
 from typing import Any
+
 from bson import encode
-from ampel.types import StockId
+
 from ampel.abstract.AbsT0Unit import AbsT0Unit
 from ampel.content.DataPoint import DataPoint
+from ampel.types import StockId
 from ampel.util.hash import hash_payload
 from ampel.ztf.ingest.ZiDataPointShaper import ZiDataPointShaperBase
 

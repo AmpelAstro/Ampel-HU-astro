@@ -7,21 +7,24 @@
 # Last Modified Date:  16.12.2020
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
-import datetime, backoff, requests
+import datetime
+from collections.abc import Generator
 from io import BytesIO, StringIO
+from typing import Any
+
+import backoff
+import requests
 from astropy.time import Time
 from pytz import timezone
 from requests.auth import HTTPBasicAuth
-from typing import Any
-from collections.abc import Generator
 
-from ampel.types import ChannelId, UBson, T3Send
-from ampel.struct.T3Store import T3Store
+from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
 from ampel.secret.NamedSecret import NamedSecret
+from ampel.struct.T3Store import T3Store
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import ChannelId, T3Send, UBson
 from ampel.util.json import AmpelEncoder, load
 from ampel.view.TransientView import TransientView
-from ampel.struct.UnitResult import UnitResult
-from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
 
 
 class ChannelSummaryPublisher(AbsPhotoT3Unit):

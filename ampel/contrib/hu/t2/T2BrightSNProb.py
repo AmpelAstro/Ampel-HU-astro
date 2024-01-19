@@ -7,14 +7,16 @@
 # Last Modified Date:  03.08.2020
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
+from typing import TypedDict
+
 import numpy as np
-from typing import Union, TypedDict
-from ampel.types import UBson
-from ampel.struct.UnitResult import UnitResult
-from ampel.view.LightCurve import LightCurve
+
+import ampel.contrib.hu.t2.xgb_trees as xgb_trees
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 from ampel.contrib.hu.t2.T2RiseDeclineStat import T2RiseDeclineBase
-import ampel.contrib.hu.t2.xgb_trees as xgb_trees
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
+from ampel.view.LightCurve import LightCurve
 
 
 class XgbTreeParam(TypedDict):

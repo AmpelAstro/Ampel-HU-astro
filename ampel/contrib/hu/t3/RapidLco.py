@@ -7,8 +7,10 @@
 # Last Modified Date:  20.08.2020
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
-import datetime, requests
-from typing import Any, Tuple
+import datetime
+from typing import Any
+
+import requests
 
 from ampel.contrib.hu.t3.RapidBase import RapidBase
 from ampel.secret.NamedSecret import NamedSecret

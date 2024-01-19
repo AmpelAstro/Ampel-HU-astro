@@ -9,20 +9,21 @@
 
 
 from typing import ClassVar
-from astropy.time import Time
-from astropy.coordinates import SkyCoord
+
 import astropy.units as u
 import numpy as np
 import requests
+from astropy.coordinates import SkyCoord
+from astropy.time import Time
 from bs4 import BeautifulSoup  # type: ignore[import]
 
-from ampel.types import UBson
-from ampel.struct.UnitResult import UnitResult
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.content.DataPoint import DataPoint
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.model.DPSelection import DPSelection
 from ampel.model.UnitModel import UnitModel
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
 
 
 class T2MinorPlanetCenter(AbsPointT2Unit):

@@ -7,11 +7,10 @@
 # Last Modified Date:  11.04.2022
 # Last Modified By:    jno <jnordin@physik.hu-berlin.de>
 
-from typing import Sequence, Dict, Any, Union
+from typing import Any, Dict, Sequence, Union
 
-import requests
-import json
 import backoff
+import requests
 from requests import HTTPError
 
 

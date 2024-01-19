@@ -8,23 +8,24 @@
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 import re
-from itertools import islice
-from typing import Any, TYPE_CHECKING
 from collections.abc import Generator, Iterable
-from ampel.struct.StockAttributes import StockAttributes
-from ampel.types import StockId
+from itertools import islice
+from typing import TYPE_CHECKING, Any
+
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit, T3Send
-from ampel.secret.NamedSecret import NamedSecret
-from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.contrib.hu.t3.ampel_tns import (
-    TNSClient,
     TNS_BASE_URL_REAL,
     TNS_BASE_URL_SANDBOX,
+    TNSClient,
 )
+from ampel.contrib.hu.t3.tns.TNSToken import TNSToken
+from ampel.secret.NamedSecret import NamedSecret
+from ampel.struct.JournalAttributes import JournalAttributes
+from ampel.struct.StockAttributes import StockAttributes
 from ampel.struct.T3Store import T3Store
+from ampel.types import StockId
 from ampel.view.TransientView import TransientView
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
-from ampel.contrib.hu.t3.tns.TNSToken import TNSToken
 
 if TYPE_CHECKING:
     from ampel.content.JournalRecord import JournalRecord

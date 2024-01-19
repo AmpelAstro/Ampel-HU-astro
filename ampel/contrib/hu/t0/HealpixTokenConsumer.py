@@ -8,10 +8,12 @@
 # Last Modified By  : jn <jno@physik.hu-berlin.de>
 
 import sys
-from signal import SIGINT, SIGTERM, default_int_handler, signal
+from signal import SIGINT, SIGTERM, signal
 from typing import Any
 
 import numpy as np
+from pymongo.errors import PyMongoError
+
 from ampel.alert.AlertConsumer import AlertConsumer
 from ampel.alert.AlertConsumerError import AlertConsumerError
 from ampel.alert.AlertConsumerMetrics import AlertConsumerMetrics, stat_time
@@ -37,8 +39,7 @@ from ampel.model.ingest.CompilerOptions import CompilerOptions
 from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
 
 # from ampel.core.AmpelContext import AmpelContext
-from ampel.util.mappings import get_by_path, merge_dict
-from pymongo.errors import PyMongoError
+from ampel.util.mappings import get_by_path
 
 # from ampel.model.AlertConsumerModel import AlertConsumerModel
 

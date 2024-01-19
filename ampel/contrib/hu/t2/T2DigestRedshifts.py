@@ -7,17 +7,18 @@
 # Last Modified Date:  19.10.2022
 # Last Modified By:    atownsend@physik.hu-berlin.de
 
-from typing import Any, Literal
 from collections.abc import Sequence
-from ampel.struct.UnitResult import UnitResult
+from typing import Any, Literal
 
-from ampel.types import UBson
+import numpy as np
+
+from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.model.StateT2Dependency import StateT2Dependency
-from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
-from ampel.view.T2DocView import T2DocView
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
 from ampel.view.LightCurve import LightCurve
-import numpy as np
+from ampel.view.T2DocView import T2DocView
 
 
 class T2DigestRedshifts(AbsTiedLightCurveT2Unit):

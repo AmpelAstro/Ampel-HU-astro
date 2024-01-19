@@ -7,27 +7,26 @@
 # Last Modified Date:  12.12.2022
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
-from typing import Literal, Union, Dict
+import os
 from collections.abc import Sequence
-
+from typing import Dict, Literal, Union
 
 import numpy as np
 import xgboost as xgb
-import os
 
-from ampel.types import UBson
-from ampel.enum.DocumentCode import DocumentCode
-from ampel.struct.UnitResult import UnitResult
-from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
-from ampel.model.StateT2Dependency import StateT2Dependency
-from ampel.content.T1Document import T1Document
+from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.content.DataPoint import DataPoint
-from ampel.view.T2DocView import T2DocView
+from ampel.content.T1Document import T1Document
 from ampel.contrib.hu.t2.T2TabulatorRiseDecline import (
-    T2TabulatorRiseDeclineBase,
     FitFailed,
+    T2TabulatorRiseDeclineBase,
 )
+from ampel.enum.DocumentCode import DocumentCode
+from ampel.model.StateT2Dependency import StateT2Dependency
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
+from ampel.view.T2DocView import T2DocView
 
 
 class T2MultiXgbClassifier(

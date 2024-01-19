@@ -1,21 +1,20 @@
-from ampel.view.T2DocView import T2DocView, TYPE_STATE_T2
-from ampel.struct.T3Store import T3Store
-import pytest
-from ampel.log.AmpelLogger import AmpelLogger
-from ampel.contrib.hu.t3.SlackSummaryPublisher import SlackSummaryPublisher
-from ampel.secret.NamedSecret import NamedSecret
-
-from ampel.content.StockDocument import StockDocument
-from ampel.content.DataPoint import DataPoint
-from ampel.content.T2Document import T2Document
-from ampel.enum.DocumentCode import DocumentCode
-from ampel.view.TransientView import TransientView
-from ampel.ztf.util.ZTFIdMapper import to_ampel_id
-
-import requests
-from slack_sdk import WebClient
 import csv
 from io import StringIO
+
+import pytest
+import requests
+from slack_sdk import WebClient
+
+from ampel.content.DataPoint import DataPoint
+from ampel.content.StockDocument import StockDocument
+from ampel.contrib.hu.t3.SlackSummaryPublisher import SlackSummaryPublisher
+from ampel.enum.DocumentCode import DocumentCode
+from ampel.log.AmpelLogger import AmpelLogger
+from ampel.secret.NamedSecret import NamedSecret
+from ampel.struct.T3Store import T3Store
+from ampel.view.T2DocView import TYPE_STATE_T2, T2DocView
+from ampel.view.TransientView import TransientView
+from ampel.ztf.util.ZTFIdMapper import to_ampel_id
 
 
 @pytest.fixture

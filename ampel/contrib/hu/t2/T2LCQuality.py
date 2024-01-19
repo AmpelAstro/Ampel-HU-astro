@@ -8,12 +8,13 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
+
 from astropy.table import Table
 from scipy.interpolate import interp1d
 
-from ampel.types import UBson
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
 from ampel.view.LightCurve import LightCurve
 
 

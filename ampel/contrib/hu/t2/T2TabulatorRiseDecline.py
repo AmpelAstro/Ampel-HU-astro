@@ -7,23 +7,24 @@
 # Last Modified Date:  03.08.2020
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
-from typing import Any, Union, TYPE_CHECKING, Sequence, Iterable
-import os, re
+import os
+import re
+from typing import TYPE_CHECKING, Any, Iterable, Sequence, Union
+
+import light_curve
 import numpy as np
 from astropy.table import Table
 from scipy.optimize import curve_fit
-import light_curve
 
-from ampel.types import UBson
 from ampel.abstract.AbsStateT2Unit import AbsStateT2Unit
 from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
-from ampel.base.LogicalUnit import LogicalUnit
 from ampel.base.AmpelBaseModel import AmpelBaseModel
-from ampel.protocol.LoggerProtocol import LoggerProtocol
-from ampel.struct.UnitResult import UnitResult
-
+from ampel.base.LogicalUnit import LogicalUnit
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
+from ampel.protocol.LoggerProtocol import LoggerProtocol
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
 
 
 def getMag(tab: Table, err=False, time=False):

@@ -7,12 +7,12 @@
 # Last Modified Date:  11.08.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from io import BytesIO
-from typing import List
-from ampel.abstract.AbsAlertLoader import AbsAlertLoader
 import gzip
 import json
+from io import BytesIO
 from pathlib import Path
+
+from ampel.abstract.AbsAlertLoader import AbsAlertLoader
 
 
 class WiseFileAlertLoader(AbsAlertLoader[BytesIO]):

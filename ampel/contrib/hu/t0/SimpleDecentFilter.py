@@ -7,13 +7,10 @@
 # Last Modified Date:  2.11.2021
 # Last Modified By:    jn <jnordin@physik.hu-berlin.de>
 
-import numpy as np
-from typing import Any
-from astropy.table import Table
 from astropy.coordinates import SkyCoord
 
-from ampel.protocol.AmpelAlertProtocol import AmpelAlertProtocol
 from ampel.abstract.AbsAlertFilter import AbsAlertFilter
+from ampel.protocol.AmpelAlertProtocol import AmpelAlertProtocol
 
 
 class SimpleDecentFilter(AbsAlertFilter):

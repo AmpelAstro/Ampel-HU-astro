@@ -8,7 +8,7 @@
 # Last Modified By  : j. nordin <j.nordin@physik.hu-berlin.de>
 
 import enum
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict
 
 from astropy.coordinates import SkyCoord
 

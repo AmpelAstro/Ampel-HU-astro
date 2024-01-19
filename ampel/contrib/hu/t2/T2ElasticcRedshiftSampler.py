@@ -7,13 +7,14 @@
 # Last Modified Date: 12.04.2022
 # Last Modified By  : jnordin@physik.hu-berlin.de
 
-from typing import Sequence, Union, TypedDict, cast
+from typing import TypedDict, Union, cast
+
 import numpy as np
 
-from ampel.types import UBson
-from ampel.struct.UnitResult import UnitResult
-from ampel.content.DataPoint import DataPoint
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
+from ampel.content.DataPoint import DataPoint
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
 
 
 class QuantileEntry(TypedDict):

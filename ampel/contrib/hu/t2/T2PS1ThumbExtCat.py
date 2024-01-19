@@ -7,19 +7,20 @@
 # Last Modified Date:  14.09.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Literal
 from collections.abc import Sequence
-from ampel.types import UBson
-from ampel.contrib.hu.t2.T2PanStarrThumbPrint import T2PanStarrThumbPrint
+from typing import Literal
+
 from ampel.abstract.AbsTiedPointT2Unit import AbsTiedPointT2Unit
-from ampel.util.collections import ampel_iter
 from ampel.content.DataPoint import DataPoint
+from ampel.contrib.hu.t2.T2PanStarrThumbPrint import T2PanStarrThumbPrint
+from ampel.enum.DocumentCode import DocumentCode
+from ampel.model.PlotProperties import FormatModel, PlotProperties
+from ampel.model.UnitModel import UnitModel
 from ampel.plot.create import create_plot_record
 from ampel.struct.UnitResult import UnitResult
-from ampel.model.PlotProperties import PlotProperties, FormatModel
-from ampel.model.UnitModel import UnitModel
+from ampel.types import UBson
+from ampel.util.collections import ampel_iter
 from ampel.view.T2DocView import T2DocView
-from ampel.enum.DocumentCode import DocumentCode
 
 
 class T2PS1ThumbExtCat(AbsTiedPointT2Unit):

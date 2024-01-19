@@ -7,16 +7,18 @@
 # Last Modified Date:  05.02.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+from typing import Any
+
 import astropy.units as u
 from astropy.time import Time
-from typing import Any
-from ampel.types import UBson
+
+from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.enum.DocumentCode import DocumentCode
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
 from ampel.util.Observatory import Observatory
 from ampel.view.LightCurve import LightCurve
-from ampel.struct.UnitResult import UnitResult
-from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
-from ampel.enum.DocumentCode import DocumentCode
 
 
 class VisibilityConstraintModel(AmpelBaseModel):

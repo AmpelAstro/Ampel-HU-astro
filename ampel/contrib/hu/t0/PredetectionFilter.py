@@ -7,13 +7,12 @@
 # Last Modified Date:  06.12.2023
 # Last Modified By:    A. Ernst <ernstand@physik.hu-berlin.de>
 
-import os
-from astropy.io.fits import Header
 
+from numpy import array
+
+from ampel.contrib.hu.util.AmpelHealpix import AmpelHealpix
 from ampel.protocol.AmpelAlertProtocol import AmpelAlertProtocol
 from ampel.ztf.t0.DecentFilter import DecentFilter
-from ampel.contrib.hu.util.AmpelHealpix import AmpelHealpix
-from numpy import array
 
 
 class PredetectionFilter(DecentFilter):

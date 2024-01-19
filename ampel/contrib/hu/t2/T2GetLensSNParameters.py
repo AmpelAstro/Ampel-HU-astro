@@ -8,10 +8,12 @@
 # Last Modified By  : alice.townsend@physik.hu-berlin.de
 
 
+from bisect import bisect_left
+
 import numpy as np
 from astropy.table import Table
+
 from ampel.contrib.hu.t2.T2RunSncosmo import T2RunSncosmo
-from bisect import bisect_left
 
 
 class T2GetLensSNParameters(T2RunSncosmo):

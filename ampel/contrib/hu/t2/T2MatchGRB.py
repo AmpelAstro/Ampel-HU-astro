@@ -1,21 +1,18 @@
-from typing import Any, Iterable, Union
-from ampel.types import UBson
-
-import requests
 import json
-
-from numpy import mean
-
-from ampel.content.DataPoint import DataPoint
-from ampel.struct.UnitResult import UnitResult
-from ampel.content.T1Document import T1Document
-from ampel.abstract.AbsStateT2Unit import AbsStateT2Unit
-from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
-from ampel.contrib.hu.util.AmpelHealpix import AmpelHealpix
+from typing import Any, Iterable, Union
 
 import astropy.time as atime
 import astropy.units as aunits
+import requests
 from astropy.coordinates import SkyCoord
+
+from ampel.abstract.AbsStateT2Unit import AbsStateT2Unit
+from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
+from ampel.content.DataPoint import DataPoint
+from ampel.content.T1Document import T1Document
+from ampel.contrib.hu.util.AmpelHealpix import AmpelHealpix
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
 
 
 class T2MatchGRB(AbsStateT2Unit, AbsTabulatedT2Unit):

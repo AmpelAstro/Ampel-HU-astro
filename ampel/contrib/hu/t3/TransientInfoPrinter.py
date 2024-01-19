@@ -8,14 +8,15 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import logging
-from typing import Any
 from collections.abc import Generator
-from ampel.types import UBson, T3Send
-from ampel.struct.UnitResult import UnitResult
-from ampel.struct.T3Store import T3Store
-from ampel.view.TransientView import TransientView
+from typing import Any
+
 from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
+from ampel.struct.T3Store import T3Store
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import T3Send, UBson
 from ampel.util.pretty import prettyjson
+from ampel.view.TransientView import TransientView
 
 
 class TransientInfoPrinter(AbsPhotoT3Unit):

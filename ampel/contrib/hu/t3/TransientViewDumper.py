@@ -14,6 +14,8 @@ from urllib.parse import ParseResult, urlparse, urlunparse
 from xml.etree import ElementTree
 
 import requests
+from requests.auth import HTTPBasicAuth
+
 from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.struct.T3Store import T3Store
@@ -21,7 +23,6 @@ from ampel.struct.UnitResult import UnitResult
 from ampel.types import T3Send, UBson
 from ampel.util.json import AmpelEncoder
 from ampel.view.TransientView import TransientView
-from requests.auth import HTTPBasicAuth
 
 
 def strip_auth_from_url(url):

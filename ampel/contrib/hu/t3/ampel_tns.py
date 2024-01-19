@@ -18,10 +18,10 @@ import time
 from typing import Any
 
 from requests.models import Response
+from requests_toolbelt.sessions import BaseUrlSession
 
 from ampel.contrib.hu.t3.tns.TNSToken import TNSToken
 from ampel.protocol.LoggerProtocol import LoggerProtocol
-from requests_toolbelt.sessions import BaseUrlSession
 
 TNSFILTERID = {1: "110", 2: "111", 3: "112"}
 AT_REPORT_FORM = "bulk-report"

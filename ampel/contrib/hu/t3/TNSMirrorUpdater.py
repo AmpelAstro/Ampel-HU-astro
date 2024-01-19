@@ -14,9 +14,9 @@ from typing import Any
 from pymongo import MongoClient
 
 from ampel.abstract.AbsOpsUnit import AbsOpsUnit
-from ampel.contrib.hu.t3.tns.TNSToken import TNSToken
 from ampel.contrib.hu.t3.tns.TNSClient import TNSClient
 from ampel.contrib.hu.t3.tns.TNSMirrorDB import TNSMirrorDB
+from ampel.contrib.hu.t3.tns.TNSToken import TNSToken
 from ampel.secret.NamedSecret import NamedSecret
 
 

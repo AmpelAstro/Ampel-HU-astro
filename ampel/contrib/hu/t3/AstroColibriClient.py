@@ -10,12 +10,15 @@
 # FIXME: restore mypy when this is actually ready
 # type: ignore
 
-from typing import Sequence, Dict, Any, Union
+import base64
+import json
+from typing import Any, Dict
 
-import requests, base64, json
 import backoff
+import requests
 from requests import HTTPError
 from requests.auth import HTTPBasicAuth
+
 # from datetime import datetime
 # from astropy.time import Time
 

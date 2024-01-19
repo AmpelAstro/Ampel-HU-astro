@@ -7,21 +7,19 @@
 # Last Modified Date:  11.04.2022
 # Last Modified By:    jno <jnordin@physik.hu-berlin.de>
 
-from itertools import islice
-from typing import Iterable, TYPE_CHECKING, TypeVar
 from collections.abc import Generator
+from itertools import islice
+from typing import TYPE_CHECKING, Iterable, TypeVar
 
-from ampel.struct.StockAttributes import StockAttributes
-from ampel.struct.JournalAttributes import JournalAttributes
-from ampel.enum.DocumentCode import DocumentCode
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit, T3Send
-from ampel.secret.NamedSecret import NamedSecret
-from ampel.view.TransientView import TransientView
-from ampel.view.T2DocView import T2DocView
-from ampel.struct.T3Store import T3Store
-from ampel.log import LogFlag
-
 from ampel.contrib.hu.t3.ElasticcTomClient import ElasticcTomClient
+from ampel.enum.DocumentCode import DocumentCode
+from ampel.log import LogFlag
+from ampel.secret.NamedSecret import NamedSecret
+from ampel.struct.JournalAttributes import JournalAttributes
+from ampel.struct.StockAttributes import StockAttributes
+from ampel.struct.T3Store import T3Store
+from ampel.view.TransientView import TransientView
 
 if TYPE_CHECKING:
     from ampel.content.JournalRecord import JournalRecord

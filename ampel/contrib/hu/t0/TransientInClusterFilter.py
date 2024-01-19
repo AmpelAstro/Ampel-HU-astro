@@ -7,10 +7,12 @@
 # Last Modified Date:  24.11.2021
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
-import numpy as np
 from functools import partial
-from ampel.ztf.t0.DecentFilter import DecentFilter
+
+import numpy as np
+
 from ampel.protocol.AmpelAlertProtocol import AmpelAlertProtocol
+from ampel.ztf.t0.DecentFilter import DecentFilter
 
 
 class TransientInClusterFilter(DecentFilter):

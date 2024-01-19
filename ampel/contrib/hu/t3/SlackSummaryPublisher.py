@@ -9,24 +9,23 @@
 
 import datetime
 import io
-from collections.abc import Mapping
+from collections.abc import Generator, Iterable, Mapping
 from typing import Any, cast
-from collections.abc import Iterable, Generator
 
 import numpy as np
 import pandas as pd
 import requests
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackClientError
+from slack_sdk.web import SlackResponse
 
-from ampel.types import T3Send
-from ampel.struct.T3Store import T3Store
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 from ampel.log.utils import log_exception
 from ampel.secret.NamedSecret import NamedSecret
+from ampel.struct.T3Store import T3Store
+from ampel.types import T3Send
 from ampel.view.TransientView import TransientView
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
-from slack_sdk.web import SlackResponse
 
 
 class SlackSummaryPublisher(AbsT3ReviewUnit):

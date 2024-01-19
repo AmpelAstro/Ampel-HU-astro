@@ -1,5 +1,5 @@
-from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
 from ampel.config.builder.DisplayOptions import DisplayOptions
+from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
 
 
 def test_build_config() -> None:

@@ -7,16 +7,17 @@
 # Last Modified Date:  08.09.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Union
 from collections.abc import Sequence
+
 from pymage.panstarrs import PS1Target  # type: ignore[import]
-from ampel.types import UBson
+
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
-from ampel.util.collections import ampel_iter
 from ampel.content.DataPoint import DataPoint
+from ampel.model.PlotProperties import FormatModel, PlotProperties
 from ampel.plot.create import create_plot_record
 from ampel.struct.UnitResult import UnitResult
-from ampel.model.PlotProperties import PlotProperties, FormatModel
+from ampel.types import UBson
+from ampel.util.collections import ampel_iter
 
 
 class T2PanStarrThumbPrint(AbsPointT2Unit):

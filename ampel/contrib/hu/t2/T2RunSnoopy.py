@@ -8,24 +8,21 @@
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
 
-from typing import Any, Optional, Union, Literal
-from collections.abc import Sequence
 import os
-
+from collections.abc import Sequence
+from typing import Literal, Optional, Union
 
 import numpy as np
 import snpy  # type: ignore[import]
-from astropy.table import Table
 from sfdmap import SFDMap  # type: ignore[import]
 
-from ampel.types import StockId, UBson
-from ampel.struct.UnitResult import UnitResult
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
-from ampel.view.T2DocView import T2DocView
-from ampel.view.LightCurve import LightCurve
-from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper
 from ampel.model.StateT2Dependency import StateT2Dependency
-from ampel.model.PlotProperties import PlotProperties
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
+from ampel.view.LightCurve import LightCurve
+from ampel.view.T2DocView import T2DocView
+from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper
 
 
 class T2RunSnoopy(AbsTiedLightCurveT2Unit):

@@ -7,12 +7,11 @@
 # Last Modified Date:  02.11.2022
 # Last Modified By:    jnordin <jnordin@physik.hu-berlin.de>
 
-from typing import Literal
-import numpy as np
 from functools import partial
+from typing import Literal
 
-from ampel.ztf.t0.DecentFilter import DecentFilter
 from ampel.protocol.AmpelAlertProtocol import AmpelAlertProtocol
+from ampel.ztf.t0.DecentFilter import DecentFilter
 
 
 class RedshiftCatalogFilter(DecentFilter):

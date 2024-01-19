@@ -7,20 +7,20 @@
 # Last Modified Date: 28.09.2021
 # Last Modified By  : jnordin@physik.hu-berlin.de
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+import os
+import re
 from collections.abc import Generator
-import os, re
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-import numpy as np
+from typing import Any, Dict, List, Optional, Union
 
-from ampel.types import UBson, T3Send
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+
+from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
 from ampel.struct.T3Store import T3Store
 from ampel.struct.UnitResult import UnitResult
-
+from ampel.types import T3Send, UBson
 from ampel.view.TransientView import TransientView
-from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
 
 
 class PlotLightcurveSample(AbsPhotoT3Unit):

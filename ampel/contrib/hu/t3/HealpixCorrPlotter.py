@@ -8,23 +8,22 @@
 # Last Modified By:   jn <jnordin@physik.hu-berlin.de>
 
 import os
-from typing import Any, Union, Generator, Sequence, Literal
+from typing import Any, Generator, Literal, Union
+
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+import numpy as np
+import pandas as pd
+from adjustText import adjust_text
+from matplotlib import cm
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
-from matplotlib import cm
-import pandas as pd
-import numpy as np
-import seaborn as sns
-from adjustText import adjust_text
 
-from ampel.types import UBson, T3Send
-from ampel.struct.UnitResult import UnitResult
-from ampel.struct.T3Store import T3Store
-from ampel.view.TransientView import TransientView
 from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
-from ampel.util.pretty import prettyjson
+from ampel.struct.T3Store import T3Store
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import T3Send, UBson
+from ampel.view.TransientView import TransientView
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 
 

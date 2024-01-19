@@ -7,28 +7,28 @@
 # Last Modified Date: 06.04.2022
 # Last Modified By  : jnordin@physik.hu-berlin.de
 
-from typing import Sequence, Literal, Optional
-import os, backoff
-from scipy.stats import chi2
 import gc
-import numpy as np
-from astropy.table import Table
+import os
+import warnings
+from typing import Literal, Optional, Sequence
+
+import backoff
 import matplotlib.pyplot as plt
-import timeout_decorator
+import numpy as np
 import packaging
 import scipy
-import warnings
+import timeout_decorator
+from astropy.table import Table
+from scipy.stats import chi2
 
-from ampel.types import UBson
-from ampel.struct.UnitResult import UnitResult
-from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
-from ampel.content.T1Document import T1Document
+from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.content.DataPoint import DataPoint
-from ampel.view.T2DocView import T2DocView
-from ampel.enum.DocumentCode import DocumentCode
+from ampel.content.T1Document import T1Document
 from ampel.model.StateT2Dependency import StateT2Dependency
-from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
+from ampel.view.T2DocView import T2DocView
 
 # do not warning about scipy.stats.mode(keepdims=None)
 if packaging.version.parse(scipy.__version__) < packaging.version.parse("1.11"):
@@ -36,14 +36,13 @@ if packaging.version.parse(scipy.__version__) < packaging.version.parse("1.11"):
         "ignore", category=FutureWarning, module="parsnip.light_curve", lineno=31
     )
 
-import parsnip
+import extinction  # type: ignore[import]
 import lcdata
+import parsnip
+import sncosmo  # type: ignore[import]
 
 # The following three only used if correcting for MW dust
 from sfdmap2.sfdmap import SFDMap  # type: ignore[import]
-import sncosmo  # type: ignore[import]
-import extinction  # type: ignore[import]
-
 
 # All parsnip predictions that are not floats
 dcast_pred = {

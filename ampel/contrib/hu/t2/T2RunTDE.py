@@ -10,27 +10,22 @@
 
 import copy
 import errno
-import os
-from typing import Literal, Sequence, Union
+from typing import Union
 
 # from astropy.time import Time
-import astropy.cosmology as cospy
 import backoff
 import numpy as np
 import sncosmo  # type: ignore[import]
-from ampel.contrib.hu.t2.T2RunSncosmo import T2RunSncosmo
-from ampel.struct.UnitResult import UnitResult
-from ampel.types import UBson
-
-# from ampel.enum.DocumentCode import DocumentCode
-from ampel.view.LightCurve import LightCurve
-
-# from ampel.model.StateT2Dependency import StateT2Dependency
-from ampel.view.T2DocView import T2DocView
 from astropy import constants as c
 from astropy import units as u
 from astropy.units import Quantity
 from sfdmap import SFDMap  # type: ignore[import]
+
+from ampel.contrib.hu.t2.T2RunSncosmo import T2RunSncosmo
+
+# from ampel.enum.DocumentCode import DocumentCode
+
+# from ampel.model.StateT2Dependency import StateT2Dependency
 
 # from urllib.request import urlopen
 # from urllib.parse import urljoin
