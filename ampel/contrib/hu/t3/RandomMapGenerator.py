@@ -30,10 +30,10 @@ class RandomMapGenerator(AbsT3PlainUnit):
     save_dir: str = "."
     map_name: str = "simulated"
 
-    long_range: Tuple[float, float] = [0, 360]
-    lat_range: Tuple[float, float] = [0, 90]
+    long_range: Tuple[float, float] = (0, 360)
+    lat_range: Tuple[float, float] = (0, 90)
 
-    fwhm_range: Tuple[float, float] = [0.4, 1.2]
+    fwhm_range: Tuple[float, float] = (0.4, 1.2)
 
     nside: int = 32
 
@@ -124,7 +124,7 @@ class RandomMapGenerator(AbsT3PlainUnit):
         hdr_simple = []
         hdr_simple.append(("SIMPLE", "T"))
 
-        hdr = []
+        hdr: list[tuple[str,float|int|str|None]] = []
         
         hdr.append(("DISTMEAN", self.distance))
         hdr.append(("DISTSTD", self.dist_unc))

@@ -59,7 +59,7 @@ adjustText = "^0.7.3"
 extcats = {version = "^2.4.2", optional = false, source = "pypi"}
 slack-sdk = {version = "^3", optional = true}
 xgboost = {version = "^1.6.2", optional = true}
-astro-parsnip = "^1.4.1"
+astro-parsnip = {version = "^1.4.1", optional = true}
 timeout-decorator = {version = "^0.5", optional = true}
 jupyter = {version = "^1.0.0", optional = true}
 voevent-parse = {version = "^1.0.3", optional = true}

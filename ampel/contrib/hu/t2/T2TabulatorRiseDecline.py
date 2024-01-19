@@ -17,6 +17,7 @@ import light_curve
 from ampel.types import UBson
 from ampel.abstract.AbsStateT2Unit import AbsStateT2Unit
 from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
+from ampel.base.LogicalUnit import LogicalUnit
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.protocol.LoggerProtocol import LoggerProtocol
 from ampel.struct.UnitResult import UnitResult
@@ -260,7 +261,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
         #    )
         mymatchlist.extend(matchlist)
 
-        matchedvalues = {}
+        matchedvalues: dict[str,list] = {}
         # Can this be redone to avoid nested loop?
         for match in mymatchlist:
             p = re.compile(match)
@@ -416,9 +417,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
         return o
 
 
-
-
-class BaseLightCurveFeatures(AmpelBaseModel):
+class BaseLightCurveFeatures(LogicalUnit, AmpelBaseModel):
     """
     Calculate various features of the light curve using the light-curve
     package described in https://ui.adsabs.harvard.edu/abs/2021MNRAS.502.5147M%2F/abstract

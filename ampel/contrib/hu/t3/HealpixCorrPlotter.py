@@ -44,11 +44,11 @@ class HealpixCorrPlotter(AbsPhotoT3Unit):
 	max_pvalue: float = 0.9
 
 	# Plot params
-	plotsize: Sequence[float] = [6,4]
+	plotsize: tuple[float,float] = (6,4)
     # List of inclusive lower limit, non-inc upper limit, marker type, label
 #	marker_colors: list[str] = ["#E69F00", "#56B4E9", "#009E73", "#0072B2", "#D55E00", "#CC79A7", "#F0E442"]
 #	marker_colors: list[str] = ["#332288", "#88CCEE", "#44AA99", "#117733", "#999933", "#DDCC77", "#CC6677", "#882255", "#AA4499"]
-	marker_colors = cm.get_cmap('plasma', 5).colors
+	marker_colors = cm.get_cmap('plasma', 5).colors # type: ignore[attr-defined]
 #	marker_colors = [cm.get_cmap('summer', 3)(i) for i in range(3)]
 	background_color: str = "tab:green"
 	ndof_marker: list[Any] = [ [0,0.5,'o', marker_colors[0], '0 dof'], [1,1.5,'^', marker_colors[1], '1 dof'], [2,np.inf,'s', marker_colors[2], '>1 dof'], ]
@@ -154,13 +154,11 @@ class HealpixCorrPlotter(AbsPhotoT3Unit):
         #legend_elements = []
         #for minfo in self.ndof_marker:
         #    legend_elements.append( Line2D([0], [0], marker=minfo[2], color=minfo[3], label=minfo[4], markeredgecolor='None' ) )
-		legend_elements = [Line2D([0], [0], marker=minfo[2], color=minfo[3], label=minfo[4], markeredgecolor='None', linewidth=0 ) for minfo in self.ndof_marker ]
-		legend_elements.append(
-            Line2D([0], [0], marker='o', markerfacecolor='None', label='Good z', markeredgecolor='k', linewidth=0 )
-            )
-		legend_elements.append(
+		legend_elements = [
+			*(Line2D([0], [0], marker=minfo[2], color=minfo[3], label=minfo[4], markeredgecolor='None', linewidth=0 ) for minfo in self.ndof_marker),
+            Line2D([0], [0], marker='o', markerfacecolor='None', label='Good z', markeredgecolor='k', linewidth=0 ),
             Patch(facecolor=self.background_color, edgecolor='None', label='Target region')
-            )
+        ]
 		ax.legend(handles=legend_elements, loc='best', ncol=2)
 #		plt.legend(loc=3,ncol=2)
 		plt.xlabel('Healpix spatial P-value')

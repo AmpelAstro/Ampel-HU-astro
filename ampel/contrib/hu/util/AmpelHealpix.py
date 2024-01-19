@@ -56,6 +56,7 @@ class AmpelHealpix:
             return 1
 
         # Retrieve mapfile.
+        assert self.map_url
         map_data = requests.get(self.map_url)
         with open(path, "wb") as fh:
             fh.write(map_data.content)
@@ -136,7 +137,8 @@ class AmpelHealpix:
             raise ValueError("First get and process map before using.")
 
         # Create mask for pixel selection
-        mask = np.zeros(len(self.credible_levels), int)
+        assert self.credible_levels
+        mask = np.zeros(len(self.credible_levels), dtype=int)
         mask[self.credible_levels <= pvalue_limit] = 1
 
         return mask.nonzero()[0].tolist()
@@ -153,7 +155,7 @@ class AmpelHealpix:
             {"nside": nside, "pixels": members} for nside, members in deresdict.items()
         ]
         # calculate relevant map area
-        hp_area = 0
+        hp_area = 0.
         for region in healpix_regions:
             npix_from_nside = 12 * region["nside"]**2
             hp_area += len(region["pixels"]) / npix_from_nside
@@ -170,6 +172,7 @@ class AmpelHealpix:
 
         if not self.nside:
             raise ValueError("First get and process map before using.")
+        assert self.credible_levels
 
         theta = 0.5 * np.pi - np.deg2rad(dec)
         phi = np.deg2rad(ra)

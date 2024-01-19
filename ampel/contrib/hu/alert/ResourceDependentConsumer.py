@@ -72,7 +72,7 @@ class DynamicShaperConsumer(AlertConsumer):
 			IngestDirective(
 				**json.loads( 
 					pattern.sub(
-						lambda m: self.alert_supplier.resources[self.directives_map[m.group(0)]], 
+						lambda m: self.alert_supplier.resources[self.directives_map[m.group(0)]].value, 
 						json.dumps(el.dict()) 
 					)
 				)

@@ -41,7 +41,7 @@ class T2HealpixProb(AbsStateT2Unit, AbsTabulatedT2Unit):
 
     # Name (signifier)
     map_name: str       # Assumed to agree with map name 
-    healpix_map: None | AmpelHealpix = None
+    _healpix_map: AmpelHealpix
     map_hash: None | str = None
 
     pvalue_limit: float = 0.9
@@ -53,9 +53,9 @@ class T2HealpixProb(AbsStateT2Unit, AbsTabulatedT2Unit):
     def load_map(self, map_info):
 
         # Load and process map
-        self.healpix_map = AmpelHealpix(map_name=map_info.get('map_name'), map_url=map_info.get('map_url'), save_dir = map_info.get('map_dir'))
-        self.map_hash = self.healpix_map.process_map()
-        self.seed = self.healpix_map.seed
+        self._healpix_map = AmpelHealpix(map_name=map_info.get('map_name'), map_url=map_info.get('map_url'), save_dir = map_info.get('map_dir'))
+        self.map_hash = self._healpix_map.process_map()
+        self.seed = self._healpix_map.seed
         print("T2HEALPIXPRB:: SEED:: ", self.seed)
         if not self.map_hash==map_info['hash']:
             raise ValueError("Healpix hash changed - modified map?")
@@ -100,8 +100,8 @@ class T2HealpixProb(AbsStateT2Unit, AbsTabulatedT2Unit):
         #print("POSITIONS::", pos)
 	
 	# 4. Use this to return the prob. 
-        out_dict: dict[str, Any] = {'map_name': self.map_name, 'map_hash': self.map_hash, 'trigger_time': self.healpix_map.trigger_time}
-        out_dict['cumprob'] = self.healpix_map.get_cumprob(mean([dp[1] for dp in pos]), mean([dp[2] for dp in pos]))
+        out_dict: dict[str, Any] = {'map_name': self.map_name, 'map_hash': self.map_hash, 'trigger_time': self._healpix_map.trigger_time}
+        out_dict['cumprob'] = self._healpix_map.get_cumprob(mean([dp[1] for dp in pos]).tolist(), mean([dp[2] for dp in pos]).tolist())
 
     # 5. Propagate used area, total alerts (unfiltered)
         # Combine pixels when possible
@@ -122,7 +122,7 @@ class T2HealpixProb(AbsStateT2Unit, AbsTabulatedT2Unit):
         out_dict["queried_alerts"] = healdps[0]['body']["alert_count_query"]
     
     # 6. return map distance & uncertainty
-        map_dist, map_dist_unc = self.healpix_map.get_mapdist()
+        map_dist, map_dist_unc = self._healpix_map.get_mapdist()
         out_dict["map_dist"] = map_dist
         out_dict["map_dist_unc"] = map_dist_unc
 

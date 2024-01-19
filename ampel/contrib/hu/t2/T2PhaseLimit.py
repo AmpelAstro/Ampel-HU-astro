@@ -244,6 +244,7 @@ class T2PhaseLimit(AbsStateT2Unit, AbsTabulatedT2Unit):
 			fig = plt.figure(figsize=(6,5) )
 
 			all_jd = flux_table["time"]
+			bins: Any
 			_1, bins, _2 = plt.hist( all_jd, bins=100, label = 'All alerts' )
 
 			plt.hist( jd, bins=bins, label = 'Clipped det.' )

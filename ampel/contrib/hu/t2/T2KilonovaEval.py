@@ -8,7 +8,7 @@
 # Last Modified By:    ernstand@physik.hu-berlin.de
 
 from collections.abc import Sequence
-from typing import Any, Literal, Union
+from typing import Any, Literal, Union, no_type_check
 
 import numpy as np
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
@@ -137,6 +137,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
     #             "TNS"
     #             ]
 
+    @no_type_check
     def inspect_ampelz(self, t2res: dict[str, Any]) -> None | dict[str, Any]:
         """
         Check whether Ampel Z data (from T2DigestRedshifts) fulfill criteria.
@@ -181,6 +182,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         # Return collected info
         return info
 
+    @no_type_check
     def inspect_possis(self, t2res: dict[str, Any]) -> None | dict[str, Any]:
         """
         Check whether a fit to T2RunPossis models looks good, save best fit's parameters.
@@ -262,6 +264,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
 
         return info
 
+    @no_type_check
     def inspect_lc(self, lc: LightCurve) -> None | dict[str, Any]:
         """
         Verify whether the transient lightcurve fulfill criteria for submission.
@@ -614,6 +617,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         self.logger.info("Passed T2infantCatalogEval", extra=info)
         return info
 
+    @no_type_check
     def inspect_catmatch(self, t2res: dict[str, Any]) -> None | dict[str, Any]:
         """
         Check wether any catalog has a match for the transit.
@@ -636,6 +640,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         # print(t2res.keys())
         return info
 
+    @no_type_check
     def inspect_grbmatch(self, t2res: dict[str, Any]) -> None | dict[str, Any]:
 
         info = {"pass": 0, "rejects": []}
@@ -654,6 +659,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             info["rejects"].append("no_grb_match")
         return info
 
+    @no_type_check
     def inspect_distance(
         self, t2res: dict[str, Any], input_info: dict[str, Any]
     ) -> None | dict[str, Any]:
@@ -709,6 +715,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
 
         return info
 
+    @no_type_check
     def inspect_prob(
         self, t2res: dict[str, Any], input_info: dict[str, Any]
     ) -> None | dict[str, Any]:
@@ -731,7 +738,8 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         info["pass"] += reward
         info["rejects"].append(["prob", reward])
         return info
-    
+
+    @no_type_check
     def inspect_risedecline(self, t2res: dict[str, Any]
     ) -> None | dict[str, Any]:
         """
@@ -772,7 +780,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         cat_kilonovaness: int = 0
         dist_kilonovaness: int = 0
 
-        info = {"possis": []}
+        info: dict[str, Any] = {"possis": []}
         rejects = []
 
         # Check t2 ouputs
@@ -877,7 +885,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
 
         # Categorize
         if kilonovaness < 1:
-            rank_decimal = 0
+            rank_decimal = 0.
         else:
             rank_decimal = kilonovaness / (kilonovaness + len(rejects))
 

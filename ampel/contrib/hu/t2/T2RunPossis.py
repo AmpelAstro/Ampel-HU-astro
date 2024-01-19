@@ -77,9 +77,9 @@ class T2RunPossis(T2RunSncosmo):
     explosion_time_jd: None | float | Literal["TriggerTime"]
 
     # Which units should this be changed to
-    t2_dependency: Sequence[
+    t2_dependency: Sequence[ # type: ignore[assignment]
         StateT2Dependency[
-            Literal[  # type: ignore[assignment]
+            Literal[
                 "T2DigestRedshifts",
                 "T2MatchBTS",
                 "T2PhaseLimit",
@@ -164,7 +164,7 @@ class T2RunPossis(T2RunSncosmo):
                 # Limit to one angle
                 # Note: U. Feindt developed model where angle was fit, left out for now
                 if phi==90:
-                    theta_mask = [True]
+                    theta_mask = np.array([True])
                 else:
                     theta_mask = np.isclose(cos_theta, model_cos_theta)
                 if not sum(theta_mask) == 1:

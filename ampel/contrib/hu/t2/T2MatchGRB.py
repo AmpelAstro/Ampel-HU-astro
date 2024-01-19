@@ -21,7 +21,7 @@ from astropy.coordinates import SkyCoord
 class T2MatchGRB(AbsStateT2Unit, AbsTabulatedT2Unit):
     trigger_jd: float | None = 0
     map_dir: str | None = "./"
-    map_name: str | None = None
+    map_name: str
 
     ra: float = 0
     dec: float = 0
@@ -58,7 +58,7 @@ class T2MatchGRB(AbsStateT2Unit, AbsTabulatedT2Unit):
         
         tmp_skycoord = None
 
-        results = { "temporal_grb": [] }
+        results: dict[str,list[dict[str,Any]]] = { "temporal_grb": [] }
 
         # get alert coordinates
         for point in datapoints:
@@ -137,7 +137,7 @@ class T2MatchGRB(AbsStateT2Unit, AbsTabulatedT2Unit):
             )
             return
 
-        event_list = []
+        event_list: list[dict[str,Any]] = []
         for event in events:
             if event["source_name"] == "":
                 continue

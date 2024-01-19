@@ -62,8 +62,8 @@ class DynamicShaperAlertConsumer(AlertConsumer):
 		        	if resource_name in self.alert_supplier.resources
 			}
 		#print('config pure', newconfig)
-		if self.shaper.config:
-			newconfig = self.shaper.config.update(newconfig)
+		if isinstance(self.shaper.config, dict):
+			newconfig = self.shaper.config | newconfig
 		shaper = UnitModel(
 				unit = self.shaper.unit,
 				config = newconfig,

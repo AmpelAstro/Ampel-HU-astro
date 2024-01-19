@@ -8,7 +8,7 @@
 # Last Modified By:    jno <jnordin@physik.hu-berlin.de>
 
 from itertools import islice
-from typing import Iterable, TYPE_CHECKING
+from typing import Iterable, TYPE_CHECKING, TypeVar
 from collections.abc import Generator
 
 from ampel.struct.StockAttributes import StockAttributes
@@ -26,7 +26,9 @@ from ampel.contrib.hu.t3.ElasticcTomClient import ElasticcTomClient
 if TYPE_CHECKING:
     from ampel.content.JournalRecord import JournalRecord
 
-def chunks(l: Iterable, n: int) -> Generator[list, None, None]:
+T = TypeVar("T")
+
+def chunks(l: Iterable[T], n: int) -> Generator[list[T], None, None]:
     source = iter(l)
     while True:
         chunk = list(islice(source, n))
@@ -186,13 +188,16 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
         failed = 0
 
         for chunk in chunks(self._get_reports(gen), self.batch_size):
+            tran_views: tuple[TransientView, ...]
+            t1_links: tuple[int, ...]
+            class_reports: tuple[dict, ...]
             tran_views, t1_links, class_reports = zip(*chunk)
 
             if self.dry_run:
                 continue
 
             # use the ElasticcTomClient
-            desc_response = self.tomclient.tom_post(class_reports)
+            desc_response = self.tomclient.tom_post(class_reports) # type: ignore[arg-type]
 
             if desc_response['success']:
                 submitted += len(class_reports)

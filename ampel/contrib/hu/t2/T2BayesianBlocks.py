@@ -1195,7 +1195,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 for sp in ["left", "bottom", "top", "right"]:
                     ax.spines[sp].set_linewidth(3)
 
-                ax.set_title(light_curve.stock_id, fontsize=25)
+                ax.set_title(str(light_curve.stock_id), fontsize=25)
                 ax.legend(
                     bbox_to_anchor=(1.05, 1),
                     loc=2,
