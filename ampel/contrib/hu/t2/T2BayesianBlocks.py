@@ -18,13 +18,13 @@ import more_itertools as mit
 import numpy as np
 import pandas as pd  # type: ignore
 from astropy.stats import bayesian_blocks  # type: ignore
-from nltk import flatten  # type: ignore
 from numpy.typing import ArrayLike
 from scipy.signal import find_peaks  # type: ignore
 from sklearn.metrics import mean_squared_error  # type: ignore
 from uncertainties import unumpy  # type: ignore
 
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
+from ampel.contrib.hu.utils import flatten
 from ampel.model.PlotProperties import PlotProperties
 from ampel.plot.create import create_plot_record
 from ampel.struct.UnitResult import UnitResult
