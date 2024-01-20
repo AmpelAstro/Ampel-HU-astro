@@ -151,9 +151,7 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
         out_dict: dict[str, Any] = {}
         for catalog, cat_opts in self.catalogs.items():
             src = None
-            self.logger.debug(
-                f"Loading catalog {catalog} using options: {str(cat_opts)}"
-            )
+            self.logger.debug(f"Loading catalog {catalog} using options: {cat_opts!s}")
             # find out how ra/dec are called in the catalog
             catq_kwargs = cat_opts.catq_kwargs
             if catq_kwargs is None:

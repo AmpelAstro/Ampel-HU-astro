@@ -214,7 +214,7 @@ class T2LCQuality(AbsLightCurveT2Unit):
                     f"parameter 'lc_filter' must be either list or tuple. got {type(self.lc_filter)} instead"
                 )
 
-            self.logger.debug(f"applying filter: {repr(filters)}")
+            self.logger.debug(f"applying filter: {filters!r}")
 
             # get upper limits and detections time series
             pps = light_curve.get_tuples("jd", "magpsf", filters=filters)

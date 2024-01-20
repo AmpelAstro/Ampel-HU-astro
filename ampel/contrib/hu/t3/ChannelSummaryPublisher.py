@@ -124,7 +124,7 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
             timestamp -= datetime.timedelta(days=1)
         filename = timestamp.strftime("channel-summary-%Y%m%d.json")
 
-        channel = list(self._channels)[0]
+        channel = next(iter(self._channels))
         basedir = f"{self.base_url}/{channel}"
         rep = self.session.head(basedir)
         if not (rep.ok or self.dry_run):

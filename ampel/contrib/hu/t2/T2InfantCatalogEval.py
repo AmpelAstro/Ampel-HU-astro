@@ -190,8 +190,10 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         if ulims and len(ulims) > 0:
             last_ulim_jd = sorted([x["body"]["jd"] for x in ulims])[-1]
             pps_after_ndet = lc.get_photopoints(
-                filters=self.lc_filters
-                + [{"attribute": "jd", "operator": ">=", "value": last_ulim_jd}]
+                filters=[
+                    *self.lc_filters,
+                    {"attribute": "jd", "operator": ">=", "value": last_ulim_jd},
+                ]
             )
             # Check if there are enough positive detection after the last significant UL
             if (

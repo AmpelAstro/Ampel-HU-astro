@@ -68,4 +68,4 @@ class T2LoadRedshift(AbsLightCurveT2Unit):
             }
 
         # Otherwise, return full match dictionary. Assuming unique BTS match, otherwise first entry is retrieved
-        return list(match.values())[0]
+        return next(iter(match.values()))

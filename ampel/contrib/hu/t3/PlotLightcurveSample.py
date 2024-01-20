@@ -294,7 +294,7 @@ class PlotLightcurveSample(AbsPhotoT3Unit):
             g = sns.PairGrid(
                 df,
                 hue="class_from_bts",
-                x_vars=["absmag"] + self.param,
+                x_vars=["absmag", *self.param],
                 y_vars="absmag",
             )
             g.map_diag(sns.histplot, color=".3")

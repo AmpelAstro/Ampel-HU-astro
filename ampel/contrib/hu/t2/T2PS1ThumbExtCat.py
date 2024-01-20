@@ -65,33 +65,29 @@ class T2PS1ThumbExtCat(AbsTiedPointT2Unit):
             return UnitResult(code=DocumentCode.T2_MISSING_INFO)
 
         pt = T2PanStarrThumbPrint.get_ps1_target(datapoint, self.band)
-        plots = []
-
-        for cat_name, cat_res in cat_results["data"].items():
-            if not cat_res:
-                continue
-
-            for band in ampel_iter(self.band):
-                for cmap in ampel_iter(self.cmaps):
-                    plots.append(
-                        create_plot_record(
-                            pt.show(
-                                ellipse=False,
-                                band=band,
-                                cmap=cmap,
-                                show=False,
-                                show_target=False,
-                                show_coord=(cat_res["ra"], cat_res["dec"]),
-                            ),
-                            self.plot_props,
-                            extra={
-                                "band": band,
-                                "stock": datapoint["stock"][0],  # type: ignore[index]
-                                "catalog": cat_name,
-                                "cmap": cmap,
-                            },
-                            logger=self.logger,
-                        )
-                    )
+        plots = [
+            create_plot_record(
+                pt.show(
+                    ellipse=False,
+                    band=band,
+                    cmap=cmap,
+                    show=False,
+                    show_target=False,
+                    show_coord=(cat_res["ra"], cat_res["dec"]),
+                ),
+                self.plot_props,
+                extra={
+                    "band": band,
+                    "stock": datapoint["stock"][0],  # type: ignore[index]
+                    "catalog": cat_name,
+                    "cmap": cmap,
+                },
+                logger=self.logger,
+            )
+            for cat_name, cat_res in cat_results["data"].items()
+            if cat_res
+            for band in ampel_iter(self.band)
+            for cmap in ampel_iter(self.cmaps)
+        ]
 
         return {"data": {"plots": plots}}

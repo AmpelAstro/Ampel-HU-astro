@@ -110,4 +110,4 @@ class T2MatchBTS(AbsLightCurveT2Unit):
             return {"bts_synced_at": self.bts_df["bts_synced_at"][0]}
 
         # Otherwise, return full match dictionary. Assuming unique BTS match, otherwise first entry is retrieved
-        return list(match.values())[0]
+        return next(iter(match.values()))

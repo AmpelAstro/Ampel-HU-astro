@@ -825,10 +825,10 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                             ]["mag"].values
                         )
 
+                        first = next(iter(everything_except_excess_values))
                         everything_except_excess_rms = mean_squared_error(
-                            list(everything_except_excess_values)[0],
-                            [np.mean(list(everything_except_excess_values)[0])]
-                            * len(list(everything_except_excess_values)[0]),
+                            first,
+                            np.ones(len(first)) * np.mean(first),
                             squared=False,
                         )
             else:
@@ -979,13 +979,16 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                         ] = significance_of_fluctuation_after_peak
 
                         # Calculate the significance of each bayesian block, inside the excess region of the highest intensity
-                        if len([i for i in idx if (i > global_peak_idx)]) >= 2:
+                        if (
+                            len(post_peak := [i for i in idx if (i > global_peak_idx)])
+                            >= 2
+                        ):
                             after_peak_excess_values = df[
                                 (
                                     (
                                         df["jd"]
                                         >= baye_block["jd_measurement_start"].loc[
-                                            [i for i in idx if (i > global_peak_idx)][0]
+                                            post_peak[0]
                                         ]
                                     )
                                     & (df["Outlier"] == False)
@@ -994,9 +997,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                                     (
                                         df["jd"]
                                         <= baye_block["jd_measurement_end"].loc[
-                                            [i for i in idx if (i > global_peak_idx)][
-                                                -1
-                                            ]
+                                            post_peak[-1]
                                         ]
                                     )
                                     & (df["Outlier"] == False)
@@ -1007,7 +1008,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                                     (
                                         df["jd"]
                                         >= baye_block["jd_measurement_start"].loc[
-                                            [i for i in idx if (i > global_peak_idx)][0]
+                                            post_peak[0]
                                         ]
                                     )
                                     & (df["Outlier"] == False)
@@ -1016,9 +1017,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                                     (
                                         df["jd"]
                                         <= baye_block["jd_measurement_end"].loc[
-                                            [i for i in idx if (i > global_peak_idx)][
-                                                -1
-                                            ]
+                                            post_peak[-1]
                                         ]
                                     )
                                     & (df["Outlier"] == False)
@@ -1044,9 +1043,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                             output["strength_after_peak"].append(
                                 (
                                     baye_block["mag"].loc[global_peak_idx]
-                                    - baye_block["mag"].loc[
-                                        [i for i in idx if (i > global_peak_idx)][0]
-                                    ]
+                                    - baye_block["mag"].loc[post_peak[0]]
                                 )
                                 / after_peak_excess_rms
                             )
@@ -1384,7 +1381,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 )
                 print("--------")
             print(
-                f"coincident regions between g and r: {str(output_per_filter['coincide_peak_block'])}"
+                f"coincident regions between g and r: {output_per_filter['coincide_peak_block']!s}"
             )
 
         return t2_output

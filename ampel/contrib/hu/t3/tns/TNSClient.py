@@ -115,7 +115,7 @@ class TNSClient:
             return exc.code not in {500, 429}
         return False
 
-    async def search(self, exclude: None | set[str] = None, **params):
+    async def search(self, *, exclude: None | set[str] = None, **params):
         semaphore = asyncio.Semaphore(self.maxParallelRequests)
         async with ClientSession(
             headers={

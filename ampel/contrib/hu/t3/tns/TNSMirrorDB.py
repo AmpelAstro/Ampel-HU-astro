@@ -41,9 +41,10 @@ class TNSMirrorDB:
         if not docs:
             return
 
-        ops = []
-        for doc in map(self.apply_schema, docs):
-            ops.append(UpdateOne({"_id": doc["_id"]}, {"$set": doc}, upsert=True))
+        ops = [
+            UpdateOne({"_id": doc["_id"]}, {"$set": doc}, upsert=True)
+            for doc in map(self.apply_schema, docs)
+        ]
 
         try:
             result = self.collection.bulk_write(ops, ordered=False)

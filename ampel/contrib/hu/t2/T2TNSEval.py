@@ -235,13 +235,13 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
             last_ulim = sorted(ulims, key=lambda x: x["body"]["jd"])[-1]
             pps_after_ndet = (
                 lc.get_photopoints(
-                    filters=self.lc_filters
-                    + [
+                    filters=[
+                        *self.lc_filters,
                         {
                             "attribute": "jd",
                             "operator": ">=",
                             "value": last_ulim["body"]["jd"],
-                        }
+                        },
                     ]
                 )
                 or []
@@ -444,8 +444,10 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         # now add info on photometric detections: consider only candidates which
         # have some consecutive detection after the last ulim
         if pps := lc.get_photopoints(
-            filters=self.lc_filters
-            + [{"attribute": "jd", "operator": ">=", "value": last_non_obs}]
+            filters=[
+                *self.lc_filters,
+                {"attribute": "jd", "operator": ">=", "value": last_non_obs},
+            ]
         ):
             # Lets create a few photometry points: TODO: should they be the latest or the first?
             atdict["photometry"] = {"photometry_group": {}}

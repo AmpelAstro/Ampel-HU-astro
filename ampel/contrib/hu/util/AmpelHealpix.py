@@ -82,11 +82,11 @@ class AmpelHealpix:
         # print(type(headers))
         # print("END HEADERS")
 
-        trigger_time = [
+        trigger_time = next(
             datetime.fromisoformat(header[1])
             for header in headers
             if header[0] == "DATE-OBS"
-        ][0]
+        )
 
         nside = int(hp.npix2nside(len(hpx)))
 
@@ -103,12 +103,12 @@ class AmpelHealpix:
             self.nside = nside
 
         # print(headers)
-        self.dist = [header[1] for header in headers if header[0] == "DISTMEAN"][0]
+        self.dist = next(header[1] for header in headers if header[0] == "DISTMEAN")
         # for header in headers:
         # print(header[1], header[0])
 
         # print(self.dist)
-        self.dist_unc = [header[1] for header in headers if header[0] == "DISTSTD"][0]
+        self.dist_unc = next(header[1] for header in headers if header[0] == "DISTSTD")
 
         seed_list = [header[1] for header in headers if header[0] == "SEED"]
         if len(seed_list) > 0:

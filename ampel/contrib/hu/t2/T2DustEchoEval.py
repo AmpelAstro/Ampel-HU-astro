@@ -191,11 +191,13 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                                     # Check the fluctuation inside the excess region
                                     #########################################################################
                                     # check if there is magnitude flactuanion before the excess region
-                                    difference = []
-                                    for baseline in np.array(
-                                        t2_res[key]["jd_baseline_regions"]
-                                    ):
-                                        difference.append(peak[0] - baseline[-1])
+                                    difference = [
+                                        peak[0] - baseline[-1]
+                                        for baseline in np.array(
+                                            t2_res[key]["jd_baseline_regions"]
+                                        )
+                                    ]
+
                                     diff, position = min(
                                         (
                                             (b, nu)

@@ -1,4 +1,4 @@
-from ampel.contrib.hu.t3.tns import TNSName
+from ampel.contrib.hu.t3.tns.TNSName import TNSName
 
 
 def test_tnsname():

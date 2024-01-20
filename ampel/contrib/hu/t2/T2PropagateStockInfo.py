@@ -7,35 +7,32 @@
 # Last Modified Date: 04.01.2022
 # Last Modified By:   jnordin@physik.hu-berlin.de
 
+from collections.abc import Generator
+from typing import Any
+
 from ampel.abstract.AbsStockT2Unit import AbsStockT2Unit
 
 
-def get_recursively(search_dict, field):
+def get_recursively(search_dict: dict[str,Any], field: str) -> Generator[str, None, None]:
     """
     Takes a dict with nested lists and dicts,
     and searches all dicts for a key of the field
     provided.
     """
-    fields_found = []
 
     for key, value in search_dict.items():
         if key == field:
-            fields_found.append(key + "_found_" + str(value))
+            yield f"{key}_found_{value}"
 
         elif isinstance(value, dict):
-            results = get_recursively(value, field)
-            for result in results:
-                fields_found.append(key + "." + result)
+            for result in get_recursively(value, field):
+                yield f"{key}.{result}"
 
         elif isinstance(value, list):
             for item in value:
                 if isinstance(item, dict):
-                    more_results = get_recursively(item, field)
-                    for another_result in more_results:
-                        fields_found.append(key + "." + another_result)
-
-    return fields_found
-
+                    for result in get_recursively(item, field):
+                        yield f"{key}.{result}"
 
 class T2PropagateStockInfo(AbsStockT2Unit):
     """
@@ -55,8 +52,7 @@ class T2PropagateStockInfo(AbsStockT2Unit):
     def process(self, stock_doc):
         outd = {}
         for label, pathlist in self.prop_paths.items():
-            paths = get_recursively(stock_doc, pathlist[-1])
-            for path in paths:
+            for path in get_recursively(stock_doc, pathlist[-1]):
                 (dictpath, dictval) = path.split("_found_")
                 if ".".join(pathlist) == dictpath:
                     outd[label] = dictval

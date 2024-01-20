@@ -51,7 +51,7 @@ def test_tnsclient_backoff(test_client: TNSClient):
 
 @pytest.mark.asyncio()
 async def test_tnsclient_backoff_async(tns_token):
-    from ampel.contrib.hu.t3.tns import TNSClient as TNSMirrorClient
+    from ampel.contrib.hu.t3.tns.TNSClient import TNSClient as TNSMirrorClient
 
     client = TNSMirrorClient(
         tns_token, timeout=120, maxParallelRequests=1, logger=AmpelLogger.get_logger()
@@ -61,7 +61,10 @@ async def test_tnsclient_backoff_async(tns_token):
         hits = [
             hit
             async for hit in client.search(
-                **{"ra": ra, "dec": dec, "radius": matchradius, "units": "arcsec"}
+                ra=ra,
+                dec=dec,
+                radius=matchradius,
+                units="arcsec",
             )
         ]
         assert hits

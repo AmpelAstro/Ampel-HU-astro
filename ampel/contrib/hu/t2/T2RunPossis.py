@@ -171,7 +171,7 @@ class T2RunPossis(T2RunSncosmo):
 
                 # Read model data
                 mdata = np.genfromtxt(fh)
-            wave = mdata[0 : int(nwave), 0]  # noqa
+            wave = mdata[0 : int(nwave), 0]
             flux = np.array(
                 [
                     mdata[i * int(nwave) : i * int(nwave) + int(nwave), 1:]

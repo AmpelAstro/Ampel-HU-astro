@@ -220,7 +220,7 @@ class SlackSummaryPublisher(AbsT3ReviewUnit):
                 for key, value in res_flat.items():
                     try:
                         frame[key] = str(value)
-                    except ValueError as ve:
+                    except ValueError as ve:  # noqa: PERF203
                         log_exception(self.logger, ve)
 
             assert transient.stock

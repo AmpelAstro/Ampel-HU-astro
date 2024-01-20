@@ -90,7 +90,7 @@ class T2PS1ThumbNedTap(AbsTiedPointT2Unit):
                 pt = T2PanStarrThumbPrint.get_ps1_target(datapoint, band)
 
                 for cmap in ampel_iter(self.cmaps):
-                    plots.append(
+                    plots.append(  # noqa: PERF401
                         create_plot_record(
                             pt.show(
                                 ellipse=False,
