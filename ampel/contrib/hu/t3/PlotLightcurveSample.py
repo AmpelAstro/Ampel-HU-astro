@@ -184,9 +184,7 @@ class PlotLightcurveSample(AbsPhotoT3Unit):
             params = {}
             for pname in self.param:
                 ix = t2body["sncosmo_result"]["param_names"].index(pname)
-                params[pname] = t2body["sncosmo_result"]["parameters"][
-                    t2body["sncosmo_result"]["param_names"].index(pname)
-                ]
+                params[pname] = t2body["sncosmo_result"]["parameters"][ix]
                 params[pname + "_err"] = t2body["sncosmo_result"]["errors"][pname]
 
             # For some reason not always showing up?
@@ -224,7 +222,6 @@ class PlotLightcurveSample(AbsPhotoT3Unit):
             sninfo["channels"] = tran_view.stock.get("channel")  # type: ignore[assignment]
 
             # Get AmpelZ info
-            ampelz, ampelz_group = None, 99
             if (
                 isinstance(
                     t2res := tran_view.get_latest_t2_body(unit="T2DigestRedshifts"),

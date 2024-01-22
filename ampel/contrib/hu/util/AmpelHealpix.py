@@ -239,7 +239,7 @@ def main():
     )
     hashit = ah.process_map()
     print(hashit)
-    pixels = ah.get_pixelmask(0.9)
+    pixels = ah.get_pixelmask(0.9)  # noqa: F841
     print(ah.get_maparea(0.9))
     print(ah.get_mapdist())
 

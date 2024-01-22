@@ -114,7 +114,6 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
         healpix_regions = [
             {"nside": nside, "pixels": members} for nside, members in deresdict.items()
         ]
-        count = sum([len(region["pixels"]) for region in healpix_regions])
 
         hp_area = ah.get_maparea(self.pvalue_limit)
 

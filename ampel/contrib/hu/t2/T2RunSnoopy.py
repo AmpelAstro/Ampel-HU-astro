@@ -294,8 +294,8 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
                     ZTFIdMapper.to_ext_id(light_curve.stock_id), self.snoopy_model_name
                 ),
             )
-            p = snoopy_sn.plot(outfile=fname)
+            snoopy_sn.plot(outfile=fname)
         if self.plot_draw:
-            p = snoopy_sn.plot()
+            snoopy_sn.plot()
 
         return t2_output

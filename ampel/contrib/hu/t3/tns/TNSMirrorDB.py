@@ -55,7 +55,7 @@ class TNSMirrorDB:
                     "modified": result.modified_count,
                 },
             )
-        except BulkWriteError as bwe:
+        except BulkWriteError:
             pass
 
     def get_names_for_location(self, ra, dec, radius):

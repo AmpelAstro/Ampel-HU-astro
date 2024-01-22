@@ -355,7 +355,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                     )
                 ) / band_tab["fluxerr"]
                 pulls.extend(list(band_pulls))
-            except ValueError as e:
+            except ValueError:
                 self.logger.info("Sncosmo get fit metric error")
                 lc_metrics["pull_retrieval_error"] = True
 

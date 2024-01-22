@@ -50,7 +50,7 @@ class PredetectionFilter(DecentFilter):
 
         if len(predetection_jds) > 0:
             self.logger.debug(
-                f"Transient is too old. There are detections prior to trigger time"
+                "Transient is too old. There are detections prior to trigger time"
             )
             return None
 

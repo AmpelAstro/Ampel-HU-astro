@@ -11,7 +11,7 @@ import os
 from collections.abc import Sequence
 from typing import Any, Literal
 
-import matplotlib.pyplot as plt  # type: ignore
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd  # type: ignore
 from nltk import flatten  # type: ignore
@@ -388,8 +388,6 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                         )
                     ).nominal_value
 
-                    baseline_rms = t2_res[key]["baseline_rms"]
-                    baseline_sigma = t2_res[key]["baseline_sigma"]
                     excess_region["significance"].append(t2_res[key]["significance"])
                     excess_region["strength_sjoert"].append(
                         t2_res[key]["strength_sjoert"]
@@ -441,9 +439,6 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                                 )
                             )
                 else:
-                    # fix: baseline_rms never used
-                    baseline_rms = t2_res[key]["baseline_rms"]
-                    baseline_sigma = t2_res[key]["baseline_sigma"]
                     excess_region["significance"].append(t2_res[key]["significance"])
                     excess_region["strength_sjoert"].append(
                         t2_res[key]["strength_sjoert"]

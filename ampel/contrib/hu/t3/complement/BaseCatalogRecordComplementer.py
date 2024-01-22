@@ -34,7 +34,7 @@ class BaseCatalogRecordComplementer(AbsBufferComplement, abstract=True):
     @cached_property
     def mongo_client(self):
         return MongoClient(
-            self.context.config.get(f"resource.extcats", str), **self.auth.get()
+            self.context.config.get("resource.extcats", str), **self.auth.get()
         )
 
     @abstractmethod

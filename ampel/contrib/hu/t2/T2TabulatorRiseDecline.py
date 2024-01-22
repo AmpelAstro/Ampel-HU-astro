@@ -197,7 +197,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
                     )
                     banddata["rise_slope_" + band] = fit[1]
                     banddata["rise_slopesig_" + band] = fit[1] / np.sqrt(cov[1][1])
-                except RuntimeError as exc:
+                except RuntimeError:
                     self.logger.info("Risetime curve fit failed.")
             if len(fallt) > 1:
                 try:
@@ -210,7 +210,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
                     )
                     banddata["fall_slope_" + band] = fit[1]
                     banddata["fall_slopesig_" + band] = fit[1] / np.sqrt(cov[1][1])
-                except RuntimeError as exc:
+                except RuntimeError:
                     self.logger.info("Falltime curve fit failed.")
 
         # In v1 we also had a requirement that a sufficient time should have
@@ -608,8 +608,6 @@ class T2TabulatorRiseDecline(
 
             # We next wich to indicate the slopes we have measured
             if "rise_slope_" + band in t2result:
-                slope = t2result["rise_slope_" + band]
-                startpoint = t2result["jd_det"]
                 xvals = np.array([-t2result["t_lc"] / 4, t2result["t_lc"] / 4])
                 yvals = xvals * t2result["rise_slope_" + band] + np.mean(bt["flux"])
                 xvals += t2result["jd_det"] + t2result["t_lc"] / 4

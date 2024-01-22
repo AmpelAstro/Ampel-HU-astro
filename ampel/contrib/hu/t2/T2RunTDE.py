@@ -91,7 +91,6 @@ class TDESource(sncosmo.Source):
     def _gauss_exp(self, phases: np.ndarray) -> np.ndarray:
         risetime = self._parameters[0]
         decaytime = self._parameters[1]
-        temp = self._parameters[2]
         peakflux = self._parameters[3]
 
         # Gaussian rise
@@ -124,8 +123,6 @@ class TDESource(sncosmo.Source):
         """
         Calculate the model flux for given wavelengths and phases
         """
-        wave_m = wave * 1e-10
-
         t_evo = self._temp_evolution(phase=phase)
 
         phase_iter = np.asarray(phase) if np.ndim(phase) == 0 else phase

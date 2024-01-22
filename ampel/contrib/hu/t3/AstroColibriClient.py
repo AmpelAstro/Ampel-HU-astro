@@ -116,7 +116,5 @@ class AstroColibriClient:
             )
             return {"success": True, **response.json()}
 
-        self.logger.info(
-            "AstroColibriClient submit fail", extra={"payload": classification}
-        )
+        self.logger.info("AstroColibriClient submit fail", extra={"payload": data})
         return {"success": False, "response": response.status_code}

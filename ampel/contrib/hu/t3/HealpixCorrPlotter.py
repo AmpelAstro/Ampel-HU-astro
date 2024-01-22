@@ -126,7 +126,7 @@ class HealpixCorrPlotter(AbsPhotoT3Unit):
             df["target"] = df["chisqndof"]
         dy = self.target_range[1] - self.target_range[0]
 
-        fig = plt.figure(figsize=self.plotsize, dpi=300)
+        plt.figure(figsize=self.plotsize, dpi=300)
         ax = plt.gca()
 
         plt.fill_between(
