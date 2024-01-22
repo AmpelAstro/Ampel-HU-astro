@@ -13,7 +13,9 @@ from typing import Any
 from ampel.abstract.AbsStockT2Unit import AbsStockT2Unit
 
 
-def get_recursively(search_dict: dict[str,Any], field: str) -> Generator[str, None, None]:
+def get_recursively(
+    search_dict: dict[str, Any], field: str
+) -> Generator[str, None, None]:
     """
     Takes a dict with nested lists and dicts,
     and searches all dicts for a key of the field
@@ -33,6 +35,7 @@ def get_recursively(search_dict: dict[str,Any], field: str) -> Generator[str, No
                 if isinstance(item, dict):
                     for result in get_recursively(item, field):
                         yield f"{key}.{result}"
+
 
 class T2PropagateStockInfo(AbsStockT2Unit):
     """
