@@ -1350,7 +1350,7 @@ ingest = ["pandas (>=1.2,<2.0)", "tqdm (>=4.58.0,<5.0.0)"]
 name = "extinction"
 version = "0.4.6"
 description = "Fast interstellar dust extinction laws"
-optional = false
+optional = true
 python-versions = ">=3.5"
 files = [
     {file = "extinction-0.4.6-cp310-cp310-manylinux_2_5_i686.manylinux1_i686.manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:027451d512555824cc7dc47a6d80fc7bcc3eae3ba616558e172278e8f29afc1d"},
@@ -1838,7 +1838,7 @@ files = [
 name = "iminuit"
 version = "2.24.0"
 description = "Jupyter-friendly Python frontend for MINUIT2 in C++"
-optional = false
+optional = true
 python-versions = ">=3.8"
 files = [
     {file = "iminuit-2.24.0-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:1709b5add21ca5d4b16ce45e18f37d17a11c56f2880d13cc32eeb6d1fb68057c"},
@@ -4887,7 +4887,7 @@ testing-integration = ["build[virtualenv] (>=1.0.3)", "filelock (>=3.4.0)", "jar
 name = "sfdmap2"
 version = "0.2.2.post1"
 description = "Get E(B-V) values from SFD dust map data"
-optional = false
+optional = true
 python-versions = ">=3.9,<4.0"
 files = [
     {file = "sfdmap2-0.2.2.post1-py3-none-any.whl", hash = "sha256:e4d045364df37126801f506302df7015ac5792235d120c659b008fbb0583eafc"},
@@ -4997,7 +4997,7 @@ files = [
 name = "sncosmo"
 version = "2.10.2"
 description = "Package for supernova cosmology based on astropy"
-optional = false
+optional = true
 python-versions = ">=3.7"
 files = [
     {file = "sncosmo-2.10.2-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:b9b3e2a5496f4467b447d90f80dc6a4230954afe390e62616f053817be796202"},
@@ -5940,4 +5940,4 @@ ztf = ["ampel-ztf"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.12"
-content-hash = "5f5995251d76dcd02bb6e21a4c1921aca1392961739368f1a7231abdeae47ace"
+content-hash = "ff584032301d4109d054377552abc9d29f3aa426566f0ca65714ca749d642c2a"
