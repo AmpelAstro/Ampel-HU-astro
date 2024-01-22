@@ -2,10 +2,11 @@
 # Last modified date: 22.05.2023
 # Last modified by: AE 
 
-import yaml
 import os
 import sys
+
 import astropy.time as atime
+import yaml
 
 
 def writeJobfilesFromDict(jobfile_template, jobfile_list_dict, commonName = "jobfile", saveDir = "."):  
@@ -85,8 +86,8 @@ def writeJobfilesFromYaml(jobfile_template, jobfile_list_file, commonName = "job
     
     """
 
-
-    jobfile_list_dict = yaml.safe_load(open(jobfile_list_file))
+    with open(jobfile_list_file) as f:
+        jobfile_list_dict = yaml.safe_load(f)
     writeJobfilesFromDict(jobfile_template, jobfile_list_dict, commonName = commonName, saveDir = saveDir)
 
 def main():

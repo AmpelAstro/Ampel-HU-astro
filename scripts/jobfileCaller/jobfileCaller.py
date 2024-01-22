@@ -3,15 +3,11 @@
 # repeats same file 5 times then moves on
 
 import os
-import sys
-import subprocess
 import shlex
-import numpy as np
+import subprocess
+import sys
 from select import select
 from subprocess import Popen
-
-import astropy.time as atime
-
 
 # directory where ampel job should be run (NEEDS .tmp FOLDER)
 #execute_directory="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/weizmann"

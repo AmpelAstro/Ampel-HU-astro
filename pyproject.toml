@@ -146,7 +146,8 @@ line-length = 88
 [tool.ruff]
 target-version = "py310"
 exclude = [
-    "ampel/contrib/hu/xgb_trees.py"
+    "ampel/contrib/hu/xgb_trees.py",
+    "notebooks"
 ]
 
 [tool.ruff.lint]
