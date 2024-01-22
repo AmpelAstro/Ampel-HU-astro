@@ -34,7 +34,7 @@ include = [
 [tool.poetry.dependencies]
 python = ">=3.10,<3.12"
 ampel-plot = {version = ">=0.8.3-3,<0.9", source = "pypi"}
-ampel-ztf = {version = ">=0.8.10,<0.9", extras = ["kafka"], optional = true}
+ampel-ztf = {version = ">=0.8.13,<0.9", extras = ["kafka"], optional = true}
 ampel-photometry = {version = ">=0.8.3,<0.9", source = "pypi"}
 ampel-interface = {version = ">=0.8.8,<0.9", source = "pypi"}
 ampel-alerts = {version = ">=0.8.5,<0.9", source = "pypi"}
@@ -46,7 +46,6 @@ scipy = ">=1.4"
 beautifulsoup4 = "^4.10.0"
 backoff = "^2"
 requests = "^2.26.0"
-urllib3 = "1.26.5"
 astropy = "^5.0"
 # PyPI prohibits direct dependencies in install_requires
 # see: https://github.com/pypa/pip/issues/6301
