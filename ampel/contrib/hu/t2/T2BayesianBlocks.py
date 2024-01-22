@@ -10,14 +10,21 @@
 import itertools
 import math
 import os
-from typing import Any, Dict, List, Optional, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 import matplotlib.pyplot as plt  # type: ignore
 import more_itertools as mit
 import numpy as np
 import pandas as pd  # type: ignore
-import uncertainties.unumpy as unumpy  # type: ignore
+from astropy.stats import bayesian_blocks  # type: ignore
+from numpy.typing import ArrayLike
+from scipy.signal import find_peaks  # type: ignore
+from sklearn.metrics import mean_squared_error  # type: ignore
+from uncertainties import unumpy  # type: ignore
+
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
+from ampel.contrib.hu.utils import flatten
 from ampel.model.PlotProperties import PlotProperties
 from ampel.plot.create import create_plot_record
 from ampel.struct.UnitResult import UnitResult
@@ -25,11 +32,8 @@ from ampel.types import StockId, UBson
 from ampel.view.LightCurve import LightCurve
 from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper
 from ampel.ztf.util.ZTFNoisifiedIdMapper import ZTFNoisifiedIdMapper
-from astropy.stats import bayesian_blocks  # type: ignore
-from nltk import flatten  # type: ignore
-from numpy.typing import ArrayLike
-from scipy.signal import find_peaks  # type: ignore
-from sklearn.metrics import mean_squared_error  # type: ignore
+
+# ruff: noqa: E712
 
 
 class T2BayesianBlocks(AbsLightCurveT2Unit):
@@ -55,7 +59,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
     debug: bool = False
 
-    debug_dir: Optional[str]
+    debug_dir: None | str
 
     # in case of ZTF: Must be called 'ZTF_g', 'ZTF_r', 'ZTF_i'
     filters: Sequence[str]
@@ -63,7 +67,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
     # Work with fluxes instead of magnitude
     flux: bool = False
     #
-    plot_props: Optional[PlotProperties]
+    plot_props: None | PlotProperties
     # Color of filters for the plots
 
     PlotColor: Sequence[str] = ["red", "blue"]
@@ -203,7 +207,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
     def baye_block_levels_with_changing_baseline(
         self, df, baye_block, baseline, baseline_sigma
     ):
-        for nu, mag in enumerate(baye_block.sort_values(by="mag")["mag"]):
+        for mag in baye_block.sort_values(by="mag")["mag"]:
             #  idx = baye_block.index.tolist()[nu]
             idx = baye_block.index[baye_block["mag"] == mag].tolist()[0]
             if np.isnan(baye_block["mag.err"][idx]):
@@ -213,7 +217,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     baye_block.loc[idx, "level"] = "excess"
             elif baye_block["level"][idx] != "baseline":
                 diff = abs(baseline - mag)
-                diff_e = np.sqrt(baseline_sigma ** 2 + baye_block["mag.err"][idx] ** 2)
+                diff_e = np.sqrt(baseline_sigma**2 + baye_block["mag.err"][idx] ** 2)
                 diff_significance = diff / diff_e
 
                 if diff_significance <= self.rej_sigma:
@@ -257,30 +261,32 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
         return excess_regions
 
     def outliers(self, excess_regions, df, baye_block, measurements_nu):
-        for nu, value in enumerate(excess_regions):
-            if len(value) == 1:
-                if measurements_nu[value[0]] == 1.0:
-                    if (
-                        baye_block["Npoints"][value[0]] == 1
-                        and baye_block["sigma_from_baseline"][value[0]] > 5.0
-                    ):
-                        df.loc[
-                            df.index[
-                                df["jd"].between(
-                                    baye_block["jd_measurement_start"][value[0]],
-                                    baye_block["jd_measurement_end"][value[0]],
-                                    inclusive="both",
-                                )
-                            ].tolist()[0],
-                            "Outlier",
-                        ] = True
-                        baye_block.loc[value[0], "level"] = "outlier"
+        for value in excess_regions:
+            if (
+                len(value) == 1
+                and measurements_nu[value[0]] == 1.0
+                and (
+                    baye_block["Npoints"][value[0]] == 1
+                    and baye_block["sigma_from_baseline"][value[0]] > 5.0
+                )
+            ):
+                df.loc[
+                    df.index[
+                        df["jd"].between(
+                            baye_block["jd_measurement_start"][value[0]],
+                            baye_block["jd_measurement_end"][value[0]],
+                            inclusive="both",
+                        )
+                    ].tolist()[0],
+                    "Outlier",
+                ] = True
+                baye_block.loc[value[0], "level"] = "outlier"
         return baye_block
 
     def description(self, excess_regions: list, measurements_nu: dict) -> list:
         # 0: The excess region has one baye block with one measurement, 1: The excess region has one baye block with multiple measurements, 2: The excess region has multiple baye blocks
         description = []
-        for nu, value in enumerate(excess_regions):
+        for value in excess_regions:
             if len(value) == 1:
                 if measurements_nu[value[0]] == 1.0:
                     description.append(0)
@@ -312,62 +318,54 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
         if output_per_filter[base_filter].get("nu_of_excess_regions") in [0, None]:
             return coincide_region
 
+        if self.flux:
+            idx = np.argmax(output_per_filter[base_filter]["max_mag_excess_region"])
         else:
-            if self.flux:
-                idx = np.argmax(output_per_filter[base_filter]["max_mag_excess_region"])
-            else:
-                idx = np.argmin(output_per_filter[base_filter]["max_mag_excess_region"])
-            start_region = output_per_filter[base_filter]["jd_excess_regions"][idx][0]
-            end_region = output_per_filter[base_filter]["jd_excess_regions"][idx][-1]
+            idx = np.argmin(output_per_filter[base_filter]["max_mag_excess_region"])
+        start_region = output_per_filter[base_filter]["jd_excess_regions"][idx][0]
+        end_region = output_per_filter[base_filter]["jd_excess_regions"][idx][-1]
 
-            # now we select the other filters
-            for compare_filter in compare_filters:
-                if output_per_filter[compare_filter].get("nu_of_excess_regions") in [
-                    0,
-                    None,
-                ]:
-                    return coincide_region
+        # now we select the other filters
+        for compare_filter in compare_filters:
+            if output_per_filter[compare_filter].get("nu_of_excess_regions") in [
+                0,
+                None,
+            ]:
+                return coincide_region
 
+            if int(output_per_filter[compare_filter].get("nu_of_excess_regions")) > 0:
+                if self.flux:
+                    idx = np.argmax(
+                        output_per_filter[compare_filter]["max_mag_excess_region"]
+                    )
+                else:
+                    idx = np.argmin(
+                        output_per_filter[compare_filter]["max_mag_excess_region"]
+                    )
                 if (
-                    int(output_per_filter[compare_filter].get("nu_of_excess_regions"))
-                    > 0
+                    (
+                        output_per_filter[compare_filter]["jd_excess_regions"][idx][-1]
+                        >= start_region
+                        >= output_per_filter[compare_filter]["jd_excess_regions"][idx][
+                            0
+                        ]
+                    )
+                    or (
+                        output_per_filter[compare_filter]["jd_excess_regions"][idx][-1]
+                        >= end_region
+                        >= output_per_filter[compare_filter]["jd_excess_regions"][idx][
+                            0
+                        ]
+                    )
+                    or (
+                        start_region
+                        <= output_per_filter[compare_filter]["jd_excess_regions"][idx][
+                            0
+                        ]
+                        <= end_region
+                    )
                 ):
-                    if self.flux:
-                        idx = np.argmax(
-                            output_per_filter[compare_filter]["max_mag_excess_region"]
-                        )
-                    else:
-                        idx = np.argmin(
-                            output_per_filter[compare_filter]["max_mag_excess_region"]
-                        )
-                    if (
-                        (
-                            output_per_filter[compare_filter]["jd_excess_regions"][idx][
-                                -1
-                            ]
-                            >= start_region
-                            >= output_per_filter[compare_filter]["jd_excess_regions"][
-                                idx
-                            ][0]
-                        )
-                        or (
-                            output_per_filter[compare_filter]["jd_excess_regions"][idx][
-                                -1
-                            ]
-                            >= end_region
-                            >= output_per_filter[compare_filter]["jd_excess_regions"][
-                                idx
-                            ][0]
-                        )
-                        or (
-                            start_region
-                            <= output_per_filter[compare_filter]["jd_excess_regions"][
-                                idx
-                            ][0]
-                            <= end_region
-                        )
-                    ):
-                        coincide_region += 1
+                    coincide_region += 1
         return coincide_region
 
     @staticmethod
@@ -467,7 +465,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
         ################################
         ######## Bayesian blocks #######
-        output_per_filter: Dict[str, Any] = {}
+        output_per_filter: dict[str, Any] = {}
 
         self.filters_lc = self.filters
 
@@ -490,7 +488,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     "mag_edge",
                 ]
             )
-            output: Dict[str, Any] = {
+            output: dict[str, Any] = {
                 "mag_edge_excess": [],
                 "max_mag_excess_region": [],
                 "max_jd_excess_region": [],
@@ -518,11 +516,10 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             elif self.data_type == "ztf_alert":
                 if self.flux:
                     raise ValueError("Not implemented yet")
-                else:
-                    phot_tuple = light_curve.get_ntuples(
-                        ["jd", "magpsf", "sigmapsf"],
-                        {"attribute": "fid", "operator": "==", "value": fid},
-                    )
+                phot_tuple = light_curve.get_ntuples(
+                    ["jd", "magpsf", "sigmapsf"],
+                    {"attribute": "fid", "operator": "==", "value": fid},
+                )
             elif self.data_type == "wise":
                 if self.flux:
                     if self.Npoints:
@@ -557,39 +554,38 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                                 },
                             ],
                         )
+                elif self.Npoints:
+                    phot_tuple = light_curve.get_ntuples(
+                        ["jd", "magpsf", "sigmapsf", "mag_Npoints"],
+                        [
+                            {
+                                "attribute": "filter",
+                                "operator": "==",
+                                "value": passband,
+                            },
+                            {
+                                "attribute": "mag_ul",
+                                "operator": "==",
+                                "value": "False",
+                            },
+                        ],
+                    )
                 else:
-                    if self.Npoints:
-                        phot_tuple = light_curve.get_ntuples(
-                            ["jd", "magpsf", "sigmapsf", "mag_Npoints"],
-                            [
-                                {
-                                    "attribute": "filter",
-                                    "operator": "==",
-                                    "value": passband,
-                                },
-                                {
-                                    "attribute": "mag_ul",
-                                    "operator": "==",
-                                    "value": "False",
-                                },
-                            ],
-                        )
-                    else:
-                        phot_tuple = light_curve.get_ntuples(
-                            ["jd", "magpsf", "sigmapsf"],
-                            [
-                                {
-                                    "attribute": "filter",
-                                    "operator": "==",
-                                    "value": passband,
-                                },
-                                {
-                                    "attribute": "mag_ul",
-                                    "operator": "==",
-                                    "value": "False",
-                                },
-                            ],
-                        )
+                    phot_tuple = light_curve.get_ntuples(
+                        ["jd", "magpsf", "sigmapsf"],
+                        [
+                            {
+                                "attribute": "filter",
+                                "operator": "==",
+                                "value": passband,
+                            },
+                            {
+                                "attribute": "mag_ul",
+                                "operator": "==",
+                                "value": "False",
+                            },
+                        ],
+                    )
 
             output_per_filter[passband] = []
 
@@ -724,35 +720,34 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     (baseline, baseline_sigma) = self.get_baseline(df, baye_block)
                     baseline = baseline_init
                     baseline_sigma = baseline_init_sigma
-                else:
-                    if self.data_type == "wise":
-                        (
-                            baye_block,
-                            baseline,
-                            baseline_sigma,
-                            baseline_rms,
-                        ) = self.baye_block_levels_with_changing_baseline(
-                            df,
-                            baye_block,
-                            baseline_init,
-                            baseline_init_sigma,
-                        )
-                    elif self.data_type in ["ztf_fp", "ztf_fp_noisy"]:
-                        (
-                            baye_block,
-                            baseline,
-                            baseline_sigma,
-                            baseline_rms,
-                        ) = self.baye_block_levels(
-                            df,
-                            baye_block,
-                            baseline_init,
-                            baseline_init_sigma,
-                        )
+                elif self.data_type == "wise":
+                    (
+                        baye_block,
+                        baseline,
+                        baseline_sigma,
+                        baseline_rms,
+                    ) = self.baye_block_levels_with_changing_baseline(
+                        df,
+                        baye_block,
+                        baseline_init,
+                        baseline_init_sigma,
+                    )
+                elif self.data_type in ["ztf_fp", "ztf_fp_noisy"]:
+                    (
+                        baye_block,
+                        baseline,
+                        baseline_sigma,
+                        baseline_rms,
+                    ) = self.baye_block_levels(
+                        df,
+                        baye_block,
+                        baseline_init,
+                        baseline_init_sigma,
+                    )
 
-                baye_block[str(sigma_discr)] = (
-                    baye_block["mag"] - baseline
-                ) / np.sqrt(baseline_sigma ** 2 + baye_block["mag.err"] ** 2)
+                baye_block[str(sigma_discr)] = (baye_block["mag"] - baseline) / np.sqrt(
+                    baseline_sigma**2 + baye_block["mag.err"] ** 2
+                )
 
             #######################################
             ########## Excess region  #############
@@ -830,10 +825,10 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                             ]["mag"].values
                         )
 
+                        first = next(iter(everything_except_excess_values))
                         everything_except_excess_rms = mean_squared_error(
-                            list(everything_except_excess_values)[0],
-                            [np.mean(list(everything_except_excess_values)[0])]
-                            * len(list(everything_except_excess_values)[0]),
+                            first,
+                            np.ones(len(first)) * np.mean(first),
                             squared=False,
                         )
             else:
@@ -984,13 +979,16 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                         ] = significance_of_fluctuation_after_peak
 
                         # Calculate the significance of each bayesian block, inside the excess region of the highest intensity
-                        if len([i for i in idx if (i > global_peak_idx)]) >= 2:
+                        if (
+                            len(post_peak := [i for i in idx if (i > global_peak_idx)])
+                            >= 2
+                        ):
                             after_peak_excess_values = df[
                                 (
                                     (
                                         df["jd"]
                                         >= baye_block["jd_measurement_start"].loc[
-                                            [i for i in idx if (i > global_peak_idx)][0]
+                                            post_peak[0]
                                         ]
                                     )
                                     & (df["Outlier"] == False)
@@ -999,9 +997,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                                     (
                                         df["jd"]
                                         <= baye_block["jd_measurement_end"].loc[
-                                            [i for i in idx if (i > global_peak_idx)][
-                                                -1
-                                            ]
+                                            post_peak[-1]
                                         ]
                                     )
                                     & (df["Outlier"] == False)
@@ -1012,7 +1008,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                                     (
                                         df["jd"]
                                         >= baye_block["jd_measurement_start"].loc[
-                                            [i for i in idx if (i > global_peak_idx)][0]
+                                            post_peak[0]
                                         ]
                                     )
                                     & (df["Outlier"] == False)
@@ -1021,9 +1017,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                                     (
                                         df["jd"]
                                         <= baye_block["jd_measurement_end"].loc[
-                                            [i for i in idx if (i > global_peak_idx)][
-                                                -1
-                                            ]
+                                            post_peak[-1]
                                         ]
                                     )
                                     & (df["Outlier"] == False)
@@ -1049,9 +1043,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                             output["strength_after_peak"].append(
                                 (
                                     baye_block["mag"].loc[global_peak_idx]
-                                    - baye_block["mag"].loc[
-                                        [i for i in idx if (i > global_peak_idx)][0]
-                                    ]
+                                    - baye_block["mag"].loc[post_peak[0]]
                                 )
                                 / after_peak_excess_rms
                             )
@@ -1102,9 +1094,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                                     excess_region["mag"] == max(excess_region["mag"])
                                 ].index.tolist()
                             )
-                        ].to_string(
-                            index=False
-                        )
+                        ].to_string(index=False)
                     )
 
                 else:
@@ -1118,9 +1108,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                                     excess_region["mag"] == min(excess_region["mag"])
                                 ].index.tolist()
                             )
-                        ].to_string(
-                            index=False
-                        )
+                        ].to_string(index=False)
                     )
 
             else:
@@ -1195,7 +1183,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 for sp in ["left", "bottom", "top", "right"]:
                     ax.spines[sp].set_linewidth(3)
 
-                ax.set_title(light_curve.stock_id, fontsize=25)
+                ax.set_title(str(light_curve.stock_id), fontsize=25)
                 ax.legend(
                     bbox_to_anchor=(1.05, 1),
                     loc=2,
@@ -1206,7 +1194,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 plt.xticks(fontsize=20)
                 plt.yticks(fontsize=20)
 
-                locals()[str("ax") + str(passband)] = fig.add_subplot(
+                locals()["ax" + str(passband)] = fig.add_subplot(
                     len(self.filters_lc) + 1, 1, fid + 1, sharex=ax
                 )
 
@@ -1219,7 +1207,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 else:
                     alpha = 1
 
-                locals()[str("ax") + str(passband)] = plt.errorbar(
+                locals()["ax" + str(passband)] = plt.errorbar(
                     df[df["Outlier"] == False]["mjd"],
                     df[df["Outlier"] == False]["mag"],
                     yerr=df[df["Outlier"] == False]["mag.err"],
@@ -1232,7 +1220,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     elinewidth=3,
                     capsize=0,
                 )
-                locals()[str("ax") + str(passband)] = plt.errorbar(
+                locals()["ax" + str(passband)] = plt.errorbar(
                     df[df["Outlier"] == True]["mjd"],
                     df[df["Outlier"] == True]["mag"],
                     yerr=df[df["Outlier"] == True]["mag.err"],
@@ -1263,7 +1251,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                         if self.data_type in ["ztf_fp", "ztf_fp_noisy"]:
                             linestyle = "dashdot"
 
-                    locals()[str("ax") + str(passband)] = plt.hlines(
+                    locals()["ax" + str(passband)] = plt.hlines(
                         value,
                         baye_block["mjd_start"][nu],
                         baye_block["mjd_end"][nu],
@@ -1271,14 +1259,14 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                         linestyles=linestyle,
                         linewidth=linewidth,
                     )
-                    locals()[str("ax") + str(passband)] = plt.hlines(
+                    locals()["ax" + str(passband)] = plt.hlines(
                         value + baye_block["mag.err"][nu],
                         baye_block["mjd_start"][nu],
                         baye_block["mjd_end"][nu],
                         color=color_block,
                         linestyles="dashed",
                     )
-                    locals()[str("ax") + str(passband)] = plt.hlines(
+                    locals()["ax" + str(passband)] = plt.hlines(
                         value - baye_block["mag.err"][nu],
                         baye_block["mjd_start"][nu],
                         baye_block["mjd_end"][nu],
@@ -1289,9 +1277,9 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 if self.flux == False:
                     plt.gca().invert_yaxis()
 
-                locals()[str("ax") + str(passband)] = plt.gca()
+                locals()["ax" + str(passband)] = plt.gca()
                 for sp in ["left", "bottom", "top", "right"]:
-                    locals()[str("ax") + str(passband)].spines[sp].set_linewidth(3)
+                    locals()["ax" + str(passband)].spines[sp].set_linewidth(3)
 
                 plt.tick_params(axis="both", which="major", pad=22, length=10, width=3)
                 plt.xticks(fontsize=20)
@@ -1369,7 +1357,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
         output_per_filter["start_excess"] = None
         output_per_filter["size_excess"] = 0
 
-        for keys in [key for key in output_per_filter.keys() if key in self.filters]:
+        for keys in [key for key in output_per_filter if key in self.filters]:
             if output_per_filter[keys].get("nu_of_excess_regions") not in [0, None]:
                 idxmax = np.argmax(output_per_filter[keys]["max_sigma_excess_region"])
                 output_per_filter["start_excess"] = output_per_filter[keys][
@@ -1393,7 +1381,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                 )
                 print("--------")
             print(
-                f"coincident regions between g and r: {str(output_per_filter['coincide_peak_block'])}"
+                f"coincident regions between g and r: {output_per_filter['coincide_peak_block']!s}"
             )
 
         return t2_output

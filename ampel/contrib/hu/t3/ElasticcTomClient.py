@@ -7,21 +7,22 @@
 # Last Modified Date:  11.04.2022
 # Last Modified By:    jno <jnordin@physik.hu-berlin.de>
 
-from typing import Sequence, Dict, Any, Union
+from collections.abc import Sequence
+from typing import Any
 
-import requests
-import json
 import backoff
+import requests
 from requests import HTTPError
 
 
-class ClassificationDict():
+class ClassificationDict:
     classifierName: str
     classifierParams: str
     classId: int
     probability: float
 
-class ElasticcClassification():
+
+class ElasticcClassification:
     alertId: int
     diaSourceId: int
     elasticcPublishTimestamp: int
@@ -45,11 +46,18 @@ class ElasticcTomClient:
     (is the session best started in a post_init()?)
 
     """
-    def __init__(self, desc_username: str, desc_password: str, logger, tom_url: str = "https://desc-tom.lbl.gov"):
+
+    def __init__(
+        self,
+        desc_username: str,
+        desc_password: str,
+        logger,
+        tom_url: str = "https://desc-tom.lbl.gov",
+    ):
         self.logger = logger
 
         # Debug url
-#        self.tom_url = "https://desc-tom-rknop-dev.lbl.gov"
+        #        self.tom_url = "https://desc-tom-rknop-dev.lbl.gov"
         # Production
         # self.tom_url = "https://desc-tom.lbl.gov"
         self.tom_url = tom_url
@@ -61,14 +69,16 @@ class ElasticcTomClient:
         # to the login URI to get that token.  (There must
         # be a cleaner way.)
         self.session = requests.session()
-        self.session.get( f'{self.tom_url}/accounts/login/' )
-        self.session.post( f'{self.tom_url}/accounts/login/',
-              data={ "username": desc_username,
-                     "password": desc_password,
-                     "csrfmiddlewaretoken": self.session.cookies['csrftoken'] } )
-        self.csrfheader = { 'X-CSRFToken': self.session.cookies['csrftoken'] }
-
-
+        self.session.get(f"{self.tom_url}/accounts/login/")
+        self.session.post(
+            f"{self.tom_url}/accounts/login/",
+            data={
+                "username": desc_username,
+                "password": desc_password,
+                "csrfmiddlewaretoken": self.session.cookies["csrftoken"],
+            },
+        )
+        self.csrfheader = {"X-CSRFToken": self.session.cookies["csrftoken"]}
 
     # robustify post
     @backoff.on_exception(
@@ -76,20 +86,35 @@ class ElasticcTomClient:
         requests.ConnectionError,
         max_tries=5,
         factor=10,
-        )
+    )
     @backoff.on_exception(
         backoff.expo,
         requests.HTTPError,
-        giveup=lambda e: not isinstance(e, HTTPError) or e.response.status_code not in {503, 504, 429, 408},
+        giveup=lambda e: not isinstance(e, HTTPError)
+        or e.response.status_code not in {503, 504, 429, 408},
         max_time=60,
+    )
+    def tom_post(
+        self,
+        classification: ElasticcClassification | list[ElasticcClassification],
+    ) -> dict[Any, Any]:
+        response = self.session.put(
+            f"{self.tom_url}/elasticc/brokermessage/",
+            json=classification,
+            headers=self.csrfheader,
         )
-    def tom_post(self, classification: Union[ElasticcClassification,list[ElasticcClassification]])->Dict[Any,Any]:
-        response = self.session.put(f'{self.tom_url}/elasticc/brokermessage/',
-                                json=classification, headers=self.csrfheader)
 
         if response.ok:
-            self.logger.debug('ElasticcTomClient submit done', extra={"payload": classification})
-            return {'success':True, **response.json()}
+            self.logger.debug(
+                "ElasticcTomClient submit done", extra={"payload": classification}
+            )
+            return {"success": True, **response.json()}
 
-        self.logger.info('ElasticcTomClient submit fail', extra={"payload": classification})
-        return {'success':False, 'response':response.status_code, 'response_body': response.text}
+        self.logger.info(
+            "ElasticcTomClient submit fail", extra={"payload": classification}
+        )
+        return {
+            "success": False,
+            "response": response.status_code,
+            "response_body": response.text,
+        }

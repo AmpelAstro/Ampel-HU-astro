@@ -1,0 +1,445 @@
+name: simulated
+
+mongo:
+  prefix: simulated
+  reset: true
+
+channel:
+- name: simulated
+  access: [ZTF, ZTF_PUB, ZTF_PRIV]
+  policy: []
+
+task:
+
+- title: HealpixToAlertToken
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3PlainUnitExecutor
+        config:
+          target:
+            unit: HealpixTokenGenerator
+            config:
+              pvalue_limit: 0.9 
+              chunk_size: 2000
+              map_name: <<map_name>>
+              map_url: <<map_url>>
+              map_dir: './tmp'
+              # date_str: "2022-01-15" # 2020-02-13
+              delta_time: 3
+              archive_token:
+                label: ztf/archive/token
+
+- title: ProcessAlerts
+  unit: DynamicShaperAlertConsumer
+  config:
+    shaper_map:
+      map_name: healpix_map_name
+      healpix_info: <<map_name>> # <<map_name>>
+    iter_max: 1000000
+    supplier:
+      unit: ZiAlertSupplier
+      config:
+        deserialize: null
+        loader:
+          unit: ZTFArchiveAlertLoader
+          config:
+            with_history: false
+            resource_name: <<resource_name>>
+    shaper: ZiGWDataPointShaper
+    directives:
+    - channel: simulated
+      filter:
+        config:
+          trigger_jd: <<trigger_jd>>
+          gaia_excessnoise_sig_max: 999
+          gaia_plx_signif: 3
+          gaia_pm_signif: 3
+          gaia_rs: 10
+          gaia_veto_gmag_max: 20
+          gaia_veto_gmag_min: 9
+          min_ndet: 1
+          min_tspan: -1
+          max_tspan: 1
+          #min_archive_tspan: -99
+          max_archive_tspan: 0.1
+          min_drb: 0.3
+          min_gal_lat: 0
+          min_rb: 0.0
+          min_sso_dist: 20
+          ps1_confusion_rad: 3
+          ps1_confusion_sg_tol: 0.1
+          ps1_sgveto_rad: 1
+          ps1_sgveto_th: 0.8
+          max_fwhm: 5.5
+          max_elong: 2
+          max_magdiff: 1
+          max_nbad: 2
+        on_stock_match: bypass
+        unit: PredetectionFilter
+      ingest:
+        stock_t2:
+          - unit: T2PropagateStockInfo
+            config: &propagate_stock_info_config
+              prop_paths:
+                trigger_time:
+                - journal
+                - healpix
+                - trigger_time
+                prob_contour:
+                - journal
+                - healpix
+                - cumprob
+                healpix_map:
+                - journal
+                - healpix
+                - map_name
+                map_dist:
+                - journal
+                - healpix
+                - map_dist
+                map_dist_unc:
+                - journal
+                - healpix
+                - map_dist_unc
+        mux:
+          combine:
+          - state_t2:
+            - config: &healpixprob_config
+                map_name: <<map_name>> # <<map_name>>
+                pvalue_limit: 0.9
+                tabulator:
+                  - unit: ZTFT2Tabulator
+              unit: T2HealpixProb
+            - config:
+                t_cadence: 3.
+                significant_bands: 
+                - 'ztfg'
+                - 'ztfr'
+                - 'ztfi'
+                tabulator:
+                - unit: ZTFT2Tabulator
+                  config:              
+              unit: T2TabulatorRiseDecline
+            - config: &digest_redshift_config
+                max_redshift_category: 6
+                t2_dependency:
+                - config: &catalog_match_config
+                    catalogs:
+                      GLADEv23:
+                        keys_to_append:
+                        - z
+                        - dist
+                        - dist_err
+                        - flag1
+                        - flag2
+                        - flag3
+                        rs_arcsec: 10
+                        use: extcats
+                      NEDz:
+                        keys_to_append:
+                        - ObjType
+                        - Velocity
+                        - z
+                        rs_arcsec: 10.0
+                        use: catsHTM
+                      NEDz_extcats:
+                        keys_to_append:
+                        - ObjType
+                        - Velocity
+                        - z
+                        post_filter:
+                          z:
+                            $gte: 0.002
+                            $lte: 0.03
+                        pre_filter: null
+                        rs_arcsec: 20.0
+                        use: extcats
+                      SDSS_spec:
+                        keys_to_append:
+                        - z
+                        - bptclass
+                        - subclass
+                        rs_arcsec: 10.0
+                        use: extcats
+                      LSPhotoZZou:
+                        all: true
+                        keys_to_append:
+                        - photoz
+                        - ra
+                        - dec
+                        - e_photoz
+                        - specz
+                        - _6
+                        - logMassBest
+                        - logMassInf
+                        - logMassSup
+                        rs_arcsec: 30.0
+                        use: extcats
+                      twoMPZ:
+                        all: true
+                        keys_to_append:
+                        - zPhoto
+                        - ra
+                        - dec
+                        - zSpec
+                        rs_arcsec: 30.0
+                        use: extcats
+                      wiseScosPhotoz:
+                        all: true
+                        keys_to_append:
+                        - zPhoto_Corr
+                        - ra
+                        - dec
+                        - wiseID
+                        - w1mCorr
+                        - w2mCorr
+                        rs_arcsec: 30.0
+                        use: extcats
+                      PS1_photoz:
+                        keys_to_append:
+                        - raMean
+                        - decMean
+                        - z_phot
+                        - z_photErr
+                        - z_phot0
+                        - _2
+                        rs_arcsec: 10.
+                        use: extcats
+                        pre_filter: null
+                        post_filter: null
+                      CRTS_DR1:
+                        keys_to_append:
+                        - CSID
+                        - VarType
+                        rs_arcsec: 5.0
+                        use: extcats
+                        pre_filter: null
+                        post_filter: null
+                      milliquas:
+                        keys_to_append:
+                        - name
+                        - broad_type
+                        - redshift
+                        - qso_prob
+                        rs_arcsec: 1.5
+                        use: extcats
+                        pre_filter: null
+                        post_filter: null
+                      GAIADR2:
+                        keys_to_append:
+                        - Plx
+                        - ErrPlx
+                        rs_arcsec: 5.0
+                        use: catsHTM
+                        pre_filter: null
+                        post_filter: null
+                      SDSSDR10:
+                        keys_to_append:
+                        - type
+                        rs_arcsec: 1.5
+                        use: catsHTM
+                        pre_filter: null
+                        post_filter: null
+                      wise_color:
+                        keys_to_append:
+                        - W1mW2
+                        rs_arcsec: 6.0
+                        use: extcats
+                        pre_filter: null
+                        post_filter: null
+                      TNS:
+                        keys_to_append:
+                        - objname
+                        - name
+                        - redshift
+                        - type
+                        - discoverydate
+                        - source_group
+                        rs_arcsec: 3.0
+                        use: extcats
+                        pre_filter: null
+                        post_filter: null
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2CatalogMatch
+              unit: T2DigestRedshifts
+            - config: &possis_config
+                possis_models:
+                  bns_m3_3comp:
+                    mej_dyn: 0.01
+                    mej_wind: 0.09
+                    phi: 45
+                    cos_theta: 0.3
+                explosion_time_jd: TriggerTime
+                max_ampelz_group: 7
+                redshift_kind: T2DigestRedshifts
+                t2_dependency:
+                - config: *digest_redshift_config
+                  unit: T2DigestRedshifts
+                - unit: T2PropagateStockInfo
+                tabulator:
+                  - unit: ZTFT2Tabulator
+                plot_props:
+                  file_name:
+                    format_str: "%s_%s_%s.svg"
+                    arg_keys:
+                      - stock
+                      - model
+                      - redshift_kind
+                  title:
+                    format_str: "%s %s %s"
+                    arg_keys:
+                      - stock
+                      - model
+                      - redshift_kind
+                  fig_text:
+                    format_str: "%s %s \nz-source %s \nchisq %.2f ndof %s"
+                    arg_keys:
+                      - stock
+                      - model
+                      - redshift_kind
+                      - chisq
+                      - ndof
+                  width: 10
+                  height: 6
+                  id_mapper: null
+                  disk_save: ./tmp/
+              unit: T2RunPossis
+            - config:
+                max_redshift: 0.2
+                min_ndet: 2
+                t2_dependency:
+                - config: *digest_redshift_config
+                  unit: T2DigestRedshifts
+                - unit: T2PropagateStockInfo
+                  config: *propagate_stock_info_config
+                - unit: T2RunPossis
+                  config: *possis_config
+                - unit: T2CatalogMatch
+                  config: *catalog_match_config
+                - unit: T2HealpixProb
+                  config: *healpixprob_config
+              unit: T2KilonovaEval
+            unit: ZiT1Combiner
+          insert:
+            point_t2:
+            - config: *catalog_match_config
+              ingest:
+                filter: PPSFilter
+                select: first
+                sort: jd
+              unit: T2CatalogMatch
+          unit: ZiArchiveMuxer  # chunk size?
+          config:
+            future_days: 3
+            history_days: 50            
+
+- title: Run T2s
+  unit: T2Worker
+  config:
+    send_beacon: false
+    raise_exc: true
+
+
+- title: React
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3ReviewUnitExecutor
+        config:
+          supply:
+            unit: T3DefaultBufferSupplier
+            config:
+              select:
+                unit: T3StockSelector
+                config:
+                  channel: simulated
+              load:
+                unit: T3SimpleDataLoader
+                config:
+                  directives:
+                    - STOCK
+                    - T1
+                    - T2DOC
+                    - DATAPOINT
+                  channel: simulated
+          stage:
+            unit: T3SimpleStager
+            config:
+              execute:
+                # - unit: TransientViewDumper
+                #   config:
+                #     desycloud_folder: O4
+                #     desycloud_filename: S200115j
+                - unit: TransientTablePublisher
+                  config:
+                    include_stock: true
+                    include_channels: true
+                    convert_stock_to: ztf
+                    fmt: csv
+                    local_path: ./tmp/
+                    table_schema:
+                      T2KilonovaEval:
+                        'Ampel z':
+                          - ampel_z
+                        'Ampel z (precision)':
+                          - ampel_z_precision
+                        'Ampel distance':
+                          - ampel_dist                       
+                        'Peak absmag (Possis)':
+                          - possis_abspeak
+                        'Fit chisq (Possis)':
+                          - possis_chisq
+                        'Fit ndof (Possis)':
+                          - possis_ndof
+                        'Kilonovaness':
+                          - kilonovaness
+                        'Rejects':
+                          - rejects
+                        'Kilonovaness/Number of Checks':
+                          - kilonovaness_dec
+                        'Z-kilonovaness':
+                          - z_kilonovaness
+                        'Possis-kilonovaness':
+                          - possis_kilonovaness
+                        'LC-kilonovaness':
+                          - lc_kilonovaness
+                        'CatMatch-kilonovaness':
+                          - cat_kilonovaness
+                        'Dist-kilonovaness':
+                          - dist_kilonovaness
+                        'Distance from ampel-z':
+                          - ampel_healpix_dist
+                        'Sigma difference distances':
+                          - distance_sigma_diff
+                        'Mag. sigma diff. in fid 1':
+                          - mag_sigma_fid_1
+                        'Mag. sigma diff. in fid 2':
+                          - mag_sigma_fid_2
+                    transient_table_schema:
+                      T2HealpixProb:
+                        'Map area':
+                          - map_area
+                        'Map dist':
+                          - map_dist
+                        'Map dist unc':
+                          - map_dist_unc
+                        'Map name':
+                          - map_name
+                        'Unfiltered alerts':
+                          - unfiltered_alerts
+                        'Queried alerts':
+                          - queried_alerts
+                      T2PropagateStockInfo:
+                        'Trigger time':
+                          - trigger_time
+                        'Prob. contour':
+                          - prob_contour
+                        'Healpix map':
+                          - healpix_map
+

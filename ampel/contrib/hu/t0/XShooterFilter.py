@@ -7,8 +7,8 @@
 # Last Modified Date:  24.11.2021
 # Last Modified By:    jnordin
 
-from typing import Optional
 from numpy import array
+
 from ampel.protocol.AmpelAlertProtocol import AmpelAlertProtocol
 from ampel.ztf.t0.DecentFilter import DecentFilter
 
@@ -25,16 +25,18 @@ class XShooterFilter(DecentFilter):
     det_within: float  # the transient must have been detected within the last 'DET_WITHIN' days
     ul_within: float  # the transient must AT LEAST one ulim within the last 'UL_WITHIN' days
     # Updated parameters based on infant detections spring 2021. Defaults conservative
-    max_chipsf: float = 4        # Best guess value 2
-    max_seeratio: float = 2      # Best guess value 1.3
-    min_sumrat: float = 0.6      # Best guess value 0.8
+    max_chipsf: float = 4  # Best guess value 2
+    max_seeratio: float = 2  # Best guess value 1.3
+    min_sumrat: float = 0.6  # Best guess value 0.8
 
     def post_init(self):
         super().post_init()
-        #self.keys_to_check += ("jd",)
+        # self.keys_to_check += ("jd",)
         # Is none not working, now doing this manually
-        #self.select_upper_limits = [{'attribute': 'magpsf', 'operator': 'is', 'value': None}]
-        self.select_photopoints = [{'attribute': 'magpsf', 'operator': 'is not', 'value': None}]
+        # self.select_upper_limits = [{'attribute': 'magpsf', 'operator': 'is', 'value': None}]
+        self.select_photopoints = [
+            {"attribute": "magpsf", "operator": "is not", "value": None}
+        ]
 
     # Override
     def process(self, alert: AmpelAlertProtocol) -> None | bool | int:
@@ -73,7 +75,6 @@ class XShooterFilter(DecentFilter):
             )
             return None
 
-
         # CUT ON THE HISTORY OF THE ALERT
         #################################
 
@@ -92,7 +93,7 @@ class XShooterFilter(DecentFilter):
 
         # check on the history 2: at least one upper limit in the last 5 days
         # old version to look for upper limits not working...
-        ulim_jds = [el['jd'] for el in alert.datapoints if el.get("candid") is  None]
+        ulim_jds = [el["jd"] for el in alert.datapoints if el.get("candid") is None]
         if ulim_jds is None:
             self.logger.debug("Rejected: this alert has no upper limits")
             return None

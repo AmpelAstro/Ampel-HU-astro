@@ -3,23 +3,23 @@ from os import environ
 import pytest
 
 from ampel.contrib.hu.t3.tns.TNSToken import TNSToken
-from ampel.contrib.hu.t3.TNSTalker import TNSClient, TNS_BASE_URL_SANDBOX
+from ampel.contrib.hu.t3.TNSTalker import TNS_BASE_URL_SANDBOX, TNSClient
 from ampel.log.AmpelLogger import AmpelLogger
 
-@pytest.fixture
+
+@pytest.fixture()
 def tns_token():
     if not (api_key := environ.get("TNS_API_KEY")):
         raise pytest.skip("Test requires env var TNS_API_KEY")
     return TNSToken(
-        id = 59228,
-        name = "ZTF_AMPEL_COMPLETE",
-        api_key = api_key,
+        id=59228,
+        name="ZTF_AMPEL_COMPLETE",
+        api_key=api_key,
     )
 
 
-@pytest.fixture
+@pytest.fixture()
 def test_client(tns_token):
-
     return TNSClient(TNS_BASE_URL_SANDBOX, AmpelLogger.get_logger(), tns_token)
 
 
@@ -49,9 +49,9 @@ def test_tnsclient_backoff(test_client: TNSClient):
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_tnsclient_backoff_async(tns_token):
-    from ampel.contrib.hu.t3.tns import TNSClient as TNSMirrorClient
+    from ampel.contrib.hu.t3.tns.TNSClient import TNSClient as TNSMirrorClient
 
     client = TNSMirrorClient(
         tns_token, timeout=120, maxParallelRequests=1, logger=AmpelLogger.get_logger()
@@ -61,7 +61,10 @@ async def test_tnsclient_backoff_async(tns_token):
         hits = [
             hit
             async for hit in client.search(
-                **{"ra": ra, "dec": dec, "radius": matchradius, "units": "arcsec"}
+                ra=ra,
+                dec=dec,
+                radius=matchradius,
+                units="arcsec",
             )
         ]
         assert hits

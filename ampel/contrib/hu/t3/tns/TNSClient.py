@@ -12,11 +12,10 @@ import json
 import sys
 import traceback
 from functools import partial
-from typing import Dict
 
 import aiohttp
 import backoff
-from aiohttp import ClientSession, ClientTimeout
+from aiohttp import ClientSession
 from aiohttp.client_exceptions import (
     ClientConnectionError,
     ClientConnectorError,
@@ -62,8 +61,7 @@ async def tns_post(
                 )
                 await asyncio.sleep(wait)
                 continue
-            else:
-                break
+            break
         resp.raise_for_status()
         return await resp.json()
 
@@ -92,7 +90,11 @@ class TNSClient:
 
     def _on_backoff(self, details):
         exc_typ, exc, _ = sys.exc_info()
-        err = traceback.format_exception_only(exc_typ, exc)[-1].rstrip("\n") if exc else None
+        err = (
+            traceback.format_exception_only(exc_typ, exc)[-1].rstrip("\n")
+            if exc
+            else None
+        )
         self.logger.warn(
             "backoff",
             extra={"exc": err, "wait": details["wait"], "tries": details["tries"]},
@@ -100,17 +102,20 @@ class TNSClient:
 
     def _on_giveup(self, details):
         exc_typ, exc, _ = sys.exc_info()
-        err = traceback.format_exception_only(exc_typ, exc)[-1].rstrip("\n") if exc else None
+        err = (
+            traceback.format_exception_only(exc_typ, exc)[-1].rstrip("\n")
+            if exc
+            else None
+        )
         self.logger.warn("gave up", extra={"exc": err, "tries": details["tries"]})
 
     @staticmethod
     def is_permanent_error(exc):
         if isinstance(exc, ClientResponseError):
             return exc.code not in {500, 429}
-        else:
-            return False
+        return False
 
-    async def search(self, exclude=set(), **params):
+    async def search(self, *, exclude: None | set[str] = None, **params):
         semaphore = asyncio.Semaphore(self.maxParallelRequests)
         async with ClientSession(
             headers={

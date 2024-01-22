@@ -14,9 +14,9 @@ from typing import Any
 from pymongo import MongoClient
 
 from ampel.abstract.AbsOpsUnit import AbsOpsUnit
-from ampel.contrib.hu.t3.tns.TNSToken import TNSToken
 from ampel.contrib.hu.t3.tns.TNSClient import TNSClient
 from ampel.contrib.hu.t3.tns.TNSMirrorDB import TNSMirrorDB
+from ampel.contrib.hu.t3.tns.TNSToken import TNSToken
 from ampel.secret.NamedSecret import NamedSecret
 
 
@@ -32,8 +32,7 @@ class TNSMirrorUpdater(AbsOpsUnit):
     dry_run: bool = False
 
     def run(self, beacon: None | dict[str, Any] = None) -> None | dict[str, Any]:
-
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(tz=datetime.timezone.utc)
         last_run = beacon["updated"] if beacon else now - datetime.timedelta(days=7)
 
         async def fetch():
@@ -50,7 +49,7 @@ class TNSMirrorUpdater(AbsOpsUnit):
             TNSMirrorDB(
                 MongoClient(
                     self.context.config.get("resource.extcats", str, raise_exc=True),
-                    **self.extcats_auth.get()
+                    **self.extcats_auth.get(),
                 ),
                 logger=self.logger,
             ).add_sources(new_reports)

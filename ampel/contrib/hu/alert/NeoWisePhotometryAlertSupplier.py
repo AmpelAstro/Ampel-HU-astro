@@ -7,22 +7,17 @@
 # Last Modified Date:
 # Last Modified By  :
 
-from typing import Any, Literal, Dict, List, Optional, Sequence, Any, Tuple
-import sys, os
-from bson import encode
+import sys
 from hashlib import blake2b
-from ampel.ztf.util.ZTFIdMapper import to_ampel_id
-from ampel.view.ReadOnlyDict import ReadOnlyDict
-from ampel.alert.BaseAlertSupplier import BaseAlertSupplier
-from ampel.alert.AmpelAlert import AmpelAlert
-from ampel.protocol.AmpelAlertProtocol import AmpelAlertProtocol
-from ampel.types import Tag
+from typing import Literal
+
 import numpy as np
 import pandas as pd
-import astropy
-import json
-from astropy.io import ascii
-from io import BytesIO
+from bson import encode
+
+from ampel.alert.AmpelAlert import AmpelAlert
+from ampel.alert.BaseAlertSupplier import BaseAlertSupplier
+from ampel.view.ReadOnlyDict import ReadOnlyDict
 
 
 class NeoWisePhotometryAlertSupplier(BaseAlertSupplier):
@@ -77,14 +72,13 @@ class NeoWisePhotometryAlertSupplier(BaseAlertSupplier):
         df["W1_flux_density_ul"].replace(1.0, "True", inplace=True)
         df["W2_flux_density_ul"].replace(1.0, "True", inplace=True)
 
-        if "timewise_metadata" in d[1].keys():
-
+        if "timewise_metadata" in d[1]:
             # calculate reduced chi2
             timewise_metadata = d[1]["timewise_metadata"]
             for b in ["W1", "W2"]:
                 timewise_metadata[f"{b}_red_chi2"] = (
-                    timewise_metadata[f"{b}_chi2_to_med_flux_density"] /
-                    (timewise_metadata[f"{b}_N_datapoints_flux_density"] - 1)
+                    timewise_metadata[f"{b}_chi2_to_med_flux_density"]
+                    / (timewise_metadata[f"{b}_N_datapoints_flux_density"] - 1)
                     if timewise_metadata[f"{b}_N_datapoints_flux_density"] > 1
                     else np.nan
                 )
@@ -167,7 +161,7 @@ class NeoWisePhotometryAlertSupplier(BaseAlertSupplier):
             df_W2["mag_Npoints"] = df["W2_mag_Npoints"]
             df_W1["flux_density_Npoints"] = df["W1_flux_density_Npoints"]
             df_W2["flux_density_Npoints"] = df["W2_flux_density_Npoints"]
-        if "ra" in d[1].keys():
+        if "ra" in d[1]:
             df_W1["ra"] = d[1]["ra"]
             df_W1["dec"] = d[1]["dec"]
             df_W2["ra"] = d[1]["ra"]
@@ -206,7 +200,7 @@ class NeoWisePhotometryAlertSupplier(BaseAlertSupplier):
 
         all_ids = b""
         pps = []
-        for index, row in df_W1.iterrows():
+        for _, row in df_W1.iterrows():
             pp = dict(row)
             pp_hash = blake2b(encode(pp), digest_size=7).digest()
             if self.counter:
@@ -217,7 +211,7 @@ class NeoWisePhotometryAlertSupplier(BaseAlertSupplier):
 
             all_ids += pp_hash
             pps.append(ReadOnlyDict(pp))
-        for index, row in df_W2.iterrows():
+        for _, row in df_W2.iterrows():
             pp = dict(row)
             pp_hash = blake2b(encode(pp), digest_size=7).digest()
             if self.counter:

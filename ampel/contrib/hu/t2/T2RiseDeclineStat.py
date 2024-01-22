@@ -7,14 +7,16 @@
 # Last Modified Date:  03.08.2020
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
+from typing import TYPE_CHECKING, Any
+
 import numpy as np
 from astropy.table import Table
-from typing import Any, TYPE_CHECKING
-from ampel.types import UBson
+
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.protocol.LoggerProtocol import LoggerProtocol
 from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
 from ampel.view.LightCurve import LightCurve
 
 
@@ -87,7 +89,6 @@ class T2RiseDeclineBase(AmpelBaseModel):
     del_duplicate_rows: bool = True
 
     def compute_stats(self, light_curve: LightCurve) -> dict[str, Any]:
-
         # Output dict that we will start to populate
         o: dict[str, Any] = {}
 
@@ -115,7 +116,7 @@ class T2RiseDeclineBase(AmpelBaseModel):
             if self.del_duplicate_rows:
                 unique_jd, counts = np.unique(dets["jd"], return_counts=True)
                 double_jd = list(unique_jd[(counts > 1)])
-                if not len(double_jd) == 0:
+                if len(double_jd) != 0:
                     self.logger.info(
                         "Cuting duplicate jd photopoints at %s" % (double_jd)
                     )
@@ -182,7 +183,7 @@ class T2RiseDeclineBase(AmpelBaseModel):
             else:
                 o["bool_pure"] = True
             # Latest upper limit prior to detection
-            if np.any((ulims["jd"] < o["jd_det"])):
+            if np.any(ulims["jd"] < o["jd_det"]):
                 o["t_predetect"] = (
                     o["jd_det"] - ulims["jd"][(ulims["jd"] < o["jd_det"])].max()
                 )
@@ -215,17 +216,13 @@ class T2RiseDeclineBase(AmpelBaseModel):
                 "Latest detection too close to peak light to calculate peak stats"
             )
             o["bool_peaked"] = False
+        elif (o["mag_last"] - min_mag) > np.sqrt(min_mag_err**2 + last_mag_err**2):
+            o["bool_peaked"] = True
         else:
-            if (o["mag_last"] - min_mag) > np.sqrt(
-                min_mag_err ** 2 + last_mag_err ** 2
-            ):
-                o["bool_peaked"] = True
-            else:
-                o["bool_peaked"] = False
+            o["bool_peaked"] = False
 
         # If we concluded a peak was there, collect info
         if o["bool_peaked"]:
-
             self.logger.debug("Calculating peak based statistics")
             o["jd_max"] = min_mag_jd
             o["mag_peak"] = min_mag
@@ -234,7 +231,7 @@ class T2RiseDeclineBase(AmpelBaseModel):
             # Other chracteristics
             # Did it not rise at all?
             if (o["mag_det"] - o["mag_peak"]) > np.sqrt(
-                det_mag_err ** 2 + min_mag_err ** 2
+                det_mag_err**2 + min_mag_err**2
             ):
                 o["bool_norise"] = False
             else:
@@ -247,7 +244,7 @@ class T2RiseDeclineBase(AmpelBaseModel):
 
             # Did it not rise at all from first detection detection?
             if (o["mag_det"] - o["mag_last"]) > np.sqrt(
-                det_mag_err ** 2 + last_mag_err ** 2
+                det_mag_err**2 + last_mag_err**2
             ):
                 o["bool_norise"] = False
             else:
@@ -280,7 +277,6 @@ class T2RiseDeclineBase(AmpelBaseModel):
             filter_det = dets[dets["filter"] == filtid]
 
             if o["bool_peaked"]:
-
                 filter_det_rise = filter_det[filter_det["jd"] <= o["jd_max"]]
                 filter_det_fall = filter_det[filter_det["jd"] >= o["jd_max"]]
 
@@ -312,23 +308,23 @@ class T2RiseDeclineBase(AmpelBaseModel):
                     o[f"slope_fall_{band}"] = p[0]
                 else:
                     o[f"slope_fall_{band}"] = None
+            # Will use all the data to fit rise parameter, set others to none
+            elif o["bool_norise"] or filter_det["jd"].size < 2:
+                o[f"slope_rise_{band}"] = None
             else:
-                # Will use all the data to fit rise parameter, set others to none
-                if o["bool_norise"] or filter_det["jd"].size < 2:
-                    o[f"slope_rise_{band}"] = None
-                else:
-                    p = np.polyfit(
-                        filter_det["jd"],
-                        filter_det["magpsf"],
-                        1,
-                        w=1.0 / filter_det["sigmapsf"],
-                    )
-                    o[f"slope_rise_{band}"] = p[0]
+                p = np.polyfit(
+                    filter_det["jd"],
+                    filter_det["magpsf"],
+                    1,
+                    w=1.0 / filter_det["sigmapsf"],
+                )
+                o[f"slope_rise_{band}"] = p[0]
 
         # Colors at specific phases
         for coljd, colname in zip(
             [o["jd_det"], o["jd_last"], o["jd_max"]],
             ["col_det", "col_last", "col_peak"],
+            strict=False,
         ):
             self.logger.debug(f"Checking col {colname} at jd {coljd}")
             # Check if time defined (e.g. if peak not known)
@@ -354,7 +350,6 @@ class T2RiseDeclineBase(AmpelBaseModel):
 
 
 class T2RiseDeclineStat(AbsLightCurveT2Unit, T2RiseDeclineBase):
-
     do_testplot: bool = False
     path_testplot: str = "/home/jnordin/tmp/t2test/"
 
@@ -392,11 +387,7 @@ class T2RiseDeclineStat(AbsLightCurveT2Unit, T2RiseDeclineBase):
         plt.ylabel("Mag")
 
         # Create text string
-        title = "ndet: %s rb %.2f drb %.2f " % (
-            outdict["ndet"],
-            outdict["rb_med"],
-            outdict["drb_med"],
-        )
+        title = f'ndet: {outdict["ndet"]} rb {outdict["rb_med"]:.2f} drb {outdict["drb_med"]:.2f} '
 
         for boolprop in ["peaked", "pure", "rising", "norise", "hasgaps"]:
             if outdict[f"bool_{boolprop}"]:
@@ -407,5 +398,4 @@ class T2RiseDeclineStat(AbsLightCurveT2Unit, T2RiseDeclineBase):
         plt.clf()
 
     def process(self, light_curve: LightCurve) -> UBson | UnitResult:
-
         return self.compute_stats(light_curve)

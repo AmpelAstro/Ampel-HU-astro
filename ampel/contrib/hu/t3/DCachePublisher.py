@@ -8,27 +8,40 @@
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 
-import asyncio, datetime, gzip, io, os, ssl, sys, time, traceback, backoff, pytz
-from contextlib import nullcontext
+import asyncio
+import datetime
+import gzip
+import io
+import os
+import ssl
+import sys
+import time
+import traceback
+from collections.abc import Generator
 from functools import partial
 from typing import Any
-from collections.abc import Generator
 from xml.etree import ElementTree
-from aiohttp import ClientSession, helpers, TCPConnector
+
+import backoff
+import pytz
+from aiohttp import ClientSession, TCPConnector, helpers
 from aiohttp.client_exceptions import (
-    ClientConnectionError, ClientConnectorError, ClientConnectorSSLError,
-    ClientResponseError, ServerDisconnectedError
+    ClientConnectionError,
+    ClientConnectorError,
+    ClientConnectorSSLError,
+    ClientResponseError,
+    ServerDisconnectedError,
 )
 
-from ampel.types import UBson
-from ampel.struct.T3Store import T3Store
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 from ampel.secret.NamedSecret import NamedSecret
+from ampel.struct.JournalAttributes import JournalAttributes
+from ampel.struct.T3Store import T3Store
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
 from ampel.util.json import AmpelEncoder
 from ampel.view.SnapView import SnapView
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
-from ampel.struct.UnitResult import UnitResult
-from ampel.struct.JournalAttributes import JournalAttributes
 
 
 class DCachePublisher(AbsT3ReviewUnit):
@@ -71,13 +84,11 @@ class DCachePublisher(AbsT3ReviewUnit):
         assert self.resource
         self.base_dest = self.resource["dcache"] + self.base_dir
 
-
     def serialize(self, tran_view: SnapView | dict[str, Any]) -> bytes:
         buf = io.BytesIO()
         with gzip.GzipFile(fileobj=buf, mode="w") as f:
             f.write(self.encoder.encode(tran_view).encode("utf-8"))
         return buf.getvalue()
-
 
     async def create_directory(self, request, path_parts) -> None:
         path = []
@@ -96,33 +107,32 @@ class DCachePublisher(AbsT3ReviewUnit):
                         resp.raise_for_status()
             self.existing_paths.add(tuple(path))
 
-
     async def put(self, request, url, data, timeout=1.0):
         if self.dry_run:
             return
         await request("PUT", url, data=data)
 
-
     async def exists(self, request, url):
         if self.dry_run:
-            return
+            return None
         resp = await request("HEAD", url, raise_for_status=False)
         return resp.status in {200, 201, 204}
-
 
     @staticmethod
     def is_permanent_error(exc):
         if isinstance(exc, ClientResponseError):
             return exc.code not in {403, 423, 500}
-        elif isinstance(exc, ClientConnectorSSLError):
+        if isinstance(exc, ClientConnectorSSLError):
             return True
-        else:
-            return False
-
+        return False
 
     def _on_backoff(self, details):
         exc_typ, exc, _ = sys.exc_info()
-        err = traceback.format_exception_only(exc_typ, exc)[-1].rstrip("\n") if exc else None
+        err = (
+            traceback.format_exception_only(exc_typ, exc)[-1].rstrip("\n")
+            if exc
+            else None
+        )
         self.logger.warn(
             "backoff",
             extra={
@@ -133,10 +143,13 @@ class DCachePublisher(AbsT3ReviewUnit):
             },
         )
 
-
     def _on_giveup(self, details):
         exc_typ, exc, _ = sys.exc_info()
-        err = traceback.format_exception_only(exc_typ, exc)[-1].rstrip("\n") if exc else None
+        err = (
+            traceback.format_exception_only(exc_typ, exc)[-1].rstrip("\n")
+            if exc
+            else None
+        )
         self.logger.warn(
             "gave up",
             extra={
@@ -146,9 +159,7 @@ class DCachePublisher(AbsT3ReviewUnit):
             },
         )
 
-
     async def publish_transient(self, request, tran_view: SnapView) -> str:
-
         assert isinstance(tran_view.id, int)
         ztf_name = to_ztf_id(tran_view.id)
         # group such that there are a maximum of 17576 in the same directory
@@ -160,7 +171,6 @@ class DCachePublisher(AbsT3ReviewUnit):
         await self.put(request, fname, data=self.serialize(tran_view))
 
         return fname
-
 
     async def send_requests(self, unbound_tasks):
         """
@@ -174,44 +184,43 @@ class DCachePublisher(AbsT3ReviewUnit):
         )
         async with TCPConnector(
             limit=self.max_parallel_requests, ssl_context=ssl_context
-        ) as connector:
-            async with ClientSession(
-                connector=connector,
-                headers={"Authorization": f"BEARER {self.authz.get()}"},
-                raise_for_status=True,
-            ) as session:
-                # ClientSession.request is a normal function returning an
-                # async context manager. While this is kind of equivalent
-                # to a coroutine, it can't be decorated with backoff. Wrap
-                # it so it can be.
-                # Note that it is important to not actually enter the
-                # context manager here, as this would close the response
-                # on exit, causing read() to raise ClientConnectionError.
-                async def async_request(*args, **kwargs):
-                    return await session.request(*args, **kwargs)
+        ) as connector, ClientSession(
+            connector=connector,
+            headers={"Authorization": f"BEARER {self.authz.get()}"},
+            raise_for_status=True,
+        ) as session:
+            # ClientSession.request is a normal function returning an
+            # async context manager. While this is kind of equivalent
+            # to a coroutine, it can't be decorated with backoff. Wrap
+            # it so it can be.
+            # Note that it is important to not actually enter the
+            # context manager here, as this would close the response
+            # on exit, causing read() to raise ClientConnectionError.
+            async def async_request(*args, **kwargs):
+                return await session.request(*args, **kwargs)
 
-                # robustify Session.request() against transitory failures
-                request = backoff.on_exception(
-                    backoff.expo,
-                    (
-                        asyncio.TimeoutError,
-                        ClientResponseError,
-                        ClientConnectorError,
-                        ClientConnectionError,
-                        ServerDisconnectedError,
-                    ),
-                    logger=None,
-                    giveup=self.is_permanent_error,
-                    on_giveup=self._on_giveup,
-                    on_backoff=self._on_backoff,
-                )(async_request)
+            # robustify Session.request() against transitory failures
+            request = backoff.on_exception(
+                backoff.expo,
+                (
+                    asyncio.TimeoutError,
+                    ClientResponseError,
+                    ClientConnectorError,
+                    ClientConnectionError,
+                    ServerDisconnectedError,
+                ),
+                logger=None,
+                giveup=self.is_permanent_error,
+                on_giveup=self._on_giveup,
+                on_backoff=self._on_backoff,
+            )(async_request)
 
-                tasks = [task(request) for task in unbound_tasks]
-                return await asyncio.gather(*tasks)
+            tasks = [task(request) for task in unbound_tasks]
+            return await asyncio.gather(*tasks)
 
-
-    def process(self, gen: Generator[SnapView, JournalAttributes, None], t3s: T3Store) -> UBson | UnitResult:
-
+    def process(
+        self, gen: Generator[SnapView, JournalAttributes, None], t3s: T3Store
+    ) -> UBson | UnitResult:
         """
         Publish a transient batch
         """
@@ -238,7 +247,6 @@ class DCachePublisher(AbsT3ReviewUnit):
 
         return None
 
-
     async def publish_manifest(self, request) -> None:
         prefix = os.path.join(self.base_dest, self.channel)
         manifest_dir = os.path.join(prefix, "manifest")
@@ -247,7 +255,7 @@ class DCachePublisher(AbsT3ReviewUnit):
             request,
             list(
                 os.path.split(
-                    prefix[len(os.path.commonprefix((self.base_dest, manifest_dir))):]
+                    prefix[len(os.path.commonprefix((self.base_dest, manifest_dir))) :]
                 )
             ),
         )
@@ -259,17 +267,22 @@ class DCachePublisher(AbsT3ReviewUnit):
         async with await request(
             "PROPFIND", latest, raise_for_status=False
         ) as response:
-            if response.status < 400 and (
-                element := ElementTree.fromstring(await response.text()).find(
-                    "**/{DAV:}prop/{DAV:}creationdate"
-                )
-            ):
-                if date := element.text:
-                    previous = os.path.join(manifest_dir, date + ".json.gz")
-                    self.logger.info(f"Moving {latest} to {previous}")
-                    await request(
-                        "MOVE", latest, headers={"Destination": previous},
+            if (
+                response.status < 400
+                and (
+                    element := ElementTree.fromstring(await response.text()).find(
+                        "**/{DAV:}prop/{DAV:}creationdate"
                     )
+                )
+                and (date := element.text)
+            ):
+                previous = os.path.join(manifest_dir, date + ".json.gz")
+                self.logger.info(f"Moving {latest} to {previous}")
+                await request(
+                    "MOVE",
+                    latest,
+                    headers={"Destination": previous},
+                )
 
         # Write a new manifest with a link to previous manifest.
         await request(
@@ -296,7 +309,9 @@ class DCachePublisher(AbsT3ReviewUnit):
         ) as response:
             authz = await response.json()
         await request(
-            "PUT", os.path.join(prefix, "macaroon"), data=authz["macaroon"],
+            "PUT",
+            os.path.join(prefix, "macaroon"),
+            data=authz["macaroon"],
         )
         self.logger.info(f"Access token: {authz}")
 
@@ -305,8 +320,8 @@ def get_macaroon(
     user: helpers.BasicAuth,
     path: str,
     validity: str,
-    activity: list[str] = [],
-    ip: list[str] = [],
+    activity: None | list[str] = None,
+    ip: None | list[str] = None,
     host: str = "globe-door.ifh.de",
     port: int = 2880,
 ):
@@ -326,14 +341,15 @@ def get_macaroon(
         ssl_context = ssl.create_default_context(
             capath=os.environ.get("X509_CERT_DIR", None)
         )
-        async with TCPConnector(ssl_context=ssl_context) as connector:
-            async with ClientSession(auth=user, connector=connector) as session:
-                resp = await session.post(
-                    f"https://{host}:{port}{path}",
-                    headers={"Content-Type": "application/macaroon-request"},
-                    json=body,
-                )
-                return (await resp.json())["macaroon"]
+        async with TCPConnector(ssl_context=ssl_context) as connector, ClientSession(
+            auth=user, connector=connector
+        ) as session:
+            resp = await session.post(
+                f"https://{host}:{port}{path}",
+                headers={"Content-Type": "application/macaroon-request"},
+                json=body,
+            )
+            return (await resp.json())["macaroon"]
 
     return asyncio.get_event_loop().run_until_complete(fetch())
 

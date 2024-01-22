@@ -8,12 +8,13 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
+
 from astropy.table import Table
 from scipy.interpolate import interp1d
 
-from ampel.types import UBson
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
 from ampel.view.LightCurve import LightCurve
 
 
@@ -195,7 +196,6 @@ class T2LCQuality(AbsLightCurveT2Unit):
         # run on the single bands individually
         out_dict = {}
         for fid in self.filter_ids:
-
             self.logger.debug(
                 f"computing light curve quality for filter id {fid} "
                 f"({self.filter_names[fid]}-band)"
@@ -205,7 +205,7 @@ class T2LCQuality(AbsLightCurveT2Unit):
             filters: list[dict[str, Any]] = [
                 {"attribute": "fid", "operator": "==", "value": fid}
             ]
-            if isinstance(self.lc_filter, (list, tuple)):
+            if isinstance(self.lc_filter, list | tuple):
                 filters += self.lc_filter
             elif isinstance(self.lc_filter, dict):
                 filters += [self.lc_filter]
@@ -214,7 +214,7 @@ class T2LCQuality(AbsLightCurveT2Unit):
                     f"parameter 'lc_filter' must be either list or tuple. got {type(self.lc_filter)} instead"
                 )
 
-            self.logger.debug(f"applying filter: {repr(filters)}")
+            self.logger.debug(f"applying filter: {filters!r}")
 
             # get upper limits and detections time series
             pps = light_curve.get_tuples("jd", "magpsf", filters=filters)

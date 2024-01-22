@@ -1,4 +1,5 @@
 import logging
+from contextlib import suppress
 
 import numpy
 from astropy.time import Time
@@ -40,10 +41,10 @@ class TNSMirrorDB:
         if not docs:
             return
 
-        ops = []
-        for doc in docs:
-            doc = self.apply_schema(doc)
-            ops.append(UpdateOne({"_id": doc["_id"]}, {"$set": doc}, upsert=True))
+        ops = [
+            UpdateOne({"_id": doc["_id"]}, {"$set": doc}, upsert=True)
+            for doc in map(self.apply_schema, docs)
+        ]
 
         try:
             result = self.collection.bulk_write(ops, ordered=False)
@@ -54,7 +55,7 @@ class TNSMirrorDB:
                     "modified": result.modified_count,
                 },
             )
-        except BulkWriteError as bwe:
+        except BulkWriteError:
             pass
 
     def get_names_for_location(self, ra, dec, radius):
@@ -77,10 +78,8 @@ class TNSMirrorDB:
         doc["pos"] = cls.geojson_key(doc.pop("radeg"), doc.pop("decdeg"))
         for k in ["ra", "dec"]:
             del doc[k]
-        try:
+        with suppress(ValueError):
             doc["discoverydate"] = Time(doc["discoverydate"]).datetime
-        except:
-            pass
         return doc
 
     @staticmethod

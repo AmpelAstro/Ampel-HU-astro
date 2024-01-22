@@ -8,17 +8,16 @@
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 
-from functools import cached_property
-from typing import Any, Tuple
 from collections.abc import Iterable
+from functools import cached_property
+from typing import Any
 
 from pymongo import MongoClient
 
-from ampel.base.decorator import abstractmethod
-from ampel.base.AmpelBaseModel import AmpelBaseModel
-from ampel.struct.AmpelBuffer import AmpelBuffer
-from ampel.secret.NamedSecret import NamedSecret
 from ampel.abstract.AbsBufferComplement import AbsBufferComplement
+from ampel.base.decorator import abstractmethod
+from ampel.secret.NamedSecret import NamedSecret
+from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.struct.T3Store import T3Store
 
 
@@ -35,7 +34,7 @@ class BaseCatalogRecordComplementer(AbsBufferComplement, abstract=True):
     @cached_property
     def mongo_client(self):
         return MongoClient(
-            self.context.config.get(f"resource.extcats", str), **self.auth.get()
+            self.context.config.get("resource.extcats", str), **self.auth.get()
         )
 
     @abstractmethod

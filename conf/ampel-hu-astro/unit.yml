@@ -1,5 +1,6 @@
 - ampel.contrib.hu.t0.SimpleDecentFilter
 - ampel.contrib.hu.t0.XShooterFilter
+- ampel.contrib.hu.t0.PredetectionFilter
 - ampel.contrib.hu.t0.TransientInClusterFilter
 - ampel.contrib.hu.t0.LensedTransientFilter
 - ampel.contrib.hu.t0.RandFilter
@@ -36,6 +37,9 @@
 - ampel.contrib.hu.t2.T2MultiXgbClassifier
 - ampel.contrib.hu.t2.T2ElasticcReport
 - ampel.contrib.hu.t2.T2FastDecliner
+- ampel.contrib.hu.t2.T2HealpixProb
+- ampel.contrib.hu.t2.T2KilonovaEval
+- ampel.contrib.hu.t2.T2MatchGRB
 - ampel.contrib.hu.t3.TransientInfoPrinter
 - ampel.contrib.hu.t3.TransientViewDumper
 - ampel.contrib.hu.t3.ChannelSummaryPublisher
@@ -51,5 +55,11 @@
 - ampel.contrib.hu.t3.ElasticcClassPublisher
 - ampel.contrib.hu.t3.VOEventPublisher
 - ampel.contrib.hu.t3.AstroColibriPublisher
+- ampel.contrib.hu.t3.HealpixTokenGenerator
+- ampel.contrib.hu.t3.RandomMapGenerator
 - ampel.contrib.hu.alert.load.WiseFileAlertLoader
 - ampel.contrib.hu.alert.NeoWisePhotometryAlertSupplier
+- ampel.contrib.hu.alert.ResourceDependentConsumer
+- ampel.contrib.hu.alert.DynamicShaperAlertConsumer
+- ampel.contrib.hu.ingest.ZiGWDataPointShaper
+

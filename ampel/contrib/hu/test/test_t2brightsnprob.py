@@ -3,10 +3,10 @@ from os.path import dirname, join
 
 import pytest
 
+from ampel.content.DataPoint import DataPoint
 from ampel.contrib.hu.t2.T2BrightSNProb import T2BrightSNProb
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.view.LightCurve import LightCurve
-from ampel.content.DataPoint import DataPoint
 from ampel.ztf.util.ZTFIdMapper import to_ampel_id
 
 _ampel_flags = {
@@ -30,11 +30,11 @@ def _to_datapoint(d):
         body=d,
         tag=[_ampel_photo_flags[f] for f in d.pop("alTags") if f in _ampel_photo_flags],
         channel=[],
-        meta=[]
+        meta=[],
     )
 
 
-@pytest.fixture
+@pytest.fixture()
 def lightcurve() -> LightCurve:
     with open(join(dirname(__file__), "lightcurve.ZTF18abmjvpb.json")) as f:
         blob = json.load(f)
@@ -63,7 +63,7 @@ def assert_equivalent(left, right):
 
 
 def test_t2brightsnprob(lightcurve):
-    monitor = T2BrightSNProb(logger=AmpelLogger.get_logger()) # type: ignore[call-arg]
+    monitor = T2BrightSNProb(logger=AmpelLogger.get_logger())  # type: ignore[call-arg]
     monitor.post_init()
     assert_equivalent(
         monitor.process(lightcurve),

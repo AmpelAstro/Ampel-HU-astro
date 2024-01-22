@@ -10,27 +10,21 @@
 
 import copy
 import errno
-import os
-from typing import Literal, Sequence, Union
 
 # from astropy.time import Time
-import astropy.cosmology as cospy
 import backoff
 import numpy as np
 import sncosmo  # type: ignore[import]
-from ampel.contrib.hu.t2.T2RunSncosmo import T2RunSncosmo
-from ampel.struct.UnitResult import UnitResult
-from ampel.types import UBson
-
-# from ampel.enum.DocumentCode import DocumentCode
-from ampel.view.LightCurve import LightCurve
-
-# from ampel.model.StateT2Dependency import StateT2Dependency
-from ampel.view.T2DocView import T2DocView
 from astropy import constants as c
 from astropy import units as u
 from astropy.units import Quantity
 from sfdmap import SFDMap  # type: ignore[import]
+
+from ampel.contrib.hu.t2.T2RunSncosmo import T2RunSncosmo
+
+# from ampel.enum.DocumentCode import DocumentCode
+
+# from ampel.model.StateT2Dependency import StateT2Dependency
 
 # from urllib.request import urlopen
 # from urllib.parse import urljoin
@@ -62,9 +56,7 @@ class TDESource(sncosmo.Source):
         self._parameters: np.ndarray = np.array([1.584, 2.278, 4.0, 1e-25])
 
     @staticmethod
-    def _planck_lam(
-        self, wave: np.ndarray, T: np.ndarray
-    ) -> Union[np.float64, np.ndarray]:
+    def _planck_lam(self, wave: np.ndarray, T: np.ndarray) -> np.float64 | np.ndarray:
         """
         Calculate the spectral radiance of a blackbody
         :wave: np.ndarray, array containing wavelength in AA
@@ -81,32 +73,24 @@ class TDESource(sncosmo.Source):
             c.h.value * c.c.value * 1 / np.outer(wave_m.value, T) / c.k_B.value
         )
 
-        bb = prefactor * 1 / (np.exp(exponential_term) - 1) / u.sr
-
         # returns spectral radiance: J s-1 sr-1 m-3
-
-        return bb
-
-    @staticmethod
-    def _cc_bol_lam(self, wave: Union[float, np.ndarray], T: np.ndarray):
-        bb = self._planck_lam(self, wave, T)
-        bb = bb * u.sr
-
-        return bb
+        return prefactor * 1 / (np.exp(exponential_term) - 1) / u.sr
 
     @staticmethod
-    def _gauss(x: float, sigma: Union[float, np.float64]) -> Union[float, np.float64]:
+    def _cc_bol_lam(self, wave: float | np.ndarray, T: np.ndarray):
+        return self._planck_lam(self, wave, T) * u.sr
+
+    @staticmethod
+    def _gauss(x: float, sigma: float | np.float64) -> float | np.float64:
         """
         Calculate a Gaussian
         """
-        gauss = np.exp(-0.5 * x**2 / (sigma**2))
-        return gauss
+        return np.exp(-0.5 * x**2 / (sigma**2))
 
     @staticmethod
     def _gauss_exp(self, phases: np.ndarray) -> np.ndarray:
         risetime = self._parameters[0]
         decaytime = self._parameters[1]
-        temp = self._parameters[2]
         peakflux = self._parameters[3]
 
         # Gaussian rise
@@ -125,9 +109,7 @@ class TDESource(sncosmo.Source):
         # exponential decay
         vals_decay = a2 * np.exp(-(phases_decay) / b2)
 
-        returnvals = np.concatenate((vals_rise, vals_decay))
-
-        return returnvals
+        return np.concatenate((vals_rise, vals_decay))
 
     def _temp_evolution(self, phase: np.ndarray) -> np.ndarray:
         """
@@ -135,22 +117,15 @@ class TDESource(sncosmo.Source):
         """
         temp = self._parameters[2]
 
-        t_evo = (10**temp) + phase * 0
-
-        return t_evo
+        return (10**temp) + phase * 0
 
     def _flux(self, phase: np.ndarray, wave: np.ndarray) -> np.ndarray:
         """
         Calculate the model flux for given wavelengths and phases
         """
-        wave_m = wave * 1e-10
-
         t_evo = self._temp_evolution(phase=phase)
 
-        if np.ndim(phase) == 0:
-            phase_iter = np.asarray(phase)
-        else:
-            phase_iter = phase
+        phase_iter = np.asarray(phase) if np.ndim(phase) == 0 else phase
 
         bb_lam = self._cc_bol_lam(self, T=t_evo, wave=wave)
 
@@ -158,9 +133,7 @@ class TDESource(sncosmo.Source):
 
         model_flux = (rise_decay * bb_lam).transpose()
 
-        model_flux_cgi = model_flux.to(u.erg / u.s / u.cm**2 / u.AA)
-
-        return model_flux_cgi
+        return model_flux.to(u.erg / u.s / u.cm**2 / u.AA)
 
 
 class T2RunTDE(T2RunSncosmo):

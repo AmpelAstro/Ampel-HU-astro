@@ -1,0 +1,30 @@
+inspect_ampelz:
+no ampelz match - FATAL
+min_redshift
+min_dist
+dst_kpc
+
+inspect_possis:
+no possis fits - FATAL
+possis_ndof - FATAL
+min_absmag
+
+inspect_lc:
+no pps - FATAL
+pps
+age
+min_ndet_postul
+maglim_maxago
+no_UL
+wrong_filter
+peak_mag
+min_gal_lat
+close_to_sso
+is_ps1_star
+rb_minmed
+no rb info
+drb
+no drb
+
+process/misc:
+absmag from lc
