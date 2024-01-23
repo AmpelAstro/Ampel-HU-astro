@@ -9,6 +9,7 @@
 
 
 from ampel.alert.AlertConsumer import AlertConsumer
+from ampel.core.EventHandler import EventHandler
 from ampel.ingest.ChainedIngestionHandler import ChainedIngestionHandler
 from ampel.log import AmpelLogger
 from ampel.model.ingest.CompilerOptions import CompilerOptions
@@ -46,7 +47,10 @@ class DynamicShaperAlertConsumer(AlertConsumer):
 
     # Overload
     def get_ingestion_handler(
-        self, run_id: int, updates_buffer: DBUpdatesBuffer, logger: AmpelLogger
+        self,
+        event_hdlr: EventHandler,
+        updates_buffer: DBUpdatesBuffer,
+        logger: AmpelLogger,
     ) -> ChainedIngestionHandler:
         # Update shaper
         # print('config first', self.shaper)
@@ -71,7 +75,7 @@ class DynamicShaperAlertConsumer(AlertConsumer):
             shaper,
             self.directives,
             updates_buffer,
-            run_id,
+            event_hdlr.get_run_id(),
             tier=0,
             logger=logger,
             database=self.database,

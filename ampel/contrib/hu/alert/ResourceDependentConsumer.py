@@ -11,6 +11,7 @@ import json
 import re
 
 from ampel.alert.AlertConsumer import AlertConsumer
+from ampel.core.EventHandler import EventHandler
 from ampel.ingest.ChainedIngestionHandler import ChainedIngestionHandler
 from ampel.log import AmpelLogger
 from ampel.model.ingest.CompilerOptions import CompilerOptions
@@ -53,7 +54,10 @@ class DynamicShaperConsumer(AlertConsumer):
 
     # Overload
     def get_ingestion_handler(
-        self, run_id: int, updates_buffer: DBUpdatesBuffer, logger: AmpelLogger
+        self,
+        event_hdlr: EventHandler,
+        updates_buffer: DBUpdatesBuffer,
+        logger: AmpelLogger,
     ) -> ChainedIngestionHandler:
         # Replacement pattern for provided resources
         pattern = re.compile(
@@ -87,7 +91,7 @@ class DynamicShaperConsumer(AlertConsumer):
             self.shaper,
             directives,
             updates_buffer,
-            run_id,
+            event_hdlr.get_run_id(),
             tier=0,
             logger=logger,
             database=self.database,
