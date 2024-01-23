@@ -133,7 +133,7 @@ module = [
   "voeventparse.*",
   "healpy.*",
   "light_curve.*",
-  "slack_sdk.*",
+  "xgboost.*"
 ]
 ignore_missing_imports = true
 
