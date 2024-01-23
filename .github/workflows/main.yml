@@ -21,6 +21,6 @@ jobs:
       PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
     with:
       mongo: true
-      python-version: "3.12"
+      python-version: "3.11"
       lint: true
       format: true
