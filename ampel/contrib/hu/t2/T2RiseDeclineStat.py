@@ -7,20 +7,19 @@
 # Last Modified Date:  03.08.2020
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import numpy as np
 from astropy.table import Table
 
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
-from ampel.base.AmpelBaseModel import AmpelBaseModel
-from ampel.protocol.LoggerProtocol import LoggerProtocol
+from ampel.base.LogicalUnit import LogicalUnit
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
 from ampel.view.LightCurve import LightCurve
 
 
-class T2RiseDeclineBase(AmpelBaseModel):
+class T2RiseDeclineBase(LogicalUnit):
     """
     Derive a number of simple metrics describing the rise, peak and decline of a lc.
 
@@ -77,9 +76,6 @@ class T2RiseDeclineBase(AmpelBaseModel):
         {"attribute": "isdiffpos", "operator": "!=", "value": "f"},
         {"attribute": "isdiffpos", "operator": "!=", "value": "0"},
     ]
-
-    if TYPE_CHECKING:
-        logger: LoggerProtocol
 
     # For some reason we have duplicate photopoints. Why!!!
     # Through setting this we manually just keep the first of each occurance
