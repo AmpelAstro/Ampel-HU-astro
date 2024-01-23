@@ -33,7 +33,7 @@ from aiohttp.client_exceptions import (
     ServerDisconnectedError,
 )
 
-from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
+from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.struct.T3Store import T3Store
@@ -44,7 +44,7 @@ from ampel.view.SnapView import SnapView
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 
 
-class DCachePublisher(AbsT3ReviewUnit):
+class DCachePublisher(AbsT3Unit):
     """
     Publish TransientViews to DCache in gzipped JSON format
 

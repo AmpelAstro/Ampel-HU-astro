@@ -11,7 +11,7 @@ from collections.abc import Generator, Iterable
 from itertools import islice
 from typing import TYPE_CHECKING, TypeVar
 
-from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit, T3Send
+from ampel.abstract.AbsT3Unit import AbsT3Unit, T3Send
 from ampel.contrib.hu.t3.ElasticcTomClient import ElasticcTomClient
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.log import LogFlag
@@ -37,7 +37,7 @@ def chunks(l: Iterable[T], n: int) -> Generator[list[T], None, None]:
             break
 
 
-class ElasticcClassPublisher(AbsT3ReviewUnit):
+class ElasticcClassPublisher(AbsT3Unit):
     """
 
     This unit is intended to submit classifications to the DESC TOM db during

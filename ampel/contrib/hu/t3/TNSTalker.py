@@ -12,7 +12,7 @@ from collections.abc import Generator, Iterable
 from itertools import islice
 from typing import TYPE_CHECKING, Any
 
-from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit, T3Send
+from ampel.abstract.AbsT3Unit import AbsT3Unit, T3Send
 from ampel.contrib.hu.t3.ampel_tns import (
     TNS_BASE_URL_REAL,
     TNS_BASE_URL_SANDBOX,
@@ -40,7 +40,7 @@ def chunks(l: Iterable, n: int) -> Generator[list, None, None]:
             break
 
 
-class TNSTalker(AbsT3ReviewUnit):
+class TNSTalker(AbsT3Unit):
     """
     Get TNS name if existing, and submit selected candidates.
 
