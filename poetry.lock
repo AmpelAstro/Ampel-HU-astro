@@ -143,13 +143,13 @@ docs = ["Sphinx (>=7.2.0,<7.3.0)", "sphinx-autodoc-typehints (>=1.11.1,<2.0.0)",
 
 [[package]]
 name = "ampel-core"
-version = "0.10.0a3"
+version = "0.10.0a4"
 description = "Alice in Modular Provenance-Enabled Land"
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "ampel_core-0.10.0a3-py3-none-any.whl", hash = "sha256:75ce0b88935620c697b4167e379ae8135f6a4ce8cb8895676b86d086b86bbe24"},
-    {file = "ampel_core-0.10.0a3.tar.gz", hash = "sha256:04e25040762f6c0cee7378c297380d9111b175710e43b9ec206a857b76f23093"},
+    {file = "ampel_core-0.10.0a4-py3-none-any.whl", hash = "sha256:37662ed034d6b4ced0f6eaba1426b8cc85b930b3751a992838b46fdc740ae96c"},
+    {file = "ampel_core-0.10.0a4.tar.gz", hash = "sha256:a53dcf65e3f07044204a65bc0af0c71d2b0677d6b6b2eaa0a5c4112a77a776ad"},
 ]
 
 [package.dependencies]
