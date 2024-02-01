@@ -2,17 +2,19 @@
 
 [[package]]
 name = "adjusttext"
-version = "0.7.3"
+version = "1.0.4"
 description = "Iteratively adjust text position in matplotlib plots to minimize overlaps"
 optional = false
 python-versions = "*"
 files = [
-    {file = "adjustText-0.7.3.tar.gz", hash = "sha256:b90e275a95b4d980cbbac7967914b8d66477c09bc346a0b3c9e2125bba664b06"},
+    {file = "adjustText-1.0.4-py3-none-any.whl", hash = "sha256:7bb022044c1de9c1e41c3f713a857be85f1e0fc4c1d1743af9c62a827de22588"},
+    {file = "adjustText-1.0.4.tar.gz", hash = "sha256:b8611b2b3660307165aabdadbdc6f9a85d02f2912989fe209379f7e699e10b83"},
 ]
 
 [package.dependencies]
 matplotlib = "*"
 numpy = "*"
+scipy = "*"
 
 [[package]]
 name = "aiohttp"
@@ -5502,4 +5504,4 @@ ztf = ["ampel-ztf"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.12"
-content-hash = "d5e6bedd9c455c968b386bfadf592194155a708901a731e19e63a5e17b384414"
+content-hash = "57dec1728ab9fcdfb1bad05d7dadc47d0cfcad622c3c820042e8cbf5f6fe1700"
