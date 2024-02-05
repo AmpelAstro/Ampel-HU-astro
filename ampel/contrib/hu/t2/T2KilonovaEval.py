@@ -262,10 +262,11 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         info["possis_obspeak"] = best_res["fit_metrics"]["obspeak_model_B"]
         info["possis_chisq"] = best_res["sncosmo_result"]["chisq"]
         info["possis_ndof"] = best_res["sncosmo_result"]["ndof"]
-        if info["possis_ndof"] != 0:
+        if info["possis_ndof"] > 0:
             info["red_chisqu"] = info["possis_chisq"] / info["possis_ndof"]
         else:
             info["red_chisqu"] = -99
+            info["rejects"].append("possis_ndof")
 
         for k, max_red_chisqu in enumerate(self.max_red_chisquares):
             if info["red_chisqu"] <= max_red_chisqu and info["red_chisqu"] >= 0.75:
@@ -280,23 +281,24 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         #     return info
         # info["pass"] += 1
 
-        if self.min_obsmag < info["possis_obspeak"] < self.max_obsmag:
-            info["pass"] += 1
-        else:
-            criterium_name = "obsmag"
-            info["rejects"].append(criterium_name)
+        if info["possis_ndof"] > 0:
+            if self.min_obsmag < info["possis_obspeak"] < self.max_obsmag:
+                info["pass"] += 1
+            else:
+                criterium_name = "obsmag"
+                info["rejects"].append(criterium_name)
 
-        for range, reward in self.absmag_range_rewards:
-            if (
-                self.ideal_absmag - range
-                < info["possis_abspeak"]
-                < self.ideal_absmag + range
-            ):
-                info["pass"] += reward
-                break
-        else:
-            criterium_name = "absmag"
-            info["rejects"].append(criterium_name)
+            for range, reward in self.absmag_range_rewards:
+                if (
+                    self.ideal_absmag - range
+                    < info["possis_abspeak"]
+                    < self.ideal_absmag + range
+                ):
+                    info["pass"] += reward
+                    break
+            else:
+                criterium_name = "absmag"
+                info["rejects"].append(criterium_name)
 
         return info
 

@@ -9,7 +9,7 @@ parameters:
 - name: map_dir_var
   value: ./
 - name: alert_dir
-  value: /mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/gw170817/alerts
+  value: /mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/gw170817/alerts_single
 - name: trigger_jd_var
   value: 2457983.028727
 - name: export_fmt

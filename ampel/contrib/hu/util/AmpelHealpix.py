@@ -144,7 +144,7 @@ class AmpelHealpix:
             raise ValueError("First get and process map before using.")
 
         # Create mask for pixel selection
-        assert self.credible_levels
+        assert len(self.credible_levels)
         mask = np.zeros(len(self.credible_levels), dtype=int)
         mask[self.credible_levels <= pvalue_limit] = 1
 
@@ -179,7 +179,7 @@ class AmpelHealpix:
 
         if not self.nside:
             raise ValueError("First get and process map before using.")
-        assert self.credible_levels
+        assert len(self.credible_levels)
 
         theta = 0.5 * np.pi - np.deg2rad(dec)
         phi = np.deg2rad(ra)
