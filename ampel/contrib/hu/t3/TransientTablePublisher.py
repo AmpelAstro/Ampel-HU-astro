@@ -213,7 +213,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
         # df["map_name"] = np.char.replace(np.array(df["map_name"], dtype=str), "random", "random"+df["map_seed"])
 
         # print(df["map_name"].iloc[0])
-        if "map_seed" in df.keys() or self.rename_files:
+        if "map_seed" in df or self.rename_files:
             # print("transienttablepublisher:: ", df["map_seed"].iloc[0])
             tmp_seed_name = df["map_seed"].iloc[0]
             if isinstance(tmp_seed_name, str):
@@ -261,7 +261,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
         # take everything local_path and put it into new folder named after skymap
         # print(df.keys)
         map_name_key = "map_name"
-        if map_name_key in list(df.keys()) and self.move_files:
+        if map_name_key in df and self.move_files:
             files_local_path = os.listdir(self.local_path)
             skymap_name = df[map_name_key][
                 0
