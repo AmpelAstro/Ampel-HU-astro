@@ -1,0 +1,93 @@
+name: sn2023ixf
+parameters:
+- name: channelname
+  value: sn2023ixf
+- name: date
+  value: "2023-05-19"
+
+
+
+mongo:
+  prefix: testSnworkflow
+  reset: false
+
+channel:
+- name: sn2023ixf
+  access: [ZTF, ZTF_PUB, ZTF_PRIV]
+  policy: []
+
+task:
+
+- title: React
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3ReviewUnitExecutor
+        config:
+          supply:
+            unit: T3DefaultBufferSupplier
+            config:
+              select:
+                unit: T3FilteringStockSelector
+                config:
+                  channel: "{{ job.parameters.channelname }}"
+                  t2_filter:
+                    unit: T2InfantCatalogEval
+                    match:
+                      action: true
+
+              load:
+                unit: T3SimpleDataLoader
+                config:
+                  directives:
+                    - STOCK
+                    - T1
+                    - T2DOC
+                    - DATAPOINT
+                  channel: "{{ job.parameters.channelname }}"
+          stage:
+            unit: T3SimpleStager
+            config:
+              execute:
+                - unit: ScoreSingleObject
+                  config:
+                    powerscale: -2
+  
+- title: React
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3ReviewUnitExecutor
+        config:
+          supply:
+            unit: T3DefaultBufferSupplier
+            config:
+              select:
+                unit: T3FilteringStockSelector
+                config:
+                  channel: "{{ job.parameters.channelname }}"
+                  t2_filter:
+                    unit: T2InfantCatalogEval
+                    match:
+                      action: true
+
+              load:
+                unit: T3SimpleDataLoader
+                config:
+                  directives:
+                    - STOCK
+                    - T1
+                    - T2DOC
+                    - DATAPOINT
+                  channel: "{{ job.parameters.channelname }}"
+          stage:
+            unit: T3SimpleStager
+            config:
+              execute:
+                - unit: ScoreTNSObjects
+                  config:
+                    powerscale: -2
+
+  
