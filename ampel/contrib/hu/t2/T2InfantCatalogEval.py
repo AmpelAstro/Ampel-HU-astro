@@ -7,17 +7,18 @@
 # Last Modified Date:  17.03.2021
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
-import numpy as np
-from typing import Any
 from collections.abc import Sequence
+from typing import Any
+
+import numpy as np
 from astropy.coordinates import Distance, SkyCoord
 from astropy.cosmology import Planck15
 
-from ampel.types import UBson
+from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
 from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
 from ampel.view.LightCurve import LightCurve
 from ampel.view.T2DocView import T2DocView
-from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
 
 
 class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
@@ -197,7 +198,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         if ulims and len(ulims) > 0:
             last_ulim_jd = sorted([x["body"]["jd"] for x in ulims])[-1]
             pps_after_ndet = lc.get_photopoints(
-                filters=self.lc_filters + [{"attribute": "jd", "operator": ">=", "value": last_ulim_jd}]
+                filters=[*self.lc_filters, {'attribute': 'jd', 'operator': '>=', 'value': last_ulim_jd}]
             )
             # Check if there are enough positive detection after the last significant UL
             if (
