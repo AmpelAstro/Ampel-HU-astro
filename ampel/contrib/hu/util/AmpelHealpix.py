@@ -49,7 +49,7 @@ class AmpelHealpix:
 
         self._get_map()
         # Attribues
-        self.credible_levels: None | Sized = None
+        self.credible_levels: Sized = []
         self.trigger_time: None | float = None
 
     def _get_map(self, clobber=False) -> int:
