@@ -41,8 +41,7 @@ class RandomMapGenerator(AbsT3PlainUnit):
     max_date: str = "2023-10-01"
 
     def process(self, t3s: T3Store) -> UBson | UnitResult:
-        
-
+        """Generate random coordinates, generate map around coordinates, save map and generated randoms"""
         # generate random coordinates
         self.generate_randoms()
 
