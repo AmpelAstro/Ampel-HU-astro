@@ -4,23 +4,24 @@
 # License:             BSD-3-Clause
 # Author:              jakob nordin
 # Date:                27.03.2023
-# Last Modified Date:  27.03.2023
-# Last Modified By:    jnordin
+# Last Modified Date:  07.02.2024
+# Last Modified By:    ernstand@physik.hu-berlin.de
 
 
 import math
 import os
-from base64 import b64encode
-from collections import defaultdict
-from datetime import datetime
-from hashlib import blake2b
 
 import healpy as hp
 import numpy as np
 import requests
-from astropy.time import Time
 
+from astropy.time import Time
+from base64 import b64encode
+from collections import defaultdict
+from datetime import datetime
+from hashlib import blake2b
 from typing import Sized
+
 
 class AmpelHealpix:
     """
