@@ -101,7 +101,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
     slack_token: None | NamedSecret[str]
     local_path: None | str = None
 
-    move_files: bool = True
+    move_files: bool = False
 
     def process(
         self, gen: Generator[TransientView, T3Send, None], t3s: None | T3Store = None
@@ -213,7 +213,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
         # df["map_name"] = np.char.replace(np.array(df["map_name"], dtype=str), "random", "random"+df["map_seed"])
 
         # print(df["map_name"].iloc[0])
-        if "random" in df["map_name"].iloc[0] or self.rename_files:
+        if "map_seed" in df.keys() or self.rename_files:
             # print("transienttablepublisher:: ", df["map_seed"].iloc[0])
             tmp_seed_name = df["map_seed"].iloc[0]
             if isinstance(tmp_seed_name, str):
