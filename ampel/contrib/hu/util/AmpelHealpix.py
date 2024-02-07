@@ -10,17 +10,16 @@
 
 import math
 import os
+from base64 import b64encode
+from collections import defaultdict
+from collections.abc import Sized
+from datetime import datetime
+from hashlib import blake2b
 
 import healpy as hp
 import numpy as np
 import requests
-
 from astropy.time import Time
-from base64 import b64encode
-from collections import defaultdict
-from datetime import datetime
-from hashlib import blake2b
-from typing import Sized
 
 
 class AmpelHealpix:
