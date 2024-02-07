@@ -20,6 +20,7 @@ import numpy as np
 import requests
 from astropy.time import Time
 
+from typing import Sized
 
 class AmpelHealpix:
     """
@@ -48,7 +49,7 @@ class AmpelHealpix:
 
         self._get_map()
         # Attribues
-        self.credible_levels: None | list = None
+        self.credible_levels: None | Sized = None
         self.trigger_time: None | float = None
 
     def _get_map(self, clobber=False) -> int:
