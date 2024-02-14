@@ -368,6 +368,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         info["most_recent_detection"] = most_recent_detection
         info["first_detection"] = first_detection
 
+        """
         # check if theres two consecutive detections that have significant decrease in brightness
         # DONE: filter wise distinction
         if len(pps) > 1:
@@ -517,6 +518,8 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             # return None
         info["pass"] += 1
 
+        """
+
         # cut on range of peak magnitude
         mags = [pp["body"]["magpsf"] for pp in pps]
         peak_mag = min(mags)
@@ -529,6 +532,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             info["pass"] += 1
         info["peak_mag"] = peak_mag
 
+        """
         # For rapidly declining sources the latest magnitude is probably more relevant
         latest_pps = lc.get_photopoints(
             filters={
@@ -547,7 +551,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             info["latest_mag"] = latest_pps[0]["body"]["magpsf"]
 
         # TODO: cut based on the mag rise per day (see submitRapid)
-
+        """
         # cut on galactic coordinates
         if pos := lc.get_pos(ret="mean", filters=self.lc_filters):
             ra, dec = pos
@@ -566,9 +570,12 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             # return None
         else:
             info["pass"] += 1
+
+        
+
         info["ra"] = ra
         info["dec"] = dec
-
+        """
         # cut on distance to closest solar system object
         # TODO: how to make this check: ('0.0' in list(phot["ssdistnr"])
         ssdist = np.array(
@@ -591,6 +598,10 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             # return None
         else:
             info["pass"] += 1
+
+            """
+        
+        """
 
         # check PS1 sg for the full alert history
         # Note that we for this check do *not* use the lightcurve filter criteria
@@ -616,6 +627,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                 ] += 0  # TODO: think about whether optional checks should be rewarded more
         else:
             self.logger.debug("No PS1 check as no data found.")
+        """
 
         # cut on median RB and DRB score
         rbs = [pp["body"]["rb"] for pp in pps if "rb" in pp["body"]]
@@ -657,7 +669,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         info["drb"] = np.median(drbs)
 
         # Transient passed pure LC criteria
-        self.logger.debug("Passed T2infantCatalogEval", extra=info)
+        #self.logger.debug("Passed T2infantCatalogEval", extra=info)
         return info
 
     @no_type_check
