@@ -571,8 +571,6 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         else:
             info["pass"] += 1
 
-        
-
         info["ra"] = ra
         info["dec"] = dec
         """
@@ -600,7 +598,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             info["pass"] += 1
 
             """
-        
+
         """
 
         # check PS1 sg for the full alert history
@@ -669,7 +667,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         info["drb"] = np.median(drbs)
 
         # Transient passed pure LC criteria
-        #self.logger.debug("Passed T2infantCatalogEval", extra=info)
+        # self.logger.debug("Passed T2infantCatalogEval", extra=info)
         return info
 
     @no_type_check
