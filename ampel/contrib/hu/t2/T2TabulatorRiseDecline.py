@@ -174,7 +174,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
         banddata = {}
         tscale = np.mean(ftable["time"])
 
-        #print("T2TABULATORRISEDECLINE::" , np.unique(ftable["band"]))
+        # print("T2TABULATORRISEDECLINE::" , np.unique(ftable["band"]))
 
         for band in set(ftable["band"]):
             bt = ftable[ftable["band"] == band]
@@ -223,7 +223,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
         risepulls = [
             banddata.get("rise_slopesig_" + band, 0) for band in set(ftable["band"])
         ]
-        #print("TABULATORRISEDECLINE:: risepulls", risepulls)
+        # print("TABULATORRISEDECLINE:: risepulls", risepulls)
         if sum(risepulls) > self.sigma_slope:
             banddata["bool_rise"] = True
         else:
@@ -232,7 +232,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
         decpulls = [
             banddata.get("fall_slopesig_" + band, 0) for band in set(ftable["band"])
         ]
-        #print("TABULATORRISEDECLINE:: decpulls", decpulls)
+        # print("TABULATORRISEDECLINE:: decpulls", decpulls)
         if sum(decpulls) < -self.sigma_slope:
             banddata["bool_fall"] = True
         else:
@@ -672,7 +672,7 @@ class T2TabulatorRiseDecline(
         # Convert input datapoints to standardized Astropy Table
         # Using standard tabulators
         flux_table = self.get_flux_table(datapoints)
-        #print("T2TABULATORRISEDECLINE:: ", flux_table)
+        # print("T2TABULATORRISEDECLINE:: ", flux_table)
 
         # Cut the flux table if requested
         if self.max_ndet > 0 and len(flux_table) > self.max_ndet:
