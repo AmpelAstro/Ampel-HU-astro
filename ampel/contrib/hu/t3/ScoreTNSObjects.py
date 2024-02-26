@@ -47,7 +47,7 @@ class ScoreTNSObjects(AbsScoreCalculator):
         super().__init__(**kwargs)
         self.client = TNSClient(
             TNSToken(
-                id=self.tns_id, name=self.tns_name, api_key=self.tns_api_key.value
+                id=self.tns_id, name=self.tns_name, api_key=self.tns_api_key.get()
             ),
             5,  # timeout
             1,  # parallel

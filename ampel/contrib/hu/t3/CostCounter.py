@@ -8,12 +8,20 @@
 # Last Modified By:    jno <jnordin@physik.hu-berlin.de>
 
 from collections.abc import Generator
+from typing import TypedDict
 
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 from ampel.struct.T3Store import T3Store
-from ampel.struct.UnitResult import UnitResult
 from ampel.types import T3Send, UBson
 from ampel.view.SnapView import SnapView
+
+
+class Costs(TypedDict):
+    stocks: int
+    states: int
+    dps: int
+    t2docs: dict[str, int]
+    t2duration: dict[str, float]
 
 
 class CostCounter(AbsT3ReviewUnit):
@@ -35,12 +43,18 @@ class CostCounter(AbsT3ReviewUnit):
 
     def process(
         self, gen: Generator[SnapView, T3Send, None], t3s: None | T3Store = None
-    ) -> UBson | UnitResult:
+    ) -> UBson:
         """
         Loop through transients and add "costs".
         """
 
-        costs = {"stocks": 0, "states": 0, "dps": 0, "t2docs": {}, "t2duration": {}}
+        costs: Costs = {
+            "stocks": 0,
+            "states": 0,
+            "dps": 0,
+            "t2docs": {},
+            "t2duration": {},
+        }
 
         # We will here loop through transients and react individually
         for view in gen:
@@ -48,14 +62,15 @@ class CostCounter(AbsT3ReviewUnit):
             costs["dps"] += len(view.t0) if view.t0 else 0
             costs["states"] += len(view.t1) if view.t1 else 0
 
-            for t2v in view.t2:
-                if t2v.unit not in costs["t2docs"]:
-                    costs["t2docs"][t2v.unit] = 0
-                    costs["t2duration"][t2v.unit] = 0
-                costs["t2docs"][t2v.unit] += 1
+            for t2v in view.t2 or []:
+                unit = str(t2v.unit)
+                if unit not in costs["t2docs"]:
+                    costs["t2docs"][unit] = 0
+                    costs["t2duration"][unit] = 0
+                costs["t2docs"][unit] += 1
 
                 # Add duration if any exists
                 for metadict in t2v.meta:
-                    costs["t2duration"][t2v.unit] += metadict.get("duration", 0)
+                    costs["t2duration"][unit] += metadict.get("duration", 0)
 
-        return costs
+        return costs  # type: ignore[return-value]

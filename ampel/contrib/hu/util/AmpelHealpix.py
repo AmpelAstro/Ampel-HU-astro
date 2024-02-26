@@ -12,7 +12,6 @@ import math
 import os
 from base64 import b64encode
 from collections import defaultdict
-from collections.abc import Sized
 from datetime import datetime
 from hashlib import blake2b
 
@@ -49,7 +48,7 @@ class AmpelHealpix:
 
         self._get_map()
         # Attribues
-        self.credible_levels: Sized = []
+        self.credible_levels = np.empty(0)
         self.trigger_time: None | float = None
 
     def _get_map(self, clobber=False) -> int:

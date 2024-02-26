@@ -41,7 +41,7 @@ class AbsScoreCalculator(AbsT3ReviewUnit, abstract=True):
     scores_parsing: Literal["sum", "max", "min"] = "max"
 
     def post_init(self) -> None:
-        self.t2scores = {t2name: 0 for t2name in self.t2scores_from}
+        self.t2scores = {t2name: 0.0 for t2name in self.t2scores_from}
 
     def process(
         self, gen: Generator[SnapView, T3Send, None], t3s: None | T3Store = None
@@ -57,7 +57,7 @@ class AbsScoreCalculator(AbsT3ReviewUnit, abstract=True):
                 scores = [
                     self.evaluate(t2unit, t2_result.body[-1])
                     for t2_result in view.get_t2_views(unit=t2unit)
-                    if isinstance(t2_result.body[-1], dict)
+                    if t2_result.body and isinstance(t2_result.body[-1], dict)
                 ]
                 if len(scores) == 0:
                     continue
@@ -76,3 +76,4 @@ class AbsScoreCalculator(AbsT3ReviewUnit, abstract=True):
         """
         Replace with evaluate method for workflow test
         """
+        raise NotImplementedError
