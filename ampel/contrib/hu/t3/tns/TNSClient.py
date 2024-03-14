@@ -61,7 +61,8 @@ async def tns_post(
                 )
                 await asyncio.sleep(wait)
                 continue
-            break
+            else:  # noqa: RET507
+                break
         resp.raise_for_status()
         return await resp.json()
 
@@ -115,7 +116,7 @@ class TNSClient:
             return exc.code not in {500, 429}
         return False
 
-    async def search(self, *, exclude: None | set[str] = None, **params):
+    async def search(self, exclude=set(), **params):  # noqa: B006
         semaphore = asyncio.Semaphore(self.maxParallelRequests)
         async with ClientSession(
             headers={
@@ -147,3 +148,40 @@ class TNSClient:
         return await self.tns_post(
             session, semaphore, "get/object", self.token, {"objname": objname}
         )
+
+    async def sendReport(self, report):
+        semaphore = asyncio.Semaphore(self.maxParallelRequests)
+        async with ClientSession(
+            headers={
+                "User-Agent": "tns_marker"
+                + json.dumps(
+                    {"tns_id": self.token.id, "name": self.token.name, "type": "bot"}
+                )
+            },
+        ) as session:
+            postreport = partial(
+                self.tns_post, session, semaphore, "bulk-report", self.token
+            )
+            response = await postreport(report)
+            print(response)
+            if response["id_code"] == 200:
+                return response["data"]["report_id"]
+            return False
+
+    async def reportReply(self, report_id):
+        semaphore = asyncio.Semaphore(self.maxParallelRequests)
+        async with ClientSession(
+            headers={
+                "User-Agent": "tns_marker"
+                + json.dumps(
+                    {"tns_id": self.token.id, "name": self.token.name, "type": "bot"}
+                )
+            },
+        ) as session:
+            reply_data = {"api_key": self.token.api_key, "report_id": report_id}
+            print("replydata", reply_data)
+            postreport = partial(
+                self.tns_post, session, semaphore, "bulk-report-reply", self.token
+            )
+            response = await postreport(reply_data)
+            return response["data"]["feedback"]

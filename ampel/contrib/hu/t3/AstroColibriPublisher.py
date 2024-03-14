@@ -12,7 +12,6 @@
 
 # from itertools import islice
 import os
-import re
 from collections.abc import Generator
 
 import numpy as np
@@ -24,6 +23,7 @@ from ampel.contrib.hu.t3.AstroColibriClient import (
     AstroColibriClient,
     AstroColibriPhot,
 )
+from ampel.contrib.hu.util.TNSMirrorSearcher import TNSMirrorSearcher
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.struct.T3Store import T3Store
 from ampel.view.TransientView import TransientView
@@ -64,7 +64,7 @@ def dps_to_astrocolobri(dps_det: list[dict]) -> dict[str, AstroColibriPhot]:
     return outphot
 
 
-class AstroColibriPublisher(AbsPhotoT3Unit):
+class AstroColibriPublisher(AbsPhotoT3Unit, TNSMirrorSearcher):
     """
 
     Publish results to AstroColibri. This demo version will:
@@ -156,23 +156,6 @@ class AstroColibriPublisher(AbsPhotoT3Unit):
             ]
         )
 
-    def get_tnsname(self, view: "TransientView") -> bool:
-        # Was transient (successfully pushed)
-        if not view.stock:
-            return False
-        # Check whether the name is found in the name collection
-        if len(names := view.stock.get("name", [])) > 0:
-            # Will only be able to require TNS name through format
-            # dddd
-            for name in names:
-                if re.search(r"\d{4}\D{3}\D?", name):
-                    return name
-
-        # Should we look through the Journal for entries from the TNSTalker?
-        # It *should* also save these entries to name so should not be needed...
-
-        return None
-
     def process(
         self,
         tviews: Generator[TransientView, JournalAttributes, None],
@@ -184,39 +167,13 @@ class AstroColibriPublisher(AbsPhotoT3Unit):
         """
 
         for tview in tviews:
-            if self.randname:
-                import random
-
-                # Generate random name (assuming publishing to dev AC)
-                tns_name = f"AmpelRand{random.randint(1, 999)}"
-            else:
-                # Find TNS name (required for AstroColibri posting)
-                # Currently assumes that this is stored either in the
-                # stock name list or can be found in the T3 journal
-                # (probably from the TNSTalker)
-                tns_name = self.get_tnsname(tview)
-                if not tns_name:
-                    self.logger.info("No TNS.", extra={"tnsName": None})
-                    continue
-
-            # Check if this was submitted
-            # TODO: How should the first submit differ from updates?
-            if self.submitted(tview):
-                # Check if it needs an update
-                if self.requires_update(tview):
-                    post_update = True
-                else:
-                    continue
-            else:
-                post_update = False
-
-            # Gather general information
+            # Gather general information, including coordinate
             payload = {
                 "type": "ot_sn",  # for optical? when to change to ot_sn?
                 "observatory": "ztf",
                 "source_name": to_ztf_id(int(tview.id)),
                 #                'trigger_id': self.trigger_id+':'+str(tview.id),  # How do these work?
-                "trigger_id": "TNS" + tns_name,
+                # "trigger_id": "TNS" + tns_name,
                 #                'ivorn': self.trigger_id+':'+str(tview.id),       # Need ivorn schema
                 "timestamp": Time.now().iso,
             }
@@ -234,6 +191,35 @@ class AstroColibriPublisher(AbsPhotoT3Unit):
             payload["ra"] = np.mean([pp["body"]["ra"] for pp in dps_det])
             payload["dec"] = np.mean([pp["body"]["dec"] for pp in dps_det])
             payload["err"] = 1.0 / 3600  # position err ~1 arcsec in dec
+
+            # Find TNS name
+            if self.randname:
+                import random
+
+                # Generate random name (assuming publishing to dev AC)
+                tns_name = f"AmpelRand{random.randint(1, 999)}"
+            else:
+                # Find TNS name (required for AstroColibri posting)
+                # Currently assumes that this is stored either in the
+                # stock name list or can be found in the T3 journal
+                # (probably from the TNSTalker)
+                tns_name = self.get_tns_name(payload["ra"], payload["dec"])
+                print("FOUND TNS NAME", tns_name)
+                if not tns_name:
+                    self.logger.info("No TNS.", extra={"tnsName": None})
+                    continue
+            payload["trigger_id"] = "TNS" + tns_name
+
+            # Check if this was submitted
+            # TODO: How should the first submit differ from updates?
+            if self.submitted(tview):
+                # Check if it needs an update
+                if self.requires_update(tview):
+                    post_update = True
+                else:
+                    continue
+            else:
+                post_update = False
 
             # If part of random testing, perturb coordinates
             if self.randname:
@@ -273,6 +259,7 @@ class AstroColibriPublisher(AbsPhotoT3Unit):
             # Assuming this exists locally under {stock}.png
             if self.image_path is not None:
                 ipath = self.image_path.replace("ZTFNAME", to_ztf_id(int(tview.id)))
+                ipath = self.image_path.replace("STOCK", str(tview.id))
                 # Only upload if it actually exists:
                 if not os.path.isfile(ipath):
                     ipath = None

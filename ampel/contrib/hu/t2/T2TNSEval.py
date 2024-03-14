@@ -15,7 +15,7 @@ from astropy.coordinates import SkyCoord
 
 # T2 importing info from T3. Restructure?
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
-from ampel.contrib.hu.t3.ampel_tns import (
+from ampel.contrib.hu.t3.tns.tns_ampel_util import (
     TNSFILTERID,
 )
 from ampel.struct.UnitResult import UnitResult
