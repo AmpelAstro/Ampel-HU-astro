@@ -1,6 +1,11 @@
-# %%
-# notebook to execute a list of jobfiles without supervision for "stream not found" or bad exit codes
-# repeats same file 5 times then moves on
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# File:                Ampel-HU-astro/ampel/contrib/hu/util/automation/AmpelHealpix.py
+# License:             BSD-3-Clause
+# Author:              andrea ernst
+# Date:                20.03.2024
+# Last Modified Date:  20.03.2024
+# Last Modified By:    ernstand@physik.hu-berlin.de
 
 import os
 import shlex
