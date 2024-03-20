@@ -5,21 +5,21 @@
 import os
 import shlex
 import subprocess
-import sys
 from select import select
 from subprocess import Popen
+
 
 def executeJobfile(job_call, execute_directory, should_retry=True, max_retries=5):
     command = job_call
     command_list = shlex.split(command)
 
-    #print(command)
+    # print(command)
 
     stream_not_found_err = "Stream not found"
 
     os.chdir(execute_directory)
-    #print(os.getcwd())
-    #print(execute_directory)
+    # print(os.getcwd())
+    # print(execute_directory)
 
     timeout = 0.1
     retry = True
@@ -27,15 +27,16 @@ def executeJobfile(job_call, execute_directory, should_retry=True, max_retries=5
     while retry:
         print("STARTING SUBPROCESS, try #", retry_ind)
         try:
-            process = Popen(command_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            process = Popen(
+                command_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
         except NameError:
             print("Error")
         retry = False
 
-        
         while process:
-            #output, error = process.communicate()
-            #print(output, error)
+            # output, error = process.communicate()
+            # print(output, error)
 
             if process.poll() is not None:
                 if process.returncode != 0:
@@ -46,7 +47,7 @@ def executeJobfile(job_call, execute_directory, should_retry=True, max_retries=5
                 print(process.stdout.read().decode("utf-8"), end="")
                 process.stdout.close()
                 break
-            
+
             rlist = select([process.stdout], [], [], timeout)[0]
 
             for f in rlist:
@@ -56,13 +57,11 @@ def executeJobfile(job_call, execute_directory, should_retry=True, max_retries=5
                     print("FOUND", stream_not_found_err)
                     retry = True
                     process.kill()
-                #elif line.find("Error") != -1:
-                    #print("Found SyntaxError")
-                    #retry = True
-                    #process.kill()
-                #print(f"{f.readline()}")
-
-        
+                # elif line.find("Error") != -1:
+                # print("Found SyntaxError")
+                # retry = True
+                # process.kill()
+                # print(f"{f.readline()}")
 
         retry_ind += 1
         if retry_ind >= max_retries or not should_retry:
@@ -70,5 +69,3 @@ def executeJobfile(job_call, execute_directory, should_retry=True, max_retries=5
             break
 
         print("RETRY?", retry)
-
-
