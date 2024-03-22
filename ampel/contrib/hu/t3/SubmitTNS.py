@@ -42,7 +42,7 @@ class SubmitTNS(AbsPhotoT3Unit, TNSMirrorSearcher):
 
     # Connect information
     tns_key: NamedSecret[dict]
-    timeout: float = 60.0
+    timeout: float = 120.0
     max_parallel_requests: int = 8
     maxdist: float = 2.0  # max squared dist, in arcsec.
     tns_doublecheck: bool = True  # Also do a TNS name search - is this needed?

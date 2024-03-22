@@ -12,7 +12,6 @@ from typing import Any, Literal
 
 import numpy as np
 
-from ampel.struct.UnitResult import UnitResult
 from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
@@ -20,7 +19,6 @@ from ampel.enum.DocumentCode import DocumentCode
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
-from ampel.view.LightCurve import LightCurve
 from ampel.view.T2DocView import T2DocView
 
 
@@ -63,14 +61,13 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
     # T2DigestRedshifts : Use the best redshift as parsed by DigestRedshift.
     # T2ElasticcRedshiftSampler: Use a list of redshifts and weights from the sampler.
     # None : Use the fixed z value
-    redshift_kind: None | str = None 
+    redshift_kind: None | str = None
     # It is also possible to use fixed redshift whenever a dynamic redshift kind is not possible
     # This could be either a single value or a list
     fixed_z: None | float | Sequence[float] = None
     # Finally, the provided lens redshift might be multiplied with a scale
     # Useful for lensing studies, or when trying multiple values
     scale_z: None | float = None
-
 
     # These are the units through which we look for redshifts
     # Which units should this be changed to
@@ -341,16 +338,13 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
 
         return group_z
 
-
-    def get_ampelZ(
-        self, t2_views: Sequence[T2DocView]
-    ) -> UBson | UnitResult:
+    def get_ampelZ(self, t2_views: Sequence[T2DocView]) -> UBson | UnitResult:
         """
 
         Parse t2_views from catalogs that were part of the redshift studies.
         Return these together with a "best estimate" - ampel_z
-        
-        Main method, separated to be used externally. 
+
+        Main method, separated to be used externally.
 
         """
 
@@ -407,15 +401,14 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
 
         return t2_output
 
-
     def get_redshift(
         self, t2_views
     ) -> tuple[None | list[float], None | str, None | list[float]]:
         """
-        
+
         Return a single or list of redshifts to be used. Not called in T2DigestRedshift.process
         but provides interface to e.g. fit units.
-        
+
         """
 
         # Examine T2s for eventual information
@@ -450,10 +443,16 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
                 )
                 # Parse this
                 if self.redshift_kind == "T2MatchBTS":
-                    if isinstance(t2_res, dict) and "bts_redshift" in t2_res and t2_res["bts_redshift"] != "-":
+                    if (
+                        isinstance(t2_res, dict)
+                        and "bts_redshift" in t2_res
+                        and t2_res["bts_redshift"] != "-"
+                    ):
                         z = [float(t2_res["bts_redshift"])]
                         z_source = "BTS"
-                elif self.redshift_kind == "T2ElasticcRedshiftSampler" and isinstance(t2_res, dict):
+                elif self.redshift_kind == "T2ElasticcRedshiftSampler" and isinstance(
+                    t2_res, dict
+                ):
                     z = t2_res["z_samples"]
                     z_source = t2_res["z_source"]
                     z_weights = t2_res["z_weights"]
@@ -474,8 +473,6 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
 
         return z, z_source, z_weights
 
-
-
     # ==================== #
     # AMPEL T2 MANDATORY   #
     # ==================== #
@@ -485,9 +482,9 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
         datapoints: Sequence[DataPoint],
         t2_views: Sequence[T2DocView],
     ) -> UBson | UnitResult:
-#    def process(
-#        self, light_curve: LightCurve, t2_views: Sequence[T2DocView]
-#    ) -> UBson | UnitResult:
+        #    def process(
+        #        self, light_curve: LightCurve, t2_views: Sequence[T2DocView]
+        #    ) -> UBson | UnitResult:
         """
 
         Parse t2_views from catalogs that were part of the redshift studies.
@@ -498,6 +495,5 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
         if not t2_views:  # Should not happen actually, T2Processor catches that case
             self.logger.error("Missing tied t2 views")
             return UnitResult(code=DocumentCode.T2_MISSING_INFO)
-            
-        return self.get_ampelZ(t2_views)
 
+        return self.get_ampelZ(t2_views)

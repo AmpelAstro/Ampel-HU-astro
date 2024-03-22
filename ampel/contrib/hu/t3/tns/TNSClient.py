@@ -32,6 +32,7 @@ async def tns_post(
     method: str,
     token: TNSToken,
     data: dict,
+    payload_label: str = "data",
     max_retries: int = 10,
 ) -> dict:
     """
@@ -44,8 +45,11 @@ async def tns_post(
                 p.set_content_disposition("form-data", name="api_key")
                 mpwriter.append(p)
                 p = aiohttp.JsonPayload(data)
-                p.set_content_disposition("form-data", name="data")
+                p.set_content_disposition("form-data", name=payload_label)
                 mpwriter.append(p)
+                print("fooo tns post")
+                print("https://www.wis-tns.org/api/" + method)
+                print(mpwriter)
                 resp = await session.post(
                     "https://www.wis-tns.org/api/" + method, data=mpwriter
                 )
@@ -113,7 +117,7 @@ class TNSClient:
     @staticmethod
     def is_permanent_error(exc):
         if isinstance(exc, ClientResponseError):
-            return exc.code not in {500, 429}
+            return exc.code not in {500, 429, 404}
         return False
 
     async def search(self, exclude=set(), **params):  # noqa: B006
@@ -181,7 +185,12 @@ class TNSClient:
             reply_data = {"api_key": self.token.api_key, "report_id": report_id}
             print("replydata", reply_data)
             postreport = partial(
-                self.tns_post, session, semaphore, "bulk-report-reply", self.token
+                self.tns_post,
+                session,
+                semaphore,
+                "bulk-report-reply",
+                self.token,
+                payload_label="report_id",
             )
             response = await postreport(reply_data)
             return response["data"]["feedback"]

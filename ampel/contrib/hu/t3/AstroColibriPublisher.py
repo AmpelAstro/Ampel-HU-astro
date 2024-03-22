@@ -78,6 +78,22 @@ class AstroColibriPublisher(AbsPhotoT3Unit, TNSMirrorSearcher):
 
     Will update if new obs was made after last posting.
 
+    AC requests:
+
+
+    - Can you make sure that the event time corresponds to the one submitted to TNS?
+    - We suggest a slight renaming of the events:
+     x   * source_name: use the name of the event given by TNS and add "(Ampel)" to it. Example: TNS name "AT 2024edy" => "AT 2024edy (Ampel)"
+     x   * trigger_id: keep as it is
+     x   * we suggest you fill the ZTF identifier (e.g. ZTF24aahbwis) that you currently use a source_name into the field "discoverer_internal_name"
+    x Type: for events that are not submitted as classified to TNS (i.e. listed as AT in TNS), please change the value of the "type" parameter to "ot" (instead of "ot_sn")
+    * Classification: you can add the Ampel classification into the field "classification". E.g. if these are supernova candidates use "SN" or any classification that one could also find on TNS
+
+
+
+
+
+
     """
 
     # Limits for attributes
@@ -169,13 +185,14 @@ class AstroColibriPublisher(AbsPhotoT3Unit, TNSMirrorSearcher):
         for tview in tviews:
             # Gather general information, including coordinate
             payload = {
-                "type": "ot_sn",  # for optical? when to change to ot_sn?
+                "type": "ot",
                 "observatory": "ztf",
-                "source_name": to_ztf_id(int(tview.id)),
+                # "source_name": to_ztf_id(int(tview.id)),
+                "discoverer_internal_name": to_ztf_id(int(tview.id)),
                 #                'trigger_id': self.trigger_id+':'+str(tview.id),  # How do these work?
                 # "trigger_id": "TNS" + tns_name,
                 #                'ivorn': self.trigger_id+':'+str(tview.id),       # Need ivorn schema
-                "timestamp": Time.now().iso,
+                # "timestamp": Time.now().iso,
             }
 
             # Gather photometry based information
@@ -198,17 +215,29 @@ class AstroColibriPublisher(AbsPhotoT3Unit, TNSMirrorSearcher):
 
                 # Generate random name (assuming publishing to dev AC)
                 tns_name = f"AmpelRand{random.randint(1, 999)}"
+                tns_submission_time = Time.now().iso
             else:
                 # Find TNS name (required for AstroColibri posting)
                 # Currently assumes that this is stored either in the
                 # stock name list or can be found in the T3 journal
                 # (probably from the TNSTalker)
-                tns_name = self.get_tns_name(payload["ra"], payload["dec"])
-                print("FOUND TNS NAME", tns_name)
-                if not tns_name:
-                    self.logger.info("No TNS.", extra={"tnsName": None})
+                tns_reports = self.get_tns_reports(payload["ra"], payload["dec"])
+                if not tns_reports:
+                    self.logger.debug("No TNS.", extra={"tnsName": None})
                     continue
+                if len(tns_reports) > 1:
+                    self.log.info("Multiple TNS matches, using the first.")
+                print("tnsdict", tns_reports)
+                tns_name = tns_reports[0][0]["body"]["objname"]
+                tns_submission_time = Time(
+                    tns_reports[0][0]["body"]["discoverydate"],
+                    format="isot",
+                    scale="utc",
+                )
+                print("FOUND TNS STUFF", tns_name, tns_submission_time)
             payload["trigger_id"] = "TNS" + tns_name
+            payload["source_name"] = tns_name + " (AMPEL)"
+            payload["timestamp"] = tns_submission_time.jd
 
             # Check if this was submitted
             # TODO: How should the first submit differ from updates?
@@ -287,6 +316,9 @@ class AstroColibriPublisher(AbsPhotoT3Unit, TNSMirrorSearcher):
                 }
 
             else:
+                print("colibri submitting")
+                print(payload)
+                print(ipath)
                 jcontent = self.colibriclient.firestore_post(payload, image_path=ipath)
 
             if jcontent:
