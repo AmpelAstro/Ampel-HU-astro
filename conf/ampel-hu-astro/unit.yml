@@ -39,6 +39,7 @@
 - ampel.contrib.hu.t2.T2FastDecliner
 - ampel.contrib.hu.t2.T2HealpixProb
 - ampel.contrib.hu.t2.T2KilonovaEval
+- ampel.contrib.hu.t2.T2KilonovaStats
 - ampel.contrib.hu.t2.T2MatchGRB
 - ampel.contrib.hu.t3.TransientInfoPrinter
 - ampel.contrib.hu.t3.TransientViewDumper

@@ -325,7 +325,7 @@ task:
                 tabulator:
                   - unit: ZTFT2Tabulator
               unit: T2RunPossis
-            - config:
+            - config: &kilonova_config
                 max_redshift: 0.2
                 min_ndet: 2
                 t2_dependency:
@@ -344,6 +344,11 @@ task:
                 - unit: T2TabulatorRiseDecline
                   config: *risedecline_config
               unit: T2KilonovaEval
+            - config: &knstats_config
+                t2_dependency:
+                - config: *kilonova_config
+                  unit: T2KilonovaEval
+              unit: T2KilonovaStats
             unit: ZiT1Combiner
           insert:
             point_t2:
