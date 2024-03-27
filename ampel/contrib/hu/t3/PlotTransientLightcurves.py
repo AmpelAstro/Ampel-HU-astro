@@ -523,6 +523,13 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit, TNSMirrorSear
             attributes.append("Kilonovaness{}".format(t2res["kilonovaness"]))
             attributes.append("LVKmap{}".format(t2res["map_name"]))
 
+        t2res = tview.get_t2_body(unit="T2KilonovaStats")
+        if (
+            isinstance(t2res, dict)
+        ):
+            attributes.append("PercentHigher{:.5f}".format(t2res["gaus_perc"]))
+            attributes.append("ExpectedCands{:.1f}+{:.1f}-{:.1f}".format(t2res["exp_kn"], t2res["exp_kn_pls"], t2res["exp_kn_min"]))
+            attributes.append("DistanceRange{}".format(t2res["dist_range"]))
         return (attributes, z)
 
     def process(
