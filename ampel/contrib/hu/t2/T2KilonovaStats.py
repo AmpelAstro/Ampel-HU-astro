@@ -121,9 +121,9 @@ class T2KilonovaStats(AbsTiedStateT2Unit):
         gaus_stats = (
             1 - self.get_kn_cumprob(kilonovaness, map_dist=map_dist, ndet=ndet)
         ) * 100
-        print(
-            f"Map at this distance with this ndet, {gaus_stats:.5f}% of events have kn >= {kilonovaness}"
-        )
+        #print(
+        #    f"Map at this distance with this ndet, {gaus_stats:.5f}% of events have kn >= {kilonovaness}"
+        #)
 
         res = self.get_kn_densitiy_stats(kilonovaness, map_area, map_dist=map_dist)
         res["gaus_percent"] = gaus_stats
@@ -144,7 +144,7 @@ class T2KilonovaStats(AbsTiedStateT2Unit):
         datapoints: Sequence[DataPoint],
         t2_views: Sequence[T2DocView],
     ) -> UBson | UnitResult:
-        print("T2KILONOVASTATS:: process")
+        #print("T2KILONOVASTATS:: process")
         for t2_view in t2_views:
             self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
             t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
