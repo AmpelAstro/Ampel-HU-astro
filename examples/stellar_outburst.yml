@@ -1,0 +1,228 @@
+name: stellarmar28
+parameters:
+- name: channelname
+  value: mar28
+- name: date
+  value: "2024-03-28"
+
+mongo:
+  prefix: evalOutburst
+  reset: true
+
+channel:
+- name: mar28
+  access: [ZTF, ZTF_PUB, ZTF_PRIV]
+  policy: []
+
+task:
+
+
+- title: token
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3PlainUnitExecutor
+        config:
+          target:
+            unit: T3ZTFArchiveTokenGenerator
+            config:
+              date_str: "{{ job.parameters.date }}"
+              delta_t: 1.
+              resource_name: ztf_stream_token
+              candidate:
+                ndethist:
+                  $gte: 3.
+#                  $lte: 10.
+                drb:
+                  $gt: 0.995
+                magpsf:
+                  $lt: 18.5
+                rb:
+                  $gt: 0.3
+                isdiffpos: 
+                  $in:
+                  - "t"
+                  - "1"
+
+
+- title: filterStellarOUtburst
+  unit: AlertConsumer
+  config:
+    iter_max: 100000
+    supplier:
+      unit: ZiAlertSupplier
+      config:
+        deserialize: null
+        loader:
+          unit: ZTFArchiveAlertLoader
+          config:
+            resource_name: ztf_stream_token
+              
+    shaper: ZiDataPointShaper
+    directives:
+    - channel: "{{ job.parameters.channelname }}"
+      filter:
+        config:
+          min_ndet: 3
+          max_ndet: 10
+          min_tspan: -99
+          max_tspan: 100
+          min_archive_tspan: -99
+          max_archive_tspan: 10000
+          max_mag: 18.5
+          peak_time_limit: 5.
+          min_peak_diff: 1.
+          min_drb: 0.995
+          min_rb: 0.3
+          require_ps_star: true
+          require_gaia_star: true
+        on_stock_match: bypass
+        unit: StellarFilter
+      ingest:
+        mux:
+          combine:
+          - state_t2:
+            - unit: T2MatchBTS
+            unit: ZiT1Combiner
+          insert:
+            point_t2:
+            - config:
+                catalogs:
+                  NEDz:
+                    keys_to_append:
+                    - ObjType
+                    - Velocity
+                    - z
+                    rs_arcsec: 10.0
+                    use: catsHTM
+                  NEDLVS:
+                    keys_to_append:
+                    - objname
+                    - objtype
+                    - dec
+                    - z_unc
+                    - z_tech
+                    - z_qual
+                    - z_qual_flag
+                    - z
+                    rs_arcsec: 10.0
+                    use: extcats
+                  SDSS_spec:
+                    keys_to_append:
+                    - z
+                    - bptclass
+                    - subclass
+                    rs_arcsec: 3
+                    use: extcats
+                  SDSSDR10:
+                    use: catsHTM
+                    rs_arcsec: 3
+                    keys_to_append:
+                    - type
+                    - flags            
+              ingest:
+                filter: PPSFilter
+                select: first
+                sort: jd
+              unit: T2CatalogMatch
+          unit: ZiMongoMuxer
+
+- title: RunT2s
+  unit: T2Worker
+  config:
+    send_beacon: false
+    raise_exc: true
+
+
+
+- title: PrintTable
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3ReviewUnitExecutor
+        config:
+          supply:
+            unit: T3DefaultBufferSupplier
+            config:
+              select:
+                unit: T3StockSelector
+                config:
+                  channel: "{{ job.parameters.channelname }}"
+              load:
+                unit: T3SimpleDataLoader
+                config:
+                  directives:
+                    - STOCK
+                    - T1
+                    - T2DOC
+                    - DATAPOINT
+                  channel: "{{ job.parameters.channelname }}"
+          stage:
+            unit: T3SimpleStager
+            config:
+              execute:
+                - unit: TransientTablePublisher
+                  config:
+                    include_stock: true
+                    include_channels: true
+                    local_path: ./
+                    table_schema:
+                      T2InfantCatalogEval:
+                        'ndet':
+                          - detections
+                    transient_table_schema:
+                      T2CatalogMatch:
+                        'NED z':
+                          - NEDz_extcats
+                          - z
+                        'NEDLVS z':
+                          - NEDLVS
+                          - z
+                        'SDSS spec z':
+                          - SDSS_spec
+                          - z
+                        'SDSS spec class':
+                          - SDSS_spec
+                          - bptclass
+                        'SDSS DR10 class':
+                          - SDSSDR10
+                          - type
+                          
+                         
+- title: PlotLightcurves
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3ReviewUnitExecutor
+        config:
+          supply:
+            unit: T3DefaultBufferSupplier
+            config:
+              select:
+                unit: T3StockSelector
+                config:
+                  channel: "{{ job.parameters.channelname }}"
+              load:
+                unit: T3SimpleDataLoader
+                config:
+                  directives:
+                    - STOCK
+                    - T1
+                    - T2DOC
+                    - DATAPOINT
+                  channel: "{{ job.parameters.channelname }}"
+          stage:
+            unit: T3SimpleStager
+            config:
+              execute:
+                - unit: PlotTransientLightcurves
+                  config:
+                    pdf_path: candidates.pdf
+                    save_png: false
+                    include_cutouts: true
+                    tabulator:
+                    - unit: ZTFT2Tabulator
+
