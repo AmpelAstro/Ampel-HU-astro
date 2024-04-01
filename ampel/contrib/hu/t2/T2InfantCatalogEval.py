@@ -148,9 +148,9 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         # Special catalog searches - mark transients close to AGNs
         milliquas = cat_res.get("milliquas", False)
         sdss_spec = cat_res.get("SDSS_spec", False)
-        if milliquas and milliquas["redshift"] > 0:
+        if milliquas and milliquas.get("redshift", -1) > 0:
             info["milliAGN"] = True
-        if sdss_spec and sdss_spec["bptclass"] in [4, 5]:
+        if sdss_spec and sdss_spec.get("bptclass", -99) in [4, 5]:
             info["sdssAGN"] = True
 
         # Return collected info
