@@ -1,21 +1,30 @@
-name: stellarmar29
+name: healpix_linfit
 parameters:
+- name: map_url_var
+  value: https://gracedb.ligo.org/api/superevents/S231102w/files/bayestar.fits.gz,1
+- name: map_name_var
+  value: S231102w.fits.gz,1
+- name: map_token_var
+  value: S231102w.fits.gz,1_token
+- name: trigger_jd_var
+  value: 2460250.5
+- name: export_fmt
+  value: csv
+- name: transienttable_path
+  value: ./TransientTable_linfit.csv
 - name: channelname
-  value: mar29
-- name: date
-  value: "2024-03-29"
+  value: testI
 
 mongo:
-  prefix: evalOutburst
+  prefix: evalLinfit
   reset: true
 
 channel:
-- name: mar29
+- name: testI
   access: [ZTF, ZTF_PUB, ZTF_PRIV]
   policy: []
 
 task:
-
 
 - title: token
   unit: T3Processor
@@ -25,19 +34,21 @@ task:
       - unit: T3PlainUnitExecutor
         config:
           target:
-            unit: T3ZTFArchiveTokenGenerator
+            unit: HealpixTokenGenerator
             config:
-              date_str: "{{ job.parameters.date }}"
-              delta_t: 1.
-              resource_name: ztf_stream_token
+              pvalue_limit: 0.9
+              chunk_size: 100
+              map_name: "{{ job.parameters.map_name_var }}"
+              map_url: "{{ job.parameters.map_url_var }}"
+              map_dir: ./
+              delta_time: 40
+              archive_token:
+                label: ztf/archive/token
               candidate:
                 ndethist:
-                  $gte: 3.
-#                  $lte: 10.
+                  $gte: 6.
                 drb:
                   $gt: 0.995
-                magpsf:
-                  $lt: 18.5
                 rb:
                   $gt: 0.3
                 isdiffpos: 
@@ -45,11 +56,13 @@ task:
                   - "t"
                   - "1"
 
-
-- title: filterStellarOUtburst
-  unit: AlertConsumer
+- title: alerts
+  unit: DynamicShaperAlertConsumer
   config:
-    iter_max: 100000
+    shaper_map:
+      map_name: healpix_map_name
+      healpix_info: "{{ job.parameters.map_name_var }}" # <<map_name>>
+    iter_max: 1000000
     supplier:
       unit: ZiAlertSupplier
       config:
@@ -57,86 +70,59 @@ task:
         loader:
           unit: ZTFArchiveAlertLoader
           config:
-            resource_name: ztf_stream_token
-              
-    shaper: ZiDataPointShaper
+            with_history: false
+            resource_name: "{{ job.parameters.map_token_var }}"
+    shaper: ZiGWDataPointShaper
     directives:
     - channel: "{{ job.parameters.channelname }}"
       filter:
         config:
-          min_ndet: 3
-          max_ndet: 10
-          min_tspan: -99
-          max_tspan: 100
-          min_archive_tspan: -99
-          max_archive_tspan: 10000
-          max_mag: 18.5
-          peak_time_limit: 5.
-          min_peak_diff: 1.
-          min_drb: 0.995
-          min_rb: 0.3
-          require_ps_star: true
-          require_gaia_star: true
+          trigger_jd: "{{ job.parameters.trigger_jd_var }}"
+          min_ndet: 0
+          min_tspan: -1
+          max_tspan: 42
+          max_archive_tspan: 42
+          min_drb: 0.3
+          min_gal_lat: 0
+          min_rb: 0.0
+          min_sso_dist: 20
+          gaia_excessnoise_sig_max: 999
+          gaia_plx_signif: 3
+          gaia_pm_signif: 3
+          gaia_rs: 0
+          gaia_veto_gmag_max: 20
+          gaia_veto_gmag_min: 9
+          ps1_confusion_rad: 3
+          ps1_confusion_sg_tol: 0.1
+          ps1_sgveto_rad: 1
+          ps1_sgveto_th: 0.8
+          max_fwhm: 5.5
+          max_elong: 2
+          max_magdiff: 1
+          max_nbad: 2
         on_stock_match: bypass
-        unit: StellarFilter
+        unit: PredetectionFilter
       ingest:
         mux:
           combine:
           - state_t2:
             - unit: T2LineFit
               config:
+                order: 1
                 tabulator:
                 - unit: ZTFT2Tabulator                
             unit: ZiT1Combiner
-          insert:
-            point_t2:
-            - config:
-                catalogs:
-                  NEDz:
-                    keys_to_append:
-                    - ObjType
-                    - Velocity
-                    - z
-                    rs_arcsec: 10.0
-                    use: catsHTM
-                  NEDLVS:
-                    keys_to_append:
-                    - objname
-                    - objtype
-                    - dec
-                    - z_unc
-                    - z_tech
-                    - z_qual
-                    - z_qual_flag
-                    - z
-                    rs_arcsec: 10.0
-                    use: extcats
-                  SDSS_spec:
-                    keys_to_append:
-                    - z
-                    - bptclass
-                    - subclass
-                    rs_arcsec: 3
-                    use: extcats
-                  SDSSDR10:
-                    use: catsHTM
-                    rs_arcsec: 3
-                    keys_to_append:
-                    - type
-                    - flags            
-              ingest:
-                filter: PPSFilter
-                select: first
-                sort: jd
-              unit: T2CatalogMatch
-          unit: ZiMongoMuxer
+          unit: ZiArchiveMuxer  # chunk size?
+          config:
+            future_days: 3
+            history_days: 50
 
-- title: RunT2s
+
+- title: t2
   unit: T2Worker
   config:
     send_beacon: false
     raise_exc: true
-
 
 
 - title: PrintTable
@@ -172,26 +158,15 @@ task:
                     include_channels: true
                     local_path: ./
                     table_schema:
-                      T2InfantCatalogEval:
-                        'ndet':
-                          - detections
+                      T2LineFit:
+                        'chi2dof':
+                          - chi2dof
+                        'slope':
+                          - p1
                     transient_table_schema:
-                      T2CatalogMatch:
-                        'NED z':
-                          - NEDz_extcats
-                          - z
-                        'NEDLVS z':
-                          - NEDLVS
-                          - z
-                        'SDSS spec z':
-                          - SDSS_spec
-                          - z
-                        'SDSS spec class':
-                          - SDSS_spec
-                          - bptclass
-                        'SDSS DR10 class':
-                          - SDSSDR10
-                          - type
+                      T2HealpixProb:
+                        'map_area':
+                          - map_area
                           
                          
 - title: PlotLightcurves
@@ -223,7 +198,7 @@ task:
               execute:
                 - unit: PlotTransientLightcurves
                   config:
-                    pdf_path: candidates.pdf
+                    pdf_path: candidates_linfit.pdf
                     save_png: false
                     include_cutouts: true
                     tabulator:

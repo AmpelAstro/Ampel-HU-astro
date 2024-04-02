@@ -42,6 +42,7 @@
 - ampel.contrib.hu.t2.T2KilonovaEval
 - ampel.contrib.hu.t2.T2MatchGRB
 - ampel.contrib.hu.t2.T2RunLightcurveFitter
+- ampel.contrib.hu.t2.T2LineFit
 - ampel.contrib.hu.t3.TransientInfoPrinter
 - ampel.contrib.hu.t3.TransientViewDumper
 - ampel.contrib.hu.t3.ChannelSummaryPublisher
