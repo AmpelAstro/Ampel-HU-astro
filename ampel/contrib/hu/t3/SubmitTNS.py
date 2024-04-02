@@ -72,7 +72,7 @@ class SubmitTNS(AbsPhotoT3Unit, TNSMirrorSearcher):
         MAX_LOOP = 25
         SLEEP = 2
 
-        reportresult = {}
+        reportresult: dict = {"inserted": [], "existing": []}
         for atreport in reports:
             # Submit a report
             for _ in range(MAX_LOOP):
@@ -90,7 +90,9 @@ class SubmitTNS(AbsPhotoT3Unit, TNSMirrorSearcher):
             for _ in range(MAX_LOOP):
                 time.sleep(SLEEP)
                 response = asyncio.run(self.client.reportReply(reportid))
-                if isinstance(response, list):
+                if isinstance(response, list) or (
+                    isinstance(response, dict) and "at_report" in response
+                ):
                     break
             else:
                 self.logger.info("TNS Report reading failed")
@@ -102,38 +104,26 @@ class SubmitTNS(AbsPhotoT3Unit, TNSMirrorSearcher):
             # of failed objects which does not correspond to the order of input atdicts.
             # In any case, nothing in the submit is posted.
             # Hence only checking first element
-            bad_request = None
-            for key_atprop in ["ra", "decl", "discovery_datetime"]:
-                if key_atprop in response[0]:
-                    try:
-                        bad_request = response[0][key_atprop]["value"]["5"]["message"]
-                        break
-                    except KeyError:
-                        pass
-            if bad_request is not None:
+            if isinstance(response, list):  # Assuming response is list iff submit fails
+                bad_request = {}
+                for key_atprop in ["ra", "decl", "discovery_datetime"]:
+                    if key_atprop in response[0]:
+                        bad_request[key_atprop] = response[0][key_atprop]
                 self.logger.info("bad TNS request", extra=bad_request)
                 continue
 
             # Parse reply for evaluation
-            for k, v in atreport["at_report"].items():
-                if "100" in response[k]:
+            for reportresponse in atreport["at_report"].values():
+                if "100" in reportresponse:
                     self.logger.info(
-                        "TNS Inserted with name %s" % (response[k]["100"]["objname"])
+                        "TNS Inserted",
+                        extra={"TNSName": reportresponse["100"]["objname"]},
                     )
-                    reportresult[v["internal_name"]] = [
-                        "TNS inserted",
-                        {"TNSName": response[k]["100"]["objname"]},
-                    ]
-                elif "101" in response[k]:
-                    self.logger.info(
-                        "Already existing with name %s"
-                        % (response[k]["101"]["objname"])
-                    )
-                    reportresult[v["internal_name"]] = [
-                        "TNS pre-existing",
-                        {"TNSName": response[k]["101"]["objname"]},
-                    ]
+                    reportresult["inserted"].append(reportresponse["100"]["objname"])
+                elif "101" in reportresponse:
+                    reportresult["existing"].append(reportresponse["101"]["objname"])
 
+        print("TNS sumit reportresult", reportresult)
         return reportresult
 
     def process(

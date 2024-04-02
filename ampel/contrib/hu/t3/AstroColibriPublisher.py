@@ -229,15 +229,16 @@ class AstroColibriPublisher(AbsPhotoT3Unit, TNSMirrorSearcher):
                     self.log.info("Multiple TNS matches, using the first.")
                 print("tnsdict", tns_reports)
                 tns_name = tns_reports[0][0]["body"]["objname"]
-                tns_submission_time = Time(
-                    tns_reports[0][0]["body"]["discoverydate"],
-                    format="isot",
-                    scale="utc",
-                )
+                #                tns_submission_time = Time(
+                #                   tns_reports[0][0]["body"]["discoverydate"],
+                #                    format="isot",
+                #                   scale="utc",
+                #                )
+                tns_submission_time = tns_reports[0][0]["body"]["discoverydate"]
                 print("FOUND TNS STUFF", tns_name, tns_submission_time)
             payload["trigger_id"] = "TNS" + tns_name
             payload["source_name"] = tns_name + " (AMPEL)"
-            payload["timestamp"] = tns_submission_time.jd
+            payload["time"] = tns_submission_time
 
             # Check if this was submitted
             # TODO: How should the first submit differ from updates?
@@ -257,16 +258,16 @@ class AstroColibriPublisher(AbsPhotoT3Unit, TNSMirrorSearcher):
                 payload["source_name"] += payload["trigger_id"][12:]
 
             # Gather attributes
-            attributes = []
+            attributes = {"classification": {}, "ampelProp": []}
             # Nearby attribute
             t2res = tview.get_t2_body(unit="T2DigestRedshifts")
             if isinstance(t2res, dict) and t2res.get("ampel_z", 999) < self.nearby_z:
-                attributes.append("Nearby")
-                attributes.append("AmpelZ{:.2f}".format(t2res["ampel_z"]))
+                attributes["ampelProp"].append("Nearby")
+                attributes["ampelProp"].append("AmpelZ{:.2f}".format(t2res["ampel_z"]))
             # Infant attribute
             t2res = tview.get_t2_body(unit="T2InfantCatalogEval")
             if isinstance(t2res, dict) and t2res.get("action", False):
-                attributes.append("Young")
+                attributes["ampelProp"].append("Young")
             # SNIa
             t2res = tview.get_t2_body(unit="T2RunParsnip")
             if (
@@ -274,15 +275,24 @@ class AstroColibriPublisher(AbsPhotoT3Unit, TNSMirrorSearcher):
                 and "classification" in t2res
                 and t2res["classification"]["SNIa"] > self.snia_minprob
             ):
-                attributes.append("ProbSNIa")
+                attributes["ampelProp"].append("ProbSNIa")
+                attributes["classification"] = {
+                    "class": ["SNIa", "Other"],
+                    "prob": [
+                        t2res["classification"]["SNIa"],
+                        1 - t2res["classification"]["SNIa"],
+                    ],
+                }
             # Kilonovaness
             t2res = tview.get_t2_body(unit="T2KilonovaEval")
             if (
                 isinstance(t2res, dict)
                 and t2res.get("kilonovaness", -99) > self.min_kilonovaness
             ):
-                attributes.append("Kilonovaness{}".format(t2res["kilonovaness"]))
-                attributes.append("LVKmap{}".format(t2res["map_name"]))
+                attributes["ampelProp"].append(
+                    "Kilonovaness{}".format(t2res["kilonovaness"])
+                )
+                attributes["ampelProp"].append("LVKmap{}".format(t2res["map_name"]))
 
             # Check whether we have a figure to upload.
             # Assuming this exists locally under {stock}.png
@@ -295,7 +305,7 @@ class AstroColibriPublisher(AbsPhotoT3Unit, TNSMirrorSearcher):
             else:
                 ipath = None
 
-            payload["ampel_attributes"] = attributes
+            payload["broker_attributes"] = attributes
             self.logger.debug("reacting", extra={"payload": payload})
 
             # Ok, so we have a transient to react to

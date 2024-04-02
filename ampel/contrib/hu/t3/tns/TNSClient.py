@@ -31,20 +31,24 @@ async def tns_post(
     semaphore: asyncio.Semaphore,
     method: str,
     token: TNSToken,
-    data: dict,
+    data: dict | int,
     payload_label: str = "data",
     max_retries: int = 10,
 ) -> dict:
     """
     post to TNS, asynchronously
     """
+    print("starting new tns_post")
     async with semaphore:
         for _ in range(max_retries):
             with aiohttp.MultipartWriter("form-data") as mpwriter:
                 p: aiohttp.Payload = aiohttp.StringPayload(token.api_key)
                 p.set_content_disposition("form-data", name="api_key")
                 mpwriter.append(p)
-                p = aiohttp.JsonPayload(data)
+                if isinstance(data, dict):
+                    p = aiohttp.JsonPayload(data)
+                else:
+                    p = aiohttp.StringPayload(str(data))
                 p.set_content_disposition("form-data", name=payload_label)
                 mpwriter.append(p)
                 print("fooo tns post")
@@ -53,6 +57,15 @@ async def tns_post(
                 resp = await session.post(
                     "https://www.wis-tns.org/api/" + method, data=mpwriter
                 )
+                # foorep = {'api_key': '76c632bce0cea71dc940ecd4bd22ecb6dc5041b9', 'report_id': 157046}
+                # print('fooreP', foorep)
+                # resp = await session.post(
+                #    "https://www.wis-tns.org/api/" + method, data=foorep
+                # )
+
+            print(resp)
+            print(resp.json())
+            print(resp.status)
             if resp.status == 429:
                 wait = max(
                     (
@@ -192,5 +205,9 @@ class TNSClient:
                 self.token,
                 payload_label="report_id",
             )
-            response = await postreport(reply_data)
+            response = await postreport(report_id)
+            print("got response", response)
+            print("with data", response["data"])
+            print("with feedback", response["data"]["feedback"])
+
             return response["data"]["feedback"]

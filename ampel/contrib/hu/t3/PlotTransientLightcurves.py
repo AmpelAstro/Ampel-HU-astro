@@ -522,6 +522,10 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit, TNSMirrorSear
         ):
             attributes.append("Kilonovaness{}".format(t2res["kilonovaness"]))
             attributes.append("LVKmap{}".format(t2res["map_name"]))
+        # Linearfit
+        t2res = tview.get_t2_body(unit="T2LineFit")
+        if isinstance(t2res, dict) and t2res.get("chi2dof", None) is not None:
+            attributes.append("LinearChi/dof{:.2}".format(t2res["chi2dof"]))
 
         t2res = tview.get_t2_body(unit="T2KilonovaStats")
         if (
