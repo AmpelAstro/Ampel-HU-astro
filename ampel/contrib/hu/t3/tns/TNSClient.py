@@ -38,7 +38,6 @@ async def tns_post(
     """
     post to TNS, asynchronously
     """
-    print("starting new tns_post")
     async with semaphore:
         for _ in range(max_retries):
             with aiohttp.MultipartWriter("form-data") as mpwriter:
@@ -51,21 +50,9 @@ async def tns_post(
                     p = aiohttp.StringPayload(str(data))
                 p.set_content_disposition("form-data", name=payload_label)
                 mpwriter.append(p)
-                print("fooo tns post")
-                print("https://www.wis-tns.org/api/" + method)
-                print(mpwriter)
                 resp = await session.post(
                     "https://www.wis-tns.org/api/" + method, data=mpwriter
                 )
-                # foorep = {'api_key': '76c632bce0cea71dc940ecd4bd22ecb6dc5041b9', 'report_id': 157046}
-                # print('fooreP', foorep)
-                # resp = await session.post(
-                #    "https://www.wis-tns.org/api/" + method, data=foorep
-                # )
-
-            print(resp)
-            print(resp.json())
-            print(resp.status)
             if resp.status == 429:
                 wait = max(
                     (
@@ -180,7 +167,6 @@ class TNSClient:
                 self.tns_post, session, semaphore, "bulk-report", self.token
             )
             response = await postreport(report)
-            print(response)
             if response["id_code"] == 200:
                 return response["data"]["report_id"]
             return False
@@ -196,7 +182,6 @@ class TNSClient:
             },
         ) as session:
             reply_data = {"api_key": self.token.api_key, "report_id": report_id}
-            print("replydata", reply_data)
             postreport = partial(
                 self.tns_post,
                 session,
@@ -206,8 +191,5 @@ class TNSClient:
                 payload_label="report_id",
             )
             response = await postreport(report_id)
-            print("got response", response)
-            print("with data", response["data"])
-            print("with feedback", response["data"]["feedback"])
 
             return response["data"]["feedback"]

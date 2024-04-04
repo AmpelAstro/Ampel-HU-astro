@@ -78,12 +78,10 @@ class SubmitTNS(AbsPhotoT3Unit, TNSMirrorSearcher):
             for _ in range(MAX_LOOP):
                 reportid = asyncio.run(self.client.sendReport(atreport))
                 if reportid:
-                    print("TNS report ID %s" % (reportid))
                     break
                 time.sleep(SLEEP)
             else:
                 self.logger.info("TNS Report sending failed")
-                print("TNS bulk report failed")
                 continue
 
             # Try to read reply
@@ -98,8 +96,6 @@ class SubmitTNS(AbsPhotoT3Unit, TNSMirrorSearcher):
                 self.logger.info("TNS Report reading failed")
                 continue
 
-            print("responseZZ", response)
-
             # Check whether request was bad. In this case TNS looks to return a list with dicts
             # of failed objects which does not correspond to the order of input atdicts.
             # In any case, nothing in the submit is posted.
@@ -113,17 +109,21 @@ class SubmitTNS(AbsPhotoT3Unit, TNSMirrorSearcher):
                 continue
 
             # Parse reply for evaluation
-            for reportresponse in atreport["at_report"].values():
-                if "100" in reportresponse:
-                    self.logger.info(
-                        "TNS Inserted",
-                        extra={"TNSName": reportresponse["100"]["objname"]},
-                    )
-                    reportresult["inserted"].append(reportresponse["100"]["objname"])
-                elif "101" in reportresponse:
-                    reportresult["existing"].append(reportresponse["101"]["objname"])
+            for reportresponses in response.values():
+                for reportresponse in reportresponses:
+                    if "100" in reportresponse:
+                        self.logger.info(
+                            "TNS Inserted",
+                            extra={"TNSName": reportresponse["100"]["objname"]},
+                        )
+                        reportresult["inserted"].append(reportresponse["100"]["objname"])
+                    elif "101" in reportresponse:
+                        reportresult["existing"].append(reportresponse["101"]["objname"])
+                        self.logger.info(
+                            "TNS Existed",
+                            extra={"TNSName": reportresponse["101"]["objname"]},
+                        )
 
-        print("TNS sumit reportresult", reportresult)
         return reportresult
 
     def process(
@@ -137,7 +137,6 @@ class SubmitTNS(AbsPhotoT3Unit, TNSMirrorSearcher):
             atdict = ztfdps_to_tnsdict(tran_view.get_photopoints())
             if atdict is None:
                 self.logger.debug("Not enough info for TNS submission")
-                print("... not enough info for submission")
                 continue
             atdict.update(self.base_at_dict)
 
@@ -150,9 +149,7 @@ class SubmitTNS(AbsPhotoT3Unit, TNSMirrorSearcher):
             (tnsname, internal_names) = self.get_tns_name_internal(
                 atdict["ra"]["value"], atdict["dec"]["value"]
             )
-            print("found tnsname", tnsname, internal_names)
             if atdict["internal_name"] in internal_names:
-                print("... found it submitted in mirror db, skip")
                 continue
 
             # and yet another check, directly from TNS... unnecessary?
@@ -162,13 +159,10 @@ class SubmitTNS(AbsPhotoT3Unit, TNSMirrorSearcher):
                         ra=atdict["ra"]["value"], dec=atdict["dec"]["value"]
                     )
                 )
-                print("direct tns check", tnsmatch)
                 if atdict["internal_name"] in tnsmatch:
-                    print("... found it submitted at TNS!")
                     continue
 
             # Collected necessary data, not already published - add to submission list
-            print("final atdict", atdict)
             atreports[tran_view.id] = atdict
 
         if len(atreports) == 0:
@@ -183,13 +177,10 @@ class SubmitTNS(AbsPhotoT3Unit, TNSMirrorSearcher):
             {"at_report": {i: report for i, report in enumerate(atreports.values())}}
         ]
 
-        print("final list of atreports")
-        print(atreportlist)
         # Submit the reports
         if not self.tns_submit:
             return None
         tnsreply = self.sendReports(atreportlist)
-        print("tnsreply", tnsreply)
 
         # Store report reply into t3 collection.
         return tnsreply

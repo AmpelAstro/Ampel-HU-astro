@@ -112,7 +112,7 @@ task:
                 tabulator:
                 - unit: ZTFT2Tabulator                
             unit: ZiT1Combiner
-          unit: ZiArchiveMuxer  # chunk size?
+          unit: ZiArchiveMuxer 
           config:
             future_days: 3
             history_days: 50
