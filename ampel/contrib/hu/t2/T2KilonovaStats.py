@@ -89,12 +89,21 @@ class T2KilonovaStats(AbsTiedStateT2Unit):
 
     def get_kn_densitiy_stats(self, kilonovaness, map_area, map_dist=np.inf):
         map_key, _ = self.get_keys(map_dist=map_dist, ndet=np.inf)
+        map_key = str(dejsonify(map_key)).replace(".0", "")
 
         data_dir = "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/kilonovaness"
         file_base = os.path.join(data_dir, "densities")
 
         density_files = os.listdir(file_base)
-        file = [dfile for dfile in density_files if "-" + str(map_key) in dfile][0]  # noqa: RUF015
+        print()
+        print("T2KILONVOANESSSTATS:: ", map_key, type(map_key), density_files)
+        print()
+        files = [dfile for dfile in density_files if "-" + str(map_key) in dfile]  # noqa: RUF015
+        if files:
+            file = files[0]
+        else:
+            print("T2KilonovaStats: No density file found for ", map_key, " Mpc.")
+            return {}
 
         dist_range = file[: file.find("_")]
 
@@ -144,7 +153,7 @@ class T2KilonovaStats(AbsTiedStateT2Unit):
         datapoints: Sequence[DataPoint],
         t2_views: Sequence[T2DocView],
     ) -> UBson | UnitResult:
-        #print("T2KILONOVASTATS:: process")
+        print("T2KILONOVASTATS:: process")
         for t2_view in t2_views:
             self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
             t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
