@@ -29,7 +29,7 @@ class RandomMapGenerator(AbsT3PlainUnit):
     map_name: str = "simulated"
 
     long_range: tuple[float, float] = (0, 360)
-    lat_range: tuple[float, float] = (0, 90)
+    lat_range: tuple[float, float] = (-30, 90)
 
     fwhm_range: tuple[float, float] = (0.4, 1.2)
 

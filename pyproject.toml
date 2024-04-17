@@ -68,8 +68,8 @@ scikit-learn = "^1.1.3"
 healpy = {version = "^1.16.2", optional = true}
 light-curve = {version = "^0.7.3"}
 ampel-lsst = {version = ">=0.8.6,<0.9", optional = true}
-ztfquery = "^1.26.1"
-types-pillow = "^10.2.0.20240213"
+ztfquery = {version = "^1.26.1", optional = true}
+ligo-gracedb = {version = "^2.12.0", optional = true}
 
 [tool.poetry.dev-dependencies]
 mypy = "^1.6.1"
@@ -78,21 +78,23 @@ pytest-cov = "^4.1.0"
 pytest-mock = "^3.12.0"
 types-requests = "^2.25.9"
 types-pytz = "^2022.1.2"
+types-pillow = "^10.2.0.20240213"
 # prevent poetry 1.3 from removing setuptools
 setuptools = "*"
 
 [tool.poetry.extras]
 elasticc = ["xgboost", "astro-parsnip", "timeout-decorator", "ampel-lsst"]
 extcats = ["extcats"]
-ligo = ["healpy", "sncosmo", "iminuit", "sfdmap2", "ampel-ztf"]
+ligo = ["healpy", "sncosmo", "iminuit", "sfdmap2", "ampel-ztf", "ligo-gracedb"]
 slack = ["slack_sdk"]
 sncosmo = ["sncosmo", "iminuit", "sfdmap2"]
 notebook = ["jupyter"]
 voevent = ["voevent-parse"]
-ztf = ["ampel-ztf"]
+ztf = ["ampel-ztf", "ztfquery"]
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.1.13"
+types-pyyaml = "^6.0.12.20240311"
 
 [tool.conda-lock]
 channels = ["conda-forge"]
@@ -135,6 +137,7 @@ module = [
   "voeventparse.*",
   "healpy.*",
   "light_curve.*",
+  "ligo.*",
 ]
 ignore_missing_imports = true
 
