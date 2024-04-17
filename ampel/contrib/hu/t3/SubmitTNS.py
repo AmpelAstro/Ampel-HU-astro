@@ -116,9 +116,13 @@ class SubmitTNS(AbsPhotoT3Unit, TNSMirrorSearcher):
                             "TNS Inserted",
                             extra={"TNSName": reportresponse["100"]["objname"]},
                         )
-                        reportresult["inserted"].append(reportresponse["100"]["objname"])
+                        reportresult["inserted"].append(
+                            reportresponse["100"]["objname"]
+                        )
                     elif "101" in reportresponse:
-                        reportresult["existing"].append(reportresponse["101"]["objname"])
+                        reportresult["existing"].append(
+                            reportresponse["101"]["objname"]
+                        )
                         self.logger.info(
                             "TNS Existed",
                             extra={"TNSName": reportresponse["101"]["objname"]},
@@ -177,10 +181,8 @@ class SubmitTNS(AbsPhotoT3Unit, TNSMirrorSearcher):
             {"at_report": {i: report for i, report in enumerate(atreports.values())}}
         ]
 
-        # Submit the reports
         if not self.tns_submit:
             return None
-        tnsreply = self.sendReports(atreportlist)
 
-        # Store report reply into t3 collection.
-        return tnsreply
+        # Submit the reports and return results for db
+        return self.sendReports(atreportlist)

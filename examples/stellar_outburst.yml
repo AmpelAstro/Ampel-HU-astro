@@ -1,16 +1,16 @@
-name: stellarmar29
+name: stellarapr17
 parameters:
 - name: channelname
-  value: mar29
+  value: apr17
 - name: date
-  value: "2024-03-29"
+  value: "2024-04-17"
 
 mongo:
   prefix: evalOutburst
-  reset: true
+  reset: false
 
 channel:
-- name: mar29
+- name: apr17
   access: [ZTF, ZTF_PUB, ZTF_PRIV]
   policy: []
 

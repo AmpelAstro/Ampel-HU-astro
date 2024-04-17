@@ -528,11 +528,13 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit, TNSMirrorSear
             attributes.append("LinearChi/dof{:.2}".format(t2res["chi2dof"]))
 
         t2res = tview.get_t2_body(unit="T2KilonovaStats")
-        if (
-            isinstance(t2res, dict)
-        ):
+        if isinstance(t2res, dict):
             attributes.append("PercentHigher{:.5f}".format(t2res["gaus_perc"]))
-            attributes.append("ExpectedCands{:.1f}+{:.1f}-{:.1f}".format(t2res["exp_kn"], t2res["exp_kn_pls"], t2res["exp_kn_min"]))
+            attributes.append(
+                "ExpectedCands{:.1f}+{:.1f}-{:.1f}".format(
+                    t2res["exp_kn"], t2res["exp_kn_pls"], t2res["exp_kn_min"]
+                )
+            )
             attributes.append("DistanceRange{}".format(t2res["dist_range"]))
         return (attributes, z)
 

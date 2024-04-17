@@ -181,7 +181,6 @@ class TNSClient:
                 )
             },
         ) as session:
-            reply_data = {"api_key": self.token.api_key, "report_id": report_id}
             postreport = partial(
                 self.tns_post,
                 session,
