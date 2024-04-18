@@ -18,7 +18,7 @@ import sncosmo  # type: ignore[import]
 from astropy import constants as c
 from astropy import units as u
 from astropy.units import Quantity
-from sfdmap import SFDMap  # type: ignore[import]
+from sfdmap2.sfdmap import SFDMap  # type: ignore[import]
 
 from ampel.contrib.hu.t2.T2RunSncosmo import T2RunSncosmo
 
