@@ -34,7 +34,7 @@ def writeJobfilesFromDict(jobfile_template, jobfile_list_dict, commonName = "job
 
             if replaceDict.get("map_name"):
                 map_name = replaceDict.get("map_name")
-                replaceDict["resource_name"] = replaceDict["map_name"] + "_token"
+                replaceDict["map_token"] = replaceDict["map_name"] + "_token"
             else:
                 map_name = map
                 if replaceDict["map_url"].find(",") != -1:
@@ -42,8 +42,8 @@ def writeJobfilesFromDict(jobfile_template, jobfile_list_dict, commonName = "job
                 else:
                     map_name += replaceDict["map_url"][-8:]
                 replaceDict["map_name"] = map_name
-                replaceDict["resource_name"] = replaceDict["map_name"] + "_token"
-
+                replaceDict["map_token"] = replaceDict["map_name"] + "_token"
+            print(replaceDict)
             if replaceDict.get("trigger_jd"):
                 tmp_time = atime.Time(replaceDict["trigger_jd"], format="jd")
                 tmp_time.format = "iso"
@@ -69,8 +69,9 @@ def writeJobfilesFromDict(jobfile_template, jobfile_list_dict, commonName = "job
             response.close()
             template.seek(0, 0)
     template.close()
-    print(jobfile_list)
-    print("Done!")
+    return jobfile_list
+    #print(jobfile_list)
+    #print("Done!")
 
 
 def writeJobfilesFromYaml(jobfile_template, jobfile_list_file, commonName = "jobfile", saveDir = "."):
