@@ -54,14 +54,20 @@ requires an access token if data is to be retrieved.
 - [T2KilonovaEval](ampel/contrib/hu/t2/T2KilonovaEval.py): Evaluate whether a transient fulfills criteria for being a potential kilonova-like event.
 - [T2KilonovaStats](ampel/contrib/hu/t2/T2KilonovaStats.py)
 - [T2LCQuality](ampel/contrib/hu/t2/T2LCQuality.py): determine the 'quality' of the light curve by computing ratios between the number of detection and that of upper limits.
+- [T2LSPhotoZTap](ampel/contrib/hu/t2/T2LSPhotoZTap.py): Query the NOIR DataLab service for photometric redshifts from the Legacy Survey.
 - [T2LoadRedshift](ampel/contrib/hu/t2/T2LoadRedshift.py): Add redshifts from external .csv.
 - [T2MatchBTS](ampel/contrib/hu/t2/T2MatchBTS.py): Add information from the BTS explorer page.
 - [T2MultiXgbClassifier](ampel/contrib/hu/t2/T2MultiXgbClassifier.py): For a range of xgboost classifier models, find a classification.
 - [T2NedSNCosmo](ampel/contrib/hu/t2/T2NedSNCosmo.py): Fits lightcurves using SNCOSMO (using SALT2 defaultwise) with redshift constrained by catalog matching results.
 - [T2NedTap](ampel/contrib/hu/t2/T2NedTap.py): See also.
+- [T2PS1ThumbExtCat](ampel/contrib/hu/t2/T2PS1ThumbExtCat.py): Retrieve panstarrs images at datapoint location and for each tied extcat catalog matching result.
+- [T2PS1ThumbNedSNCosmo](ampel/contrib/hu/t2/T2PS1ThumbNedSNCosmo.py): This state t2 unit is tied with the state T2 unit T2NedSNCosmo.
+- [T2PS1ThumbNedTap](ampel/contrib/hu/t2/T2PS1ThumbNedTap.py): This point t2 unit is tied with the point T2 unit T2NedTap.
+- [T2PanStarrThumbPrint](ampel/contrib/hu/t2/T2PanStarrThumbPrint.py): Retrieve panstarrs images at datapoint location and save these as compressed svg into the returned dict.
 - [T2RunParsnip](ampel/contrib/hu/t2/T2RunParsnip.py): Gathers information and runs the parsnip model and classifier.
 - [T2RunPossis](ampel/contrib/hu/t2/T2RunPossis.py): Load a POSSIS kilnova model and fit to a LightCurve object as process is called.
 - [T2RunSncosmo](ampel/contrib/hu/t2/T2RunSncosmo.py): Gathers information and runs Sncosmo.
+- [T2RunSnoopy](ampel/contrib/hu/t2/T2RunSnoopy.py): Gathers information and runs snoopy.
 - [T2RunTDE](ampel/contrib/hu/t2/T2RunTDE.py): Create a TDE model and fit to a LightCurve object as process is called.
 - [T2TNSEval](ampel/contrib/hu/t2/T2TNSEval.py): Evalute whether a transient fulfills criteria for submission to TNS.
 - [T2XgbClassifier](ampel/contrib/hu/t2/T2XgbClassifier.py): Load a series of xgboost classifier models (distinguished by number of detections) and return a classification.

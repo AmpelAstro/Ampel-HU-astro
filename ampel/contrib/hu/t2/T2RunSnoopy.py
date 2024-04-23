@@ -14,7 +14,7 @@ from typing import Literal
 
 import numpy as np
 import snpy  # type: ignore[import]
-from sfdmap import SFDMap  # type: ignore[import]
+from sfdmap2.sfdmap import SFDMap  # type: ignore[import]
 
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
 from ampel.model.StateT2Dependency import StateT2Dependency
