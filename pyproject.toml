@@ -66,6 +66,7 @@ healpy = {version = "^1.16.2", optional = true}
 light-curve = {version = "^0.7.3"}
 ampel-lsst = {version = ">=0.8.6,<0.9", optional = true}
 ligo-gracedb = {version = "^2.12.0", optional = true}
+astro-datalab = {version = "^2", optional = true}
 
 [tool.poetry.dev-dependencies]
 mypy = "^1.6.1"
@@ -82,6 +83,7 @@ elasticc = ["xgboost", "astro-parsnip", "timeout-decorator", "ampel-lsst"]
 extcats = ["extcats"]
 ligo = ["healpy", "sncosmo", "iminuit", "sfdmap2", "ampel-ztf", "ligo-gracedb"]
 panstarrs = ["pymage"]
+legacy-surveys = ["astro-datalab"]
 slack = ["slack_sdk"]
 sncosmo = ["sncosmo", "iminuit", "sfdmap2"]
 notebook = ["jupyter"]
