@@ -24,14 +24,15 @@ jobs:
       lint: true
       format: true
   unit_inventory:
-    # Only run on main branch push (e.g. pull request merge).
-    if: github.event_name == 'push'
+    # Only run on pull requests
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-22.04
     steps:
     # Check out the PR head on pull_request, otherwise default
     - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
       with:
         ref: ${{ github.event.pull_request.head.ref }}
+        token: ${{ secrets.GH_TOKEN }}
     - name: "Set up environment"
       uses: packetcoders/action-setup-cache-python-poetry@0d0be5577b30d85f3fa2d93a4beeda149520f120 # v1.2.0
       with:
@@ -47,5 +48,5 @@ jobs:
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git add README.md
-        git commit --author="$(git log ${{ github.sha }} -1 --pretty='%an <%ae>')" -m "[no ci] chore: Update README for ${{ github.sha }}" || exit 0
+        git commit --author="$(git log ${{ github.event.pull_request.head.ref }} -1 --pretty='%an <%ae>')" -m "chore: Update README for ${{ github.sha }}" || exit 0
         git push
