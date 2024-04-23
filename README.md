@@ -59,8 +59,10 @@ requires an access token if data is to be retrieved.
 - [T2MultiXgbClassifier](ampel/contrib/hu/t2/T2MultiXgbClassifier.py): For a range of xgboost classifier models, find a classification.
 - [T2NedSNCosmo](ampel/contrib/hu/t2/T2NedSNCosmo.py): Fits lightcurves using SNCOSMO (using SALT2 defaultwise) with redshift constrained by catalog matching results.
 - [T2NedTap](ampel/contrib/hu/t2/T2NedTap.py): See also.
+- [T2RunParsnip](ampel/contrib/hu/t2/T2RunParsnip.py): Gathers information and runs the parsnip model and classifier.
 - [T2RunPossis](ampel/contrib/hu/t2/T2RunPossis.py): Load a POSSIS kilnova model and fit to a LightCurve object as process is called.
 - [T2RunSncosmo](ampel/contrib/hu/t2/T2RunSncosmo.py): Gathers information and runs Sncosmo.
+- [T2RunTDE](ampel/contrib/hu/t2/T2RunTDE.py): Create a TDE model and fit to a LightCurve object as process is called.
 - [T2TNSEval](ampel/contrib/hu/t2/T2TNSEval.py): Evalute whether a transient fulfills criteria for submission to TNS.
 - [T2XgbClassifier](ampel/contrib/hu/t2/T2XgbClassifier.py): Load a series of xgboost classifier models (distinguished by number of detections) and return a classification.
 
@@ -83,3 +85,4 @@ requires an access token if data is to be retrieved.
 - [TransientInfoPrinter](ampel/contrib/hu/t3/TransientInfoPrinter.py)
 - [TransientTablePublisher](ampel/contrib/hu/t3/TransientTablePublisher.py): Construct a table based on selected T2 output values.
 - [TransientViewDumper](ampel/contrib/hu/t3/TransientViewDumper.py)
+- [VOEventPublisher](ampel/contrib/hu/t3/VOEventPublisher.py): Unit for creating a VOEvent pased on T2output and transient LightCurve.
