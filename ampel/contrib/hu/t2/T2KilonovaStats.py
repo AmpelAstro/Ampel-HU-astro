@@ -48,7 +48,7 @@ class T2KilonovaStats(AbsTiedStateT2Unit):
             self.binned_gaus_dict = json.load(file, parse_constant=dejsonify)
             file.close()
         
-        print(self.binned_gaus_dict)
+        #print(self.binned_gaus_dict)
 
     def get_keys(self, map_dist=np.inf, ndet=np.inf):
         ndet_key = np.inf
@@ -84,7 +84,7 @@ class T2KilonovaStats(AbsTiedStateT2Unit):
         gaus_stats = self.get_kn_stats(map_dist=map_dist, ndet=ndet)
         #print("GAUS STATS ", gaus_stats, " ", type(gaus_stats))
 
-        return self.gaus_cdf(kilonovaness, loc=gaus_stats[0], scale=gaus_stats[1])
+        return self.gaus_cdf(kilonovaness, loc=gaus_stats["loc"], scale=gaus_stats["scale"])
  
 
     def get_kn_densitiy_stats(self, kilonovaness, map_area, map_dist=np.inf):
@@ -95,9 +95,9 @@ class T2KilonovaStats(AbsTiedStateT2Unit):
         file_base = os.path.join(data_dir, "densities")
 
         density_files = os.listdir(file_base)
-        print()
-        print("T2KILONVOANESSSTATS:: ", map_key, type(map_key), density_files)
-        print()
+        #print()
+        #print("T2KILONVOANESSSTATS:: ", map_key, type(map_key), density_files)
+        #print()
         files = [dfile for dfile in density_files if "-" + str(map_key) in dfile]  # noqa: RUF015
         if files:
             file = files[0]
@@ -153,7 +153,7 @@ class T2KilonovaStats(AbsTiedStateT2Unit):
         datapoints: Sequence[DataPoint],
         t2_views: Sequence[T2DocView],
     ) -> UBson | UnitResult:
-        print("T2KILONOVASTATS:: process")
+        #print("T2KILONOVASTATS:: process")
         for t2_view in t2_views:
             self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
             t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res

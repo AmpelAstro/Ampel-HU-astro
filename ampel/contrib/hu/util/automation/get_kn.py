@@ -19,7 +19,7 @@ jobfile = ""
 
 
 EXEC_DIR = (
-    "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/remote"
+    "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/O4"
 )
 CONF_FILE = "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/ampel_conf.yaml"
 VAULT_FILE = "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/vault.yaml"
