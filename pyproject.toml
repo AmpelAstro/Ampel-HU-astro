@@ -67,6 +67,8 @@ light-curve = {version = "^0.7.3"}
 ampel-lsst = {version = ">=0.8.6,<0.9", optional = true}
 ligo-gracedb = {version = "^2.12.0", optional = true}
 astro-datalab = {version = "^2", optional = true}
+# mainline snoopy can't be built as PEP 517 package; use our own distribution
+snpy = {version = "^2.5.3", optional = true, source = "desy-gitlab"}
 
 [tool.poetry.dev-dependencies]
 mypy = "^1.6.1"
@@ -86,6 +88,7 @@ panstarrs = ["pymage"]
 legacy-surveys = ["astro-datalab"]
 slack = ["slack_sdk"]
 sncosmo = ["sncosmo", "iminuit", "sfdmap2"]
+snpy = ["snpy"]
 notebook = ["jupyter"]
 voevent = ["voevent-parse"]
 ztf = ["ampel-ztf"]
