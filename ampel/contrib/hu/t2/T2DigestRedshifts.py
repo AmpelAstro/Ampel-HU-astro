@@ -59,9 +59,13 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
     # Options for the get_redshift option
     # T2MatchBTS : Use the redshift published by BTS and  synced by that T2.
     # T2DigestRedshifts : Use the best redshift as parsed by DigestRedshift.
+    # AmpelZ: equal to T2DigestRedshifts
     # T2ElasticcRedshiftSampler: Use a list of redshifts and weights from the sampler.
     # None : Use the fixed z value
-    redshift_kind: None | str = None
+    redshift_kind: None | Literal[
+        "T2MatchBTS", "T2DigestRedshifts", "T2ElasticcRedshiftSampler", "AmpelZ"
+    ] = None
+
     # It is also possible to use fixed redshift whenever a dynamic redshift kind is not possible
     # This could be either a single value or a list
     fixed_z: None | float | Sequence[float] = None
