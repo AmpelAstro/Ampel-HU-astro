@@ -6855,4 +6855,4 @@ ztf = ["ampel-ztf"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.12"
-content-hash = "c00b5b7c4f048313786dd47f6bfd7c6efd4cf30029c23cff2afe21d6af3b7c8c"
+content-hash = "23ea648d706d1fc1240e76bb735dd020623b45a292071eacfd4f26a23d5ae803"

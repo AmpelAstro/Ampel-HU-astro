@@ -46,7 +46,7 @@ scipy = ">=1.4"
 beautifulsoup4 = "^4.10.0"
 backoff = "^2"
 requests = "^2.26.0"
-astropy = "^5.0"
+astropy = ">=5.0"
 # pymage never made it to pypi; distribute our own package
 pymage = {version = "^0.5", optional = true, source = "desy-gitlab"}
 pandas = "^2.0.0"
