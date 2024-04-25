@@ -146,21 +146,20 @@ docs = ["Sphinx (>=6.1.2,<6.2.0)", "sphinx-autodoc-typehints (>=1.11.1,<2.0.0)",
 
 [[package]]
 name = "ampel-core"
-version = "0.8.7"
+version = "0.8.9"
 description = "Alice in Modular Provenance-Enabled Land"
 optional = false
-python-versions = ">=3.10,<3.12"
+python-versions = "<4.0,>=3.10"
 files = [
-    {file = "ampel_core-0.8.7-py3-none-any.whl", hash = "sha256:78c99c73a526aa7ad047cbd271dfd097a01fbf1afc963abbe04dba56a4cd1448"},
-    {file = "ampel_core-0.8.7.tar.gz", hash = "sha256:8ff9267023a231aa9bffd09dcb709d6e0bdc44825cbe84f926d58392779a6b9e"},
+    {file = "ampel_core-0.8.9-py3-none-any.whl", hash = "sha256:aa7b5cacc641f0d06f6dab9b3dd084c82690ea5e9034a03527f55cd7821a5362"},
+    {file = "ampel_core-0.8.9.tar.gz", hash = "sha256:3b60d14ad3fee1eea665920321d386ce3074afac2bbece3ef6f69fe20cd04e52"},
 ]
 
 [package.dependencies]
-ampel-interface = ">=0.8.10,<0.9.0"
+ampel-interface = ">=0.8.12,<0.9.0"
 appdirs = ">=1.4.4,<2.0.0"
 prometheus-client = ">=0.16,<0.17"
 psutil = ">=5.8.0,<6.0.0"
-pydantic = ">=1.9.0,<2.0.0"
 pymongo = ">=4.0,<5.0"
 requests = ">=2.0,<3.0"
 schedule = ">=1.0.0,<2.0.0"
@@ -169,8 +168,7 @@ xxhash = ">=3.0.0,<4.0.0"
 yq = ">=3.0.0,<4.0.0"
 
 [package.extras]
-docs = ["Sphinx (>=6.1.2,<6.2.0)", "sphinx-autodoc-typehints (>=1.11.1,<2.0.0)", "sphinx-press-theme (>=0.5.1,<0.9.0)", "tomlkit (>=0.11.0,<0.12.0)"]
-server = ["fastapi (>=0.95,<0.96)", "uvicorn[standard] (>=0.21.1,<0.22.0)"]
+server = ["fastapi (>=0.95)", "uvicorn[standard] (>=0.21.1)"]
 slack = ["slack-sdk (>=3.18.1,<4.0.0)"]
 
 [[package]]
