@@ -463,7 +463,7 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit, TNSMirrorSear
     # Add Fritz link to plot
     fritzlink: bool = True
 
-    # Will post result to Slack channel, if given
+    # Will post result to Slack channel if a slack channel and a NamedSecret containig the corresponding token is given
     slack_channel: str | None = None
     slack_token: NamedSecret[str] = NamedSecret(label="slack/ztf_general/jno")
 
@@ -473,8 +473,9 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit, TNSMirrorSear
             import tempfile
 
             self.pdf_path = tempfile.mkstemp(".pdf", "PlotTransientLightcurves", ".")[1]
+
         # Possibly create a slack client
-        if self.slack_channel:
+        if self.slack_channel and self.slack_token is not None:
             self.webclient = WebClient(self.slack_token.get())
 
     def attributes_from_t2(
@@ -570,7 +571,7 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit, TNSMirrorSear
                 tnsname = self.get_tns_name(ra, dec)
 
                 # Retrieve cutouts
-                if self.include_cutouts:
+                if self.include_cutouts and self.archive_token is not None:
                     candid = get_brightest_candid(tran_view.get_photopoints())
                     cutouts = ampel_api_cutout(
                         candid,
@@ -603,7 +604,7 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit, TNSMirrorSear
                 plt.close()
 
         # Post to slack
-        if self.slack_channel:
+        if self.slack_channel and self.slack_token is not None:
             with open(self.pdf_path, "rb") as file:  # type: ignore
                 self.webclient.files_upload(
                     file=file,  # type: ignore
