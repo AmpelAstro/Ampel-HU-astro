@@ -65,32 +65,8 @@ def ztfdps_to_tnsdict(
             names.append(ZTFIdMapper.to_ext_id(dp["stock"]))
         elif isinstance(dp["stock"], Sequence):
             names.extend([ZTFIdMapper.to_ext_id(stock) for stock in dp["stock"]])
-    print(names)
     ztfnames = set(names)
 
-    #    stocks = []
-    #    foo = [ stocks.extend( dp["stock"] ) if isinstance(dp["stock"], Sequence)
-    #            else stocks.append( dp["stock"] )
-    #            for dp in zdps ]
-    #    print(foo)
-    #    ztfnames = set(
-    #        [
-    #            ZTFIdMapper.to_ext_id(stock)
-    #            for stock in foo
-    #        ]
-    #    )
-
-    #    ztfnames = set(
-    #        [
-    #            ZTFIdMapper.to_ext_id(stock)
-    #            for dp in zdps
-    #            for stock in dp["stock"]
-    #            if isinstance(stock, int)
-    #        ]
-    #    )
-    print("ztfnames", ztfnames)
-    if len(ztfnames) != 1:
-        print("...whaat, how many names")
 
     # Start defining AT dict: name and position
     atdict: dict[str, Any] = {}

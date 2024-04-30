@@ -16,7 +16,7 @@ from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
 from ampel.contrib.hu.t3.tns.tns_ampel_util import get_tns_t2remarks, ztfdps_to_tnsdict
 from ampel.contrib.hu.t3.tns.TNSClient import TNSClient
 from ampel.contrib.hu.t3.tns.TNSToken import TNSToken
-from ampel.contrib.hu.util.TNSMirrorSearcher import TNSMirrorSearcher
+#from ampel.contrib.hu.util.TNSMirrorSearcher import TNSMirrorSearcher
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.struct.T3Store import T3Store
 from ampel.struct.UnitResult import UnitResult
@@ -24,7 +24,7 @@ from ampel.types import StockId, T3Send, UBson
 from ampel.view.TransientView import TransientView
 
 
-class SubmitTNS(AbsPhotoT3Unit, TNSMirrorSearcher):
+class SubmitTNS(AbsPhotoT3Unit):
     """
     Submit candidates to TNS (unless already submitted).
 
@@ -143,6 +143,16 @@ class SubmitTNS(AbsPhotoT3Unit, TNSMirrorSearcher):
                 self.logger.debug("Not enough info for TNS submission")
                 continue
             atdict.update(self.base_at_dict)
+        
+            # Check if ZTF name exists in TNS mirror archive
+            if isinstance( tran_view.extra, dict) and 'TNSReports' in tran_view.extra:
+                intnames = []
+                for tnsreport in tran_view.extra['TNSReports']:
+                    intnames.extend( tnsreport['internal_names'].split(', ') )
+                if atdict["internal_name"] in intnames:
+                    self.logger.debug('already in tns',extra={'id':atdict["internal_name"]})
+                    continue
+                      
 
             # from T2s
             catremarks = get_tns_t2remarks(tran_view)
@@ -150,13 +160,13 @@ class SubmitTNS(AbsPhotoT3Unit, TNSMirrorSearcher):
                 atdict.update(catremarks)
 
             # Was this already submitted to TNS, and if so also based on ZTF?
-            (tnsname, internal_names) = self.get_tns_name_internal(
-                atdict["ra"]["value"], atdict["dec"]["value"]
-            )
-            if atdict["internal_name"] in internal_names:
-                continue
+            #(tnsname, internal_names) = self.get_tns_name_internal(
+            #    atdict["ra"]["value"], atdict["dec"]["value"]
+            #)
+            #if atdict["internal_name"] in internal_names:
+            #    continue
 
-            # and yet another check, directly from TNS... unnecessary?
+            # directly check with TNS... unnecessary?
             if self.tns_doublecheck:
                 tnsmatch = asyncio.run(
                     self.get_tns_names(
