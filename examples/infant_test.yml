@@ -1,9 +1,9 @@
-name: infantapr17
+name: infantmay8
 parameters:
 - name: channelname
-  value: apr17
+  value: may8
 - name: date
-  value: "2024-04-17"
+  value: "2024-05-08"
 - name: deltat
   value: 1
 - name: mindet
@@ -12,11 +12,11 @@ parameters:
   value: 8
 
 mongo:
-  prefix: infantEvalTmp
+  prefix: infantEval
   reset: false
 
 channel:
-- name: apr17
+- name: may8
   access: [ZTF, ZTF_PUB, ZTF_PRIV]
   policy: []
 
@@ -103,6 +103,7 @@ task:
           combine:
           - state_t2:
             - unit: T2MatchBTS
+            - unit: T2LightCurveSummary
             - config:
                 max_age: 10.
                 maglim_maxago: 10.
@@ -201,7 +202,7 @@ task:
                     select: first
                     sort: jd
                   unit: T2CatalogMatch
-            - unit: T2RunLightcurveFitter
+            - unit: T2DemoLightcurveFitter
               config: 
                 max_redshift_category: 7
                 tabulator:
@@ -353,6 +354,10 @@ task:
                     - T2DOC
                     - DATAPOINT
                   channel: "{{ job.parameters.channelname }}"
+              complement: 
+              - unit: ZTFCutoutImages
+                config:
+                  eligible: last
           stage:
             unit: T3SimpleStager
             config:

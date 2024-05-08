@@ -67,7 +67,6 @@ def ztfdps_to_tnsdict(
             names.extend([ZTFIdMapper.to_ext_id(stock) for stock in dp["stock"]])
     ztfnames = set(names)
 
-
     # Start defining AT dict: name and position
     atdict: dict[str, Any] = {}
     atdict["ra"] = {"value": ra, "error": 1.0, "units": "arcsec"}
