@@ -341,33 +341,17 @@ def create_stamp_plot(cutouts: dict, ax, cutout_type: str):
     """
     Helper function to create cutout subplot.
     Cutouts assumed to be a dict of the type returned from
-    an AMPEL archive query.
+    the ZTFCutoutImages complement:
+      {'candid': {'cutoutScience': b'..', 'cutoutTemplate': ...} }
+
+    Grabbing images of the first candid available.
 
     cutout_type assumed to be one of Science, Template, Difference
     """
 
-    v3_cutout_names = {
-        "Science": "Cutoutscience",
-        "Template": "Cutouttemplate",
-        "Difference": "Cutoutdifference",
-    }
+    data = next(iter(cutouts.values()))[f"cutout{cutout_type}"]
 
-    # Not sure why the different paths - possible config change?
-    if cutouts.get(f"cutout{cutout_type}") is None:
-        v3_cutout_type = v3_cutout_names[cutout_type]
-        _data = cutouts.get(f"cutout{v3_cutout_type}", {}).get("stampData", {})
-        # if _data is not None:
-        #    data = _data.get("stampData")
-        # else:
-        #    data = None
-        data = _data.get("stampData") if _data is not None else None
-
-        if data is None:
-            data = create_empty_cutout()
-    else:
-        data = cutouts[f"cutout{cutout_type}"]["stampData"]
-
-    with gzip.open(io.BytesIO(b64decode(data)), "rb") as f:
+    with gzip.open(io.BytesIO(data), "rb") as f:
         data = fits.open(io.BytesIO(f.read()), ignore_missing_simple=True)[0].data
     vmin, vmax = np.percentile(data[data == data], [0, 100])  # noqa: PLR0124
     data_ = visualization.AsinhStretch()((data - vmin) / (vmax - vmin))
@@ -570,14 +554,37 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit, TNSMirrorSear
                 # Create abs unit to inherit which allows TNS names to be grabbed.
                 tnsname = self.get_tns_name(ra, dec)
 
-                # Retrieve cutouts
-                if self.include_cutouts and self.archive_token is not None:
+                if (
+                    self.include_cutouts
+                    and tran_view.extra
+                    and (cutouts := tran_view.extra.get("ZTFCutoutImages", None))
+                    is not None
+                ):
+                    # Complement cutouts worked
+                    pass
+                elif self.include_cutouts and self.archive_token is not None:
+                    # Explicitly load them from archive - remove option?
                     candid = get_brightest_candid(tran_view.get_photopoints())
-                    cutouts = ampel_api_cutout(
-                        candid,
-                        archive_token=self.archive_token.get(),
-                        archive_path=self.archive_path,
-                    )
+                    if (
+                        rawcutouts := ampel_api_cutout(
+                            candid,
+                            archive_token=self.archive_token.get(),
+                            archive_path=self.archive_path,
+                        )
+                    ) is not None:
+                        # Todo - do the same cutout modificatio as in ZTFCutoutImages
+                        cutouts = {
+                            candid: {
+                                k: b64decode(rawcutouts[k]["stampData"])
+                                for k in [
+                                    "cutoutScience",
+                                    "cutoutTemplate",
+                                    "cutoutDifference",
+                                ]
+                            }
+                        }
+                    else:
+                        cutouts = None
                 else:
                     cutouts = None
 
@@ -604,7 +611,7 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit, TNSMirrorSear
                 plt.close()
 
         # Post to slack
-        if self.slack_channel and self.slack_token is not None:
+        if self.slack_channel is not None and self.slack_token is not None:
             with open(self.pdf_path, "rb") as file:  # type: ignore
                 self.webclient.files_upload(
                     file=file,  # type: ignore
