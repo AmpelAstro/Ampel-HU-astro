@@ -88,9 +88,9 @@ for name, spec in config.get("unit").items():
         and unit.__doc__.strip()
         and not any(unit.__doc__ == base.__doc__ for base in unit.__bases__)
     ):
-        # extract the first sentence, unwrap, and add a period
+        # extract the first sentence (ends with punctuation followed by a capital letter or newline), unwrap, and add a period
         doc = re.split(
-            r"([\.!\?:]\s+|\n\n)",
+            r"([\.!\?:]\s+?([A-Z]|\n)|\n\n)",
             inspect.getdoc(unit).strip(),
             maxsplit=1,
             flags=re.MULTILINE,
