@@ -37,7 +37,7 @@ requires an access token if data is to be retrieved.
 - [RcfFilter](ampel/contrib/hu/t0/RcfFilter.py): Filter for the ZTF Redshift Completeness Factor program..
 - [RedshiftCatalogFilter](ampel/contrib/hu/t0/RedshiftCatalogFilter.py): Filter derived from DecentFilter designed to only accept transients located close to a galaxy in a catalog, and within redshift bounds.
 - [SimpleDecentFilter](ampel/contrib/hu/t0/SimpleDecentFilter.py): General-purpose filter devloped alongside DecentFilter but without use of external catalogs.
-- [StellarFilter](ampel/contrib/hu/t0/StellarFilter.py): a.k.a.
+- [StellarFilter](ampel/contrib/hu/t0/StellarFilter.py): a.k.a. as the IndecentFilter, i.e. an inversion of the DecentFilter mainly used for finding extragalactic objects.
 - [TransientInClusterFilter](ampel/contrib/hu/t0/TransientInClusterFilter.py): Filter derived from the DecentFilter, in addition selecting candidates with position compatible with that of nearby galaxy clusters..
 - [XShooterFilter](ampel/contrib/hu/t0/XShooterFilter.py): Filter derived from the DecentFilter, in addition selecting very new transients which are visible from the South.
 
@@ -61,7 +61,7 @@ requires an access token if data is to be retrieved.
 - [T2MatchBTS](ampel/contrib/hu/t2/T2MatchBTS.py): Add information from the BTS explorer page.
 - [T2MultiXgbClassifier](ampel/contrib/hu/t2/T2MultiXgbClassifier.py): For a range of xgboost classifier models, find a classification.
 - [T2NedSNCosmo](ampel/contrib/hu/t2/T2NedSNCosmo.py): Fits lightcurves using SNCOSMO (using SALT2 defaultwise) with redshift constrained by catalog matching results.
-- [T2NedTap](ampel/contrib/hu/t2/T2NedTap.py): See also.
+- [T2NedTap](ampel/contrib/hu/t2/T2NedTap.py): See also: https://ned.ipac.caltech.edu/tap/sync?QUERY=SELECT+*+FROM+TAP_SCHEMA.tables&REQUEST=doQuery&LANG=ADQL&FORMAT=text Export all NED: https://ned.ipac.caltech.edu/tap/sync?QUERY=SELECT+*+FROM+NEDTAP.objdir&REQUEST=doQuery&LANG=ADQL&FORMAT=text.
 - [T2PS1ThumbExtCat](ampel/contrib/hu/t2/T2PS1ThumbExtCat.py): Retrieve panstarrs images at datapoint location and for each tied extcat catalog matching result.
 - [T2PS1ThumbNedSNCosmo](ampel/contrib/hu/t2/T2PS1ThumbNedSNCosmo.py): This state t2 unit is tied with the state T2 unit T2NedSNCosmo.
 - [T2PS1ThumbNedTap](ampel/contrib/hu/t2/T2PS1ThumbNedTap.py): This point t2 unit is tied with the point T2 unit T2NedTap.
