@@ -46,12 +46,9 @@ scipy = ">=1.4"
 beautifulsoup4 = "^4.10.0"
 backoff = "^2"
 requests = "^2.26.0"
-astropy = "^5.0"
-# PyPI prohibits direct dependencies in install_requires
-# see: https://github.com/pypa/pip/issues/6301
-# FIXME: restore pymage when it lands on PyPI
-# pymage = {url = "https://github.com/MickaelRigault/pymage/archive/v1.0.tar.gz#sha256=11e99c4ea06b76ca7fb5b42d1d35d64139a4fa6f7f163a2f0f9cc3ea0b3c55eb"}
-# pymage has an undeclared dependency on pandas
+astropy = ">=5.0"
+# pymage never made it to pypi; distribute our own package
+pymage = {version = "^0.5", optional = true, source = "desy-gitlab"}
 pandas = ">=2.0"
 seaborn = "^0.12.0"
 adjustText = "^1.0.0"
@@ -70,11 +67,14 @@ light-curve = {version = "^0.7.3"}
 ampel-lsst = {version = ">=0.8.6,<0.9", optional = true}
 ztfquery = {version = "^1.26.1", optional = true}
 ligo-gracedb = {version = "^2.12.0", optional = true}
+astro-datalab = {version = "^2", optional = true}
+# mainline snoopy can't be built as PEP 517 package; use our own distribution
+snpy = {version = "^2.5.3", optional = true, source = "desy-gitlab"}
 
 [tool.poetry.dev-dependencies]
 mypy = "^1.6.1"
 pytest = "^8.0.2"
-pytest-cov = "^4.1.0"
+pytest-cov = "^5.0.0"
 pytest-mock = "^3.12.0"
 types-requests = "^2.25.9"
 types-pytz = "^2022.1.2"
@@ -86,8 +86,11 @@ setuptools = "*"
 elasticc = ["xgboost", "astro-parsnip", "timeout-decorator", "ampel-lsst"]
 extcats = ["extcats"]
 ligo = ["healpy", "sncosmo", "iminuit", "sfdmap2", "ampel-ztf", "ligo-gracedb"]
+panstarrs = ["pymage"]
+legacy-surveys = ["astro-datalab"]
 slack = ["slack_sdk"]
 sncosmo = ["sncosmo", "iminuit", "sfdmap2"]
+snpy = ["snpy"]
 notebook = ["jupyter"]
 voevent = ["voevent-parse"]
 ztf = ["ampel-ztf", "ztfquery"]
@@ -95,6 +98,12 @@ ztf = ["ampel-ztf", "ztfquery"]
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.1.13"
 types-pyyaml = "^6.0.12.20240311"
+
+
+[[tool.poetry.source]]
+name = "desy-gitlab"
+url = "https://gitlab.desy.de/api/v4/projects/jakob.van.santen%2Fampel-pypi-demo/packages/pypi/simple"
+priority = "supplemental"
 
 [tool.conda-lock]
 channels = ["conda-forge"]
