@@ -90,7 +90,7 @@ for name, spec in config.get("unit").items():
     ):
         # extract the first sentence (ends with punctuation followed by something other than a lowercase letter), unwrap, and add a period
         doc = re.split(
-            r"([\.!\?:]\s+?[^a-z]?|\n\n)",
+            r"([\.!\?:]\s+?([^a-z]|\n)|\n\n)",
             inspect.getdoc(unit).strip(),
             maxsplit=1,
             flags=re.MULTILINE,
