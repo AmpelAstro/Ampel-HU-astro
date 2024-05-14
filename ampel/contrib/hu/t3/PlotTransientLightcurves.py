@@ -10,15 +10,11 @@
 import gzip
 import io
 import os
-from base64 import b64decode, b64encode
 from collections.abc import Generator, Iterable
-from json import JSONDecodeError
 from typing import Any
 
-import backoff
 import matplotlib.pyplot as plt
 import numpy as np
-import requests
 from astropy import units as u
 from astropy import visualization
 from astropy.cosmology import FlatLambdaCDM
@@ -34,7 +30,6 @@ from ztfquery.utils.stamps import get_ps_stamp  # type: ignore
 from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
 from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
 from ampel.content.DataPoint import DataPoint
-from ampel.contrib.hu.util.TNSMirrorSearcher import TNSMirrorSearcher
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.struct.T3Store import T3Store
 from ampel.struct.UnitResult import UnitResult
@@ -276,65 +271,9 @@ def fig_from_fluxtable(
     if z is not None:
         lc_ax3.tick_params(axis="both", which="major", labelsize=9)
 
-    #    if z is not None:
-    #        axes = [lc_ax1, lc_ax2, lc_ax3]
-    #    else:
-    #        axes = [lc_ax1, lc_ax2]
     axes = [lc_ax1, lc_ax2, lc_ax3] if z is not None else [lc_ax1, lc_ax2]
 
     return fig, axes
-
-
-@backoff.on_exception(
-    backoff.expo,
-    requests.exceptions.RequestException,
-    max_time=600,
-)
-def ampel_api_cutout(
-    candid: int | None, archive_token: str, archive_path: str
-) -> dict | None:
-    """Function to query ampel for cutouts by candidate ID"""
-    if not candid:
-        return None
-
-    queryurl_cutouts = os.path.join(archive_path, "alert", str(candid), "cutouts")
-    headers = {"Authorization": f"Bearer {archive_token}"}
-
-    response = requests.get(
-        queryurl_cutouts,
-        headers=headers,
-    )
-
-    if response.status_code == 503:
-        raise requests.exceptions.RequestException
-
-    cutouts = None
-    try:
-        cutouts = response.json()
-    except JSONDecodeError as e:
-        raise requests.exceptions.RequestException from e
-
-    return cutouts
-
-
-def create_empty_cutout():
-    """Function to reate an empty image for missing cutouts"""
-    npix = 63
-
-    blank = np.ones((npix, npix))
-
-    for i in range(npix):
-        c = abs(npix / 2 - i) / (0.5 * npix)
-        blank[i - 1][i - 1] = c
-        blank[i - 1][npix - i - 1] = c
-
-    hdu = fits.PrimaryHDU(blank)
-    hdul = fits.HDUList([hdu])
-    comp = io.BytesIO()
-    hdul.writeto(comp)
-    blank_compressed = gzip.compress(comp.getvalue())
-
-    return b64encode(blank_compressed)
 
 
 def create_stamp_plot(cutouts: dict, ax, cutout_type: str):
@@ -411,25 +350,18 @@ def get_upperlimit_table(
     return tab  # noqa: RET504
 
 
-def get_brightest_candid(
-    dps: Iterable[DataPoint] | None,
-) -> int | None:
-    if not dps:
-        return None
+class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
+    """
 
-    def filter_detections(dps: Iterable[DataPoint]) -> Iterable[DataPoint]:
-        return [dp for dp in dps if "ZTF" in dp["tag"] and "magpsf" in dp["body"]]
-
-    candlist = [(dp["body"]["magpsf"], dp["id"]) for dp in filter_detections(dps)]
-    if len(candlist) == 0:
-        return None
-
-    candlist.sort()
-
-    return candlist[0][1]
+    Create a (pdf) plot summarizing lightcurves of candidates provided to the unit.
+    Features:
+    - Include thumbnails (if provided through the ZTFCutoutImages T3 complement.
+    - Include link to TNS (if match existing and provided through TNSNames T3 complement.
+    - Upload to slack channel (if token provided)
 
 
-class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit, TNSMirrorSearcher):
+    """
+
     # Default path is to create a multi-page pdf
     pdf_path: None | str = None  # Will create random if not set
     titleprefix: str = "AMPEL: "
@@ -440,9 +372,6 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit, TNSMirrorSear
 
     # Should ZTF cutouts be retrieved (requires remote archive access)
     include_cutouts: bool = False
-    archive_token: NamedSecret[str] = NamedSecret(label="ztf/archive/token")
-    #: Base URL of archive service
-    archive_path: str = "https://ampel.zeuthen.desy.de/api/ztf/archive/v3/"
 
     # Add Fritz link to plot
     fritzlink: bool = True
@@ -550,9 +479,15 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit, TNSMirrorSear
                 # Gatter attributes from potential T2 documents
                 (attributes, z) = self.attributes_from_t2(tran_view)
 
-                # Identify TNS name if present
-                # Create abs unit to inherit which allows TNS names to be grabbed.
-                tnsname = self.get_tns_name(ra, dec)
+                # Check if ZTF name exists in TNS mirror archive
+                tnsname = None
+                if (
+                    isinstance(tran_view.extra, dict)
+                    and "TNSReports" in tran_view.extra
+                ):
+                    tnsname = next(iter(tran_view.extra["TNSReports"])).get(
+                        "objname", None
+                    )
 
                 if (
                     self.include_cutouts
@@ -562,29 +497,6 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit, TNSMirrorSear
                 ):
                     # Complement cutouts worked
                     pass
-                elif self.include_cutouts and self.archive_token is not None:
-                    # Explicitly load them from archive - remove option?
-                    candid = get_brightest_candid(tran_view.get_photopoints())
-                    if (
-                        rawcutouts := ampel_api_cutout(
-                            candid,
-                            archive_token=self.archive_token.get(),
-                            archive_path=self.archive_path,
-                        )
-                    ) is not None:
-                        # Todo - do the same cutout modificatio as in ZTFCutoutImages
-                        cutouts = {
-                            candid: {
-                                k: b64decode(rawcutouts[k]["stampData"])
-                                for k in [
-                                    "cutoutScience",
-                                    "cutoutTemplate",
-                                    "cutoutDifference",
-                                ]
-                            }
-                        }
-                    else:
-                        cutouts = None
                 else:
                     cutouts = None
 

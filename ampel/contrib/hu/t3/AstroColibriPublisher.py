@@ -23,7 +23,6 @@ from ampel.contrib.hu.t3.AstroColibriClient import (
     AstroColibriClient,
     AstroColibriPhot,
 )
-from ampel.contrib.hu.util.TNSMirrorSearcher import TNSMirrorSearcher
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.struct.T3Store import T3Store
 from ampel.view.TransientView import TransientView
@@ -64,7 +63,7 @@ def dps_to_astrocolobri(dps_det: list[dict]) -> dict[str, AstroColibriPhot]:
     return outphot
 
 
-class AstroColibriPublisher(AbsPhotoT3Unit, TNSMirrorSearcher):
+class AstroColibriPublisher(AbsPhotoT3Unit):
     """
 
     Publish results to AstroColibri. This demo version will:
@@ -216,26 +215,16 @@ class AstroColibriPublisher(AbsPhotoT3Unit, TNSMirrorSearcher):
                 # Generate random name (assuming publishing to dev AC)
                 tns_name = f"AmpelRand{random.randint(1, 999)}"
                 tns_submission_time = Time.now().iso
-            else:
-                # Find TNS name (required for AstroColibri posting)
-                # Currently assumes that this is stored either in the
-                # stock name list or can be found in the T3 journal
-                # (probably from the TNSTalker)
-                tns_reports = self.get_tns_reports(payload["ra"], payload["dec"])
-                if not tns_reports:
-                    self.logger.debug("No TNS.", extra={"tnsName": None})
-                    continue
-                if len(tns_reports) > 1:
-                    self.log.info("Multiple TNS matches, using the first.")
-                print("tnsdict", tns_reports)
-                tns_name = tns_reports[0][0]["body"]["objname"]
-                #                tns_submission_time = Time(
-                #                   tns_reports[0][0]["body"]["discoverydate"],
-                #                    format="isot",
-                #                   scale="utc",
-                #                )
-                tns_submission_time = tns_reports[0][0]["body"]["discoverydate"]
+            elif isinstance(tview.extra, dict) and "TNSReports" in tview.extra:
+                # A tns name is required, here obtained from the mirror DB through a T3 complement
+                tnsreport = next(iter(tview.extra["TNSReports"]))
+                tns_name = tnsreport["objname"]
+                tns_submission_time = tnsreport["discoverydate"]
                 print("FOUND TNS STUFF", tns_name, tns_submission_time)
+            else:
+                self.logger.debug("No TNS name", extra={"tnsName": None})
+                continue
+
             payload["trigger_id"] = "TNS" + tns_name
             payload["source_name"] = tns_name + " (AMPEL)"
             payload["time"] = tns_submission_time

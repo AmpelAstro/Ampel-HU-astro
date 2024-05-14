@@ -16,8 +16,6 @@ from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
 from ampel.contrib.hu.t3.tns.tns_ampel_util import get_tns_t2remarks, ztfdps_to_tnsdict
 from ampel.contrib.hu.t3.tns.TNSClient import TNSClient
 from ampel.contrib.hu.t3.tns.TNSToken import TNSToken
-
-# from ampel.contrib.hu.util.TNSMirrorSearcher import TNSMirrorSearcher
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.struct.T3Store import T3Store
 from ampel.struct.UnitResult import UnitResult
@@ -160,13 +158,6 @@ class SubmitTNS(AbsPhotoT3Unit):
             catremarks = get_tns_t2remarks(tran_view)
             if catremarks is not None:
                 atdict.update(catremarks)
-
-            # Was this already submitted to TNS, and if so also based on ZTF?
-            # (tnsname, internal_names) = self.get_tns_name_internal(
-            #    atdict["ra"]["value"], atdict["dec"]["value"]
-            # )
-            # if atdict["internal_name"] in internal_names:
-            #    continue
 
             # directly check with TNS... unnecessary?
             if self.tns_doublecheck:

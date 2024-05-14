@@ -1,9 +1,9 @@
-name: infantmay8
+name: infantmay10
 parameters:
 - name: channelname
-  value: may8
+  value: may10
 - name: date
-  value: "2024-05-08"
+  value: "2024-05-10"
 - name: deltat
   value: 1
 - name: mindet
@@ -13,10 +13,10 @@ parameters:
 
 mongo:
   prefix: infantEval
-  reset: false
+  reset: false 
 
 channel:
-- name: may8
+- name: may10
   access: [ZTF, ZTF_PUB, ZTF_PRIV]
   policy: []
 
@@ -358,6 +358,9 @@ task:
               - unit: ZTFCutoutImages
                 config:
                   eligible: last
+              - unit: TNSNames
+                config:
+                  include_report: true
           stage:
             unit: T3SimpleStager
             config:
