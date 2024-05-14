@@ -37,7 +37,7 @@ requires an access token if data is to be retrieved.
 - [RcfFilter](ampel/contrib/hu/t0/RcfFilter.py): Filter for the ZTF Redshift Completeness Factor program..
 - [RedshiftCatalogFilter](ampel/contrib/hu/t0/RedshiftCatalogFilter.py): Filter derived from DecentFilter designed to only accept transients located close to a galaxy in a catalog, and within redshift bounds.
 - [SimpleDecentFilter](ampel/contrib/hu/t0/SimpleDecentFilter.py): General-purpose filter devloped alongside DecentFilter but without use of external catalogs.
-- [StellarFilter](ampel/contrib/hu/t0/StellarFilter.py): a.k.a.
+- [StellarFilter](ampel/contrib/hu/t0/StellarFilter.py): a.k.a. as the IndecentFilter, i.e. an inversion of the DecentFilter mainly used for finding extragalactic objects.
 - [TransientInClusterFilter](ampel/contrib/hu/t0/TransientInClusterFilter.py): Filter derived from the DecentFilter, in addition selecting candidates with position compatible with that of nearby galaxy clusters..
 - [XShooterFilter](ampel/contrib/hu/t0/XShooterFilter.py): Filter derived from the DecentFilter, in addition selecting very new transients which are visible from the South.
 
@@ -61,12 +61,12 @@ requires an access token if data is to be retrieved.
 - [T2MatchBTS](ampel/contrib/hu/t2/T2MatchBTS.py): Add information from the BTS explorer page.
 - [T2MultiXgbClassifier](ampel/contrib/hu/t2/T2MultiXgbClassifier.py): For a range of xgboost classifier models, find a classification.
 - [T2NedSNCosmo](ampel/contrib/hu/t2/T2NedSNCosmo.py): Fits lightcurves using SNCOSMO (using SALT2 defaultwise) with redshift constrained by catalog matching results.
-- [T2NedTap](ampel/contrib/hu/t2/T2NedTap.py): See also.
-- [T2PS1ThumbExtCat](ampel/contrib/hu/t2/T2PS1ThumbExtCat.py): Retrieve panstarrs images at datapoint location and for each tied extcat catalog matching result.
+- [T2NedTap](ampel/contrib/hu/t2/T2NedTap.py): See also: https://ned.ipac.caltech.edu/tap/sync?QUERY=SELECT+*+FROM+TAP_SCHEMA.tables&REQUEST=doQuery&LANG=ADQL&FORMAT=text Export all NED: https://ned.ipac.caltech.edu/tap/sync?QUERY=SELECT+*+FROM+NEDTAP.objdir&REQUEST=doQuery&LANG=ADQL&FORMAT=text.
+- [T2PS1ThumbExtCat](ampel/contrib/hu/t2/T2PS1ThumbExtCat.py): Retrieve panstarrs images at datapoint location and for each tied extcat catalog matching result: - create a new image - mark the datapoint location - mark the matched location from the catalog.
 - [T2PS1ThumbNedSNCosmo](ampel/contrib/hu/t2/T2PS1ThumbNedSNCosmo.py): This state t2 unit is tied with the state T2 unit T2NedSNCosmo.
 - [T2PS1ThumbNedTap](ampel/contrib/hu/t2/T2PS1ThumbNedTap.py): This point t2 unit is tied with the point T2 unit T2NedTap.
 - [T2PanStarrThumbPrint](ampel/contrib/hu/t2/T2PanStarrThumbPrint.py): Retrieve panstarrs images at datapoint location and save these as compressed svg into the returned dict.
-- [T2RunParsnip](ampel/contrib/hu/t2/T2RunParsnip.py): Gathers information and runs the parsnip model and classifier.
+- [T2RunParsnip](ampel/contrib/hu/t2/T2RunParsnip.py): Gathers information and runs the parsnip model and classifier. - Obtain model (read from file unless not in sncosmo registry) - Parse previous (chained) T2results for redshift or phase limits. - Creates suitable photometry, using the converter provided and  phase limits. - Defines model appropritately, including fit ranges and fixed parameters. - Run fit, potentially iterative in case of non-convergence. - Plot output if requested.
 - [T2RunPossis](ampel/contrib/hu/t2/T2RunPossis.py): Load a POSSIS kilnova model and fit to a LightCurve object as process is called.
 - [T2RunSncosmo](ampel/contrib/hu/t2/T2RunSncosmo.py): Gathers information and runs Sncosmo.
 - [T2RunSnoopy](ampel/contrib/hu/t2/T2RunSnoopy.py): Gathers information and runs snoopy.
@@ -77,10 +77,10 @@ requires an access token if data is to be retrieved.
 ### T3 units (react):
 - [AstroColibriPublisher](ampel/contrib/hu/t3/AstroColibriPublisher.py): Publish results to AstroColibri.
 - [ChannelSummaryPublisher](ampel/contrib/hu/t3/ChannelSummaryPublisher.py): Create a json file with summary statistics for the channel.
-- [CostCounter](ampel/contrib/hu/t3/CostCounter.py): Derive metrics for the total cost, as parsed by the provided documents.
+- [CostCounter](ampel/contrib/hu/t3/CostCounter.py): Derive metrics for the total cost, as parsed by the provided documents: - Number of states - dps associated with each state (and thus DB operations) - t2documents associated with each state - total compute time for each t2unit.
 - [ElasticcClassPublisher](ampel/contrib/hu/t3/ElasticcClassPublisher.py): This unit is intended to submit classifications to the DESC TOM db during the ELAsTICC LSST alert simulation.
 - [HealpixCorrPlotter](ampel/contrib/hu/t3/HealpixCorrPlotter.py): Compare healpix coordinate P-value with output from T2RunSncosmo..
-- [HealpixTokenGenerator](ampel/contrib/hu/t3/HealpixTokenGenerator.py): Based on a URL to a Healpix map.
+- [HealpixTokenGenerator](ampel/contrib/hu/t3/HealpixTokenGenerator.py): Based on a URL to a Healpix map: - find pixels given requested prob contour. - request archive token for this stream..
 - [PlotLightcurveSample](ampel/contrib/hu/t3/PlotLightcurveSample.py): Unit plots results from lightcurve fitters (RunSncosmo, RunParsnip).
 - [PlotTransientLightcurves](ampel/contrib/hu/t3/PlotTransientLightcurves.py): Create a (pdf) plot summarizing lightcurves of candidates provided to the unit.
 - [RandomMapGenerator](ampel/contrib/hu/t3/RandomMapGenerator.py): Generate smoothed circular healpix probability values around a random coordinate..
