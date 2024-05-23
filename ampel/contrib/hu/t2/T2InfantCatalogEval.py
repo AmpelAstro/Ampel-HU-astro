@@ -84,6 +84,8 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
     rb_minmed: float = 0.3
     # Minimal median RB.
     drb_minmed: float = 0.995
+    # Minimal pull w.r.t to image magnitude limit (i.e. (diffmaglim-mag)/magerr))
+    min_magpull: float = 0.0
 
     # Limiting magnitude to consider upper limits as 'significant'
     maglim_min: float = 19.5
@@ -146,9 +148,9 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         # Special catalog searches - mark transients close to AGNs
         milliquas = cat_res.get("milliquas", False)
         sdss_spec = cat_res.get("SDSS_spec", False)
-        if milliquas and milliquas["redshift"] > 0:
+        if milliquas and milliquas.get("redshift", -1) > 0:
             info["milliAGN"] = True
-        if sdss_spec and sdss_spec["bptclass"] in [4, 5]:
+        if sdss_spec and sdss_spec.get("bptclass", -99) in [4, 5]:
             info["sdssAGN"] = True
 
         # Return collected info
@@ -187,6 +189,20 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
             self.logger.debug("Rejected", extra={"age": age})
             return None
         info["age"] = age
+
+        # cut on pull compared with image diffmaglim
+        magpull = sum(
+            [
+                (pp["body"]["diffmaglim"] - pp["body"]["magpsf"])
+                / pp["body"]["sigmapsf"]
+                for pp in pps
+            ]
+        )
+        info["mag_pull"] = magpull
+        # cut on which filters used
+        if magpull < self.min_magpull:
+            self.logger.debug("Rejected", extra={"mag_pull": magpull})
+            return None
 
         # cut on number of detection after last SIGNIFICANT UL
         ulims = lc.get_upperlimits(

@@ -31,7 +31,8 @@ async def tns_post(
     semaphore: asyncio.Semaphore,
     method: str,
     token: TNSToken,
-    data: dict,
+    data: dict | int,
+    payload_label: str = "data",
     max_retries: int = 10,
 ) -> dict:
     """
@@ -43,8 +44,11 @@ async def tns_post(
                 p: aiohttp.Payload = aiohttp.StringPayload(token.api_key)
                 p.set_content_disposition("form-data", name="api_key")
                 mpwriter.append(p)
-                p = aiohttp.JsonPayload(data)
-                p.set_content_disposition("form-data", name="data")
+                if isinstance(data, dict):
+                    p = aiohttp.JsonPayload(data)
+                else:
+                    p = aiohttp.StringPayload(str(data))
+                p.set_content_disposition("form-data", name=payload_label)
                 mpwriter.append(p)
                 resp = await session.post(
                     "https://www.wis-tns.org/api/" + method, data=mpwriter
@@ -61,7 +65,8 @@ async def tns_post(
                 )
                 await asyncio.sleep(wait)
                 continue
-            break
+            else:  # noqa: RET507
+                break
         resp.raise_for_status()
         return await resp.json()
 
@@ -112,10 +117,10 @@ class TNSClient:
     @staticmethod
     def is_permanent_error(exc):
         if isinstance(exc, ClientResponseError):
-            return exc.code not in {500, 429}
+            return exc.code not in {500, 429, 404}
         return False
 
-    async def search(self, *, exclude: None | set[str] = None, **params):
+    async def search(self, exclude=set(), **params):  # noqa: B006
         semaphore = asyncio.Semaphore(self.maxParallelRequests)
         async with ClientSession(
             headers={
@@ -147,3 +152,43 @@ class TNSClient:
         return await self.tns_post(
             session, semaphore, "get/object", self.token, {"objname": objname}
         )
+
+    async def sendReport(self, report):
+        semaphore = asyncio.Semaphore(self.maxParallelRequests)
+        async with ClientSession(
+            headers={
+                "User-Agent": "tns_marker"
+                + json.dumps(
+                    {"tns_id": self.token.id, "name": self.token.name, "type": "bot"}
+                )
+            },
+        ) as session:
+            postreport = partial(
+                self.tns_post, session, semaphore, "bulk-report", self.token
+            )
+            response = await postreport(report)
+            if response["id_code"] == 200:
+                return response["data"]["report_id"]
+            return False
+
+    async def reportReply(self, report_id):
+        semaphore = asyncio.Semaphore(self.maxParallelRequests)
+        async with ClientSession(
+            headers={
+                "User-Agent": "tns_marker"
+                + json.dumps(
+                    {"tns_id": self.token.id, "name": self.token.name, "type": "bot"}
+                )
+            },
+        ) as session:
+            postreport = partial(
+                self.tns_post,
+                session,
+                semaphore,
+                "bulk-report-reply",
+                self.token,
+                payload_label="report_id",
+            )
+            response = await postreport(report_id)
+
+            return response["data"]["feedback"]

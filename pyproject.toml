@@ -34,7 +34,7 @@ include = [
 [tool.poetry.dependencies]
 python = ">=3.10,<3.12"
 ampel-plot = {version = ">=0.8.3-3,<0.9", source = "pypi"}
-ampel-ztf = {version = ">=0.8.13,<0.9", extras = ["kafka"], optional = true}
+ampel-ztf = {version = ">=0.8.15,<0.9", extras = ["kafka"], optional = true}
 ampel-photometry = {version = ">=0.8.3,<0.9", source = "pypi"}
 ampel-interface = {version = ">=0.8.8,<0.9", source = "pypi"}
 ampel-alerts = {version = ">=0.8.5,<0.9", source = "pypi"}
@@ -69,6 +69,7 @@ ligo-gracedb = {version = "^2.12.0", optional = true}
 astro-datalab = {version = "^2", optional = true}
 # mainline snoopy can't be built as PEP 517 package; use our own distribution
 snpy = {version = "^2.5.3", optional = true, source = "desy-gitlab"}
+ztfquery = "^1.27.1"
 
 [tool.poetry.dev-dependencies]
 mypy = "^1.6.1"
