@@ -37,6 +37,7 @@ requires an access token if data is to be retrieved.
 - [RcfFilter](ampel/contrib/hu/t0/RcfFilter.py): Filter for the ZTF Redshift Completeness Factor program..
 - [RedshiftCatalogFilter](ampel/contrib/hu/t0/RedshiftCatalogFilter.py): Filter derived from DecentFilter designed to only accept transients located close to a galaxy in a catalog, and within redshift bounds.
 - [SimpleDecentFilter](ampel/contrib/hu/t0/SimpleDecentFilter.py): General-purpose filter devloped alongside DecentFilter but without use of external catalogs.
+- [StellarFilter](ampel/contrib/hu/t0/StellarFilter.py): a.k.a.
 - [TransientInClusterFilter](ampel/contrib/hu/t0/TransientInClusterFilter.py): Filter derived from the DecentFilter, in addition selecting candidates with position compatible with that of nearby galaxy clusters..
 - [XShooterFilter](ampel/contrib/hu/t0/XShooterFilter.py): Filter derived from the DecentFilter, in addition selecting very new transients which are visible from the South.
 
@@ -44,6 +45,7 @@ requires an access token if data is to be retrieved.
 - [T2BayesianBlocks](ampel/contrib/hu/t2/T2BayesianBlocks.py): T2 unit for running a bayesian block search algorithm to highlight excess regions.
 - [T2BrightSNProb](ampel/contrib/hu/t2/T2BrightSNProb.py): Derive a number of simple metrics describing the rise, peak and decline of a lc.
 - [T2CatalogMatchLocal](ampel/contrib/hu/t2/T2CatalogMatchLocal.py): Cross matches the position of a transient to those of sources in a set of catalogs.
+- [T2DemoLightcurveFitter](ampel/contrib/hu/t2/T2DemoLightcurveFitter.py): Demonstration class showing how methods of T2BaseLightcurveFitter can be used develop a specific classifier.
 - [T2DigestRedshifts](ampel/contrib/hu/t2/T2DigestRedshifts.py): Compare potential matches from different T2 units providing redshifts.
 - [T2DustEchoEval](ampel/contrib/hu/t2/T2DustEchoEval.py)
 - [T2ElasticcRedshiftSampler](ampel/contrib/hu/t2/T2ElasticcRedshiftSampler.py): Parse the elasticc diaSource host information and returns a list of redshifts and weights.
@@ -77,9 +79,9 @@ requires an access token if data is to be retrieved.
 - [ChannelSummaryPublisher](ampel/contrib/hu/t3/ChannelSummaryPublisher.py): Create a json file with summary statistics for the channel.
 - [CostCounter](ampel/contrib/hu/t3/CostCounter.py): Derive metrics for the total cost, as parsed by the provided documents.
 - [ElasticcClassPublisher](ampel/contrib/hu/t3/ElasticcClassPublisher.py): This unit is intended to submit classifications to the DESC TOM db during the ELAsTICC LSST alert simulation.
-- [HealpixCorrPlotter](ampel/contrib/hu/t3/HealpixCorrPlotter.py): Compare healpix coordinate P-value with output from T2RunSncosmo..
 - [HealpixTokenGenerator](ampel/contrib/hu/t3/HealpixTokenGenerator.py): Based on a URL to a Healpix map.
 - [PlotLightcurveSample](ampel/contrib/hu/t3/PlotLightcurveSample.py): Unit plots results from lightcurve fitters (RunSncosmo, RunParsnip).
+- [PlotTransientLightcurves](ampel/contrib/hu/t3/PlotTransientLightcurves.py): Create a (pdf) plot summarizing lightcurves of candidates provided to the unit.
 - [RandomMapGenerator](ampel/contrib/hu/t3/RandomMapGenerator.py): Generate smoothed circular healpix probability values around a random coordinate..
 - [RapidBase](ampel/contrib/hu/t3/RapidBase.py): Trigger rapid reactions.
 - [RapidLco](ampel/contrib/hu/t3/RapidLco.py): Submit LCO triggers for candidates passing criteria..
@@ -87,6 +89,7 @@ requires an access token if data is to be retrieved.
 - [ScoreSingleObject](ampel/contrib/hu/t3/ScoreSingleObject.py): Calculate score based on how early a specific SN is detected.
 - [ScoreTNSObjects](ampel/contrib/hu/t3/ScoreTNSObjects.py): Calculate score based on detection time reported to TNS, if any..
 - [SlackSummaryPublisher](ampel/contrib/hu/t3/SlackSummaryPublisher.py)
+- [SubmitTNS](ampel/contrib/hu/t3/SubmitTNS.py): Submit candidates to TNS (unless already submitted).
 - [TNSTalker](ampel/contrib/hu/t3/TNSTalker.py): Get TNS name if existing, and submit selected candidates.
 - [TransientInfoPrinter](ampel/contrib/hu/t3/TransientInfoPrinter.py)
 - [TransientTablePublisher](ampel/contrib/hu/t3/TransientTablePublisher.py): Construct a table based on selected T2 output values.
