@@ -12,16 +12,17 @@ from typing import Any, Literal
 
 import numpy as np
 
-from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
+from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
+from ampel.content.DataPoint import DataPoint
+from ampel.content.T1Document import T1Document
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
-from ampel.view.LightCurve import LightCurve
 from ampel.view.T2DocView import T2DocView
 
 
-class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
+class T2DigestRedshifts(AbsTiedStateT2Unit):
     """
 
     Compare potential matches from different T2 units providing redshifts.
@@ -54,6 +55,23 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
     #                    "max_redshift": "max redshift to use",
     #                    "z_group": "which redshift group to assign to" }
     catalogmatch_override: None | dict[str, Any]
+
+    # Options for the get_redshift option
+    # T2MatchBTS : Use the redshift published by BTS and  synced by that T2.
+    # T2DigestRedshifts : Use the best redshift as parsed by DigestRedshift.
+    # AmpelZ: equal to T2DigestRedshifts
+    # T2ElasticcRedshiftSampler: Use a list of redshifts and weights from the sampler.
+    # None : Use the fixed z value
+    redshift_kind: None | Literal[
+        "T2MatchBTS", "T2DigestRedshifts", "T2ElasticcRedshiftSampler", "AmpelZ"
+    ] = None
+
+    # It is also possible to use fixed redshift whenever a dynamic redshift kind is not possible
+    # This could be either a single value or a list
+    fixed_z: None | float | Sequence[float] = None
+    # Finally, the provided lens redshift might be multiplied with a scale
+    # Useful for lensing studies, or when trying multiple values
+    scale_z: None | float = None
 
     # These are the units through which we look for redshifts
     # Which units should this be changed to
@@ -324,22 +342,15 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
 
         return group_z
 
-    # ==================== #
-    # AMPEL T2 MANDATORY   #
-    # ==================== #
-    def process(
-        self, light_curve: LightCurve, t2_views: Sequence[T2DocView]
-    ) -> UBson | UnitResult:
+    def get_ampelZ(self, t2_views: Sequence[T2DocView]) -> UBson | UnitResult:
         """
 
         Parse t2_views from catalogs that were part of the redshift studies.
         Return these together with a "best estimate" - ampel_z
 
-        """
+        Main method, separated to be used externally.
 
-        if not t2_views:  # Should not happen actually, T2Processor catches that case
-            self.logger.error("Missing tied t2 views")
-            return UnitResult(code=DocumentCode.T2_MISSING_INFO)
+        """
 
         # Loop through all potential T2s with redshift information.
         # Each should return an array of arrays, corresponding to redshift maches
@@ -392,5 +403,101 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
         if self.catalogmatch_override:
             t2_output["AmpelZ-Warning"] = "Override catalog in use."
 
-        self.logger.debug("digest redshift: %s" % (t2_output))
         return t2_output
+
+    def get_redshift(
+        self, t2_views
+    ) -> tuple[None | list[float], None | str, None | list[float]]:
+        """
+
+        Return a single or list of redshifts to be used. Not called in T2DigestRedshift.process
+        but provides interface to e.g. fit units.
+
+        """
+
+        # Examine T2s for eventual information
+        z: None | list[float] = None
+        z_source: None | str = None
+        z_weights: None | list[float] = None
+
+        if self.redshift_kind in [
+            "T2DigestRedshifts",
+            "AmpelZ",
+        ]:
+            t2_res = self.get_ampelZ(t2_views)
+            if (
+                isinstance(t2_res, dict)
+                and "ampel_z" in t2_res
+                and t2_res["ampel_z"] is not None
+                and t2_res["group_z_nbr"] <= self.max_redshift_category
+            ):
+                z = [float(t2_res["ampel_z"])]
+                z_source = "AMPELz_group" + str(t2_res["group_z_nbr"])
+        elif self.redshift_kind in [
+            "T2MatchBTS",
+            "T2DigestRedshifts",
+            "T2ElasticcRedshiftSampler",
+        ]:
+            for t2_view in t2_views:
+                if t2_view.unit != self.redshift_kind:
+                    continue
+                self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
+                t2_res = (
+                    res[-1] if isinstance(res := t2_view.get_payload(), list) else res
+                )
+                # Parse this
+                if self.redshift_kind == "T2MatchBTS":
+                    if (
+                        isinstance(t2_res, dict)
+                        and "bts_redshift" in t2_res
+                        and t2_res["bts_redshift"] != "-"
+                    ):
+                        z = [float(t2_res["bts_redshift"])]
+                        z_source = "BTS"
+                elif self.redshift_kind == "T2ElasticcRedshiftSampler" and isinstance(
+                    t2_res, dict
+                ):
+                    z = t2_res["z_samples"]
+                    z_source = t2_res["z_source"]
+                    z_weights = t2_res["z_weights"]
+        # Check if there is a fixed z set for this run, otherwise keep as free parameter
+        elif self.fixed_z is not None:
+            if isinstance(self.fixed_z, float):
+                z = [self.fixed_z]
+            else:
+                z = list(self.fixed_z)
+            z_source = "Fixed"
+        else:
+            z = None
+            z_source = "Fitted"
+
+        if (z is not None) and (z_source is not None) and self.scale_z:
+            z = [onez * self.scale_z for onez in z]
+            z_source += f" + scaled {self.scale_z}"
+
+        return z, z_source, z_weights
+
+    # ==================== #
+    # AMPEL T2 MANDATORY   #
+    # ==================== #
+    def process(
+        self,
+        compound: T1Document,
+        datapoints: Sequence[DataPoint],
+        t2_views: Sequence[T2DocView],
+    ) -> UBson | UnitResult:
+        #    def process(
+        #        self, light_curve: LightCurve, t2_views: Sequence[T2DocView]
+        #    ) -> UBson | UnitResult:
+        """
+
+        Parse t2_views from catalogs that were part of the redshift studies.
+        Return these together with a "best estimate" - ampel_z
+
+        """
+
+        if not t2_views:  # Should not happen actually, T2Processor catches that case
+            self.logger.error("Missing tied t2 views")
+            return UnitResult(code=DocumentCode.T2_MISSING_INFO)
+
+        return self.get_ampelZ(t2_views)

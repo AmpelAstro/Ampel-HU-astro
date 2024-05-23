@@ -6219,6 +6219,17 @@ tests = ["autopep8", "flake8", "isort", "numpy", "pytest", "scipy (>=1.7.1)", "t
 tutorials = ["matplotlib", "pandas", "tabulate", "torch"]
 
 [[package]]
+name = "types-pillow"
+version = "10.2.0.20240511"
+description = "Typing stubs for Pillow"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "types-Pillow-10.2.0.20240511.tar.gz", hash = "sha256:b2fcc27b8e15ae3741941e43b4f39eba6fce6bcb152af90bbb07b387d2585783"},
+    {file = "types_Pillow-10.2.0.20240511-py3-none-any.whl", hash = "sha256:ef87a19ea0a02a89c784cbc1b99dfff6c00dd0d5796a8ac868cf7ec69c5f88ff"},
+]
+
+[[package]]
 name = "types-python-dateutil"
 version = "2.9.0.20240316"
 description = "Typing stubs for python-dateutil"
@@ -6837,6 +6848,24 @@ files = [
 docs = ["furo", "jaraco.packaging (>=9.3)", "jaraco.tidelift (>=1.4)", "rst.linker (>=1.9)", "sphinx (>=3.5)", "sphinx-lint"]
 testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-enabler (>=2.2)", "pytest-ignore-flaky", "pytest-mypy", "pytest-ruff (>=0.2.1)"]
 
+[[package]]
+name = "ztfquery"
+version = "1.27.1"
+description = "Python package to access ZTF data"
+optional = true
+python-versions = ">=3.8"
+files = [
+    {file = "ztfquery-1.27.1-py3-none-any.whl", hash = "sha256:a717ff9bed70d31f3cee7b80baffd9945d6c8bbc669b736b2410251d92c9e6b2"},
+    {file = "ztfquery-1.27.1.tar.gz", hash = "sha256:19801e66e8b33b67feb6bf05886c104c9b96fd5c03fe23e8b1d559f50e67cf0f"},
+]
+
+[package.dependencies]
+astropy = ">=5.2"
+matplotlib = ">=3.7"
+numpy = ">=1.24"
+pandas = ">=1.7"
+requests = ">=2.28"
+
 [extras]
 elasticc = ["ampel-lsst", "astro-parsnip", "timeout-decorator", "xgboost"]
 extcats = ["extcats"]
@@ -6848,9 +6877,9 @@ slack = ["slack-sdk"]
 sncosmo = ["iminuit", "sfdmap2", "sncosmo"]
 snpy = ["snpy"]
 voevent = ["voevent-parse"]
-ztf = ["ampel-ztf"]
+ztf = ["ampel-ztf", "ztfquery"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.12"
-content-hash = "23ea648d706d1fc1240e76bb735dd020623b45a292071eacfd4f26a23d5ae803"
+content-hash = "5cca9f6404161d00f85c4cf0e284c8adb445f8ed7d9217b6d6e4133e7138a620"
