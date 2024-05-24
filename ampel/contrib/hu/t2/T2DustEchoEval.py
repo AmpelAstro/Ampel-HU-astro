@@ -35,6 +35,8 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
 
     rej_sigma: float = 5.0
 
+    max_strength_threshold: float | str = "inf"
+
     data_type: str = "wise"
 
     filters: list[str]
@@ -44,6 +46,10 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
     # ==================== #
     # AMPEL T2 MANDATORY   #
     # ==================== #
+
+    def post_init(self) -> None:
+        if isinstance(self.max_strength_threshold, str):
+            self.max_strength_threshold = float(self.max_strength_threshold)
 
     def process(
         self, light_curve: LightCurve, t2_views: Sequence[T2DocView]
@@ -149,7 +155,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
                             t2_output["description"].append("Very low sigma")
 
                         elif any(
-                            t2_res[key]["strength_sjoert"] < t2_res[key]["significance"]
+                            t2_res[key]["strength_sjoert"] < min([t2_res[key]["significance"], self.max_strength_threshold])
                             for key in self.filters_lc
                         ):
                             t2_output["description"].append("Low significance")
