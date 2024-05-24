@@ -11,7 +11,7 @@ from setuptools import find_namespace_packages, setup
 
 setup(
     name="ampel-hu-astro",
-    version="0.8.3-alpha.20",
+    version="0.8.3-alpha.21",
     packages=find_namespace_packages(),
     package_data={
         "": ["*.json", "py.typed"],  # include any package containing *.json files
