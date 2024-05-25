@@ -40,8 +40,8 @@ class T2BaseLightcurveFitter(T2DigestRedshifts, AbsTabulatedT2Unit, abstract=Tru
 
     # Adding default redshift selection values, corresponding to usage of "good" redshifts from catalogs can be selected
     # Leaving to default values either provides no redshift,
-    #redshift_kind = "T2DigestRedshifts"
-    #max_redshift_category: int = 3
+    # redshift_kind = "T2DigestRedshifts"
+    # max_redshift_category: int = 3
     # ... or uncommenting below will provide a fixed z
     # fixed_z: 0.1
 
