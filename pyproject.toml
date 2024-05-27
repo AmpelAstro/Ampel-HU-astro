@@ -157,6 +157,7 @@ ignore_missing_imports = true
 addopts = "--cov=ampel --showlocals -ra"
 filterwarnings = [
     "error",
+    "always:numpy.ndarray size changed:RuntimeWarning",
     "ignore:Deprecated call to `pkg_resources.declare_namespace\\('ligo'\\):DeprecationWarning",
     "ignore:pkg_resources is deprecated:DeprecationWarning",
     "ignore:(?s).*Pyarrow will become a required dependency of pandas:DeprecationWarning",
