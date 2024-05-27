@@ -370,7 +370,7 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
     # Dir for saving png (thumbnails + single event if chosen)
     image_cache_dir: str = "./image_cache"
 
-    save_dir: str = "./images" # dir for saving plots, pdf
+    save_dir: str = "./images"  # dir for saving plots, pdf
 
     # Should ZTF cutouts be retrieved (requires remote archive access)
     include_cutouts: bool = False
@@ -448,9 +448,9 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
         t2res = tview.get_t2_body(unit="T2KilonovaStats")
         if isinstance(t2res, dict):
             attributes.append(f"PercentHigher{t2res['gaus_percent']:.5f} ")
-            #print("T3PlotTransientLightcurves:: ", "attributes_from_t2 ", 6.1)
-            attributes.append(f"ExpectedCands{t2res['exp_kn']:.1f}+{t2res['exp_kn_pls']:.1f}-{t2res['exp_kn_min']:.1f} ")
-            #print("T3PlotTransientLightcurves:: ", "attributes_from_t2 ", 6.2)
+            attributes.append(
+                f"ExpectedCands{t2res['exp_kn']:.1f}+{t2res['exp_kn_pls']:.1f}-{t2res['exp_kn_min']:.1f} "
+            )
             attributes.append(f"DistanceRange{t2res['dist_range']}")
         return (attributes, z)
 
