@@ -25,7 +25,7 @@ class RapidLco(RapidBase):
     """
 
     # LCO trigger info
-    lco_api: NamedSecret[str] = NamedSecret(label="lco/jnordin")
+    lco_api: NamedSecret[str] = NamedSecret[str](label="lco/jnordin")
     # A dict of LCO API triggers to be sent for each SN that fulfills all
     # criteria. Assumed to have the following key content:
     # 'trigger_name': {'start_delay':X (days), 'end_delay':Y (days), 'api_form':Z}

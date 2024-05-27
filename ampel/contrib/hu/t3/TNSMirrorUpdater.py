@@ -25,7 +25,7 @@ class TNSMirrorUpdater(AbsOpsUnit):
     Sync a local mirror of the TNS database
     """
 
-    extcats_auth: NamedSecret[dict] = NamedSecret(label="extcats/writer")
+    extcats_auth: NamedSecret[dict] = NamedSecret[dict](label="extcats/writer")
     api_key: NamedSecret[dict]
     timeout: float = 60.0
     max_parallel_requests: int = 8

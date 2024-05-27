@@ -50,7 +50,7 @@ class TransientViewDumper(AbsPhotoT3Unit):
     # If this is passed, files are always saved locally
     outputfile: None | str = None
 
-    desycloud_auth: NamedSecret[dict] = NamedSecret(label="desycloud")
+    desycloud_auth: NamedSecret[dict] = NamedSecret[dict](label="desycloud")
     desycloud_folder: str = "dumps"
     desycloud_filename: str = str(uuid.uuid1())
 

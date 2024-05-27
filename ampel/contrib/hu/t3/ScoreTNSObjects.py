@@ -26,7 +26,7 @@ class ScoreTNSObjects(AbsScoreCalculator):
     """
 
     # Bot api key frm TNS
-    tns_api_key: NamedSecret[str] = NamedSecret(label="tns/api/token")
+    tns_api_key: NamedSecret[str] = NamedSecret[str](label="tns/api/token")
     tns_id: int = 49023
     tns_name: str = "ZTF_AMPEL_NEW"
 

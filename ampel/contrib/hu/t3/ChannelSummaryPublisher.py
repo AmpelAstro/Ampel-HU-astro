@@ -38,7 +38,7 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
 
     dry_run: bool = False
     base_url: str = "https://desycloud.desy.de/remote.php/webdav/AMPEL/ZTF"
-    auth: NamedSecret[list] = NamedSecret(label="desycloud/valery")
+    auth: NamedSecret[list] = NamedSecret[list](label="desycloud/valery")
 
     def post_init(self) -> None:
         self.summary: dict[str, Any] = {}

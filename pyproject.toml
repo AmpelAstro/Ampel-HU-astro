@@ -149,11 +149,17 @@ module = [
   "light_curve.*",
   "xgboost.*",
   "ligo.*",
+  "ztfquery.*",
 ]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 addopts = "--cov=ampel --showlocals -ra"
+filterwarnings = [
+    "error",
+    "ignore:pkg_resources is deprecated:DeprecationWarning",
+    "ignore:(?s).*Pyarrow will become a required dependency of pandas:DeprecationWarning",
+]
 
 [tool.black]
 line-length = 88

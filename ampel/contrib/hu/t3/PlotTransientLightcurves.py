@@ -24,8 +24,8 @@ from astropy.time import Time
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.colors import Normalize
 from matplotlib.ticker import MultipleLocator
-from slack import WebClient  # type: ignore
-from ztfquery.utils.stamps import get_ps_stamp  # type: ignore
+from slack_sdk.web import WebClient
+from ztfquery.utils.stamps import get_ps_stamp
 
 from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
 from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
