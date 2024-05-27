@@ -1,16 +1,16 @@
-name: stellarapr17
+name: stellarmay21
 parameters:
 - name: channelname
-  value: apr17
+  value: may21
 - name: date
-  value: "2024-04-17"
+  value: "2024-05-21"
 
 mongo:
   prefix: evalOutburst
-  reset: false
+  reset: true
 
 channel:
-- name: apr17
+- name: may21
   access: [ZTF, ZTF_PUB, ZTF_PRIV]
   policy: []
 
@@ -81,16 +81,9 @@ task:
         unit: StellarFilter
       ingest:
         mux:
-          combine:
-          - state_t2:
-            - unit: T2LineFit
-              config:
-                tabulator:
-                - unit: ZTFT2Tabulator                
-            unit: ZiT1Combiner
           insert:
             point_t2:
-            - config:
+            - config: &catalog_match_config
                 catalogs:
                   NEDz:
                     keys_to_append:
@@ -129,6 +122,22 @@ task:
                 select: first
                 sort: jd
               unit: T2CatalogMatch
+          combine:
+          - state_t2:
+            - unit: T2DemoLightcurveFitter
+              config:
+                fit_order: 1
+                fixed_z: 0.
+                tabulator:
+                - unit: ZTFT2Tabulator    
+                t2_dependency:
+                - config: *catalog_match_config
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2CatalogMatch
+            unit: ZiT1Combiner
           unit: ZiMongoMuxer
 
 - title: RunT2s
