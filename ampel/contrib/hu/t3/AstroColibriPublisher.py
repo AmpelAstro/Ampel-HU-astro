@@ -12,7 +12,6 @@
 
 # from itertools import islice
 import os
-import re
 from collections.abc import Generator
 
 import numpy as np
@@ -77,6 +76,22 @@ class AstroColibriPublisher(AbsPhotoT3Unit):
     - Kilonovaness if available.
 
     Will update if new obs was made after last posting.
+
+    AC requests:
+
+
+    - Can you make sure that the event time corresponds to the one submitted to TNS?
+    - We suggest a slight renaming of the events:
+     x   * source_name: use the name of the event given by TNS and add "(Ampel)" to it. Example: TNS name "AT 2024edy" => "AT 2024edy (Ampel)"
+     x   * trigger_id: keep as it is
+     x   * we suggest you fill the ZTF identifier (e.g. ZTF24aahbwis) that you currently use a source_name into the field "discoverer_internal_name"
+    x Type: for events that are not submitted as classified to TNS (i.e. listed as AT in TNS), please change the value of the "type" parameter to "ot" (instead of "ot_sn")
+    * Classification: you can add the Ampel classification into the field "classification". E.g. if these are supernova candidates use "SN" or any classification that one could also find on TNS
+
+
+
+
+
 
     """
 
@@ -156,23 +171,6 @@ class AstroColibriPublisher(AbsPhotoT3Unit):
             ]
         )
 
-    def get_tnsname(self, view: "TransientView") -> bool:
-        # Was transient (successfully pushed)
-        if not view.stock:
-            return False
-        # Check whether the name is found in the name collection
-        if len(names := view.stock.get("name", [])) > 0:
-            # Will only be able to require TNS name through format
-            # dddd
-            for name in names:
-                if re.search(r"\d{4}\D{3}\D?", name):
-                    return name
-
-        # Should we look through the Journal for entries from the TNSTalker?
-        # It *should* also save these entries to name so should not be needed...
-
-        return None
-
     def process(
         self,
         tviews: Generator[TransientView, JournalAttributes, None],
@@ -184,41 +182,16 @@ class AstroColibriPublisher(AbsPhotoT3Unit):
         """
 
         for tview in tviews:
-            if self.randname:
-                import random
-
-                # Generate random name (assuming publishing to dev AC)
-                tns_name = f"AmpelRand{random.randint(1, 999)}"
-            else:
-                # Find TNS name (required for AstroColibri posting)
-                # Currently assumes that this is stored either in the
-                # stock name list or can be found in the T3 journal
-                # (probably from the TNSTalker)
-                tns_name = self.get_tnsname(tview)
-                if not tns_name:
-                    self.logger.info("No TNS.", extra={"tnsName": None})
-                    continue
-
-            # Check if this was submitted
-            # TODO: How should the first submit differ from updates?
-            if self.submitted(tview):
-                # Check if it needs an update
-                if self.requires_update(tview):
-                    post_update = True
-                else:
-                    continue
-            else:
-                post_update = False
-
-            # Gather general information
+            # Gather general information, including coordinate
             payload = {
-                "type": "ot_sn",  # for optical? when to change to ot_sn?
+                "type": "ot",
                 "observatory": "ztf",
-                "source_name": to_ztf_id(int(tview.id)),
+                # "source_name": to_ztf_id(int(tview.id)),
+                "discoverer_internal_name": to_ztf_id(int(tview.id)),
                 #                'trigger_id': self.trigger_id+':'+str(tview.id),  # How do these work?
-                "trigger_id": "TNS" + tns_name,
+                # "trigger_id": "TNS" + tns_name,
                 #                'ivorn': self.trigger_id+':'+str(tview.id),       # Need ivorn schema
-                "timestamp": Time.now().iso,
+                # "timestamp": Time.now().iso,
             }
 
             # Gather photometry based information
@@ -235,6 +208,38 @@ class AstroColibriPublisher(AbsPhotoT3Unit):
             payload["dec"] = np.mean([pp["body"]["dec"] for pp in dps_det])
             payload["err"] = 1.0 / 3600  # position err ~1 arcsec in dec
 
+            # Find TNS name
+            if self.randname:
+                import random
+
+                # Generate random name (assuming publishing to dev AC)
+                tns_name = f"AmpelRand{random.randint(1, 999)}"
+                tns_submission_time = Time.now().iso
+            elif isinstance(tview.extra, dict) and "TNSReports" in tview.extra:
+                # A tns name is required, here obtained from the mirror DB through a T3 complement
+                tnsreport = next(iter(tview.extra["TNSReports"]))
+                tns_name = tnsreport["objname"]
+                tns_submission_time = tnsreport["discoverydate"]
+                print("FOUND TNS STUFF", tns_name, tns_submission_time)
+            else:
+                self.logger.debug("No TNS name", extra={"tnsName": None})
+                continue
+
+            payload["trigger_id"] = "TNS" + tns_name
+            payload["source_name"] = tns_name + " (AMPEL)"
+            payload["time"] = tns_submission_time
+
+            # Check if this was submitted
+            # TODO: How should the first submit differ from updates?
+            if self.submitted(tview):
+                # Check if it needs an update
+                if self.requires_update(tview):
+                    post_update = True
+                else:
+                    continue
+            else:
+                post_update = False
+
             # If part of random testing, perturb coordinates
             if self.randname:
                 payload["ra"] += random.randrange(-1, 1)
@@ -242,16 +247,16 @@ class AstroColibriPublisher(AbsPhotoT3Unit):
                 payload["source_name"] += payload["trigger_id"][12:]
 
             # Gather attributes
-            attributes = []
+            attributes = {"classification": {}, "ampelProp": []}
             # Nearby attribute
             t2res = tview.get_t2_body(unit="T2DigestRedshifts")
             if isinstance(t2res, dict) and t2res.get("ampel_z", 999) < self.nearby_z:
-                attributes.append("Nearby")
-                attributes.append("AmpelZ{:.2f}".format(t2res["ampel_z"]))
+                attributes["ampelProp"].append("Nearby")
+                attributes["ampelProp"].append("AmpelZ{:.2f}".format(t2res["ampel_z"]))
             # Infant attribute
             t2res = tview.get_t2_body(unit="T2InfantCatalogEval")
             if isinstance(t2res, dict) and t2res.get("action", False):
-                attributes.append("Young")
+                attributes["ampelProp"].append("Young")
             # SNIa
             t2res = tview.get_t2_body(unit="T2RunParsnip")
             if (
@@ -259,27 +264,37 @@ class AstroColibriPublisher(AbsPhotoT3Unit):
                 and "classification" in t2res
                 and t2res["classification"]["SNIa"] > self.snia_minprob
             ):
-                attributes.append("ProbSNIa")
+                attributes["ampelProp"].append("ProbSNIa")
+                attributes["classification"] = {
+                    "class": ["SNIa", "Other"],
+                    "prob": [
+                        t2res["classification"]["SNIa"],
+                        1 - t2res["classification"]["SNIa"],
+                    ],
+                }
             # Kilonovaness
             t2res = tview.get_t2_body(unit="T2KilonovaEval")
             if (
                 isinstance(t2res, dict)
                 and t2res.get("kilonovaness", -99) > self.min_kilonovaness
             ):
-                attributes.append("Kilonovaness{}".format(t2res["kilonovaness"]))
-                attributes.append("LVKmap{}".format(t2res["map_name"]))
+                attributes["ampelProp"].append(
+                    "Kilonovaness{}".format(t2res["kilonovaness"])
+                )
+                attributes["ampelProp"].append("LVKmap{}".format(t2res["map_name"]))
 
             # Check whether we have a figure to upload.
             # Assuming this exists locally under {stock}.png
             if self.image_path is not None:
                 ipath = self.image_path.replace("ZTFNAME", to_ztf_id(int(tview.id)))
+                ipath = self.image_path.replace("STOCK", str(tview.id))
                 # Only upload if it actually exists:
                 if not os.path.isfile(ipath):
                     ipath = None
             else:
                 ipath = None
 
-            payload["ampel_attributes"] = attributes
+            payload["broker_attributes"] = attributes
             self.logger.debug("reacting", extra={"payload": payload})
 
             # Ok, so we have a transient to react to
@@ -300,6 +315,9 @@ class AstroColibriPublisher(AbsPhotoT3Unit):
                 }
 
             else:
+                print("colibri submitting")
+                print(payload)
+                print(ipath)
                 jcontent = self.colibriclient.firestore_post(payload, image_path=ipath)
 
             if jcontent:

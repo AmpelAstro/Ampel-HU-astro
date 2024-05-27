@@ -38,6 +38,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         "NEDz",
         "GLADEv23",
         "NEDz_extcats",
+        "NEDLVS",
     ]  # Otherwise more
     # maximum redshift from T2 CATALOGMATCH catalogs (e.g. NEDz and SDSSspec)
     max_redshift: float = 0.05  # 0.1
@@ -52,7 +53,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
     # arcsec, maximum distance
     max_dist: float = 50
     # kpc, maximum distance
-    max_kpc_dist: float = 999
+    max_kpc_dist: float = 20
 
     # Cut on alert properties
 
@@ -83,6 +84,8 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
     rb_minmed: float = 0.3
     # Minimal median RB.
     drb_minmed: float = 0.995
+    # Minimal pull w.r.t to image magnitude limit (i.e. (diffmaglim-mag)/magerr))
+    min_magpull: float = 0.0
 
     # Limiting magnitude to consider upper limits as 'significant'
     maglim_min: float = 19.5
@@ -113,7 +116,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
                 and (self.min_redshift < catinfo["z"] < self.max_redshift)
                 and (self.min_dist < catinfo["dist2transient"] < self.max_dist)
             ):
-                self.logger.info(
+                self.logger.debug(
                     "Found z.",
                     extra={
                         "catalog": catname,
@@ -128,7 +131,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
                     / 60.0
                 )
                 if self.max_kpc_dist > 0 and dst_kpc > self.max_kpc_dist:
-                    self.logger.info(
+                    self.logger.debug(
                         "Skip, physical distance too large.",
                         extra={"distance_kpc": dst_kpc},
                     )
@@ -136,6 +139,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
                 zmatchs.append([catinfo["z"]])
                 info[f"{catname}_z"] = catinfo["z"]
                 info[f"{catname}_dist2transient"] = catinfo["dist2transient"]
+                info[f"{catname}_kpcdist"] = dst_kpc
 
         if len(zmatchs) == 0:
             return None
@@ -144,9 +148,9 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         # Special catalog searches - mark transients close to AGNs
         milliquas = cat_res.get("milliquas", False)
         sdss_spec = cat_res.get("SDSS_spec", False)
-        if milliquas and milliquas["redshift"] > 0:
+        if milliquas and milliquas.get("redshift", -1) > 0:
             info["milliAGN"] = True
-        if sdss_spec and sdss_spec["bptclass"] in [4, 5]:
+        if sdss_spec and sdss_spec.get("bptclass", -99) in [4, 5]:
             info["sdssAGN"] = True
 
         # Return collected info
@@ -163,20 +167,42 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         assert pps is not None
         info: dict[str, Any] = {}
 
+        # get position
+        if pos := lc.get_pos(ret="mean", filters=self.lc_filters):
+            ra, dec = pos
+        else:
+            return None
+        info["ra"] = ra
+        info["dec"] = dec
+
         # cut on number of detection
         if len(pps) < self.min_ndet:
-            self.logger.info("Rejected", extra={"det": len(pps)})
+            self.logger.debug("Rejected", extra={"det": len(pps)})
             return None
         info["detections"] = len(pps)
 
         # cut on age
         jds = [pp["body"]["jd"] for pp in pps]
-        most_recent_detection, first_detection = max(jds), min(jds)
-        age = most_recent_detection - first_detection
+        info["t_max"], info["t_min"] = max(jds), min(jds)
+        age = info["t_max"] - info["t_min"]
         if age > self.max_age or age < self.min_age:
-            self.logger.info("Rejected", extra={"age": age})
+            self.logger.debug("Rejected", extra={"age": age})
             return None
         info["age"] = age
+
+        # cut on pull compared with image diffmaglim
+        magpull = sum(
+            [
+                (pp["body"]["diffmaglim"] - pp["body"]["magpsf"])
+                / pp["body"]["sigmapsf"]
+                for pp in pps
+            ]
+        )
+        info["mag_pull"] = magpull
+        # cut on which filters used
+        if magpull < self.min_magpull:
+            self.logger.debug("Rejected", extra={"mag_pull": magpull})
+            return None
 
         # cut on number of detection after last SIGNIFICANT UL
         ulims = lc.get_upperlimits(
@@ -200,34 +226,34 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
                 pps_after_ndet is not None
                 and len(pps_after_ndet) < self.min_ndet_postul
             ):
-                self.logger.info(
+                self.logger.debug(
                     "not enough consecutive detections after last significant UL.",
                     extra={"NDet": len(pps), "lastUlimJD": last_ulim_jd},
                 )
                 return None
             # Check that there is a recent ul
-            if (most_recent_detection - last_ulim_jd) > self.maglim_maxago:
-                self.logger.info(
+            if (info["t_max"] - last_ulim_jd) > self.maglim_maxago:
+                self.logger.debug(
                     "No recent UL.",
                     extra={
-                        "lastDet": most_recent_detection,
+                        "lastDet": info["t_max"],
                         "lastUlimJD": last_ulim_jd,
                     },
                 )
                 return None
-            info["last_UL"] = most_recent_detection - last_ulim_jd
+            info["last_UL"] = info["t_max"] - last_ulim_jd
         else:
-            self.logger.info("no UL")
+            self.logger.debug("no UL")
             return None
 
         # cut on number of filters
         used_filters = set([pp["body"]["fid"] for pp in pps])
         if len(used_filters) < self.min_n_filters:
-            self.logger.info("Rejected", extra={"nbr_filt": len(used_filters)})
+            self.logger.debug("Rejected", extra={"nbr_filt": len(used_filters)})
             return None
         # cut on which filters used
         if used_filters.isdisjoint(self.det_filterids):
-            self.logger.info(
+            self.logger.debug(
                 "Rejected (wrong filter det)", extra={"det_filters": used_filters}
             )
             return None
@@ -236,7 +262,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         mags = [pp["body"]["magpsf"] for pp in pps]
         peak_mag = min(mags)
         if peak_mag > self.min_peak_mag or peak_mag < self.max_peak_mag:
-            self.logger.info("Rejected", extra={"peak_mag": peak_mag})
+            self.logger.debug("Rejected", extra={"peak_mag": peak_mag})
             return None
         info["peak_mag"] = peak_mag
 
@@ -245,7 +271,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
             filters={
                 "attribute": "jd",
                 "operator": "==",
-                "value": most_recent_detection,
+                "value": info["t_max"],
             }
         )
         if latest_pps:
@@ -256,17 +282,11 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         # TODO: cut based on the mag rise per day (see submitRapid)
 
         # cut on galactic coordinates
-        if pos := lc.get_pos(ret="mean", filters=self.lc_filters):
-            ra, dec = pos
-        else:
-            raise ValueError("Light curve contains no points")
         coordinates = SkyCoord(ra, dec, unit="deg")
         b = coordinates.galactic.b.deg
         if abs(b) < self.min_gal_lat:
-            self.logger.info("Rejected (galactic plane)", extra={"gal_lat_b": b})
+            self.logger.debug("Rejected (galactic plane)", extra={"gal_lat_b": b})
             return None
-        info["ra"] = ra
-        info["dec"] = dec
 
         # cut on distance to closest solar system object
         # TODO: how to make this check: ('0.0' in list(phot["ssdistnr"])
@@ -281,7 +301,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
 
         # TODO: Note that this discards a transient if it was ever close to a ss object!
         if np.any(close_to_sso):
-            self.logger.info(
+            self.logger.debug(
                 "Rejected (close to solar system object)",
                 extra={"ssdistnr": ssdist.tolist()},
             )
@@ -297,43 +317,43 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
                 np.array(sgscore1) > self.ps1_sgveto_sgth,
             )
             if np.any(is_ps1_star):
-                self.logger.info(
+                self.logger.debug(
                     "Rejected (PS1 SG cut)",
                     extra={"distpsnr1": distpsnr1, "sgscore1": sgscore1},
                 )
                 return None
         else:
-            self.logger.info("No PS1 check as no data found.")
+            self.logger.debug("No PS1 check as no data found.")
 
         # cut on median RB and DRB score
         rbs = [pp["body"]["rb"] for pp in pps]
         if np.median(rbs) < self.rb_minmed:
-            self.logger.info(
+            self.logger.debug(
                 "Rejected (RB)",
                 extra={"median_rd": np.median(rbs)},
             )
             return None
         if (len(rbs) == 0) and self.rb_minmed > 0:
-            self.logger.info("Rejected (No rb info)")
+            self.logger.debug("Rejected (No rb info)")
             return None
         info["rb"] = np.median(rbs)
 
         # drb might not exist
         drbs = [pp["body"]["drb"] for pp in pps if "drb" in pp["body"]]
         if len(drbs) > 0 and np.median(drbs) < self.drb_minmed:
-            self.logger.info(
+            self.logger.debug(
                 "Rejected (dRB)",
                 extra={"median_drd": np.median(drbs)},
             )
             return None
         if (len(drbs) == 0) and self.drb_minmed > 0:
-            self.logger.info("Rejected (No drb info)")
+            self.logger.debug("Rejected (No drb info)")
             return None
 
         info["drb"] = np.median(drbs)
 
         # Transient passed pure LC criteria
-        self.logger.info("Passed T2infantCatalogEval", extra=info)
+        self.logger.debug("Passed T2infantCatalogEval", extra=info)
         return info
 
     # MANDATORY
@@ -360,6 +380,11 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
 
         """
 
+        lc_info = self.inspect_lc(light_curve)
+        # ii. Check whether the lightcurve passes selection criteria
+        if not lc_info:
+            return {"action": False, "eval": "LC fail selection."}
+
         # i. Check the catalog matching criteria
         # There might be multiple CatalogMatch associated with the transient
         # we here only take the first without specific origin
@@ -367,18 +392,13 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
 
         catalog_result = t2_cat_match.get_payload()
         if not isinstance(catalog_result, dict):
-            return {"action": False, "eval": "No catlog match result"}
+            return {"action": False, "eval": "No catalog match result"}
+
         transient_info = self.inspect_catalog(catalog_result)
         if not transient_info:
-            return {"action": False, "eval": "No cat match in z-range"}
-
-        # ii. Check whether the lightcurve passes selection criteria
-        lc_info = self.inspect_lc(light_curve)
-
-        if not lc_info:
-            transient_info["action"] = False
-            transient_info["eval"] = "LC fail selection."
-            return transient_info
+            lc_info["action"] = False
+            lc_info["eval"] = "No cat match in z-range."
+            return lc_info
         transient_info.update(lc_info)
 
         # iii. Check absolute magnitude
@@ -386,7 +406,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         absmag = transient_info["peak_mag"] - sndist.distmod.value
         transient_info["absmag"] = absmag
         if not (self.min_absmag < absmag < self.max_absmag):
-            self.logger.info("Rejected (absmag)", extra={"absmag": absmag})
+            self.logger.debug("Rejected (absmag)", extra={"absmag": absmag})
             transient_info["action"] = False
             transient_info["eval"] = "Absmag"
             return transient_info

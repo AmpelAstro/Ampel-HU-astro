@@ -1,0 +1,378 @@
+name: infantmay10
+parameters:
+- name: channelname
+  value: may10
+- name: date
+  value: "2024-05-10"
+- name: deltat
+  value: 1
+- name: mindet
+  value: 1
+- name: maxdet
+  value: 8
+
+mongo:
+  prefix: infantEval
+  reset: false 
+
+channel:
+- name: may10
+  access: [ZTF, ZTF_PUB, ZTF_PRIV]
+  policy: []
+
+task:
+
+
+- title: token
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3PlainUnitExecutor
+        config:
+          target:
+            unit: T3ZTFArchiveTokenGenerator
+            config:
+              date_str: "{{ job.parameters.date }}"
+              delta_t: "{{ job.parameters.deltat }}"
+              debug: true
+              resource_name: ztf_stream_token
+              candidate:
+                ndethist:
+                  $gte: "{{ job.parameters.mindet }}"
+                  $lte: "{{ job.parameters.maxdet }}"
+                drb:
+                  $gt: 0.995
+                magpsf:
+                  $gt: 18.
+                rb:
+                  $gt: 0.5
+#                ssdistnr:
+#                  $lt: 0
+                isdiffpos: 
+                  $in:
+                  - "t"
+                  - "1"
+
+
+- title: NearbyInfantReact
+  unit: AlertConsumer
+  config:
+    iter_max: 100000
+    supplier:
+      unit: ZiAlertSupplier
+      config:
+        deserialize: null
+        loader:
+          unit: ZTFArchiveAlertLoader
+          config:
+            resource_name: ztf_stream_token
+              
+    shaper: ZiDataPointShaper
+    directives:
+    - channel: "{{ job.parameters.channelname }}"
+      filter:
+        config:
+          gaia_excessnoise_sig_max: 999
+          gaia_plx_signif: 3
+          gaia_pm_signif: 3
+          gaia_rs: 20
+          gaia_veto_gmag_max: 20
+          gaia_veto_gmag_min: 9
+          min_ndet: 1
+          min_tspan: -99
+          max_tspan: 100
+          min_archive_tspan: -99
+          max_archive_tspan: 10000
+          min_drb: 0.995
+          min_gal_lat: 14
+          min_rb: 0.3
+          min_sso_dist: 20
+          ps1_confusion_rad: 0         # Turns off PS1 confusion check. Maybe redundnant with drb?
+          ps1_confusion_sg_tol: 0.1
+          ps1_sgveto_rad: 1
+          ps1_sgveto_th: 0.8
+          max_fwhm: 5.5
+          max_elong: 2
+          max_magdiff: 1
+          max_nbad: 2
+        on_stock_match: bypass
+        unit: DecentFilter
+      ingest:
+        mux:
+          combine:
+          - state_t2:
+            - unit: T2MatchBTS
+            - unit: T2LightCurveSummary
+            - config:
+                max_age: 10.
+                maglim_maxago: 10.
+                min_redshift: 0.0004
+                min_magpull: 2
+                max_absmag: -12
+                lc_filters:
+                - attribute: sharpnr
+                  operator: ">="
+                  value: -10.15
+                - attribute: magfromlim
+                  operator: ">"
+                  value: 0
+                - attribute: chipsf
+                  operator: "<"
+                  value: 4
+                - attribute: sumrat
+                  operator: ">"
+                  value: 0.9
+                det_filterids:
+                - 1
+                - 2
+                t2_dependency:
+                - config: &catalog_match_config
+                    catalogs:
+                      GLADEv23:
+                        keys_to_append:
+                        - z
+                        - dist
+                        - dist_err
+                        - flag1
+                        - flag2
+                        - flag3
+                        rs_arcsec: 10
+                        use: extcats
+                      NEDz_extcats:
+                        keys_to_append:
+                        - ObjType
+                        - Velocity
+                        - z
+                        rs_arcsec: 30.0
+                        use: extcats
+                      NEDz:
+                        keys_to_append:
+                        - ObjType
+                        - Velocity
+                        - z
+                        rs_arcsec: 10.0
+                        use: catsHTM
+                      NEDLVS:
+                        keys_to_append:
+                        - objname
+                        - objtype
+                        - dec
+                        - z_unc
+                        - z_tech
+                        - z_qual
+                        - z_qual_flag
+                        - z
+                        rs_arcsec: 10.0
+                        use: extcats
+                      SDSS_spec:
+                        keys_to_append:
+                        - z
+                        - bptclass
+                        - subclass
+                        rs_arcsec: 10.0
+                        use: extcats
+                      milliquas:
+                        use: extcats
+                        rs_arcsec: 3
+                        keys_to_append:
+                        - broad_type
+                        - name
+                        - redshift
+                        - qso_prob
+                      SDSSDR10:
+                        use: catsHTM
+                        rs_arcsec: 3
+                        keys_to_append:
+                        - type
+                        - flags
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2CatalogMatch
+              unit: T2InfantCatalogEval
+            - unit: T2DigestRedshifts
+              config: &digest_config
+                max_redshift_category: 7
+                t2_dependency:
+                - config: *catalog_match_config
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2CatalogMatch
+            - unit: T2DemoLightcurveFitter
+              config: 
+                max_redshift_category: 7
+                tabulator:
+                - unit: ZTFT2Tabulator                
+                t2_dependency:
+                - config: *catalog_match_config
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2CatalogMatch
+            unit: ZiT1Combiner
+          insert:
+            point_t2:
+            - config: *catalog_match_config
+              ingest:
+                filter: PPSFilter
+                select: first
+                sort: jd
+              unit: T2CatalogMatch
+          unit: ZiMongoMuxer
+
+- title: Run T2s
+  unit: T2Worker
+  config:
+    send_beacon: false
+    raise_exc: true
+
+
+
+- title: React
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3ReviewUnitExecutor
+        config:
+          supply:
+            unit: T3DefaultBufferSupplier
+            config:
+              select:
+                unit: T3FilteringStockSelector
+                config:
+                  channel: "{{ job.parameters.channelname }}"
+                  t2_filter:
+                    unit: T2InfantCatalogEval
+                    match:
+                      action: true
+
+              load:
+                unit: T3SimpleDataLoader
+                config:
+                  directives:
+                    - STOCK
+                    - T1
+                    - T2DOC
+                    - DATAPOINT
+                  channel: "{{ job.parameters.channelname }}"
+          stage:
+            unit: T3SimpleStager
+            config:
+              execute:
+                - unit: TransientTablePublisher
+                  config:
+                    include_stock: true
+                    include_channels: true
+                    local_path: ./
+                    table_schema:
+                      T2InfantCatalogEval:
+                        'ndet':
+                          - detections
+                        'age':
+                          - age
+                        'last_UL':
+                          - last_UL
+                        'peak_mag':
+                          - peak_mag
+                        'latest_mag':
+                          - latest_mag
+                        'rb':
+                          - rb
+                        'drb':
+                          - drb
+                        'absmag':
+                          - absmag
+                        'action':
+                          - action
+                        'infantNEDz':
+                          - NEDz_extcats_z
+                        'infantNEDdist':
+                          - NEDz_extcats_dist2transient
+                        'infantNEDkpc':
+                          - NEDz_extcats_kpcdist
+                        'infantGladez':
+                          - GLADEv23_z
+                        'infantGladedist':
+                          - GLADEv23_dist2transient
+                        'infantGladekpc':
+                          - GLADEv23_kpcdist
+                        'infantNedLvsz':
+                          - NEDLVS_z
+                        'infantNedLvsdist':
+                          - NEDLVS_dist2transient
+                        'infantNedLvskpc':
+                          - NEDLVS_kpcdist
+                    transient_table_schema:
+                      T2CatalogMatch:
+                        'Glade z':
+                          - GLADEv23
+                          - z
+                        'NED z':
+                          - NEDz_extcats
+                          - z
+                        'NED offset':
+                          - NEDz_extcats
+                          - dist2transient
+                        'NEDLVS z':
+                          - NEDLVS
+                          - z
+                        'NEDLV offset':
+                          - NEDLVS
+                          - dist2transient
+           
+- title: React
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3ReviewUnitExecutor
+        config:
+          supply:
+            unit: T3DefaultBufferSupplier
+            config:
+              select:
+                unit: T3FilteringStockSelector
+                config:
+                  channel: "{{ job.parameters.channelname }}"
+                  t2_filter:
+                    unit: T2InfantCatalogEval
+                    match:
+                      action: true
+
+              load:
+                unit: T3SimpleDataLoader
+                config:
+                  directives:
+                    - STOCK
+                    - T1
+                    - T2DOC
+                    - DATAPOINT
+                  channel: "{{ job.parameters.channelname }}"
+              complement: 
+              - unit: ZTFCutoutImages
+                config:
+                  eligible: last
+              - unit: TNSNames
+                config:
+                  include_report: true
+          stage:
+            unit: T3SimpleStager
+            config:
+              execute:
+                - unit: PlotTransientLightcurves
+                  config:
+                    pdf_path: candidates.pdf
+                    save_png: true
+                    include_cutouts: true
+                    slack_channel: "#ztf_auto"
+                    slack_token:
+                      label: "slack/ztf_ia/jno"                    
+                    tabulator:
+                    - unit: ZTFT2Tabulator
+

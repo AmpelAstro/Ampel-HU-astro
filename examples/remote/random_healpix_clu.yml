@@ -149,6 +149,7 @@ task:
                 map_name: "{{ job.parameters.map_name_var }}"
               unit: T2MatchGRB
             - config: &risedecline_config
+                #sigma_slope: 150
                 t_cadence: 3.
                 significant_bands: 
                 - 'ztfg'
@@ -339,7 +340,7 @@ task:
                 tabulator:
                   - unit: ZTFT2Tabulator
               unit: T2RunPossis
-            - config:
+            - config: &kilonova_config
                 max_redshift: 0.2
                 min_ndet: 2
                 t2_dependency:
@@ -358,6 +359,11 @@ task:
                 - unit: T2TabulatorRiseDecline
                   config: *risedecline_config
               unit: T2KilonovaEval
+            - config: &knstats_config
+                t2_dependency:
+                - config: *kilonova_config
+                  unit: T2KilonovaEval
+              unit: T2KilonovaStats
             unit: ZiT1Combiner
           insert:
             point_t2:
@@ -465,6 +471,17 @@ task:
                         'rise_decline':
                           - rise_decline
                     transient_table_schema:
+                      T2KilonovaStats:
+                        'gaus_percent':
+                          - gaus_percent
+                        'exp_kn': 
+                          - exp_kn
+                        'exp_kn_pls': 
+                          - exp_kn_pls
+                        'exp_kn_min': 
+                          - exp_kn_min
+                        'dist_range': 
+                          - dist_range
                       T2MatchGRB:
                         'grb_temporal':
                           - temporal_grb

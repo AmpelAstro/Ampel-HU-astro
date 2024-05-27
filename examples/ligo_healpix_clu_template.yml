@@ -123,6 +123,7 @@ task:
                   - unit: ZTFT2Tabulator
               unit: T2HealpixProb
             - config: &risedecline_config
+                #sigma_slope: 150
                 t_cadence: 3.
                 significant_bands: 
                 - 'ztfg'

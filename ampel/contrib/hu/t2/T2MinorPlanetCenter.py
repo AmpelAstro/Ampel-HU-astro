@@ -45,6 +45,8 @@ class T2MinorPlanetCenter(AbsPointT2Unit):
     # Potential filter for photopoint selection
     filters: None | dict | list[dict] = None
 
+    timeout: float = 30.0
+
     def process(self, pp: DataPoint) -> UBson | UnitResult:
         """
         Parameters
@@ -117,7 +119,7 @@ class T2MinorPlanetCenter(AbsPointT2Unit):
         }
 
         # Post the request
-        response = requests.post(url=NEO_URL, data=request_data, timeout=30)
+        response = requests.post(url=NEO_URL, data=request_data, timeout=self.timeout)
 
         # Parse the result
         soup = BeautifulSoup(response.text, "html5lib")

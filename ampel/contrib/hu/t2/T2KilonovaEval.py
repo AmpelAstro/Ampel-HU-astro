@@ -262,10 +262,11 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         info["possis_obspeak"] = best_res["fit_metrics"]["obspeak_model_B"]
         info["possis_chisq"] = best_res["sncosmo_result"]["chisq"]
         info["possis_ndof"] = best_res["sncosmo_result"]["ndof"]
-        if info["possis_ndof"] != 0:
+        if info["possis_ndof"] > 0:
             info["red_chisqu"] = info["possis_chisq"] / info["possis_ndof"]
         else:
             info["red_chisqu"] = -99
+            info["rejects"].append("possis_ndof")
 
         for k, max_red_chisqu in enumerate(self.max_red_chisquares):
             if info["red_chisqu"] <= max_red_chisqu and info["red_chisqu"] >= 0.75:
@@ -280,23 +281,24 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         #     return info
         # info["pass"] += 1
 
-        if self.min_obsmag < info["possis_obspeak"] < self.max_obsmag:
-            info["pass"] += 1
-        else:
-            criterium_name = "obsmag"
-            info["rejects"].append(criterium_name)
+        if info["possis_ndof"] > 0:
+            if self.min_obsmag < info["possis_obspeak"] < self.max_obsmag:
+                info["pass"] += 1
+            else:
+                criterium_name = "obsmag"
+                info["rejects"].append(criterium_name)
 
-        for range, reward in self.absmag_range_rewards:
-            if (
-                self.ideal_absmag - range
-                < info["possis_abspeak"]
-                < self.ideal_absmag + range
-            ):
-                info["pass"] += reward
-                break
-        else:
-            criterium_name = "absmag"
-            info["rejects"].append(criterium_name)
+            for range, reward in self.absmag_range_rewards:
+                if (
+                    self.ideal_absmag - range
+                    < info["possis_abspeak"]
+                    < self.ideal_absmag + range
+                ):
+                    info["pass"] += reward
+                    break
+            else:
+                criterium_name = "absmag"
+                info["rejects"].append(criterium_name)
 
         return info
 
@@ -366,6 +368,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         info["most_recent_detection"] = most_recent_detection
         info["first_detection"] = first_detection
 
+        """
         # check if theres two consecutive detections that have significant decrease in brightness
         # DONE: filter wise distinction
         if len(pps) > 1:
@@ -515,6 +518,8 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             # return None
         info["pass"] += 1
 
+        """
+
         # cut on range of peak magnitude
         mags = [pp["body"]["magpsf"] for pp in pps]
         peak_mag = min(mags)
@@ -527,6 +532,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             info["pass"] += 1
         info["peak_mag"] = peak_mag
 
+        """
         # For rapidly declining sources the latest magnitude is probably more relevant
         latest_pps = lc.get_photopoints(
             filters={
@@ -545,7 +551,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             info["latest_mag"] = latest_pps[0]["body"]["magpsf"]
 
         # TODO: cut based on the mag rise per day (see submitRapid)
-
+        """
         # cut on galactic coordinates
         if pos := lc.get_pos(ret="mean", filters=self.lc_filters):
             ra, dec = pos
@@ -564,9 +570,10 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             # return None
         else:
             info["pass"] += 1
+
         info["ra"] = ra
         info["dec"] = dec
-
+        """
         # cut on distance to closest solar system object
         # TODO: how to make this check: ('0.0' in list(phot["ssdistnr"])
         ssdist = np.array(
@@ -589,6 +596,10 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
             # return None
         else:
             info["pass"] += 1
+
+            """
+
+        """
 
         # check PS1 sg for the full alert history
         # Note that we for this check do *not* use the lightcurve filter criteria
@@ -614,6 +625,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
                 ] += 0  # TODO: think about whether optional checks should be rewarded more
         else:
             self.logger.debug("No PS1 check as no data found.")
+        """
 
         # cut on median RB and DRB score
         rbs = [pp["body"]["rb"] for pp in pps if "rb" in pp["body"]]
@@ -655,7 +667,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         info["drb"] = np.median(drbs)
 
         # Transient passed pure LC criteria
-        self.logger.debug("Passed T2infantCatalogEval", extra=info)
+        # self.logger.debug("Passed T2infantCatalogEval", extra=info)
         return info
 
     @no_type_check

@@ -323,9 +323,9 @@ task:
                   unit: T2DigestRedshifts
                 - unit: T2PropagateStockInfo
                 tabulator:
-                  - unit: ZTFT2Tabulator
+                - unit: ZTFT2Tabulator
               unit: T2RunPossis
-            - config:
+            - config: &kilonova_config
                 max_redshift: 0.2
                 min_ndet: 2
                 t2_dependency:
@@ -344,6 +344,11 @@ task:
                 - unit: T2TabulatorRiseDecline
                   config: *risedecline_config
               unit: T2KilonovaEval
+            - config: &knstats_config
+                t2_dependency:
+                - config: *kilonova_config
+                  unit: T2KilonovaEval
+              unit: T2KilonovaStats
             unit: ZiT1Combiner
           insert:
             point_t2:
@@ -397,6 +402,16 @@ task:
                 #   config:
                 #     desycloud_folder: O4
                 #     desycloud_filename: S200115j
+                - unit: PlotTransientLightcurves
+                  config:
+                    pdf_path: candidates.pdf
+                    save_png: true
+                    include_cutouts: true
+                    #slack_channel: "#ztf_auto"
+                    #slack_token:
+                      #label: "slack/ztf_ia/jno"
+                    tabulator:
+                      - unit: ZTFT2Tabulator
                 - unit: TransientTablePublisher
                   config:
                     include_stock: true
@@ -451,6 +466,17 @@ task:
                         'rise_decline':
                           - rise_decline
                     transient_table_schema:
+                      T2KilonovaStats:
+                        'gaus_percent':
+                          - gaus_percent
+                        'exp_kn': 
+                          - exp_kn
+                        'exp_kn_pls': 
+                          - exp_kn_pls
+                        'exp_kn_min': 
+                          - exp_kn_min
+                        'dist_range': 
+                          - dist_range
                       T2MatchGRB:
                         'grb_temporal':
                           - temporal_grb

@@ -19,12 +19,12 @@ execute_directory="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/a
 # directory where jobfiles are found
 #jobfile_save_dir="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/examples/calibrateKilonovaEval_jobfiles/"
 #jobfile_save_dir="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/examples/weizmann_jobfiles/"
-jobfile_save_dir="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/examples/simulated_maps/"
+#jobfile_save_dir="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/examples/simulated_maps/"
 #jobfile_save_dir="/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/examples/O3_offset_jobfiles/"
 
 #jobfiles_to_execute_file = os.listdir(jobfile_save_dir)
 # list of names of jobfiles to run
-jobfile_names = os.listdir(jobfile_save_dir)
+#jobfile_names = os.listdir(jobfile_save_dir)
 
 #config file to use
 conf_file = "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/ampel_conf.yaml"

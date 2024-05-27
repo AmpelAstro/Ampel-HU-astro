@@ -139,14 +139,14 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
     t_cadence: float = 5.0
     significant_bands: Sequence[str] = ["lsstg", "lsstr", "lssti", "lsstz"]
     sigma_det: float = 5.0
-    sigma_slope: float = 3.0  # Threshold for having detected a slope
+    sigma_slope: float = 3.0  # Threshold for having detected a slope (flux/day)
     color_list: Sequence[Sequence[str]] = [
         ["lsstu", "lsstg"],
         ["lsstg", "lsstr"],
         ["lsstr", "lssti"],
         ["lssti", "lsstz"],
         ["lsstz", "lssty"],
-        ["ztg", "ztfr"],
+        ["ztfg", "ztfr"],
         ["ztfr", "ztfi"],
     ]
     max_tgap: int = 30
@@ -173,6 +173,8 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
 
         banddata = {}
         tscale = np.mean(ftable["time"])
+
+        # print("T2TABULATORRISEDECLINE::" , np.unique(ftable["band"]))
 
         for band in set(ftable["band"]):
             bt = ftable[ftable["band"] == band]
@@ -221,6 +223,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
         risepulls = [
             banddata.get("rise_slopesig_" + band, 0) for band in set(ftable["band"])
         ]
+        # print("TABULATORRISEDECLINE:: risepulls", risepulls)
         if sum(risepulls) > self.sigma_slope:
             banddata["bool_rise"] = True
         else:
@@ -229,6 +232,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
         decpulls = [
             banddata.get("fall_slopesig_" + band, 0) for band in set(ftable["band"])
         ]
+        # print("TABULATORRISEDECLINE:: decpulls", decpulls)
         if sum(decpulls) < -self.sigma_slope:
             banddata["bool_fall"] = True
         else:
@@ -563,7 +567,7 @@ class T2TabulatorRiseDecline(
     BaseLightCurveFeatures,
 ):
     plot_prob: float = 0.0
-    path_testplot: str = "/home/jnordin/tmp/t2test/"
+    path_testplot: str = "./plots/"
 
     #    def __init__(self, **kwargs):
     #        super().__init__(**kwargs)
@@ -646,6 +650,7 @@ class T2TabulatorRiseDecline(
             ax.set_title(title, {"fontsize": 8})
 
         # Store figure
+        os.makedirs(self.path_testplot, exist_ok=True)
         path = os.path.join(
             self.path_testplot, "{}_{}.pdf".format(name, t2result["ndet"])
         )
@@ -667,6 +672,7 @@ class T2TabulatorRiseDecline(
         # Convert input datapoints to standardized Astropy Table
         # Using standard tabulators
         flux_table = self.get_flux_table(datapoints)
+        # print("T2TABULATORRISEDECLINE:: ", flux_table)
 
         # Cut the flux table if requested
         if self.max_ndet > 0 and len(flux_table) > self.max_ndet:

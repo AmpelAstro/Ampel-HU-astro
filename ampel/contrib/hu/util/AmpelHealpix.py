@@ -4,8 +4,8 @@
 # License:             BSD-3-Clause
 # Author:              jakob nordin
 # Date:                27.03.2023
-# Last Modified Date:  27.03.2023
-# Last Modified By:    jnordin
+# Last Modified Date:  07.02.2024
+# Last Modified By:    ernstand@physik.hu-berlin.de
 
 
 import math
@@ -48,7 +48,7 @@ class AmpelHealpix:
 
         self._get_map()
         # Attribues
-        self.credible_levels: None | list = None
+        self.credible_levels = np.empty(0)
         self.trigger_time: None | float = None
 
     def _get_map(self, clobber=False) -> int:
@@ -144,7 +144,7 @@ class AmpelHealpix:
             raise ValueError("First get and process map before using.")
 
         # Create mask for pixel selection
-        assert self.credible_levels
+        assert len(self.credible_levels)
         mask = np.zeros(len(self.credible_levels), dtype=int)
         mask[self.credible_levels <= pvalue_limit] = 1
 
@@ -179,7 +179,7 @@ class AmpelHealpix:
 
         if not self.nside:
             raise ValueError("First get and process map before using.")
-        assert self.credible_levels
+        assert len(self.credible_levels)
 
         theta = 0.5 * np.pi - np.deg2rad(dec)
         phi = np.deg2rad(ra)
