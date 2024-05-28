@@ -127,7 +127,7 @@ class T2KilonovaStats(AbsTiedStateT2Unit):
             "dist_range": dist_range,
         }
 
-        #statement = f"For map of area = {map_area} squ.deg. at {dist_range} Mpc, expect {exp_kn:.1f} (+{exp_kn_pls:.1f} -{exp_kn_min:.1f}) candidates with kn = {kilonovaness}."
+        # statement = f"For map of area = {map_area} squ.deg. at {dist_range} Mpc, expect {exp_kn:.1f} (+{exp_kn_pls:.1f} -{exp_kn_min:.1f}) candidates with kn = {kilonovaness}."
         return stats_dict  # noqa: RET504
 
     def get_kn_total_stats(self, kilonovaness, map_area, map_dist=np.inf, ndet=np.inf):
