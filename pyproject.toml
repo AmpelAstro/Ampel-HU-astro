@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ampel-hu-astro"
-version = "0.10.0a1"
+version = "0.10.0a2"
 license = "BSD-3-Clause"
 readme = "README.md"
 description = "Astronomy units for the Ampel system from HU-Berlin"
@@ -82,7 +82,7 @@ types-pillow = "^10.2.0.20240213"
 setuptools = "*"
 
 [tool.poetry.extras]
-elasticc = ["xgboost", "astro-parsnip", "timeout-decorator", "ampel-lsst"]
+elasticc = ["xgboost", "astro-parsnip", "timeout-decorator", "ampel-lsst", "light-curve"]
 extcats = ["extcats"]
 ligo = ["healpy", "sncosmo", "iminuit", "sfdmap2", "ampel-ztf", "ligo-gracedb"]
 panstarrs = ["pymage"]

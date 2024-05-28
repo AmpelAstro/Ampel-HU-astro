@@ -86,7 +86,7 @@ class FitFailed(RuntimeError):
     ...
 
 
-class T2TabulatorRiseDeclineBase(AmpelBaseModel):
+class T2TabulatorRiseDeclineBase:
     """
      Derive a number of simple metrics describing the rise, peak and decline of a lc.
 
