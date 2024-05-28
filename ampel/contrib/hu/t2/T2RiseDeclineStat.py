@@ -135,15 +135,15 @@ class T2RiseDeclineBase(LogicalUnit):
         o["ndet"] = dets["jd"].size
 
         try:
-            o["mag_det"] = float(dets["magpsf"][dets["jd"] == o["jd_det"]])
+            o["mag_det"] = float(dets["magpsf"][dets["jd"] == o["jd_det"]][0])
         except TypeError:
             print("debug")
             print(dets)
             print(o["jd_det"])
             print(dets["jd"] == o["jd_det"])
-            o["mag_det"] = float(dets["magpsf"][dets["jd"] == o["jd_det"]])
+            o["mag_det"] = float(dets["magpsf"][dets["jd"] == o["jd_det"]][0])
 
-        o["mag_last"] = float(dets["magpsf"][dets["jd"] == o["jd_last"]])
+        o["mag_last"] = float(dets["magpsf"][dets["jd"] == o["jd_last"]][0])
         o["t_lc"] = o["jd_last"] - o["jd_det"]
 
         # Check if (d)real bogus present for any of these + host values
@@ -198,15 +198,15 @@ class T2RiseDeclineBase(LogicalUnit):
         min_mag_jd = float(dets["jd"][dets["magpsf"] == min_mag][-1])
         min_mag_err = float(dets["sigmapsf"][dets["magpsf"] == min_mag][-1])
         try:
-            last_mag_err = float(dets["sigmapsf"][dets["jd"] == o["jd_last"]])
+            last_mag_err = float(dets["sigmapsf"][dets["jd"] == o["jd_last"]][0])
         except TypeError:
             print("last mag err")
             print(dets)
             print(o)
             print(dets["magpsf"] == o["mag_last"])
-            last_mag_err = float(dets["sigmapsf"][dets["magpsf"] == o["mag_last"]])
+            last_mag_err = float(dets["sigmapsf"][dets["magpsf"] == o["mag_last"]][0])
 
-        det_mag_err = float(dets["sigmapsf"][dets["jd"] == o["jd_det"]])
+        det_mag_err = float(dets["sigmapsf"][dets["jd"] == o["jd_det"]][0])
         if (o["jd_last"] - min_mag_jd) < self.max_tsep:
             self.logger.info(
                 "Latest detection too close to peak light to calculate peak stats"
