@@ -11,13 +11,14 @@ import os
 from collections.abc import Generator
 from typing import Any, Literal
 
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from adjustText import adjust_text
-from matplotlib import cm, ticker
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
+from matplotlib.ticker import FormatStrFormatter, ScalarFormatter
 
 from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
 from ampel.struct.T3Store import T3Store
@@ -49,7 +50,7 @@ class HealpixCorrPlotter(AbsPhotoT3Unit):
     # List of inclusive lower limit, non-inc upper limit, marker type, label
     # marker_colors: list[str] = ["#E69F00", "#56B4E9", "#009E73", "#0072B2", "#D55E00", "#CC79A7", "#F0E442"]
     # marker_colors: list[str] = ["#332288", "#88CCEE", "#44AA99", "#117733", "#999933", "#DDCC77", "#CC6677", "#882255", "#AA4499"]
-    marker_colors = cm.get_cmap("plasma", 5).colors  # type: ignore[attr-defined]
+    marker_colors = matplotlib.colormaps.get_cmap("plasma")(np.linspace(0, 1, 5))
     # marker_colors = [cm.get_cmap('summer', 3)(i) for i in range(3)]
     background_color: str = "tab:green"
     ndof_marker: list[Any] = [
@@ -184,8 +185,8 @@ class HealpixCorrPlotter(AbsPhotoT3Unit):
                 )
 
         plt.xscale("log")
-        ax.xaxis.set_major_formatter(ticker.FormatStrFormatter("%0.2f"))
-        ax.xaxis.set_minor_formatter(ticker.ScalarFormatter())
+        ax.xaxis.set_major_formatter(FormatStrFormatter("%0.2f"))
+        ax.xaxis.set_minor_formatter(ScalarFormatter())
         # adjust_text(annotations, arrowprops=dict(arrowstyle='->', color='red'), add_objects=targetpoints)
         adjust_text(
             annotations, arrowprops=dict(arrowstyle="->", color="darkslategrey")
