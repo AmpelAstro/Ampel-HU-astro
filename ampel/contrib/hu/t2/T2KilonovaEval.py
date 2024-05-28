@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              jnordin@physik.hu-berlin.de
 # Date:                29.03.2023
-# Last Modified Date:  21.04.2023
+# Last Modified Date:  27.05.2024
 # Last Modified By:    ernstand@physik.hu-berlin.de
 
 from collections.abc import Sequence
@@ -722,7 +722,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         possible_modes = ["reward", "punish", "pass"]
         if self.distance_mode not in possible_modes:
             raise ValueError(
-                "results: distance mode must be one of %r." % possible_modes
+                f"results: distance mode must be one of {possible_modes!r}."
             )
 
         # reward/punish distance math depending on mode
