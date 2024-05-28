@@ -31,7 +31,7 @@ def jsonify(string: str):
     tmp_str = tmp_str.replace("True", "true")
     tmp_str = tmp_str.replace("False", "false")
     tmp_str = tmp_str.replace("inf", "Infinity")
-    return tmp_str
+    return tmp_str  # noqa: RET504
 
 
 def dejsonify(arg):
@@ -127,8 +127,8 @@ class T2KilonovaStats(AbsTiedStateT2Unit):
             "dist_range": dist_range,
         }
 
-        statement = f"For map of area = {map_area} squ.deg. at {dist_range} Mpc, expect {exp_kn:.1f} (+{exp_kn_pls:.1f} -{exp_kn_min:.1f}) candidates with kn = {kilonovaness}."
-        return stats_dict
+        #statement = f"For map of area = {map_area} squ.deg. at {dist_range} Mpc, expect {exp_kn:.1f} (+{exp_kn_pls:.1f} -{exp_kn_min:.1f}) candidates with kn = {kilonovaness}."
+        return stats_dict  # noqa: RET504
 
     def get_kn_total_stats(self, kilonovaness, map_area, map_dist=np.inf, ndet=np.inf):
         gaus_stats = (
@@ -144,7 +144,7 @@ class T2KilonovaStats(AbsTiedStateT2Unit):
             map_area=t2res["map_area"],
             map_dist=t2res["map_dist"],
         )
-        return info
+        return info  # noqa: RET504
 
     def process(
         self,
