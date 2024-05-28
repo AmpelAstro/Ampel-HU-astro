@@ -86,12 +86,15 @@ class SlackSummaryPublisher(AbsT3Unit):
 
         if len(frames) > 0:
             df = pd.DataFrame.from_records(frames)
-            # Set fill value for channel columns to False
-            for channel in channels:
-                df[channel].fillna(False, inplace=True)
-            # Set fill value for all other columns to MISSING
-            for field in set(df.columns.values).difference(channels):
-                df[field].fillna("MISSING", inplace=True)
+            # Set fill value for channel columns to False, and all others to MISSING
+            df.fillna(
+                {c: False for c in channels}
+                | {
+                    field: "MISSING"
+                    for field in set(df.columns.values).difference(channels)
+                },
+                inplace=True,
+            )
             # Move channel info at end
             df = df.reindex(
                 copy=False,
@@ -139,11 +142,16 @@ class SlackSummaryPublisher(AbsT3Unit):
             if self.full_photometry:
                 photometry_df = pd.concat(photometry, sort=False)
                 # Set fill value for channel columns to False
-                for channel in channels:
-                    photometry_df[channel].fillna(False, inplace=True)
-                # Set fill value for all other columns to MISSING
-                for field in set(photometry_df.columns.values).difference(channels):
-                    photometry_df[field].fillna("MISSING", inplace=True)
+                photometry_df.fillna(
+                    {c: False for c in channels}
+                    | {
+                        field: "MISSING"
+                        for field in set(photometry_df.columns.values).difference(
+                            channels
+                        )
+                    },
+                    inplace=True,
+                )
                 # Move channel info at end
                 photometry_df = photometry_df.reindex(
                     copy=False,
