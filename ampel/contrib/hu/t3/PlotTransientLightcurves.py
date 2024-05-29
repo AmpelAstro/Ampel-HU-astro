@@ -378,7 +378,7 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
 
     # Will post result to Slack channel if a slack channel and a NamedSecret containig the corresponding token is given
     slack_channel: str | None = None
-    slack_token: NamedSecret[str] = NamedSecret[str](label="slack/ztf_general/jno")
+    slack_token: NamedSecret[str] | None = None
 
     def post_init(self) -> None:
         # Create temporary path if not set
