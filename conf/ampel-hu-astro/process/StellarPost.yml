@@ -1,11 +1,11 @@
-name: RapidReact
+name: PostOutburst
 tier: 3
 active: true
 template: ztf_periodic_summary
-schedule: every(10).minutes
+schedule: every(60).minutes
 channel:
   any_of:
-    - HU_RAPID_INFANT
+    - HU_STELLAR_OUTBURST
 load:
   - TRANSIENT
   - DATAPOINT
@@ -18,18 +18,13 @@ complement:
     config:
       include_report: true
 
-filter: 
-  t2: 
-    unit: T2InfantCatalogEval
-    match: 
-      action: true 
 run:
   - unit: PlotTransientLightcurves
     config:
-      pdf_path: candidates.pdf
+      pdf_path: outburstcand.pdf
       save_png: true
       include_cutouts: true
-      slack_channel: "#ztf_auto"
+      slack_channel: "#ztf_rapid"
       slack_token:
         label: "slack/ztf_ia/jno"              
       tabulator:
@@ -37,15 +32,10 @@ run:
   - unit: SkyPortalPublisher
     config:
       groups:
-      - AmpelInfant
+      - AmpelStars
       filters:
-      - AMPEL.HU_RAPID_INFANT
+      - AMPEL.HU_STELLAR_OUTBURST
       token:
         label: fritz/jvs/ampelbot
       base_url: 'https://fritz.science'
-  - unit: SubmitTNS
-    config:
-      tns_submit: true
-      tns_key:
-        label: tns/api/tokendict
 
