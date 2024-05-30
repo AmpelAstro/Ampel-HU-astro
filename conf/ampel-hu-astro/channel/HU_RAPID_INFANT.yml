@@ -5,35 +5,138 @@ active: true
 auto_complete: live
 template: ztf_uw_private
 t0_filter:
-  unit: XShooterFilter
-  config: HU_RAPID
-  override:
-    ul_within: 3
+  unit: DecentFilter
+  config:
+    gaia_excessnoise_sig_max: 999
+    gaia_plx_signif: 3
+    gaia_pm_signif: 3
+    gaia_rs: 20
+    gaia_veto_gmag_max: 20
+    gaia_veto_gmag_min: 9
     min_ndet: 1
-    max_tspan: 2
-    min_rb: 0.4
+    min_tspan: -99
+    max_tspan: 3
+    min_archive_tspan: -99
+    max_archive_tspan: 3
     min_drb: 0.995
-    max_fwhm: 4.5
-    ps1_sgveto_rad: 2
-    max_chipsf: 2
-    max_seeratio: 1.3
-    min_sumrat: 0.8
+    min_gal_lat: 14
+    min_rb: 0.3
+    min_sso_dist: 20
+    ps1_confusion_rad: 0     
+    ps1_confusion_sg_tol: 0.1
+    ps1_sgveto_rad: 1
+    ps1_sgveto_th: 0.8
+    max_fwhm: 5.5
+    max_elong: 2
+    max_magdiff: 1
+    max_nbad: 2
+
 t2_compute:
   - unit: T2CatalogMatch
-    config: '%T2CatalogMatch_general'
-  - unit: T2InfantCatalogEval
-    config:
-      max_age: 3
-      det_filterids:
-      - 1
-      - 2
-      max_kpc_dist: 60
-      min_absmag: -17
-      max_redshift: 0.03
+    config:  &infant_catalog_config
+      catalogs:
+        GLADEv23:
+          keys_to_append:
+          - z
+          - dist
+          - dist_err
+          - flag1
+          - flag2
+          - flag3
+          rs_arcsec: 10
+          use: extcats
+        NEDz_extcats:
+          keys_to_append:
+          - ObjType
+          - Velocity
+          - z
+          rs_arcsec: 30.0
+          use: extcats
+        NEDz:
+          keys_to_append:
+          - ObjType
+          - Velocity
+          - z
+          rs_arcsec: 10.0
+          use: catsHTM
+        NEDLVS:
+          keys_to_append:
+          - objname
+          - objtype
+          - dec
+          - z_unc
+          - z_tech
+          - z_qual
+          - z_qual_flag
+          - z
+          rs_arcsec: 10.0
+          use: extcats
+        SDSS_spec:
+          keys_to_append:
+          - z
+          - bptclass
+          - subclass
+          rs_arcsec: 10.0
+          use: extcats
+        milliquas:
+          use: extcats
+          rs_arcsec: 3
+          keys_to_append:
+          - broad_type
+          - name
+          - redshift
+          - qso_prob
+        SDSSDR10:
+          use: catsHTM
+          rs_arcsec: 3
+          keys_to_append:
+          - type
+          - flags
+    ingest:
+      filter: PPSFilter
+      select: first
+      sort: jd
+  - unit: T2MatchBTS
+  - unit: T2LightCurveSummary
+  - unit: T2DigestRedshifts
+    config: 
+      max_redshift_category: 7
       t2_dependency:
-      - unit: T2CatalogMatch
-        config: '%T2CatalogMatch_general'
+      - config: *infant_catalog_config
         link_override:
           filter: PPSFilter
-          sort: jd
           select: first
+          sort: jd
+        unit: T2CatalogMatch
+  - unit: T2InfantCatalogEval
+    config:
+      max_age: 10.
+      maglim_maxago: 10.
+      min_redshift: 0.0004
+      min_magpull: 2
+      max_absmag: -12
+      lc_filters:
+      - attribute: sharpnr
+        operator: ">="
+        value: -10.15
+      - attribute: magfromlim
+        operator: ">"
+        value: 0
+      - attribute: chipsf
+        operator: "<"
+        value: 4
+      - attribute: sumrat
+        operator: ">"
+        value: 0.9
+        det_filterids:
+        - 1
+        - 2
+      t2_dependency:
+      - config: *infant_catalog_config
+        link_override:
+          filter: PPSFilter
+          select: first
+          sort: jd
+        unit: T2CatalogMatch
+
+
