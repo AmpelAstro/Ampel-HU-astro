@@ -11,6 +11,7 @@ import gzip
 import io
 import os
 from collections.abc import Generator, Iterable
+from contextlib import nullcontext
 from typing import Any
 
 import matplotlib.pyplot as plt
@@ -57,7 +58,7 @@ def fig_from_fluxtable(
     legend: bool = False,
     grid_interval: None | int = None,
     t_0_jd: None | float = None,
-    cutout_cache_dir: str = ".",
+    cutout_cache_dir: None | str = ".",
 ):
     """
     Create a lightcurve figure (in mag space) based on
@@ -105,16 +106,18 @@ def fig_from_fluxtable(
         ):
             create_stamp_plot(cutouts=cutouts, ax=ax_, cutout_type=type_)
 
-        img_cache = os.path.join(cutout_cache_dir, f"{name}_PS1.png")
+        if cutout_cache_dir is not None:
+            img_cache = os.path.join(cutout_cache_dir, f"{name}_PS1.png")
 
-        if not os.path.isfile(img_cache):
-            img = get_ps_stamp(ra, dec, size=240, color=["y", "g", "i"])
-            img.save(img_cache)
+            if not os.path.isfile(img_cache):
+                img = get_ps_stamp(ra, dec, size=240, color=["y", "g", "i"])
+                img.save(img_cache)
+            else:
+                from PIL import Image
 
+                img = Image.open(img_cache)
         else:
-            from PIL import Image
-
-            img = Image.open(img_cache)
+            img = get_ps_stamp(ra, dec, size=240, color=["y", "g", "i"])
 
         cutoutps1.imshow(np.asarray(img))
         cutoutps1.set_title("PS1", fontdict={"fontsize": "small"})
@@ -368,7 +371,7 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
     # Optionally, save a {stock}.png image of each individual event
     save_png: bool = False
     # Dir for saving png (thumbnails + single event if chosen)
-    image_cache_dir: str = "."
+    image_cache_dir: None | str = "."
 
     # Should ZTF cutouts be retrieved (requires remote archive access)
     include_cutouts: bool = False
@@ -381,12 +384,6 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
     slack_token: NamedSecret[str] | None = None
 
     def post_init(self) -> None:
-        # Create temporary path if not set
-        if not self.pdf_path:
-            import tempfile
-
-            self.pdf_path = tempfile.mkstemp(".pdf", "PlotTransientLightcurves", ".")[1]
-
         # Possibly create a slack client
         if self.slack_channel and self.slack_token is not None:
             self.webclient = WebClient(self.slack_token.get())
@@ -455,7 +452,8 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
     def process(
         self, gen: Generator[TransientView, T3Send, None], t3s: None | T3Store = None
     ) -> UBson | UnitResult:
-        with PdfPages(self.pdf_path) as pdf:
+        buffer = io.BytesIO()
+        with PdfPages(self.pdf_path or buffer) as pdf:
             for tran_view in gen:
                 if not tran_view.get_photopoints():
                     self.logger.debug("No photopoints", extra={"stock": tran_view.id})
@@ -517,17 +515,21 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                     cutout_cache_dir=self.image_cache_dir,
                 )
                 pdf.savefig()
-                plt.savefig(
-                    os.path.join(self.image_cache_dir, str(tran_view.id) + ".png")
-                )
+                if self.image_cache_dir is not None:
+                    plt.savefig(
+                        os.path.join(self.image_cache_dir, str(tran_view.id) + ".png")
+                    )
                 plt.close()
 
         # Post to slack
         if self.slack_channel is not None and self.slack_token is not None:
-            with open(self.pdf_path, "rb") as file:  # type: ignore
+            buffer.seek(0)
+            with (
+                open(self.pdf_path, "rb") if self.pdf_path else nullcontext(buffer)  # type: ignore[attr-defined]
+            ) as file:
                 self.webclient.files_upload(
-                    file=file,  # type: ignore
-                    filename=self.pdf_path,
+                    file=file,
+                    filename=self.pdf_path or "candidates.pdf",
                     channels=self.slack_channel,
                     #                thread_ts=self.ts,
                 )
