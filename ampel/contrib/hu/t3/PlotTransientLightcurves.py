@@ -525,8 +525,8 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
         if self.slack_channel is not None and self.slack_token is not None:
             buffer.seek(0)
             with (
-                open(self.pdf_path, "rb") if self.pdf_path else nullcontext(buffer)
-            ) as file:  # type: ignore
+                open(self.pdf_path, "rb") if self.pdf_path else nullcontext(buffer)  # type: ignore[attr-defined]
+            ) as file:
                 self.webclient.files_upload(
                     file=file,
                     filename=self.pdf_path or "candidates.pdf",
