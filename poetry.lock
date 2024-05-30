@@ -142,13 +142,13 @@ ampel-core = ">=0.10.0a0,<0.11"
 
 [[package]]
 name = "ampel-core"
-version = "0.10.0.post0"
+version = "0.10.1"
 description = "Alice in Modular Provenance-Enabled Land"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "ampel_core-0.10.0.post0-py3-none-any.whl", hash = "sha256:a0d3e2a4bce2236e25a9f13f5c1a0121356409d5979fbb222ee84afb1f1446b5"},
-    {file = "ampel_core-0.10.0.post0.tar.gz", hash = "sha256:cca021c2b3e2ba8f12292a3fca4f55bd0addd652b09ff00633dbf5b7b43be3d4"},
+    {file = "ampel_core-0.10.1-py3-none-any.whl", hash = "sha256:d3f0c97e77652444be03ce3d1dbfaefefb678c36b41df850d00b2333e12e1577"},
+    {file = "ampel_core-0.10.1.tar.gz", hash = "sha256:c7d7570efcfd40193c971e63731de538c6b043f785b0a538da4a6a37874838ce"},
 ]
 
 [package.dependencies]
@@ -5357,13 +5357,13 @@ rpds-py = ">=0.7.0"
 
 [[package]]
 name = "requests"
-version = "2.32.2"
+version = "2.32.3"
 description = "Python HTTP for Humans."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "requests-2.32.2-py3-none-any.whl", hash = "sha256:fc06670dd0ed212426dfeb94fc1b983d917c4f9847c863f313c9dfaaffb7c23c"},
-    {file = "requests-2.32.2.tar.gz", hash = "sha256:dd951ff5ecf3e3b3aa26b40703ba77495dab41da839ae72ef3c8e5d8e2433289"},
+    {file = "requests-2.32.3-py3-none-any.whl", hash = "sha256:70761cfe03c773ceb22aa2f671b4757976145175cdfca038c02654d061d6dcc6"},
+    {file = "requests-2.32.3.tar.gz", hash = "sha256:55365417734eb18255590a9ff9eb97e9e1da868d4ccd6402399eaf68af20a760"},
 ]
 
 [package.dependencies]
@@ -5971,17 +5971,17 @@ tests = ["cython", "littleutils", "pygments", "pytest", "typeguard"]
 
 [[package]]
 name = "sympy"
-version = "1.12"
+version = "1.12.1"
 description = "Computer algebra system (CAS) in Python"
 optional = true
 python-versions = ">=3.8"
 files = [
-    {file = "sympy-1.12-py3-none-any.whl", hash = "sha256:c3588cd4295d0c0f603d0f2ae780587e64e2efeedb3521e46b9bb1d08d184fa5"},
-    {file = "sympy-1.12.tar.gz", hash = "sha256:ebf595c8dac3e0fdc4152c51878b498396ec7f30e7a914d6071e674d49420fb8"},
+    {file = "sympy-1.12.1-py3-none-any.whl", hash = "sha256:9b2cbc7f1a640289430e13d2a56f02f867a1da0190f2f99d8968c2f74da0e515"},
+    {file = "sympy-1.12.1.tar.gz", hash = "sha256:2877b03f998cd8c08f07cd0de5b767119cd3ef40d09f41c30d722f6686b0fb88"},
 ]
 
 [package.dependencies]
-mpmath = ">=0.19"
+mpmath = ">=1.1.0,<1.4.0"
 
 [[package]]
 name = "tables"
