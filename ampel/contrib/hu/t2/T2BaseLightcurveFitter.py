@@ -18,11 +18,10 @@ from sfdmap2.sfdmap import SFDMap  # type: ignore[import]
 
 from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
 from ampel.base.decorator import abstractmethod
-from ampel.content.DataPoint import DataPoint
-from ampel.content.T1Document import T1Document
 from ampel.contrib.hu.t2.T2DigestRedshifts import T2DigestRedshifts
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
+from ampel.view.LightCurve import LightCurve
 from ampel.view.T2DocView import T2DocView
 
 
@@ -39,9 +38,12 @@ class T2BaseLightcurveFitter(T2DigestRedshifts, AbsTabulatedT2Unit, abstract=Tru
 
     """
 
-    # Adding default redshift selection values, corresponding to usage of "good" redshifts from catalogs
-    redshift_kind = "T2DigestRedshifts"
-    max_redshift_category: int = 3
+    # Adding default redshift selection values, corresponding to usage of "good" redshifts from catalogs can be selected
+    # Leaving to default values either provides no redshift,
+    # redshift_kind = "T2DigestRedshifts"
+    # max_redshift_category: int = 3
+    # ... or uncommenting below will provide a fixed z
+    # fixed_z: 0.1
 
     # Remove MW dust absorption.
     # MWEBV is either derived from SFD maps using the position from light_curve
@@ -116,7 +118,7 @@ class T2BaseLightcurveFitter(T2DigestRedshifts, AbsTabulatedT2Unit, abstract=Tru
 
     def get_fitdata(
         self,
-        datapoints: Sequence[DataPoint],
+        light_curve: LightCurve,
         t2_views: Sequence[T2DocView],
     ) -> tuple[Table | None, dict]:
         """
@@ -134,28 +136,6 @@ class T2BaseLightcurveFitter(T2DigestRedshifts, AbsTabulatedT2Unit, abstract=Tru
         # Fit data info
         fitdatainfo: dict[str, UBson] = {}
 
-        # Check for phase limits
-        (jdstart, jdend) = self._get_phaselimit(t2_views)
-        fitdatainfo["jdstart"] = jdstart
-        fitdatainfo["jdend"] = jdend
-        if fitdatainfo["jdstart"] is None:
-            return (None, fitdatainfo)
-
-        # Obtain photometric table
-        sncosmo_table = self.get_flux_table(datapoints)
-        sncosmo_table = sncosmo_table[
-            (sncosmo_table["time"] >= jdstart) & (sncosmo_table["time"] <= jdend)
-        ]
-
-        # Potentially correct for dust absorption
-        # Requires filters to be known by sncosmo (and the latter installed)
-        if self.apply_mwcorrection:
-            # Get ebv from coordiantes.
-            # Here there should be some option to read it from journal/stock etc
-            mwebv = self.dustmap.ebv(*self.get_pos(datapoints, which="mean"))
-            fitdatainfo["mwebv"] = mwebv
-            sncosmo_table = self._deredden_mw_extinction(mwebv, sncosmo_table)
-
         ## Obtain redshift(s) from T2DigestRedshifts
         zlist, z_source, z_weights = self.get_redshift(t2_views)
         fitdatainfo["z"] = zlist
@@ -165,6 +145,31 @@ class T2BaseLightcurveFitter(T2DigestRedshifts, AbsTabulatedT2Unit, abstract=Tru
         if not isinstance(zlist, list) or z_source is None:
             return (None, fitdatainfo)
 
+        # Check for phase limits
+        (jdstart, jdend) = self._get_phaselimit(t2_views)
+        fitdatainfo["jdstart"] = jdstart
+        fitdatainfo["jdend"] = jdend
+        if fitdatainfo["jdstart"] is None:
+            return (None, fitdatainfo)
+
+        # Obtain photometric table
+        if (pps := light_curve.get_photopoints()) is None:
+            return (None, fitdatainfo)
+
+        sncosmo_table = self.get_flux_table(pps)
+        sncosmo_table = sncosmo_table[
+            (sncosmo_table["time"] >= jdstart) & (sncosmo_table["time"] <= jdend)
+        ]
+
+        # Potentially correct for dust absorption
+        # Requires filters to be known by sncosmo (and the latter installed)
+        if self.apply_mwcorrection:
+            # Get ebv from coordiantes.
+            # Here there should be some option to read it from journal/stock etc
+            mwebv = self.dustmap.ebv(*light_curve.get_pos())
+            fitdatainfo["mwebv"] = mwebv
+            sncosmo_table = self._deredden_mw_extinction(mwebv, sncosmo_table)
+
         return (sncosmo_table, fitdatainfo)
 
     # ==================== #
@@ -173,8 +178,7 @@ class T2BaseLightcurveFitter(T2DigestRedshifts, AbsTabulatedT2Unit, abstract=Tru
     @abstractmethod
     def process(
         self,
-        compound: T1Document,
-        datapoints: Sequence[DataPoint],
+        light_curve: LightCurve,
         t2_views: Sequence[T2DocView],
     ) -> UBson | UnitResult:
         """

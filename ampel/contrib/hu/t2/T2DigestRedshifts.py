@@ -12,17 +12,16 @@ from typing import Any, Literal
 
 import numpy as np
 
-from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
-from ampel.content.DataPoint import DataPoint
-from ampel.content.T1Document import T1Document
+from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
+from ampel.view.LightCurve import LightCurve
 from ampel.view.T2DocView import T2DocView
 
 
-class T2DigestRedshifts(AbsTiedStateT2Unit):
+class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
     """
 
     Compare potential matches from different T2 units providing redshifts.
@@ -41,7 +40,7 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
 
     # Max redshift uncertainty category: 1-7
     # (where 7 is any, and 1 only nearby spectroscopic matches)
-    max_redshift_category: int
+    max_redshift_category: int = 3
 
     # Redshift estimates associated with each region ( only rough guideline!!! )
     category_precision: list[float] = [0.0003, 0.003, 0.01, 0.02, 0.04, 0.1, 0.3]
@@ -482,8 +481,7 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
     # ==================== #
     def process(
         self,
-        compound: T1Document,
-        datapoints: Sequence[DataPoint],
+        light_curve: LightCurve,
         t2_views: Sequence[T2DocView],
     ) -> UBson | UnitResult:
         #    def process(
