@@ -25,7 +25,7 @@ from astropy.time import Time
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.colors import Normalize
 from matplotlib.ticker import MultipleLocator
-from slack import WebClient  # type: ignore
+from slack_sdk.web import WebClient
 from ztfquery.utils.stamps import get_ps_stamp  # type: ignore
 
 from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
@@ -527,7 +527,7 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
             with (
                 open(self.pdf_path, "rb") if self.pdf_path else nullcontext(buffer)  # type: ignore[attr-defined]
             ) as file:
-                self.webclient.files_upload(
+                self.webclient.files_upload_v2(
                     file=file,
                     filename=self.pdf_path or "candidates.pdf",
                     channels=self.slack_channel,
