@@ -26,8 +26,9 @@ filter:
 run:
   - unit: PlotTransientLightcurves
     config:
-      pdf_path: candidates.pdf
-      save_png: true
+      pdf_path: null
+      save_png: false
+      image_cache_dir: null
       include_cutouts: true
       slack_channel: "#ztf_auto"
       slack_token:

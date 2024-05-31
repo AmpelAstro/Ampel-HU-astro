@@ -22,7 +22,8 @@ run:
   - unit: PlotTransientLightcurves
     config:
       pdf_path: null
-      save_png: true
+      image_cache_dir: null
+      save_png: false
       include_cutouts: true
       slack_channel: "#ztf_rapid"
       slack_token:
