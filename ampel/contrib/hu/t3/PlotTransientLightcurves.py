@@ -527,7 +527,7 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
             with (
                 open(self.pdf_path, "rb") if self.pdf_path else nullcontext(buffer)  # type: ignore[attr-defined]
             ) as file:
-                self.webclient.files_upload_v2(
+                self.webclient.files_upload(
                     file=file,
                     filename=self.pdf_path or "candidates.pdf",
                     channels=self.slack_channel,
