@@ -36,6 +36,7 @@ run:
       - AmpelStars
       filters:
       - AMPEL.HU_STELLAR_OUTBURST
+      cutouts: null
       token:
         label: fritz/jvs/ampelbot
       base_url: 'https://fritz.science'

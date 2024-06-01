@@ -41,6 +41,7 @@ run:
       - AmpelInfant
       filters:
       - AMPEL.HU_RAPID_INFANT
+      cutouts: null
       token:
         label: fritz/jvs/ampelbot
       base_url: 'https://fritz.science'
