@@ -2,7 +2,7 @@ name: stellarmay21
 
 mongo:
   prefix: evalOutburst
-  reset: true
+  # reset: true
 
 channel:
 - name: may21
@@ -176,7 +176,7 @@ task:
               slack_token: null
               include_stock: true
               include_channels: true
-              local_path: ./
+              local_path: null
               table_schema:
                 T2InfantCatalogEval:
                   'ndet':
@@ -227,6 +227,7 @@ task:
           - unit: PlotTransientLightcurves
             config:
               pdf_path: candidates.pdf
+              pdf_path: null
               save_png: false
               include_cutouts: true
               tabulator:
