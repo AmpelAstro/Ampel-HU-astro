@@ -521,6 +521,10 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                     os.path.join(self.image_cache_dir, str(tran_view.id) + ".png")
                 )
                 plt.close()
+            # Check page count
+            if pdf.get_pagecount()==0:
+                self.logger.debug('No pdf pages created')
+                return None
 
         # Post to slack
         if self.slack_channel is not None and self.slack_token is not None:
