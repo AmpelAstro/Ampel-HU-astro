@@ -198,6 +198,12 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
                 if cat_name == "SDSS_spec" and cat_match["dist2transient"] < 10:
                     group_z[1].append(cat_match["z"])
                     group_dist[1].append(cat_match["dist2transient"])
+
+                if cat_name == "DESISV3" and cat_match["dist2transient"] < 10 and cat_match.get("zwarn",-1) ==0:
+                    group_z[1].append(cat_match["z"])
+                    group_dist[1].append(cat_match["dist2transient"])
+ 
+ 
                 # Implicit restriction as tests where done with this max matching radius
                 if (
                     cat_name == "GLADEv23"
