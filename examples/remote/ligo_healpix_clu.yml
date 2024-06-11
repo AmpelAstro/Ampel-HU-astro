@@ -13,7 +13,7 @@ parameters:
 - name: export_fmt
   value: csv
 - name: transienttable_path
-  value: TransientTable
+  value: ./TransientTable.csv
 
 mongo:
   prefix: healpix
@@ -404,8 +404,8 @@ task:
                 #     desycloud_filename: S200115j
                 - unit: PlotTransientLightcurves
                   config:
-                    pdf_path: candidates.pdf
-                    save_png: true
+                    #pdf_path: candidates.pdf
+                    save_png: false
                     include_cutouts: true
                     #slack_channel: "#ztf_auto"
                     #slack_token:
@@ -502,5 +502,5 @@ task:
                           - healpix_map
   outputs:
     artifacts:
-      - name: TransientTable
+      - name: transienttable
         path: "{{ job.parameters.transienttable_path }}"
