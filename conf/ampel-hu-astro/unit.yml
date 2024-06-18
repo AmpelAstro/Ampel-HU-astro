@@ -7,6 +7,7 @@
 - ampel.contrib.hu.t0.RcfFilter
 - ampel.contrib.hu.t0.RedshiftCatalogFilter
 - ampel.contrib.hu.t0.StellarFilter
+- ampel.contrib.hu.t0.TimeDistributionFilter
 - ampel.contrib.hu.t2.T2PanStarrThumbPrint
 - ampel.contrib.hu.t2.T2PhaseLimit
 - ampel.contrib.hu.t2.T2PS1ThumbExtCat
@@ -67,6 +68,7 @@
 - ampel.contrib.hu.t3.ScoreTNSObjects
 - ampel.contrib.hu.t3.PlotTransientLightcurves
 - ampel.contrib.hu.t3.SubmitTNS
+- ampel.contrib.hu.t3.StreamTokenGenerator
 - ampel.contrib.hu.alert.load.WiseFileAlertLoader
 - ampel.contrib.hu.alert.NeoWisePhotometryAlertSupplier
 - ampel.contrib.hu.alert.DynamicShaperAlertConsumer
