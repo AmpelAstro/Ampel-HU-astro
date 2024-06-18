@@ -132,6 +132,11 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
     training_zeropoint: float = 27.5  # Used in Elasticc training sample
     default_zeropoint: float = 25.0  # Default parsnip value
 
+    # Cases with long photometric series (forced photometry) can
+    # yield chi2 values with unnaturally low probabilities.
+    # Having a min prob value for each successfull redshift often help
+    min_runprob: float = 0.01
+
     # Save / plot parameters
     plot_suffix: None | str
     plot_dir: None | str
@@ -445,9 +450,13 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             }
             # Not sure whether the dof could change? Normalizing now
             if foo["model_dof"] > 0:
-                predictions[str(redshift)]["chi2pdf"] = chi2.pdf(
-                    foo["model_chisq"], foo["model_dof"]
+                predictions[str(redshift)]["chi2pdf"] = max(
+                    self.min_runprob, chi2.pdf(foo["model_chisq"], foo["model_dof"])
                 )
+                # If we are here, should at least have a min prob
+            #                print('DEEEBUGG')
+            #                if predictions[str(redshift)]["chi2pdf"]==0:
+            #                    predictions[str(redshift)]["chi2pdf"]=0.01
             else:
                 # Not enough data - earlier check?
                 predictions[str(redshift)]["chi2pdf"] = 0.0
