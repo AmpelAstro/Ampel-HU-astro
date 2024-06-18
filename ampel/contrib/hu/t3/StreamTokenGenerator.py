@@ -51,6 +51,7 @@ class StreamTokenGenerator(AbsT3PlainUnit):
                 "isdiffpos": {"$in": ["t", "1"]},
             }
 
+        query: dict[Any, Any] = {}
         if self.mode == "cone":
             if not (self.cone):
                 raise TypeError("Missing required argument: cone")

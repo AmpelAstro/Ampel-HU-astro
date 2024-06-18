@@ -522,8 +522,8 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                 )
                 plt.close()
             # Check page count
-            if pdf.get_pagecount()==0:
-                self.logger.debug('No pdf pages created')
+            if pdf.get_pagecount() == 0:
+                self.logger.debug("No pdf pages created")
                 return None
 
         # Post to slack
