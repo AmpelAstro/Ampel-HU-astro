@@ -1,16 +1,16 @@
-name: stellarapr17
+name: stellarjun4
 parameters:
 - name: channelname
-  value: apr17
+  value: jun4
 - name: date
-  value: "2024-04-17"
+  value: "2024-06-04"
 
 mongo:
   prefix: evalOutburst
-  reset: false
+  reset: true
 
 channel:
-- name: apr17
+- name: jun4
   access: [ZTF, ZTF_PUB, ZTF_PRIV]
   policy: []
 
@@ -32,12 +32,12 @@ task:
               resource_name: ztf_stream_token
               candidate:
                 ndethist:
-                  $gte: 3.
-#                  $lte: 10.
+                  $gte: 2.
+#                  $lte: 5.
                 drb:
                   $gt: 0.995
                 magpsf:
-                  $lt: 18.5
+                  $gt: 18.5
                 rb:
                   $gt: 0.3
                 isdiffpos: 
@@ -64,15 +64,15 @@ task:
     - channel: "{{ job.parameters.channelname }}"
       filter:
         config:
-          min_ndet: 3
-          max_ndet: 10
+          min_ndet: 2
+          max_ndet: 20
           min_tspan: -99
           max_tspan: 100
           min_archive_tspan: -99
           max_archive_tspan: 10000
-          max_mag: 18.5
+#          max_mag: 18.5
           peak_time_limit: 5.
-          min_peak_diff: 1.
+          min_peak_diff: 0.3
           min_drb: 0.995
           min_rb: 0.3
           require_ps_star: true
@@ -83,10 +83,7 @@ task:
         mux:
           combine:
           - state_t2:
-            - unit: T2LineFit
-              config:
-                tabulator:
-                - unit: ZTFT2Tabulator                
+            - unit: T2LightCurveSummary
             unit: ZiT1Combiner
           insert:
             point_t2:
@@ -217,6 +214,13 @@ task:
                     - T2DOC
                     - DATAPOINT
                   channel: "{{ job.parameters.channelname }}"
+              complement: 
+              - unit: ZTFCutoutImages
+                config:
+                  eligible: last
+              - unit: TNSNames
+                config:
+                  include_report: true
           stage:
             unit: T3SimpleStager
             config:
