@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              jnordin@physik.hu-berlin.de
 # Date:                29.03.2023
-# Last Modified Date:  21.04.2023
+# Last Modified Date:  27.05.2024
 # Last Modified By:    ernstand@physik.hu-berlin.de
 
 from collections.abc import Sequence
@@ -798,7 +798,8 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
 
         info = {"pass": 0, "rise_decline": t2res}
         info["pass"] = t2res["bool_fall"] + t2res["bool_peaked"]
-
+        #print("T2KILONOVAEVAL:: ", t2res.keys())
+        info["ndet"] = t2res["ndet"]
         return info
 
     # MANDATORY

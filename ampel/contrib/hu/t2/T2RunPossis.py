@@ -143,7 +143,7 @@ class T2RunPossis(T2RunSncosmo):
                 f"{model_gen}/nph1.0e+06_mejdyn{mej_dyn:05.3f}_mejwind{mej_wind:05.3f}_phi{phi}.txt",
             )
 
-            # print(model_url)
+            #print("T2RUNPOSSIS:: ", model_url)
 
             # Find file
             with urlopen(model_url) as fh:
@@ -204,14 +204,17 @@ class T2RunPossis(T2RunSncosmo):
                 tmp_sncosmo_model = sncosmo.Model(source=source)
                 tmp_fit_params = copy.deepcopy(tmp_sncosmo_model.param_names)
 
+            #print("T2RUNPOSSIS:: ", tmp_sncosmo_model.param_names)
             # If redshift _should_ be provided we remove this from fit parameters
             if self.redshift_kind is not None or self.backup_z is not None:
+                print("T2RUNPOSSIS:: ", "remove z")
                 tmp_fit_params.remove("z")
 
             # If explosion time should be fixed, do so
             # If explosion time should be fixed, do so
             if isinstance(self.explosion_time_jd, float):
                 tmp_sncosmo_model.set(t0=self.explosion_time_jd)
+                #print("T2RUNPOSSIS:: ", "remove t0")
                 tmp_fit_params.remove("t0")
 
             self.sncosmo_data[model_ind] = {
@@ -268,6 +271,7 @@ class T2RunPossis(T2RunSncosmo):
                         "reset explosion time",
                         extra={"explosion_time": self.explosion_time_jd},
                     )
+                    print("T2RUNPOSSIS:: ", self.explosion_time_jd)
                     self.sncosmo_model.set(t0=self.explosion_time_jd)
                     self.fit_params.remove("t0")
 

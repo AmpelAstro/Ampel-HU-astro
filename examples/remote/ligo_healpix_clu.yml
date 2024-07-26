@@ -404,8 +404,8 @@ task:
                 #     desycloud_filename: S200115j
                 - unit: PlotTransientLightcurves
                   config:
-                    pdf_path: candidates.pdf
-                    save_png: true
+                    #pdf_path: candidates.pdf
+                    save_png: false
                     include_cutouts: true
                     #slack_channel: "#ztf_auto"
                     #slack_token:
@@ -465,7 +465,8 @@ task:
                           - mag_sigma_fid_2
                         'rise_decline':
                           - rise_decline
-                    transient_table_schema:
+                        'ndet':
+                          - ndet               
                       T2KilonovaStats:
                         'gaus_percent':
                           - gaus_percent
@@ -477,6 +478,7 @@ task:
                           - exp_kn_min
                         'dist_range': 
                           - dist_range
+                    transient_table_schema:
                       T2MatchGRB:
                         'grb_temporal':
                           - temporal_grb

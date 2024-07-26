@@ -1,3 +1,12 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# File:                ampel/contrib/hu/t2/T2KilonovaStats.py
+# License:             BSD-3-Clause
+# Author:              ernstand@physik.hu-berlin.de
+# Date:                29.04.2023
+# Last Modified Date:  27.05.2024
+# Last Modified By:    ernstand@physik.hu-berlin.de
+
 import json
 import os
 from collections.abc import Iterable, Sequence
@@ -34,6 +43,10 @@ def dejsonify(arg):
 
 
 class T2KilonovaStats(AbsTiedStateT2Unit):
+    """
+    Evaluate kilonovaness stats for transient given map distance and number of detections.
+    """
+    
     # Which units should this be chained to
     t2_dependency: Sequence[StateT2Dependency[Literal["T2KilonovaEval"]]]
 
@@ -51,25 +64,33 @@ class T2KilonovaStats(AbsTiedStateT2Unit):
         #print(self.binned_gaus_dict)
 
     def get_keys(self, map_dist=np.inf, ndet=np.inf):
-        ndet_key = np.inf
-        map_key = np.inf
-        if ndet:
-            for key in self.binned_gaus_dict:
-                fkey = dejsonify(key)
-                #print("NDET key:: ", key, " is made ", fkey, " ", type(fkey), " ndet = ", ndet, " ", type(ndet))
-                if ndet <= fkey:
-                    ndet_key = key
-                    break
+            ndet_key = np.inf
+            map_key = np.inf
+            if ndet:
+                for key in np.sort([dejsonify(tkey) for tkey in self.binned_gaus_dict]):
+                    fkey = key
+                    #print("NDET key:: ", key, " is made ", fkey, " ", type(fkey), " ndet = ", ndet, " ", type(ndet))
+                    if ndet <= fkey:
+                        ndet_key = key
+                        break
+            if ndet_key < np.inf:
+                ndet_key = int(ndet_key)
 
-        if map_dist:
-            for key in self.binned_gaus_dict[ndet_key]:
-                fkey = dejsonify(key)
-                #print(fkey)
-                if map_dist <= fkey:
-                    map_key = key
-                    break
+            ndet_key_j = jsonify(str(ndet_key))
 
-        return map_key, ndet_key
+            if map_dist:
+                for key in np.sort([dejsonify(tkey) for tkey in self.binned_gaus_dict[ndet_key_j]]):
+                    fkey = dejsonify(key)
+                    #print("distance keys: ", fkey)
+                    #print(fkey)
+                    if map_dist <= fkey:
+                        map_key = key
+                        break
+            if map_key < np.inf:
+                map_key = int(map_key)
+
+            map_key_j = jsonify(str(map_key))
+            return map_key_j, ndet_key_j
     
     def gaus_cdf(self, xval, loc: float = 0, scale: float = 1):
         return stats.norm.cdf(xval, loc=loc, scale=scale)
@@ -77,12 +98,12 @@ class T2KilonovaStats(AbsTiedStateT2Unit):
     def get_kn_stats(self, map_dist=np.inf, ndet=np.inf):
         map_key, ndet_key = self.get_keys(map_dist=map_dist, ndet=ndet)
 
-        # print(ndet_key, map_key)
+        #print(ndet, ndet_key, map_key)
         return self.binned_gaus_dict[ndet_key][map_key]
 
     def get_kn_cumprob(self, kilonovaness, map_dist=np.inf, ndet=np.inf):
         gaus_stats = self.get_kn_stats(map_dist=map_dist, ndet=ndet)
-        #print("GAUS STATS ", gaus_stats, " ", type(gaus_stats))
+        #print("GAUS STATS ", gaus_stats, " ", type(gaus_stats), "ndet: ", ndet)
 
         return self.gaus_cdf(kilonovaness, loc=gaus_stats["loc"], scale=gaus_stats["scale"])
  
@@ -131,7 +152,7 @@ class T2KilonovaStats(AbsTiedStateT2Unit):
             1 - self.get_kn_cumprob(kilonovaness, map_dist=map_dist, ndet=ndet)
         ) * 100
         #print(
-        #    f"Map at this distance with this ndet, {gaus_stats:.5f}% of events have kn >= {kilonovaness}"
+         #   f"Map at this distance with this ndet, {gaus_stats:.5f}% of events have kn >= {kilonovaness}"
         #)
 
         res = self.get_kn_densitiy_stats(kilonovaness, map_area, map_dist=map_dist)
@@ -144,6 +165,7 @@ class T2KilonovaStats(AbsTiedStateT2Unit):
             kilonovaness=t2res["kilonovaness"],
             map_area=t2res["map_area"],
             map_dist=t2res["map_dist"],
+            ndet=t2res["ndet"]
         )
         return info
 
@@ -159,6 +181,9 @@ class T2KilonovaStats(AbsTiedStateT2Unit):
             t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
 
             if t2_view.unit == "T2KilonovaEval":
-                return self.kilonovaness_statistics(t2_res)
+                result = self.kilonovaness_statistics(t2_res)
+                #print("T2KILONOVASTATS:: ", t2_res["ndet"], result["gaus_percent"], result["exp_kn"])
+                return result
+            
 
         return {}

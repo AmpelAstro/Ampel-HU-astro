@@ -455,7 +455,8 @@ task:
                           - mag_sigma_fid_2
                         'rise_decline':
                           - rise_decline
-                    transient_table_schema:
+                        'ndet':
+                          - ndet                  
                       T2KilonovaStats:
                         'gaus_percent':
                           - gaus_percent
@@ -467,6 +468,7 @@ task:
                           - exp_kn_min
                         'dist_range': 
                           - dist_range
+                    transient_table_schema:
                       T2HealpixProb:
                         'map_area':
                           - map_area

@@ -26,6 +26,8 @@ class PredetectionFilter(DecentFilter):
     map_dir: str | None = "./"
     map_name: str | None = None
 
+    verbose = False
+
     def post_init(self):
         super().post_init()
         # self.keys_to_check += ("jd",)
@@ -49,9 +51,12 @@ class PredetectionFilter(DecentFilter):
         predetection_jds = [jd for jd in alert_jds if jd < self.trigger_jd]
 
         if len(predetection_jds) > 0:
+
             self.logger.debug(
                 "Transient is too old. There are detections prior to trigger time"
             )
+            if self.verbose:
+                print("transient too old")
             return None
 
         # now apply the DecentFilter

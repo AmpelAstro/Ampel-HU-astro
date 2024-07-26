@@ -145,7 +145,7 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
         alert_count_nofilter = response_count.json()["count"]
         # print("ALERT COUNT NO FILTER", alert_count_nofilter)
 
-        # print("HEALPIXTOKENGENERATOR::", query_dict)
+        #print("HEALPIXTOKENGENERATOR::", query_dict)
 
         response = session.post(
             "streams/from_query",
