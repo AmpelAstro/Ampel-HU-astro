@@ -24,13 +24,13 @@ import pandas as pd
 from ampel.content.DataPoint import DataPoint
 
 
-
-
 # Settings
-fname = "/home/jnordin/data/noiztf/ztf_train_bts_noisified.h5"
+#fname = "/home/jnordin/data/noiztf/ztf_train_bts_noisified.h5"
+fname = "/home/jnordin/data/noiztf/ztf_train_bts_test.h5"
 tags: list[Tag] = ["NOIZTF","ZTF"]
 minsig: float = 3.0
-max_transients: int = 1000
+start_count: int = 0
+end_count: int = 50000
 
 
 
@@ -58,8 +58,6 @@ t2._tab_engines.append( ZTFT2Tabulator() )
 
 # Load the lcdata lightcurves
 bts_lc = lcdata.read_hdf5(fname)
-
-
 
 
 def sncosmo2ztpdps(tab, metadict, filtercolumn='band', timeformat='jd', 
@@ -133,6 +131,11 @@ def sncosmo2ztpdps(tab, metadict, filtercolumn='band', timeformat='jd',
 results = []
 for k in range(len(bts_lc.meta)):
     print(k)
+    if k<start_count:
+        continue
+
+    if k>=end_count:
+        break
 
     lc = bts_lc.get_sncosmo_lc(k)
     meta = bts_lc.meta[k]
@@ -153,8 +156,6 @@ for k in range(len(bts_lc.meta)):
         t2out = t2.process(t1d, alert_pps)
         results.append( {'object_id':meta['object_id'], **t2.process(t1d, alert_pps) } )
 
-    if k>max_transients:
-        break
 
 
 # Collect and export
