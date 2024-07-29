@@ -141,6 +141,7 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
         }
         endpoint_count = "https://ampel.zeuthen.desy.de/api/ztf/archive/v3/alerts/healpix/skymap/count"
         response_count = session.post(endpoint_count, json=count_query_dict)
+        print(response_count)
         print(response_count.json())
         alert_count_nofilter = response_count.json()["count"]
         # print("ALERT COUNT NO FILTER", alert_count_nofilter)
