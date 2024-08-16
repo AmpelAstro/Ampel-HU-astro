@@ -52,6 +52,7 @@ class StreamTokenGenerator(AbsT3PlainUnit):
     timeout: float = 60
 
     debug: bool = False
+    query: dict[str, Any] = None
 
     def process(self, t3s: T3Store) -> UBson | UnitResult:
         if self.candidate:
@@ -68,20 +69,20 @@ class StreamTokenGenerator(AbsT3PlainUnit):
                 raise TypeError(
                     "Missing required argument==> cone={ra:value, dec:value, radius:value}"
                 )
-            query: dict[str, Any] = {"cone": self.cone, "candidate": candidate}
+            self.query = {"cone": self.cone, "candidate": candidate}
 
         elif self.mode == "healpix":
             if not (self.nside and self.pixels):
                 raise TypeError('Missing required argument: "nside" and/or "pixels"')
 
-            query: dict[str, Any] = {
+            self.query = {
                 "regions": [{"nside": self.nside, "pixels": self.pixels}],
                 "jd": {"$gt": self.jd_range[0], "$lt": self.jd_range[1]},
                 "candidate": candidate,
             }
 
         elif self.mode == "epoch":
-            query: dict[str, Any] = {
+            self.query = {
                 "jd": {"$gt": self.jd_range[0], "$lt": self.jd_range[1]},
                 "candidate": candidate,
             }
@@ -94,7 +95,7 @@ class StreamTokenGenerator(AbsT3PlainUnit):
         )
         session.headers["authorization"] = f"bearer {self.archive_token.get()}"
 
-        response = session.post("streams/from_query?programid=1", json=query)
+        response = session.post("streams/from_query?programid=1", json=self.query)
 
         rd = response.json()
 
