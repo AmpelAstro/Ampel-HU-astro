@@ -36,7 +36,7 @@ class StreamTokenGenerator(AbsT3PlainUnit):
     archive: str = "https://ampel.zeuthen.desy.de/api/ztf/archive/v3/"
     resource_name: str = "ztf_stream_token"
 
-    mode: str = "cone" or "healpix" or "epoch"
+    mode: str = "cone"  # or "healpix" or "epoch". Default mode is cone.
 
     # supply ra, dec and radius if mode is "cone"
     cone: None | dict[str, float] = None
