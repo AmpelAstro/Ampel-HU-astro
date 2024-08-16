@@ -118,9 +118,12 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
 
     # Plot parameters
     plot_db: bool = False
-    plot_props: None | PlotProperties = None  # Plot properties for SvgRecord creation
-    plot_matplotlib_suffix: None | str = None  # Suffix if stored (locally) through matplotlib (e.g. _crayzmodel.png). Will add transient name
-    plot_matplotlib_dir: str = "."  # Suffix if stored (locally) through matplotlib (e.g. _crayzmodel.png). Will add transient name
+    # Plot properties for SvgRecord creation
+    plot_props: None | PlotProperties = None
+    # Suffix if stored (locally) through matplotlib (e.g. _crayzmodel.png). Will add transient name
+    plot_matplotlib_suffix: None | str = None
+    # Suffix if stored (locally) through matplotlib (e.g. _crayzmodel.png). Will add transient name
+    plot_matplotlib_dir: str = "."
 
     # Units from which time limits to use or redshifts can be picked.
     t2_dependency: Sequence[
@@ -209,7 +212,8 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                     continue
                 self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
                 t2_res = (
-                    res[-1] if isinstance(res := t2_view.get_payload(), list) else res
+                    res[-1] if isinstance(res :=
+                                          t2_view.get_payload(), list) else res
                 )
                 # Parse this
                 if self.redshift_kind == "T2MatchBTS":
@@ -260,7 +264,8 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             if len(z) % 2 != 0:
                 z = z[int(len(z) / 2)]  # type: ignore
             else:
-                z = ((z[int(len(z) / 2)]) + (z[int(len(z) / 2) - 1])) / 2  # type: ignore
+                z = ((z[int(len(z) / 2)]) +
+                     (z[int(len(z) / 2) - 1])) / 2  # type: ignore
 
         return z, z_source  # type: ignore
 
@@ -284,7 +289,8 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                     continue
                 self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
                 t2_res = (
-                    res[-1] if isinstance(res := t2_view.get_payload(), list) else res
+                    res[-1] if isinstance(res :=
+                                          t2_view.get_payload(), list) else res
                 )
                 jdstart = t2_res["t_start"]
                 jdend = t2_res["t_end"]
@@ -301,7 +307,8 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         detection_sigma = (
             3  # Detection sigma threshold to look for phase of first detection
         )
-        pull_range = [-10, 20]  # Phase range used when calculating uniform chi2/dof
+        # Phase range used when calculating uniform chi2/dof
+        pull_range = [-10, 20]
 
         z = sncosmo_model.get("z")
 
@@ -323,7 +330,8 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         )
         # Determine the phase of the first 3 sigma detection
         i_first = np.where(
-            (sncosmo_table["flux"] / sncosmo_table["fluxerr"]) > detection_sigma
+            (sncosmo_table["flux"] /
+             sncosmo_table["fluxerr"]) > detection_sigma
         )[0]
         # table might not be ordered
         lc_metrics[f"phase_{detection_sigma}sigma"] = np.min(
@@ -419,7 +427,8 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         sncosmo_table = self.get_flux_table(datapoints)
         # print("T2RUNSNCOSMO:: ", sncosmo_table)
         sncosmo_table = sncosmo_table[
-            (sncosmo_table["time"] >= jdstart) & (sncosmo_table["time"] <= jdend)
+            (sncosmo_table["time"] >= jdstart) & (
+                sncosmo_table["time"] <= jdend)
         ]
 
         self.logger.debug(f"Sncosmo table {sncosmo_table}")
@@ -432,7 +441,8 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
 
         # Define fit parameter and ranges
         if self.apply_mwcorrection:
-            transient_mwebv = self.dustmap.ebv(*self.get_pos(datapoints, which="mean"))
+            transient_mwebv = self.dustmap.ebv(
+                *self.get_pos(datapoints, which="mean"))
             self.sncosmo_model.set(mwebv=transient_mwebv)
 
         # Set redshift if provided
@@ -440,11 +450,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             self.sncosmo_model.set(z=t2_output["z"])
 
         self.logger.debug(
-            "Starting fit with fit params {}, all parameters {} and start values {}".format(
-                self.fit_params,
-                self.sncosmo_model.param_names,
-                self.sncosmo_model.parameters,
-            )
+            f"Starting fit with fit params {self.fit_params}, all parameters {self.sncosmo_model.param_names} and start values {self.sncosmo_model.parameters}"
         )
 
         # Carry out fit. Bounds are directly carried from parameters
@@ -483,17 +489,17 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         # How to best serialize these for mongo storage?
         sncosmo_result["parameters"] = sncosmo_result["parameters"].tolist()
         sncosmo_result["data_mask"] = sncosmo_result["data_mask"].tolist()
-        
+
         # try:
         #     sncosmo_result["covariance"] = sncosmo_result["covariance"].tolist()
         # except KeyError:
         #     sncosmo_result["covariance"] = []
-        
-        #sncosmo covariance is either None or an array
+
+        # sncosmo covariance is either None or an array
         if isinstance(sncosmo_result["covariance"], np.ndarray):
-            sncosmo_result["covariance"] =sncosmo_result["covariance"].tolist() 
+            sncosmo_result["covariance"] = sncosmo_result["covariance"].tolist()
         else:
-            sncosmo_result["covariance"]=[]
+            sncosmo_result["covariance"] = []
 
         # For filtering purposes we want a proper dict
         sncosmo_result["paramdict"] = {}
@@ -506,11 +512,13 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         # Save plot
         if self.plot_props or self.plot_matplotlib_suffix:
             # Construct name JN: What are the standards for noisified?
-            stock_id = "-".join([str(v) for v in self.get_stock_id(datapoints)])
+            stock_id = "-".join([str(v)
+                                for v in self.get_stock_id(datapoints)])
             tname = "-".join([str(v) for v in self.get_stock_name(datapoints)])
 
             if self.noisified:
-                stock_id = "-".join([str(v) for v in self.get_stock_id(datapoints)])
+                stock_id = "-".join([str(v)
+                                    for v in self.get_stock_id(datapoints)])
                 tname = ZTFNoisifiedIdMapper().to_ext_id(stock_id)
 
             # Add some info
