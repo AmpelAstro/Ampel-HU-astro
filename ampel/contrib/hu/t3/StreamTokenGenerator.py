@@ -46,7 +46,7 @@ class StreamTokenGenerator(AbsT3PlainUnit):
     pixels: None | list = None  # use when mode is "healpix"
 
     # default jd range: [ztf_start, jd_now]
-    jd_range: list = [2458195., float(Time.now().jd)]
+    jd_range: list = [2458195.0, float(Time.now().jd)]
 
     #: seconds to wait for query to complete
     timeout: float = 60
@@ -54,64 +54,47 @@ class StreamTokenGenerator(AbsT3PlainUnit):
     debug: bool = False
 
     def process(self, t3s: T3Store) -> UBson | UnitResult:
-
         if self.candidate:
             candidate = self.candidate
         else:  # default candidate filter
             candidate = {
                 "rb": {"$gt": 0.3},
                 "ndethist": {"$gte": 2},
-                "isdiffpos": {"$in": ["t", "1"]}
+                "isdiffpos": {"$in": ["t", "1"]},
             }
 
-        if self.mode == 'cone':
+        if self.mode == "cone":
             if not self.cone:
                 raise TypeError(
-                    'Missing required argument==> cone={ra:value, dec:value, radius:value}')
-            query = {
-                "cone": self.cone,
-                "candidate": candidate
-            }
+                    "Missing required argument==> cone={ra:value, dec:value, radius:value}"
+                )
+            query = {"cone": self.cone, "candidate": candidate}
 
-        elif self.mode == 'healpix':
+        elif self.mode == "healpix":
             if not (self.nside and self.pixels):
-                raise TypeError(
-                    'Missing required argument: "nside" and/or "pixels"')
+                raise TypeError('Missing required argument: "nside" and/or "pixels"')
 
             query = {
-                "regions": [
-                    {
-                        "nside": self.nside,
-                        "pixels": self.pixels
-                    }
-                ],
-                "jd": {
-                    "$gt": self.jd_range[0],
-                    "$lt": self.jd_range[1]
-                },
-                "candidate": candidate
+                "regions": [{"nside": self.nside, "pixels": self.pixels}],
+                "jd": {"$gt": self.jd_range[0], "$lt": self.jd_range[1]},
+                "candidate": candidate,
             }
 
-        elif self.mode == 'epoch':
+        elif self.mode == "epoch":
             query = {
-                "jd": {
-                    "$gt": self.jd_range[0],
-                    "$lt": self.jd_range[1]
-                },
-                "candidate": candidate
+                "jd": {"$gt": self.jd_range[0], "$lt": self.jd_range[1]},
+                "candidate": candidate,
             }
 
         else:
-            raise ValueError(
-                ' Invalid mode! must be "cone" OR "healpix" OR "epoch" ')
+            raise ValueError(' Invalid mode! must be "cone" OR "healpix" OR "epoch" ')
 
         session = BaseUrlSession(
-            self.archive if self.archive.endswith("/") else self.archive + "/")
+            self.archive if self.archive.endswith("/") else self.archive + "/"
+        )
         session.headers["authorization"] = f"bearer {self.archive_token.get()}"
 
-        response = session.post(
-            "streams/from_query?programid=1",
-            json=query)
+        response = session.post("streams/from_query?programid=1", json=query)
 
         rd = response.json()
 
@@ -131,7 +114,8 @@ class StreamTokenGenerator(AbsT3PlainUnit):
             delay *= 2
         else:
             raise RuntimeError(
-                f"{session.base_url}stream/{token} still locked after {time.time() - t0:.0f} s")
+                f"{session.base_url}stream/{token} still locked after {time.time() - t0:.0f} s"
+            )
         response.raise_for_status()
         self.logger.info("Stream created", extra=response.json())
 
