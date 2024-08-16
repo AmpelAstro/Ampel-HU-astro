@@ -68,7 +68,7 @@ class StreamTokenGenerator(AbsT3PlainUnit):
                 raise TypeError(
                     "Missing required argument==> cone={ra:value, dec:value, radius:value}"
                 )
-            query = {"cone": self.cone, "candidate": candidate}
+            query: dict[str, Any] = {"cone": self.cone, "candidate": candidate}
 
         elif self.mode == "healpix":
             if not (self.nside and self.pixels):
@@ -81,7 +81,7 @@ class StreamTokenGenerator(AbsT3PlainUnit):
             }
 
         elif self.mode == "epoch":
-            query = {
+            query: dict[str, Any] = {
                 "jd": {"$gt": self.jd_range[0], "$lt": self.jd_range[1]},
                 "candidate": candidate,
             }
