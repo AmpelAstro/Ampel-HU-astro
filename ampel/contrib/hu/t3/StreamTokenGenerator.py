@@ -74,7 +74,7 @@ class StreamTokenGenerator(AbsT3PlainUnit):
             if not (self.nside and self.pixels):
                 raise TypeError('Missing required argument: "nside" and/or "pixels"')
 
-            query = {
+            query: dict[str, Any] = {
                 "regions": [{"nside": self.nside, "pixels": self.pixels}],
                 "jd": {"$gt": self.jd_range[0], "$lt": self.jd_range[1]},
                 "candidate": candidate,
