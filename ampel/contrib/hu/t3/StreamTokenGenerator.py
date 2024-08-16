@@ -52,7 +52,7 @@ class StreamTokenGenerator(AbsT3PlainUnit):
     timeout: float = 60
 
     debug: bool = False
-    query: dict[str, Any] = None
+    query: dict[str, Any] | None = None
 
     def process(self, t3s: T3Store) -> UBson | UnitResult:
         if self.candidate:
