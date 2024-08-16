@@ -65,7 +65,7 @@ class StreamTokenGenerator(AbsT3PlainUnit):
             }
 
         if self.mode == 'cone':
-            if not (self.cone):
+            if not self.cone:
                 raise TypeError(
                     'Missing required argument==> cone={ra:value, dec:value, radius:value}')
             query = {
