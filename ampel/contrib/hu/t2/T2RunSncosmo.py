@@ -212,8 +212,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                     continue
                 self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
                 t2_res = (
-                    res[-1] if isinstance(res :=
-                                          t2_view.get_payload(), list) else res
+                    res[-1] if isinstance(res := t2_view.get_payload(), list) else res
                 )
                 # Parse this
                 if self.redshift_kind == "T2MatchBTS":
@@ -264,8 +263,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             if len(z) % 2 != 0:
                 z = z[int(len(z) / 2)]  # type: ignore
             else:
-                z = ((z[int(len(z) / 2)]) +
-                     (z[int(len(z) / 2) - 1])) / 2  # type: ignore
+                z = ((z[int(len(z) / 2)]) + (z[int(len(z) / 2) - 1])) / 2  # type: ignore
 
         return z, z_source  # type: ignore
 
@@ -289,8 +287,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                     continue
                 self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
                 t2_res = (
-                    res[-1] if isinstance(res :=
-                                          t2_view.get_payload(), list) else res
+                    res[-1] if isinstance(res := t2_view.get_payload(), list) else res
                 )
                 jdstart = t2_res["t_start"]
                 jdend = t2_res["t_end"]
@@ -330,8 +327,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         )
         # Determine the phase of the first 3 sigma detection
         i_first = np.where(
-            (sncosmo_table["flux"] /
-             sncosmo_table["fluxerr"]) > detection_sigma
+            (sncosmo_table["flux"] / sncosmo_table["fluxerr"]) > detection_sigma
         )[0]
         # table might not be ordered
         lc_metrics[f"phase_{detection_sigma}sigma"] = np.min(
@@ -427,8 +423,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         sncosmo_table = self.get_flux_table(datapoints)
         # print("T2RUNSNCOSMO:: ", sncosmo_table)
         sncosmo_table = sncosmo_table[
-            (sncosmo_table["time"] >= jdstart) & (
-                sncosmo_table["time"] <= jdend)
+            (sncosmo_table["time"] >= jdstart) & (sncosmo_table["time"] <= jdend)
         ]
 
         self.logger.debug(f"Sncosmo table {sncosmo_table}")
@@ -441,8 +436,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
 
         # Define fit parameter and ranges
         if self.apply_mwcorrection:
-            transient_mwebv = self.dustmap.ebv(
-                *self.get_pos(datapoints, which="mean"))
+            transient_mwebv = self.dustmap.ebv(*self.get_pos(datapoints, which="mean"))
             self.sncosmo_model.set(mwebv=transient_mwebv)
 
         # Set redshift if provided
@@ -512,13 +506,11 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         # Save plot
         if self.plot_props or self.plot_matplotlib_suffix:
             # Construct name JN: What are the standards for noisified?
-            stock_id = "-".join([str(v)
-                                for v in self.get_stock_id(datapoints)])
+            stock_id = "-".join([str(v) for v in self.get_stock_id(datapoints)])
             tname = "-".join([str(v) for v in self.get_stock_name(datapoints)])
 
             if self.noisified:
-                stock_id = "-".join([str(v)
-                                    for v in self.get_stock_id(datapoints)])
+                stock_id = "-".join([str(v) for v in self.get_stock_id(datapoints)])
                 tname = ZTFNoisifiedIdMapper().to_ext_id(stock_id)
 
             # Add some info
