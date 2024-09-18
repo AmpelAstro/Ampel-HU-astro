@@ -4,8 +4,9 @@
 # - Select subets with specific ndet, time or class ranges.
 # - Select max samples per original transient.
 # [- Add parsnip information.]
-# - Consistently divide into training / validation.
 # [- Map class (labels)] Not implemented.
+#
+# This version will require parsnip information from file, and will use all of those, For training and validation, you will need to run twice.
 
 
 import pandas as pd
@@ -15,17 +16,21 @@ from astropy.io.misc.hdf5 import read_table_hdf5
 
 # Filenames
 fname_risedecline = 'risedecline_aug13.parquet'
-fname_parsnip = '/home/jnordin/data/noiztf/v240724/btsnoisyztf_predictions_scale3_subsample90_iin_slsn_val_v5_split.h5'
+#fname_parsnip = '/home/jnordin/data/noiztf/v240809/noiztfpred_train_sncut_scale5_z3_cadscale0.5_subamp0.9_seed0_notde.h5'
+fname_parsnip = '/home/jnordin/data/noiztf/v240809/noiztfpred_val_sncut_scale5_z3_cadscale0.5_subamp0.9_seed0_notde.h5'
+
+bname = fname_parsnip.split('/')[-1].split('.')[0]
+
+print(bname)
+
 
 # Parameters for selecting which RiseDecline runs to use
 ndetrange = [5,20]
 timerange = [0,50]
 # Maximum number of rows / transient
-maxalert = 20
+maxalert = 1
 # Cut TDEs?
 cut_tde = True
-# Fraction to set aside for validation
-valfrac = 0.2
 
 # Columns to transfer from parsnip results
 parsnip_cols = ['object_id','color', 'color_error', 'amplitude', 'amplitude_error', 's1', 's1_error', 's2', 's2_error', 's3', 's3_error', 'total_s2n', 'count', 'count_s2n_3', 'count_s2n_5', 'count_s2n_3_pre', 'count_s2n_3_rise', 'count_s2n_3_fall', 'count_s2n_3_post', 'model_chisq', 'model_dof', 'luminosity', 'luminosity_error', 'chisqdof']
@@ -49,6 +54,7 @@ df_parsnip = parsnip_tab.to_pandas()
 df_parsnip['object_id'] = df_parsnip['object_id'].str.decode('utf-8')
 
 
+print('Parsnip input file shape', df_parsnip.shape)
 
 df = pd.read_parquet( fname_risedecline )
 print('startsize', df.shape)
@@ -73,41 +79,34 @@ print('original transients', len(stocks))
 
 
 
-# Randomize transients for validation sample
-valstock = np.random.choice(stocks, size=int(valfrac*len(stocks)), replace=False)
 
 # Go through each transient and subselect (hmm...)
-train, validate = [], []
+selected = []
 dfgroup = df.groupby('ztfid')
 k = 0
 for groupstock, group in dfgroup:
   if k % 1000==0:
     print(k, groupstock, group.shape)
-    
-  if groupstock in valstock:
-    savelist = validate
-  else: 
-    savelist = train
-    
+        
   if group.shape[0]>maxalert:
-    print('... yep, many alerts from event', group.shape[0])
-    savelist.append( group.sample(n=maxalert, random_state=random_state ) )
+#    print('... yep, many alerts from event', group.shape[0])
+    selected.append( group.sample(n=maxalert, random_state=random_state ) )
   else:
-    savelist.append( group )
+    selected.append( group )
     
   k += 1
   
-df_train = pd.concat(train)
-df_val = pd.concat(validate)
+df_out = pd.concat(selected)
 
-df_train = df_train.drop(columns=cut_cols)
-df_val = df_val.drop(columns=cut_cols)
+# For this setup, we require parsnip information
+pmask = (df_out['model_dof']>0)
+print('parsnipmax', len(pmask), sum(pmask))
 
 # Final step - remove columns
-print(list(df_val.columns))
+df_out = df_out.drop(columns=cut_cols)
+print(list(df_out.columns))
 
-df_train.to_parquet('features_noiztf_v0_train.parquet')
-df_val.to_parquet('features_noiztf_v0_validate.parquet')
+df_out.to_parquet('features_noiztf_'+bname+'.parquet')
 
 
 

@@ -25,12 +25,24 @@ from ampel.content.DataPoint import DataPoint
 
 
 # Settings
-#fname = "/home/jnordin/data/noiztf/ztf_train_bts_noisified.h5"
-fname = "/home/jnordin/data/noiztf/ztf_train_bts_test.h5"
+#fname = "/home/jnordin/data/noiztf/v240809/ztf_train_bts_train.h5"
+fname = "/home/jnordin/data/noiztf/v240809/ztf_train_bts_test.h5"
+
+bname = fname.split('/')[-1].split('.')[0]
+
+print(bname)
+
+
+
+
 tags: list[Tag] = ["NOIZTF","ZTF"]
 minsig: float = 3.0
-start_count: int = 0
-end_count: int = 50000
+
+batchsize: int = 5000
+batch: int = 4
+
+start_count: int = batchsize*(batch-1)
+end_count: int = batchsize*batch
 
 
 
@@ -126,16 +138,17 @@ def sncosmo2ztpdps(tab, metadict, filtercolumn='band', timeformat='jd',
     return pps
 
 
+print('have to go', len(bts_lc.meta))
 
 # Start stepping through transients
 results = []
 for k in range(len(bts_lc.meta)):
-    print(k)
     if k<start_count:
         continue
 
     if k>=end_count:
         break
+    print(k)
 
     lc = bts_lc.get_sncosmo_lc(k)
     meta = bts_lc.meta[k]
@@ -160,7 +173,7 @@ for k in range(len(bts_lc.meta)):
 
 # Collect and export
 df = pd.DataFrame.from_dict(results)
-df.to_csv('foo.csv')
+df.to_csv('risedecline_{}_batch{}.csv'.format(bname,batch))
 
 
 
