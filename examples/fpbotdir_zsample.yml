@@ -108,39 +108,28 @@ task:
                   unit: T2CatalogMatch
             - unit: T2RunParsnipRiseDecline
               config: 
+                classifier_name: devtest
+                classifier_version: "0.1"
                 t_cadence: 3.
                 significant_bands: 
                 - 'ztfg'
                 - 'ztfr'
                 - 'ztfi'
-                parsnip_model: '/home/jnordin/data/parsnip/parsnip_ps1_ztf.pt'
-                parsnip_classifier: '/home/jnordin/data/parsnip/ztf_classifier.pkl'
+                paths_parsnip:
+                  snlong:
+                    model: '/home/jnordin/data/parsnip/parsnip_ps1_ztf.pt'
+                    classifier: '/home/jnordin/data/parsnip/ztf_classifier.pkl'
+                paths_xgbmulti:
+                  all:
+#                    path: /home/jnordin/github/ampelJul24/elasticc2/models_multivar/sn_long/model_sn_long
+                    path: /home/jnordin/data/noiztf/v240809/xgfpb_models/model_sn_long_sample1
+                    classes: [ "slsn", "snia", "snibc", "snii", "sniin" ]
+                add_parsnip_from: snlong
                 parsnipplot_suffix: 'png'
                 parsnipplot_dir: '/home/jnordin/tmp/ztfparsnip_fp'
                 max_redshift_category: 7
                 redshift_kind: AmpelZ
-                tabulator:
-                - unit: ZTFT2Tabulator                
-                t2_dependency:
-                - config: *catalog_match_config
-                  link_override:
-                    filter: PPSFilter
-                    select: first
-                    sort: jd
-                  unit: T2CatalogMatch
-            - unit: T2RunParsnipRiseDecline
-              config: 
-                t_cadence: 3.
-                significant_bands: 
-                - 'ztfg'
-                - 'ztfr'
-                - 'ztfi'
-                parsnip_model: '/home/jnordin/data/parsnip/parsnip_ps1_ztf.pt'
-                parsnip_classifier: '/home/jnordin/data/parsnip/ztf_classifier.pkl'
-                parsnipplot_suffix: 'png'
-                parsnipplot_dir: '/home/jnordin/tmp/ztfparsnip_fp'
-                redshift_kind: null
-                fixed_z: 0.05
+                return_features: true
                 tabulator:
                 - unit: ZTFT2Tabulator                
                 t2_dependency:
