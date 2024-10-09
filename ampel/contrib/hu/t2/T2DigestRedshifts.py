@@ -12,15 +12,16 @@ from typing import Any, Literal
 
 import numpy as np
 
-#from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
+# from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
 from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
+from ampel.content.DataPoint import DataPoint
+
+# from ampel.view.LightCurve import LightCurve
+from ampel.content.T1Document import T1Document
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
-from ampel.content.DataPoint import DataPoint
-#from ampel.view.LightCurve import LightCurve
-from ampel.content.T1Document import T1Document
 from ampel.view.T2DocView import T2DocView
 
 

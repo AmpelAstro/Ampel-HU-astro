@@ -17,13 +17,14 @@ from astropy.table import Table
 from sfdmap2.sfdmap import SFDMap  # type: ignore[import]
 
 from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
-from ampel.content.DataPoint import DataPoint
 from ampel.base.decorator import abstractmethod
+from ampel.content.DataPoint import DataPoint
+from ampel.content.T1Document import T1Document
 from ampel.contrib.hu.t2.T2DigestRedshifts import T2DigestRedshifts
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
-from ampel.content.T1Document import T1Document
-#from ampel.view.LightCurve import LightCurve
+
+# from ampel.view.LightCurve import LightCurve
 from ampel.view.T2DocView import T2DocView
 
 
@@ -165,9 +166,9 @@ class T2BaseLightcurveFitter(T2DigestRedshifts, AbsTabulatedT2Unit, abstract=Tru
         if self.apply_mwcorrection:
             # Get ebv from coordiantes.
             # Here there should be some option to read it from journal/stock etc
-            ras = [pp['body']['ra'] for pp in datapoints if 'ra' in pp['body']]
-            decs = [pp['body']['dec'] for pp in datapoints if 'dec' in pp['body'] ]
-            mwebv = self.dustmap.ebv(sum(ras)/len(ras), sum(decs)/len(decs) )
+            ras = [pp["body"]["ra"] for pp in datapoints if "ra" in pp["body"]]
+            decs = [pp["body"]["dec"] for pp in datapoints if "dec" in pp["body"]]
+            mwebv = self.dustmap.ebv(sum(ras) / len(ras), sum(decs) / len(decs))
             fitdatainfo["mwebv"] = mwebv
             sncosmo_table = self._deredden_mw_extinction(mwebv, sncosmo_table)
 

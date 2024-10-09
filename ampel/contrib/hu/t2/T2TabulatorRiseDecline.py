@@ -214,17 +214,20 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
                     banddata["fall_slopesig_" + band] = fit[1] / np.sqrt(cov[1][1])
                 except RuntimeError:
                     self.logger.info("Falltime curve fit failed.")
-                    
-            # Check for flux decline until the time for a possible second bump 
-            if sum( 
-                    (
-                    isecpeak:=(np.abs(fallt["time"] - max_flux_time - self.dt_fluxevo) < self.t_cadence/2)
-                    ) 
-                )>0:
-                banddata["fluxevo_ratio_" + band] = np.mean(fallt["flux"][isecpeak]) / max_flux
 
-
-
+            # Check for flux decline until the time for a possible second bump
+            if (
+                sum(
+                    isecpeak := (
+                        np.abs(fallt["time"] - max_flux_time - self.dt_fluxevo)
+                        < self.t_cadence / 2
+                    )
+                )
+                > 0
+            ):
+                banddata["fluxevo_ratio_" + band] = (
+                    np.mean(fallt["flux"][isecpeak]) / max_flux
+                )
 
         # Check whether we have a significant rise detected in any band.
         risepulls = [
@@ -326,7 +329,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
             bandobs in self.significant_bands for bandobs in flux_table["band"]
         ]
         sig_mask = np.abs((flux_table["flux"]) / flux_table["fluxerr"]) > self.sigma_det
-            
+
         det_table = flux_table[band_mask & sig_mask]
         # Calculate fraction negative detection (we no longer cut only because of this)
         o["ndet"] = len(det_table)

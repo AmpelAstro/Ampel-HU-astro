@@ -13,11 +13,12 @@ from collections.abc import Sequence
 import numpy as np
 
 from ampel.content.DataPoint import DataPoint
+from ampel.content.T1Document import T1Document
 from ampel.contrib.hu.t2.T2BaseLightcurveFitter import T2BaseLightcurveFitter
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
-from ampel.content.T1Document import T1Document
-#from ampel.view.LightCurve import LightCurve
+
+# from ampel.view.LightCurve import LightCurve
 from ampel.view.T2DocView import T2DocView
 
 
