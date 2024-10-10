@@ -150,7 +150,10 @@ class T2RunParsnipRiseDecline(
         # Create averaged values
         avgfeat = self.average_filtervalues(features)
         features.update(avgfeat)
-        t2_output: dict[str,Any] = {"risedeclinefeatures": features, "fitdatainfo": fitdatainfo}
+        t2_output: dict[str, Any] = {
+            "risedeclinefeatures": features,
+            "fitdatainfo": fitdatainfo,
+        }
 
         ## Run the classifiers
         t2_output["classifications"] = self.classify(

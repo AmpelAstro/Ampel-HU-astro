@@ -135,7 +135,10 @@ def run_parsnip_zsample(
         [lcfit["chi2pdf"] for redshift, lcfit in predictions.items()]
     )
 
-    result_dict: dict[str,Any] = {"predictions": predictions, "classifications": classifcations}
+    result_dict: dict[str, Any] = {
+        "predictions": predictions,
+        "classifications": classifcations,
+    }
 
     if np.sum(z_probabilities) > 0:
         # Take redshift probabilities into account, if available
@@ -405,7 +408,7 @@ class BaseClassifier(AmpelBaseModel):
         }
 
         ### Prepare output
-        class_records: dict[Any,Any] = {
+        class_records: dict[Any, Any] = {
             "name": self.classifier_name,
             "version": self.classifier_version,
             "parsnip": parsnip_class,
