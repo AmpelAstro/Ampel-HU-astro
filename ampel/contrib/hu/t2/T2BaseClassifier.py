@@ -135,7 +135,7 @@ def run_parsnip_zsample(
         [lcfit["chi2pdf"] for redshift, lcfit in predictions.items()]
     )
 
-    result_dict = {"predictions": predictions, "classifications": classifcations}
+    result_dict: dict[str,Any] = {"predictions": predictions, "classifications": classifcations}
 
     if np.sum(z_probabilities) > 0:
         # Take redshift probabilities into account, if available
@@ -338,8 +338,9 @@ class BaseClassifier(AmpelBaseModel):
         """
 
         ### Parsnip
+        parsnip_class: dict[str, Any] = {}
         if len(flux_table) < 4:
-            parsnip_class: dict[str, Any] = {"Failed": "few det"}
+            parsnip_class["Failed"] = "few det"
         else:
             models = parsnip_models if parsnip_models else self.class_parsnip.keys()
             if (
@@ -347,7 +348,7 @@ class BaseClassifier(AmpelBaseModel):
                 and self.add_parsnip_from not in models
             ):
                 raise ValueError("Feature parsnip model not requested to run.")
-            parsnip_class: dict[str, Any] = {
+            parsnip_class = {
                 model_name: self.get_parsnip_class(
                     model_name,
                     flux_table,
@@ -404,7 +405,7 @@ class BaseClassifier(AmpelBaseModel):
         }
 
         ### Prepare output
-        class_records = {
+        class_records: dict[Any,Any] = {
             "name": self.classifier_name,
             "version": self.classifier_version,
             "parsnip": parsnip_class,
