@@ -67,6 +67,7 @@ requires an access token if data is to be retrieved.
 - [T2PS1ThumbNedTap](ampel/contrib/hu/t2/T2PS1ThumbNedTap.py): This point t2 unit is tied with the point T2 unit T2NedTap.
 - [T2PanStarrThumbPrint](ampel/contrib/hu/t2/T2PanStarrThumbPrint.py): Retrieve panstarrs images at datapoint location and save these as compressed svg into the returned dict.
 - [T2RunParsnip](ampel/contrib/hu/t2/T2RunParsnip.py): Gathers information and runs the parsnip model and classifier.
+- [T2RunParsnipRiseDecline](ampel/contrib/hu/t2/T2RunParsnipRiseDecline.py)
 - [T2RunPossis](ampel/contrib/hu/t2/T2RunPossis.py): Load a POSSIS kilnova model and fit to a LightCurve object as process is called.
 - [T2RunSncosmo](ampel/contrib/hu/t2/T2RunSncosmo.py): Gathers information and runs Sncosmo.
 - [T2RunSnoopy](ampel/contrib/hu/t2/T2RunSnoopy.py): Gathers information and runs snoopy.

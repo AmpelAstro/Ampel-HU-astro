@@ -1,0 +1,293 @@
+name: fpbotdir
+parameters:
+- name: channelname
+  value: test
+
+mongo:
+  prefix: fpbotDir
+  reset: true
+
+channel:
+- name: test
+  access: [ZTF, ZTF_PUB, ZTF_PRIV]
+  policy: []
+
+task:
+
+- title: NearbyInfantReact
+  unit: AlertConsumer
+  config:
+    iter_max: 100000
+    supplier:
+      unit: ZTFFPbotForcedPhotometryAlertSupplier
+      config:
+        deserialize: csv
+        excl_baseline_pp: true
+        loader:
+          unit: DirAlertLoader
+          config:
+            folder: /home/jnordin/data/ztf_fpbot/noiztf_221223
+            extension: "*csv"
+              
+    shaper: ZiDataPointShaper
+    directives:
+    - channel: "{{ job.parameters.channelname }}"
+      ingest:
+        mux:
+          combine:
+          - state_t2:
+            - unit: T2LightCurveSummary
+            - unit: T2MatchBTS
+            - unit: T2DigestRedshifts
+              config: &digest_config
+                max_redshift_category: 7
+                t2_dependency:
+                - config: &catalog_match_config
+                    catalogs:
+                      GLADEv23:
+                        keys_to_append:
+                        - z
+                        - dist
+                        - dist_err
+                        - flag1
+                        - flag2
+                        - flag3
+                        rs_arcsec: 10
+                        use: extcats
+                      NEDz_extcats:
+                        keys_to_append:
+                        - ObjType
+                        - Velocity
+                        - z
+                        rs_arcsec: 30.0
+                        use: extcats
+                      NEDz:
+                        keys_to_append:
+                        - ObjType
+                        - Velocity
+                        - z
+                        rs_arcsec: 10.0
+                        use: catsHTM
+                      NEDLVS:
+                        keys_to_append:
+                        - objname
+                        - objtype
+                        - dec
+                        - z_unc
+                        - z_tech
+                        - z_qual
+                        - z_qual_flag
+                        - z
+                        rs_arcsec: 10.0
+                        use: extcats
+                      SDSS_spec:
+                        keys_to_append:
+                        - z
+                        - bptclass
+                        - subclass
+                        rs_arcsec: 10.0
+                        use: extcats
+                      milliquas:
+                        use: extcats
+                        rs_arcsec: 3
+                        keys_to_append:
+                        - broad_type
+                        - name
+                        - redshift
+                        - qso_prob
+                      SDSSDR10:
+                        use: catsHTM
+                        rs_arcsec: 3
+                        keys_to_append:
+                        - type
+                        - flags
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2CatalogMatch
+            - unit: T2RunParsnipRiseDecline
+              config: 
+                classifier_name: devtest
+                classifier_version: "0.1"
+                t_cadence: 3.
+                significant_bands: 
+                - 'ztfg'
+                - 'ztfr'
+                - 'ztfi'
+                paths_parsnip:
+                  snlong:
+                    model: '/home/jnordin/data/parsnip/parsnip_ps1_ztf.pt'
+                    classifier: '/home/jnordin/data/parsnip/ztf_classifier.pkl'
+                paths_xgbmulti:
+                  all:
+#                    path: /home/jnordin/github/ampelJul24/elasticc2/models_multivar/sn_long/model_sn_long
+                    path: /home/jnordin/data/noiztf/v240809/xgfpb_models/model_sn_long_sample1
+                    classes: [ "slsn", "snia", "snibc", "snii", "sniin" ]
+                add_parsnip_from: snlong
+                parsnipplot_suffix: 'png'
+                parsnipplot_dir: '/home/jnordin/tmp/ztfparsnip_fp'
+                max_redshift_category: 7
+                redshift_kind: AmpelZ
+                return_features: true
+                tabulator:
+                - unit: ZTFT2Tabulator                
+                t2_dependency:
+                - config: *catalog_match_config
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2CatalogMatch
+            unit: ZiT1Combiner
+          insert:
+            point_t2:
+            - config: *catalog_match_config
+              ingest:
+                filter: PPSFilter
+                select: first
+                sort: jd
+              unit: T2CatalogMatch
+          unit: ZiMongoMuxer
+
+- title: Run T2s
+  unit: T2Worker
+  config:
+    send_beacon: false
+    raise_exc: true
+
+
+
+- title: React
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3ReviewUnitExecutor
+        config:
+          supply:
+            unit: T3DefaultBufferSupplier
+            config:
+              select:
+                unit: T3StockSelector
+                config:
+                  channel: "{{ job.parameters.channelname }}"
+              load:
+                unit: T3SimpleDataLoader
+                config:
+                  directives:
+                    - STOCK
+                    - T1
+                    - T2DOC
+                    - DATAPOINT
+                  channel: "{{ job.parameters.channelname }}"
+          stage:
+            unit: T3SimpleStager
+            config:
+              execute:
+                - unit: TransientTablePublisher
+                  config:
+                    include_stock: true
+                    include_channels: true
+                    local_path: ./
+                    table_schema:
+                      T2InfantCatalogEval:
+                        'ndet':
+                          - detections
+                        'age':
+                          - age
+                        'last_UL':
+                          - last_UL
+                        'peak_mag':
+                          - peak_mag
+                        'latest_mag':
+                          - latest_mag
+                        'rb':
+                          - rb
+                        'drb':
+                          - drb
+                        'absmag':
+                          - absmag
+                        'action':
+                          - action
+                        'infantNEDz':
+                          - NEDz_extcats_z
+                        'infantNEDdist':
+                          - NEDz_extcats_dist2transient
+                        'infantNEDkpc':
+                          - NEDz_extcats_kpcdist
+                        'infantGladez':
+                          - GLADEv23_z
+                        'infantGladedist':
+                          - GLADEv23_dist2transient
+                        'infantGladekpc':
+                          - GLADEv23_kpcdist
+                        'infantNedLvsz':
+                          - NEDLVS_z
+                        'infantNedLvsdist':
+                          - NEDLVS_dist2transient
+                        'infantNedLvskpc':
+                          - NEDLVS_kpcdist
+                    transient_table_schema:
+                      T2CatalogMatch:
+                        'Glade z':
+                          - GLADEv23
+                          - z
+                        'NED z':
+                          - NEDz_extcats
+                          - z
+                        'NED offset':
+                          - NEDz_extcats
+                          - dist2transient
+                        'NEDLVS z':
+                          - NEDLVS
+                          - z
+                        'NEDLV offset':
+                          - NEDLVS
+                          - dist2transient
+           
+- title: React
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3ReviewUnitExecutor
+        config:
+          supply:
+            unit: T3DefaultBufferSupplier
+            config:
+              select:
+                unit: T3StockSelector
+                config:
+                  channel: "{{ job.parameters.channelname }}"
+              load:
+                unit: T3SimpleDataLoader
+                config:
+                  directives:
+                    - STOCK
+                    - T1
+                    - T2DOC
+                    - DATAPOINT
+                  channel: "{{ job.parameters.channelname }}"
+              complement: 
+              - unit: ZTFCutoutImages
+                config:
+                  eligible: last
+              - unit: TNSNames
+                config:
+                  include_report: true
+          stage:
+            unit: T3SimpleStager
+            config:
+              execute:
+                - unit: PlotTransientLightcurves
+                  config:
+                    pdf_path: candidates.pdf
+                    save_png: true
+                    include_cutouts: false
+                    slack_channel: "#ztf_auto"
+                    slack_token:
+                      label: "slack/ztf_ia/jno"                    
+                    tabulator:
+                    - unit: ZTFT2Tabulator
+

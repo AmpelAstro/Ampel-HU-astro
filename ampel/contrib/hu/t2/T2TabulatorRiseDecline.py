@@ -119,6 +119,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
                    "cadence" days of jd_last
      * slope_rise_{i,ii} : magnitude slope between jd_det and jd_max. None if bool_norise
      * slope_decline_{i,ii} : magnitude slope between jd_max and jd_lst. None unless bool_peaked
+     * postpeak_fluxevo_{band} : flux ratio between peak and {dt_fluxevo}
 
      Additionally, we would like to access host properties like distance and host mags and sizes.
      Would that have to be a different T2?.
@@ -140,6 +141,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
     significant_bands: Sequence[str] = ["lsstg", "lsstr", "lssti", "lsstz"]
     sigma_det: float = 5.0
     sigma_slope: float = 3.0  # Threshold for having detected a slope (flux/day)
+    dt_fluxevo: float = 20.0  # Calculating flux ratio between peak and this time (roughly modeled after SNIa 2nd peak)
     color_list: Sequence[Sequence[str]] = [
         ["lsstu", "lsstg"],
         ["lsstg", "lsstr"],
@@ -173,8 +175,6 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
 
         banddata = {}
         tscale = np.mean(ftable["time"])
-
-        # print("T2TABULATORRISEDECLINE::" , np.unique(ftable["band"]))
 
         for band in set(ftable["band"]):
             bt = ftable[ftable["band"] == band]
@@ -215,15 +215,24 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
                 except RuntimeError:
                     self.logger.info("Falltime curve fit failed.")
 
-        # In v1 we also had a requirement that a sufficient time should have
-        # passed after peak, such that we "should" have seen a decline.
-        # We here skip this, hopefully the slope fit is sufficient
+            # Check for flux decline until the time for a possible second bump
+            if (
+                sum(
+                    isecpeak := (
+                        np.abs(fallt["time"] - max_flux_time - self.dt_fluxevo)
+                        < self.t_cadence / 2
+                    )
+                )
+                > 0
+            ):
+                banddata["fluxevo_ratio_" + band] = (
+                    np.mean(fallt["flux"][isecpeak]) / max_flux
+                )
 
         # Check whether we have a significant rise detected in any band.
         risepulls = [
             banddata.get("rise_slopesig_" + band, 0) for band in set(ftable["band"])
         ]
-        # print("TABULATORRISEDECLINE:: risepulls", risepulls)
         if sum(risepulls) > self.sigma_slope:
             banddata["bool_rise"] = True
         else:
@@ -232,7 +241,6 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
         decpulls = [
             banddata.get("fall_slopesig_" + band, 0) for band in set(ftable["band"])
         ]
-        # print("TABULATORRISEDECLINE:: decpulls", decpulls)
         if sum(decpulls) < -self.sigma_slope:
             banddata["bool_fall"] = True
         else:
@@ -321,6 +329,7 @@ class T2TabulatorRiseDeclineBase(AmpelBaseModel):
             bandobs in self.significant_bands for bandobs in flux_table["band"]
         ]
         sig_mask = np.abs((flux_table["flux"]) / flux_table["fluxerr"]) > self.sigma_det
+
         det_table = flux_table[band_mask & sig_mask]
         # Calculate fraction negative detection (we no longer cut only because of this)
         o["ndet"] = len(det_table)
@@ -672,7 +681,6 @@ class T2TabulatorRiseDecline(
         # Convert input datapoints to standardized Astropy Table
         # Using standard tabulators
         flux_table = self.get_flux_table(datapoints)
-        # print("T2TABULATORRISEDECLINE:: ", flux_table)
 
         # Cut the flux table if requested
         if self.max_ndet > 0 and len(flux_table) > self.max_ndet:

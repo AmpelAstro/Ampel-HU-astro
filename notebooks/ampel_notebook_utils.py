@@ -68,17 +68,20 @@ def api_name2candid(name, token):
 
 def api_get_lightcurve(name, token, shaper=None):
     """
-    Retrieve the alert history of a SN and convert to a LightCurve object.
+    Retrieve the alert datapoints belonging to a named supernova from the archive.    
 
     An alert token is needed for access. Archive token can be retrieved from
     https://ampel.zeuthen.desy.de/live/dashboard/tokens
     once the user has registered with the github AmpelProject.
+    
+    A shaper is used to convert the raw archive content, with the standard ZTF
+    one used if none is provided.
 
     :param name: str, ZTF name of transient.
     :param token: str, AMPEL archive token:
     :param shaper: optional, AMPEL data point shaper (otherwise using default)
 
-    return LightCurve object
+    return list[datapoints]
 
     """
 
@@ -109,6 +112,47 @@ def api_get_lightcurve(name, token, shaper=None):
     dps = shaper.process( pps, stockId)
     t1d = T1Document(stock=stockId, link=0)
     return LightCurve.build(t1d, dps)
+
+
+def api_get_datapoints(name, token, shaper=None):
+    """
+    Retrieve the alert history and provide as a list of AMPEL shaped datapoints.
+
+    An alert token is needed for access. Archive token can be retrieved from
+    https://ampel.zeuthen.desy.de/live/dashboard/tokens
+    once the user has registered with the github AmpelProject.
+
+    :param name: str, ZTF name of transient.
+    :param token: str, AMPEL archive token:
+    :param shaper: optional, AMPEL data point shaper (otherwise using default)
+
+    return LightCurve object
+
+    """
+    
+    # Setup connection
+    endpoint = "https://ampel.zeuthen.desy.de/api/ztf/archive/v3/object/{}/photopoints".format(name)
+    header = {"Authorization": "bearer "+token}
+
+    response = requests.get(endpoint, headers=header )
+    
+    if not response.ok:
+        return None
+    
+    # Convert
+    alert = response.json()
+    if alert is None:
+        return None
+    
+    pps = [alert['candidate']]
+    pps.extend( [prv_cand for prv_cand in alert['prv_candidates'] ] )
+
+    if shaper is None:
+        tmplog = AmpelLogger.get_logger()
+        shaper = ZiDataPointShaper(logger=tmplog)
+    
+    stockId = ZTFIdMapper.to_ampel_id(name)
+    return shaper.process( pps, stockId)
 
 
 def api_get_lightcurves(name, token, shaper=None, with_history=True):
