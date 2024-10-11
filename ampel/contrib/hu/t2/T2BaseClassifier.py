@@ -331,7 +331,7 @@ class BaseClassifier(AmpelBaseModel):
         xgb_multimodels: list | None = None,
         parsnip_models: list | None = None,
         redshift_weights=None,
-    ) -> tuple[list[dict], dict]:
+    ) -> list[dict]:
         """
         Run the loaded classifiers on the input features / lightcurve.
         'xgb_binarymodels', 'xgb_multimodels', 'parsnip_models' all allow to select which models to use (selected by labels).
@@ -408,7 +408,7 @@ class BaseClassifier(AmpelBaseModel):
         }
 
         ### Prepare output
-        class_records: dict[Any, Any] = {
+        class_records: dict = {
             "name": self.classifier_name,
             "version": self.classifier_version,
             "parsnip": parsnip_class,
@@ -418,4 +418,4 @@ class BaseClassifier(AmpelBaseModel):
         if self.return_features:
             class_records["features"] = features
 
-        return class_records
+        return [class_records]
