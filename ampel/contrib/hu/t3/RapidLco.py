@@ -244,7 +244,7 @@ class RapidLco(RapidBase):
             # Abort if we have errors
             if len(testreply.json()["errors"]) > 0:
                 self.logger.info(
-                    "Validating LCO trigger fails for for %s" % (transient_name),
+                    f"Validating LCO trigger fails for for {transient_name}",
                     extra={"target": transient_name, "react_dict": react_dict},
                 )
                 success = False
@@ -262,7 +262,7 @@ class RapidLco(RapidBase):
                 response.raise_for_status()
             except requests.exceptions.HTTPError:
                 self.logger.info(
-                    "Submit LCO fails for %s" % (transient_name),
+                    f"Submit LCO fails for {transient_name}",
                     extra={
                         "target": transient_name,
                         "react_dict": react_dict,
@@ -273,7 +273,7 @@ class RapidLco(RapidBase):
 
             # Look at the response
             self.logger.info(
-                "Submit LCO succeeds for %s" % (transient_name),
+                f"Submit LCO succeeds for {transient_name}",
                 extra={
                     "target": transient_name,
                     "react_dict": react_dict,

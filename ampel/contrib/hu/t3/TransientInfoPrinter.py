@@ -70,7 +70,7 @@ class TransientInfoPrinter(AbsPhotoT3Unit):
         if tran.stock:
             logger.info(f"Tags: {tran.stock['tag']}")
 
-        logger.info("Content: %s" % tran.content_summary())
+        logger.info(f"Content: {tran.content_summary()}")
 
         if tran.extra:
             logger.info(f"Extra: {tran.extra}")

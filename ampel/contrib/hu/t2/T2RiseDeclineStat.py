@@ -113,9 +113,7 @@ class T2RiseDeclineBase(LogicalUnit):
                 unique_jd, counts = np.unique(dets["jd"], return_counts=True)
                 double_jd = list(unique_jd[(counts > 1)])
                 if len(double_jd) != 0:
-                    self.logger.info(
-                        "Cuting duplicate jd photopoints at %s" % (double_jd)
-                    )
+                    self.logger.info(f"Cuting duplicate jd photopoints at {double_jd}")
                     for jd in double_jd:
                         bDoubleJD = dets["jd"] == jd
                         MaxRb = dets["rb"][bDoubleJD].max()

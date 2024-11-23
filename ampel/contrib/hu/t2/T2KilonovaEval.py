@@ -721,9 +721,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
 
         possible_modes = ["reward", "punish", "pass"]
         if self.distance_mode not in possible_modes:
-            raise ValueError(
-                "results: distance mode must be one of %r." % possible_modes
-            )
+            raise ValueError(f"results: distance mode must be one of {possible_modes}.")
 
         # reward/punish distance math depending on mode
         match self.distance_mode:

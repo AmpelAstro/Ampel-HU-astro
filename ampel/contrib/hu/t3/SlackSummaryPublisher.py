@@ -101,7 +101,7 @@ class SlackSummaryPublisher(AbsT3Unit):
                 columns=[c for c in df.columns if c not in channels] + list(channels),
             )
 
-            filename = "Summary_%s.csv" % date
+            filename = f"Summary_{date}.csv"
 
             buffer = io.StringIO(filename)
             df.to_csv(buffer)
@@ -159,7 +159,7 @@ class SlackSummaryPublisher(AbsT3Unit):
                     + list(channels),
                 )
 
-                filename = "Photometry_%s.csv" % date
+                filename = f"Photometry_{date}.csv"
 
                 buffer = io.StringIO(filename)
                 photometry_df.to_csv(buffer)

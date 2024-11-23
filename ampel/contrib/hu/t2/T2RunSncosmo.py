@@ -440,11 +440,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             self.sncosmo_model.set(z=t2_output["z"])
 
         self.logger.debug(
-            "Starting fit with fit params {}, all parameters {} and start values {}".format(
-                self.fit_params,
-                self.sncosmo_model.param_names,
-                self.sncosmo_model.parameters,
-            )
+            f"Starting fit with fit params {self.fit_params}, all parameters {self.sncosmo_model.param_names} and start values {self.sncosmo_model.parameters}"
         )
 
         # Carry out fit. Bounds are directly carried from parameters

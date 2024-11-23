@@ -143,10 +143,10 @@ def get_tns_t2remarks(tview: TransientView) -> None | dict[str, Any]:
         sdss_spec = cat_res.get("SDSS_spec", False)
         if sdss_spec:
             remarks["remarks"] = (
-                remarks["remarks"] + "SDSS spec-z %.3f. " % (sdss_spec["z"])
+                remarks["remarks"] + f"SDSS spec-z {sdss_spec['z']:.3f}. "
             )
         elif nedz:
-            remarks["remarks"] = remarks["remarks"] + "NED z %.3f. " % (nedz["z"])
+            remarks["remarks"] = remarks["remarks"] + f"NED z {nedz['z']:.3f}. "
 
         # tag AGNs
         milliquas = cat_res.get("milliquas", False)

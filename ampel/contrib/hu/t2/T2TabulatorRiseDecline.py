@@ -632,7 +632,7 @@ class T2TabulatorRiseDecline(
             ax.set_ylabel(band)
 
             # Create text string
-            title = "ndet: %s " % (t2result["ndet"])
+            title = f'ndet: {t2result["ndet"]} '
 
             for boolprop in [
                 "peaked",

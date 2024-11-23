@@ -290,9 +290,7 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
             # Construct name
             fname = os.path.join(
                 self.plot_dir,
-                "{}_snoopy_{}.png".format(
-                    ZTFIdMapper.to_ext_id(light_curve.stock_id), self.snoopy_model_name
-                ),
+                f"{ZTFIdMapper.to_ext_id(light_curve.stock_id)}_snoopy_{self.snoopy_model_name}.png",
             )
             snoopy_sn.plot(outfile=fname)
         if self.plot_draw:

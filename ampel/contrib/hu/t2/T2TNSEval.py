@@ -119,7 +119,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         for needed_cat in self.needed_catalogs:
             if not cat_res.get(needed_cat, False):
                 self.logger.debug(
-                    "no T2CATALOGMATCH results for %s" % needed_cat,
+                    f"no T2CATALOGMATCH results for {needed_cat}",
                     extra={"catalog_matches": cat_res},
                 )
                 return False
@@ -316,7 +316,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
 
         # cut on median dRB score
         drbs = [pp["body"]["drb"] for pp in pps if "drb" in pp["body"]]
-        if len(drbs) > 0 and np.median(drbs) < self.drb_minmed:  # noqa: SIM103
+        if len(drbs) > 0 and np.median(drbs) < self.drb_minmed:
             return False
 
         # congratulation Lightcurve, you made it!
@@ -337,10 +337,10 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         sdss_spec = cat_res.get("SDSS_spec", False)
         if sdss_spec:
             remarks["remarks"] = (
-                remarks["remarks"] + "SDSS spec-z %.3f. " % (sdss_spec["z"])
+                remarks["remarks"] + f"SDSS spec-z {sdss_spec['z']:.3f}. "
             )
         elif nedz:
-            remarks["remarks"] = remarks["remarks"] + "NED z %.3f. " % (nedz["z"])
+            remarks["remarks"] = remarks["remarks"] + f"NED z {nedz['z']:.3f}. "
 
         # tag AGNs
         milliquas = cat_res.get("milliquas", False)
@@ -497,7 +497,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         If needed by TNS, they need to be converted back at T3
         """
 
-        self.logger.debug("starting eval from %s" % (t2_views))
+        self.logger.debug(f"starting eval from {t2_views}")
 
         # i. Check whether the lightcurve passes selection criteria
         if not self.inspect_lc(light_curve):

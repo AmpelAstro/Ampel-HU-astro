@@ -337,7 +337,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
             else:
                 group_z[1].append(z)
 
-        self.logger.debug(" bts match yield %s" % (group_z))
+        self.logger.debug(f" bts match yield {group_z}")
 
         return group_z
 

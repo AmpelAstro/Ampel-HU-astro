@@ -426,8 +426,7 @@ class RcfFilter(AbsAlertFilter):
                     return codes.max_ipac_age
             except KeyError:
                 self.logger.debug(
-                    "%s No jd end or start alert keywords. Letting through."
-                    % (alert.id)
+                    f"{alert.id} No jd end or start alert keywords. Letting through."
                 )
 
         # SEARCH POINT SOURCE UNDERNEATH
