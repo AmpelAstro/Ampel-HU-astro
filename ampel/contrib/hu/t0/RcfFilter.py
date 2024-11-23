@@ -23,7 +23,9 @@ class RcfFilter(AbsAlertFilter):
 
     min_ndet: int = 1  #: number of previous detections
     min_dist_to_sso: float  #: distance to nearest solar system object [arcsec]
-    min_gal_lat: float  #: minium distance from galactic plane. set to negative to disable cut.
+    min_gal_lat: (
+        float  #: minium distance from galactic plane. set to negative to disable cut.
+    )
     min_age: float  #: Age as calculated based on previous PP in alert
     max_ipac_age: float  #: Age as calculated based on alert keywords
     max_magpsf: float
@@ -340,7 +342,7 @@ class RcfFilter(AbsAlertFilter):
         ):
             return True
 
-        if (
+        if (  # noqa: SIM103
             age > 90
             and alert["distnr"] > 0  # shouldn't this be distnr?  was distnbr
             and alert["distnr"] < 0.5

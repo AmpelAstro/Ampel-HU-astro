@@ -316,7 +316,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
 
         # cut on median dRB score
         drbs = [pp["body"]["drb"] for pp in pps if "drb" in pp["body"]]
-        if len(drbs) > 0 and np.median(drbs) < self.drb_minmed:
+        if len(drbs) > 0 and np.median(drbs) < self.drb_minmed:  # noqa: SIM103
             return False
 
         # congratulation Lightcurve, you made it!

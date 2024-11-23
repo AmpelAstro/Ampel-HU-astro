@@ -56,7 +56,7 @@ class TDESource(sncosmo.Source):
         self._parameters: np.ndarray = np.array([1.584, 2.278, 4.0, 1e-25])
 
     @staticmethod
-    def _planck_lam(self, wave: np.ndarray, T: np.ndarray) -> np.float64 | np.ndarray:
+    def _planck_lam(wave: np.ndarray, T: np.ndarray) -> np.float64 | np.ndarray:
         """
         Calculate the spectral radiance of a blackbody
         :wave: np.ndarray, array containing wavelength in AA
@@ -76,18 +76,17 @@ class TDESource(sncosmo.Source):
         # returns spectral radiance: J s-1 sr-1 m-3
         return prefactor * 1 / (np.exp(exponential_term) - 1) / u.sr
 
-    @staticmethod
-    def _cc_bol_lam(self, wave: float | np.ndarray, T: np.ndarray):
-        return self._planck_lam(self, wave, T) * u.sr
+    @classmethod
+    def _cc_bol_lam(cls, wave: np.ndarray, T: np.ndarray):
+        return cls._planck_lam(wave, T) * u.sr
 
     @staticmethod
-    def _gauss(x: float, sigma: float | np.float64) -> float | np.float64:
+    def _gauss(x, sigma):
         """
         Calculate a Gaussian
         """
         return np.exp(-0.5 * x**2 / (sigma**2))
 
-    @staticmethod
     def _gauss_exp(self, phases: np.ndarray) -> np.ndarray:
         risetime = self._parameters[0]
         decaytime = self._parameters[1]
@@ -127,9 +126,9 @@ class TDESource(sncosmo.Source):
 
         phase_iter = np.asarray(phase) if np.ndim(phase) == 0 else phase
 
-        bb_lam = self._cc_bol_lam(self, T=t_evo, wave=wave)
+        bb_lam = self._cc_bol_lam(T=t_evo, wave=wave)
 
-        rise_decay = self._gauss_exp(self, phases=phase_iter)
+        rise_decay = self._gauss_exp(phases=phase_iter)
 
         model_flux = (rise_decay * bb_lam).transpose()
 
