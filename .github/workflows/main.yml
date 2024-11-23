@@ -21,7 +21,10 @@ jobs:
       PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
     with:
       mongo: true
+      # renovate: datasource=python-version depName=python versioning=python
       python-version: "3.11"
+      # renovate: datasource=pypi depName=ruff versioning=pep440
+      ruff-version: "0.7.4"
       lint: true
       format: true
   unit_inventory:
