@@ -11,7 +11,7 @@ import gc
 import os
 import warnings
 from collections.abc import Sequence
-from typing import Literal
+from typing import Any, Literal, cast
 
 import backoff
 import matplotlib.pyplot as plt
@@ -240,7 +240,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             if t2_view.unit not in self.abort_map:
                 continue
             self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-            t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
+            t2_res = cast(dict[str, Any], t2_view.get_payload())
             abort_maps.update(t2_res)
 
             for abort_map in self.abort_map[t2_view.unit]:

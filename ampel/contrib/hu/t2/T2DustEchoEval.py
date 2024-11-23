@@ -9,7 +9,7 @@
 
 import os
 from collections.abc import Sequence
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -108,9 +108,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
             self.filters_lc = self.filters
             if t2_view.unit == "T2BayesianBlocks":
                 self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-                t2_res = (
-                    res[-1] if isinstance(res := t2_view.get_payload(), list) else res
-                )
+                t2_res = cast(dict[str, Any], t2_view.get_payload())
 
                 for key in self.filters:
                     if key not in t2_res or t2_res.get(key) is None:

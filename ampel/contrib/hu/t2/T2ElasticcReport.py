@@ -8,7 +8,7 @@
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
 from collections.abc import Sequence
-from typing import Literal
+from typing import Any, Literal, cast
 
 import numpy as np
 
@@ -829,9 +829,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
             self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
             # Xgb results either from multiple instances of T2XgbClassifier...
             if t2_view.unit == "T2XgbClassifier":
-                t2_res = (
-                    res[-1] if isinstance(res := t2_view.get_payload(), list) else res
-                )
+                t2_res = cast(dict[str, Any], t2_view.get_payload())
                 if "prob0" in t2_res:
                     if t2_res["model"] == self.tree_1v2:
                         is1 = t2_res["prob0"]
@@ -844,9 +842,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
                     direct_eval = t2_res.get("direct_eval", None)
             # ... or all from T2MultiXgbClassifier
             elif t2_view.unit == "T2MultiXgbClassifier":
-                t2_res = (
-                    res[-1] if isinstance(res := t2_view.get_payload(), list) else res
-                )
+                t2_res = cast(dict[str, Any], t2_view.get_payload())
                 if t2_res["model"] == "multiXgb":
                     is1 = t2_res["classifications"][self.tree_1v2]["prob0"]
                     is21 = t2_res["classifications"][self.tree_21v22]["prob0"]
@@ -854,9 +850,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
                 elif t2_res["model"] == "directEval":
                     direct_eval = t2_res.get("direct_eval", None)
             elif t2_view.unit == "T2RunParsnip":
-                t2_res = (
-                    res[-1] if isinstance(res := t2_view.get_payload(), list) else res
-                )
+                t2_res = cast(dict[str, Any], t2_view.get_payload())
 
                 if "classification" in t2_res:
                     parsnip_class = {

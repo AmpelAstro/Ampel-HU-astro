@@ -8,7 +8,7 @@
 # Last Modified By:    ernstand@physik.hu-berlin.de
 
 from collections.abc import Sequence
-from typing import Any, Literal, no_type_check
+from typing import Any, Literal, cast, no_type_check
 
 import numpy as np
 from astropy.coordinates import Distance, SkyCoord
@@ -837,7 +837,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         # Check t2 ouputs
         for t2_view in t2_views:
             self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-            t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
+            t2_res = cast(dict[str, Any], t2_view.get_payload())
 
             # Redshift
             if t2_view.unit == "T2DigestRedshifts":

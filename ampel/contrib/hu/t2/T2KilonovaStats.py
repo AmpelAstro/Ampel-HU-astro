@@ -1,7 +1,7 @@
 import json
 import os
 from collections.abc import Sequence
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import numpy as np
 import pandas as pd
@@ -155,7 +155,7 @@ class T2KilonovaStats(AbsTiedStateT2Unit):
         print("T2KILONOVASTATS:: process")
         for t2_view in t2_views:
             self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-            t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
+            t2_res = cast(dict[str, Any], t2_view.get_payload())
 
             if t2_view.unit == "T2KilonovaEval":
                 return self.kilonovaness_statistics(t2_res)

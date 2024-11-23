@@ -8,7 +8,7 @@
 # Last Modified By:    atownsend@physik.hu-berlin.de
 
 from collections.abc import Sequence
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import numpy as np
 
@@ -360,9 +360,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
         # Loop through t2_views and collect information.
         for t2_view in t2_views:
             self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-            t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
-            # v0.8:
-            # t2_res =  t2_view.get_data()
+            t2_res = cast(dict[str, Any], t2_view.get_payload())
 
             if t2_view.unit == "T2LSPhotoZTap":
                 new_zs, new_dists = self._get_lsphotoz_groupz(t2_res)
@@ -484,9 +482,6 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
         light_curve: LightCurve,
         t2_views: Sequence[T2DocView],
     ) -> UBson | UnitResult:
-        #    def process(
-        #        self, light_curve: LightCurve, t2_views: Sequence[T2DocView]
-        #    ) -> UBson | UnitResult:
         """
 
         Parse t2_views from catalogs that were part of the redshift studies.

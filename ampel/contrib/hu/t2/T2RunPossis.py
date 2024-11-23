@@ -10,7 +10,7 @@
 
 import copy
 from collections.abc import Sequence
-from typing import Literal
+from typing import Any, Literal, cast
 from urllib.parse import urljoin
 from urllib.request import urlopen
 
@@ -254,11 +254,7 @@ class T2RunPossis(T2RunSncosmo):
                     if t2_view.unit not in ["T2PropagateStockInfo", "T2HealpixProb"]:
                         continue
                     self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-                    t2_res = (
-                        res[-1]
-                        if isinstance(res := t2_view.get_payload(), list)
-                        else res
-                    )
+                    t2_res = cast(dict[str, Any], t2_view.get_payload())
                     if "trigger_time" not in t2_res:
                         self.logger.info("No explosion time", extra={"t2res": t2_res})
                         return UnitResult(code=DocumentCode.T2_MISSING_INFO)

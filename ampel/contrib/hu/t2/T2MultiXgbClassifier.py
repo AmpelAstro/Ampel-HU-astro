@@ -9,7 +9,7 @@
 
 import os
 from collections.abc import Sequence
-from typing import Literal
+from typing import Any, Literal, cast
 
 import numpy as np
 import xgboost as xgb
@@ -174,14 +174,10 @@ class T2MultiXgbClassifier(
             self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
             # So far only knows how to parse phases from T2TabulatorRiseDecline
             if t2_view.unit == "T2TabulatorRiseDecline":
-                t2_res = (
-                    res[-1] if isinstance(res := t2_view.get_payload(), list) else res
-                )
+                t2_res = cast(dict[str, Any], t2_view.get_payload())
                 t2data.update(t2_res)
             if t2_view.unit == "T2ElasticcRedshiftSampler":
-                t2_res = (
-                    res[-1] if isinstance(res := t2_view.get_payload(), list) else res
-                )
+                t2_res = cast(dict[str, Any], t2_view.get_payload())
                 # For some reason we trained xgb using z, zerr and host_sep
                 zdata = {"z": None, "z_err": None, "host_sep": None}
                 if t2_res["z_source"] in [
