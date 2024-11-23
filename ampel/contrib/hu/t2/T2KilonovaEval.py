@@ -82,7 +82,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
     ideal_absmag: float = -15.5  # from gw170817
     absmag_range_rewards: list = [(0.5, 5), (2, 2), (4, 1)]
     min_absmag: float = -20  # AB magnitude -16 +- 4 DOI 10.3847/1538-4357/ac8e60
-    max_absmag: float = -12  #
+    max_absmag: float = -12
     min_obsmag: float = 19  #  Arxive: aa40689
     max_obsmag: float = 21
     min_ndet: int = 1

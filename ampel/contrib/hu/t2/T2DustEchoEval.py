@@ -457,22 +457,22 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
             ):
                 if maybe_interesting is False:
                     if any(value == "nan" for value in excess_region["e_rise"]):
-                        t2_output["status"] = "3"  #
+                        t2_output["status"] = "3"
                     else:
                         t2_output["status"] = "1"
                 elif any(value == "nan" for value in excess_region["e_rise"]):
-                    t2_output["status"] = "3_maybe_interesting"  #
+                    t2_output["status"] = "3_maybe_interesting"
                 else:
                     t2_output["status"] = "1_maybe_interesting"
             elif maybe_interesting is False:
                 if any(value == "nan" for value in excess_region["e_rise"]):
-                    t2_output["status"] = "4"  #
+                    t2_output["status"] = "4"
                 else:
-                    t2_output["status"] = "2"  #
+                    t2_output["status"] = "2"
             elif any(value == "nan" for value in excess_region["e_rise"]):
-                t2_output["status"] = "4_maybe_interesting"  #
+                t2_output["status"] = "4_maybe_interesting"
             else:
-                t2_output["status"] = "2_maybe_interesting"  #
+                t2_output["status"] = "2_maybe_interesting"
         else:
             t2_output["status"] = "No further investigation"
             t2_output["values"] = excess_region

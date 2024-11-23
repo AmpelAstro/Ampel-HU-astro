@@ -530,7 +530,6 @@ class BaseLightCurveFeatures(LogicalUnit, AmpelBaseModel):
 
     def extract_lightcurve_features(self, flux_table: Table) -> dict[str, float]:
         result = {}
-        #
         for band, fid in self.lightcurve_bands.items():
             if (in_band := flux_table[flux_table["band"] == fid]) is None:
                 continue

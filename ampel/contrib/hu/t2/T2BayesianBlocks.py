@@ -66,7 +66,6 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
     # Work with fluxes instead of magnitude
     flux: bool = False
-    #
     plot_props: None | PlotProperties
     # Color of filters for the plots
 

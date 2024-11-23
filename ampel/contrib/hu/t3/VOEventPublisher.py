@@ -47,7 +47,7 @@ class VOEventPublisher(AbsPhotoT3Unit):
     # Selection of fields to output ("WHY?")
     name_filter: dict[str, str] = {"ZTF name": "ZTF", "TNS ID": "TNS"}
     # Which datapoints to include in submission?
-    which_photometry: Literal["first", "last"] = "first"  #
+    which_photometry: Literal["first", "last"] = "first"
     # Schema for state dependent T2s (one row for each)
     why_schema: dict[str, Any]
     # Temporary file name
