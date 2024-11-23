@@ -751,12 +751,8 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
         z1 = dia_object.get("hostgal_zphot_q050")
         z2 = dia_object.get("hostgal2_zphot_q050")
         # No z information
-        if z1 is None and z2 is None:
-            return None
-
-        # Can this happen?
         if z1 is None or z2 is None:
-            print(dia_object)
+            return None
 
         # Which "mid"fix, '' or '2'?
         midfix = ""
