@@ -108,8 +108,9 @@ def ztfdps_to_tnsdict(
             "limiting_flux": float("{0:.2f}".format(dp["body"]["diffmaglim"])),  # noqa: UP030
             "filter_value": TNSFILTERID.get(dp["body"]["fid"]),
         }
-        if dp["body"]["jd"] < atdict["discovery_datetime"]:
-            atdict["discovery_datetime"] = dp["body"]["jd"]
+        atdict["discovery_datetime"] = min(
+            dp["body"]["jd"], atdict["discovery_datetime"]
+        )
         photdict.update(ZTF_TNS_AT)
         atdict["photometry"]["photometry_group"][
             len(atdict["photometry"]["photometry_group"])

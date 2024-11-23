@@ -340,7 +340,7 @@ class RcfFilter(AbsAlertFilter):
         ):
             return True
 
-        if (  # noqa: SIM103
+        if (
             age > 90
             and alert["distnr"] > 0  # shouldn't this be distnr?  was distnbr
             and alert["distnr"] < 0.5
@@ -400,10 +400,8 @@ class RcfFilter(AbsAlertFilter):
                 or al["isdiffpos"] == "0"
             ):
                 continue
-            if al["jd"] < jd_first_pps:
-                jd_first_pps = al["jd"]
-            if al["magpsf"] < m_peak:
-                m_peak = al["magpsf"]
+            jd_first_pps = min(al["jd"], jd_first_pps)
+            m_peak = min(al["magpsf"], m_peak)
             if al["magpsf"] < self.max_magpsf:
                 bright_detections += 1
 

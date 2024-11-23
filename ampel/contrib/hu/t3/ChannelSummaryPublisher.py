@@ -73,10 +73,8 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
             assert isinstance(summary, dict)
             out.update(summary)
             last_detection = summary["last_detection"]
-            if last_detection < self._jd_range[0]:
-                self._jd_range[0] = last_detection
-            if last_detection > self._jd_range[1]:
-                self._jd_range[1] = last_detection
+            self._jd_range[0] = min(last_detection, self._jd_range[0])
+            self._jd_range[1] = max(last_detection, self._jd_range[1])
 
         return out
 

@@ -252,7 +252,8 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
             return t2_output
 
         # Initialize SN
-        assert isinstance(pos := light_curve.get_pos(), tuple)
+        pos = light_curve.get_pos()
+        assert isinstance(pos, tuple)
         (ra, dec) = pos
         assert isinstance(light_curve.stock_id, int)
         if self.apply_mwcorrection:

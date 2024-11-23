@@ -91,7 +91,8 @@ class VOEventPublisher(AbsPhotoT3Unit):
                 for t2res in tran_view.get_t2_views(unit=t2unit):
                     for label, path in table_entries.items():
                         assert t2res.body
-                        assert isinstance((body := t2res.body[-1]), dict)
+                        body = t2res.body[-1]
+                        assert isinstance(body, dict)
                         if result := get_by_path(body, path):
                             t2dict[label] = result
             if len(t2dict.keys()) == 0:

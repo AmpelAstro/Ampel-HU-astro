@@ -460,8 +460,9 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
                     "limiting_flux": float("{:.2f}".format(pp["body"]["diffmaglim"])),
                     "filter_value": TNSFILTERID.get(pp["body"]["fid"]),
                 }
-                if pp["body"]["jd"] < atdict["discovery_datetime"]:
-                    atdict["discovery_datetime"] = pp["body"]["jd"]
+                atdict["discovery_datetime"] = min(
+                    pp["body"]["jd"], atdict["discovery_datetime"]
+                )
                 photdict.update(self.ztf_tns_at)
                 atdict["photometry"]["photometry_group"][str(ipp)] = photdict
 
