@@ -140,7 +140,8 @@ class ElasticcClassPublisher(AbsT3Unit):
             tran_view.get_journal_entries(tier=0, filter_func=select_alerts)
         ):
             for entry in jentries:
-                assert isinstance(link := entry.get("link"), int)
+                link = entry.get("link")
+                assert isinstance(link, int)
                 if link in done_t1states:
                     state_map[link] = True
                 else:

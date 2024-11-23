@@ -163,7 +163,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
 
         # cut away bright stars. TODO: this considers just the closest matches...
         # as well as fast moving stars
-        gaia_dr2 = cat_res.get("GAIADR2", None)
+        gaia_dr2 = cat_res.get("GAIADR2")
         if (
             gaia_dr2
             and gaia_dr2["Mag_G"] > 0
@@ -316,7 +316,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
 
         # cut on median dRB score
         drbs = [pp["body"]["drb"] for pp in pps if "drb" in pp["body"]]
-        if len(drbs) > 0 and np.median(drbs) < self.drb_minmed:
+        if len(drbs) > 0 and np.median(drbs) < self.drb_minmed:  # noqa: SIM103
             return False
 
         # congratulation Lightcurve, you made it!

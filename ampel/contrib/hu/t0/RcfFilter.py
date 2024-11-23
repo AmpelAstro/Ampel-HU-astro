@@ -340,7 +340,7 @@ class RcfFilter(AbsAlertFilter):
         ):
             return True
 
-        if (
+        if (  # noqa: SIM103
             age > 90
             and alert["distnr"] > 0  # shouldn't this be distnr?  was distnbr
             and alert["distnr"] < 0.5

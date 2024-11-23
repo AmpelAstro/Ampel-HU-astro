@@ -122,9 +122,7 @@ class DCachePublisher(AbsT3Unit):
     def is_permanent_error(exc):
         if isinstance(exc, ClientResponseError):
             return exc.code not in {403, 423, 500}
-        if isinstance(exc, ClientConnectorSSLError):
-            return True
-        return False
+        return isinstance(exc, ClientConnectorSSLError)
 
     def _on_backoff(self, details):
         exc_typ, exc, _ = sys.exc_info()

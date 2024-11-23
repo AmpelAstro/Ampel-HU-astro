@@ -748,8 +748,8 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
         Extract the most relevant u-g color, if present.
         """
 
-        z1 = dia_object.get("hostgal_zphot_q050", None)
-        z2 = dia_object.get("hostgal2_zphot_q050", None)
+        z1 = dia_object.get("hostgal_zphot_q050")
+        z2 = dia_object.get("hostgal2_zphot_q050")
         # No z information
         if z1 is None and z2 is None:
             return None

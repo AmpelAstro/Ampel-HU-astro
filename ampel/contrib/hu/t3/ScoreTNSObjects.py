@@ -81,7 +81,7 @@ class ScoreTNSObjects(AbsScoreCalculator):
         print("t2result")
         print(t2_result)
 
-        if (ra := t2_result.get("ra", None)) and (dec := t2_result.get("dec", None)):
+        if (ra := t2_result.get("ra")) and (dec := t2_result.get("dec")):
             tjd = asyncio.run(self.get_tns_discovery(ra, dec))
         else:
             tjd = None
