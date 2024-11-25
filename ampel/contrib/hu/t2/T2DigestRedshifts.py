@@ -12,17 +12,18 @@ from typing import Any, Literal
 
 import numpy as np
 
-from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
+from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
+from ampel.content.DataPoint import DataPoint
+from ampel.content.T1Document import T1Document
 from ampel.contrib.hu.t2.util import get_payload
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
-from ampel.view.LightCurve import LightCurve
 from ampel.view.T2DocView import T2DocView
 
 
-class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
+class T2DigestRedshifts(AbsTiedStateT2Unit):
     """
 
     Compare potential matches from different T2 units providing redshifts.
@@ -481,7 +482,8 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
     # ==================== #
     def process(
         self,
-        light_curve: LightCurve,
+        compound: T1Document,
+        datapoints: Sequence[DataPoint],
         t2_views: Sequence[T2DocView],
     ) -> UBson | UnitResult:
         """

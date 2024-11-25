@@ -151,6 +151,7 @@ module = [
   "xgboost.*",
   "ligo.*",
   "ztfquery.*",
+  "joblib.*",
 ]
 ignore_missing_imports = true
 
