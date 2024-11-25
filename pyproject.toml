@@ -176,7 +176,7 @@ exclude = [
 ]
 
 [tool.ruff.format]
-line-ending = "auto"
+line-ending = "lf"
 
 [tool.ruff.lint]
 select = [
