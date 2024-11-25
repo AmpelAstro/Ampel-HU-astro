@@ -12,10 +12,13 @@ from collections.abc import Sequence
 # The following three only used if correcting for MW dust
 import numpy as np
 
+from ampel.content.DataPoint import DataPoint
+from ampel.content.T1Document import T1Document
 from ampel.contrib.hu.t2.T2BaseLightcurveFitter import T2BaseLightcurveFitter
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
-from ampel.view.LightCurve import LightCurve
+
+# from ampel.view.LightCurve import LightCurve
 from ampel.view.T2DocView import T2DocView
 
 
@@ -41,7 +44,8 @@ class T2DemoLightcurveFitter(T2BaseLightcurveFitter):
 
     def process(
         self,
-        light_curve: LightCurve,
+        compound: T1Document,
+        datapoints: Sequence[DataPoint],
         t2_views: Sequence[T2DocView],
     ) -> UBson | UnitResult:
         """
@@ -62,7 +66,7 @@ class T2DemoLightcurveFitter(T2BaseLightcurveFitter):
 
         # Load photometry as table
         # fitdatainfo contains redshift, if requested
-        (sncosmo_table, fitdatainfo) = self.get_fitdata(light_curve, t2_views)
+        (sncosmo_table, fitdatainfo) = self.get_fitdata(datapoints, t2_views)
         t2_output.update(fitdatainfo)
         if sncosmo_table is None:
             return t2_output
