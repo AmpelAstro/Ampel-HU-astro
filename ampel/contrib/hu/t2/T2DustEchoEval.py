@@ -109,7 +109,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
             self.filters_lc = self.filters
             if t2_view.unit == "T2BayesianBlocks":
                 self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-                t2_res = get_payload(t2_view, dict[str, Any])
+                t2_res = get_payload(t2_view)
 
                 for key in self.filters:
                     if key not in t2_res or t2_res.get(key) is None:

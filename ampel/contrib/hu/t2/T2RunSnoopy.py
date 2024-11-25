@@ -17,6 +17,7 @@ import snpy  # type: ignore[import]
 from sfdmap2.sfdmap import SFDMap  # type: ignore[import]
 
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
+from ampel.contrib.hu.t2.util import get_payload
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
@@ -114,9 +115,7 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
                 if t2_view.unit != self.redshift_kind:
                     continue
                 self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-                t2_res = (
-                    res[-1] if isinstance(res := t2_view.get_payload(), list) else res
-                )
+                t2_res = get_payload(t2_view)
                 # Parse this
                 if self.redshift_kind == "T2MatchBTS":
                     if "bts_redshift" in t2_res and t2_res["bts_redshift"] != "-":
@@ -162,9 +161,7 @@ class T2RunSnoopy(AbsTiedLightCurveT2Unit):
                 if t2_view.unit != "T2PhaseLimit":
                     continue
                 self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-                t2_res = (
-                    res[-1] if isinstance(res := t2_view.get_payload(), list) else res
-                )
+                t2_res = get_payload(t2_view)
                 jdstart = t2_res["t_start"]
                 jdend = t2_res["t_end"]
 

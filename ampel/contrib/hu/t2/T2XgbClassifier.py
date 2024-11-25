@@ -202,10 +202,10 @@ class T2XgbClassifier(AbsTiedStateT2Unit):
             self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
             # So far only knows how to parse phases from T2TabulatorRiseDecline
             if t2_view.unit == "T2TabulatorRiseDecline":
-                t2_res = get_payload(t2_view, dict[str, Any])
+                t2_res = get_payload(t2_view)
                 t2data.update(t2_res)
             if t2_view.unit == "T2ElasticcRedshiftSampler":
-                t2_res = get_payload(t2_view, dict[str, Any])
+                t2_res = get_payload(t2_view)
                 # For some reason we trained xgb using z, zerr and host_sep
                 zdata = {"z": None, "z_err": None, "host_sep": None}
                 if t2_res["z_source"] in [
@@ -227,7 +227,7 @@ class T2XgbClassifier(AbsTiedStateT2Unit):
                         pass
                     else:
                         self.logger.info(
-                            "Do not know how to handle z info", extra=t2_res
+                            "Do not know how to handle z info", extra=dict(t2_res)
                         )
                         print(t2_res)
                         return {"model": self.model_prefix, "xgbsuccess": False}

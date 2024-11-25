@@ -1,6 +1,6 @@
 import json
 import os
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Any, Literal
 
 import numpy as np
@@ -139,7 +139,9 @@ class T2KilonovaStats(AbsTiedStateT2Unit):
         res["gaus_percent"] = gaus_stats
         return res
 
-    def kilonovaness_statistics(self, t2res: dict[str, Any]) -> None | dict[str, Any]:
+    def kilonovaness_statistics(
+        self, t2res: Mapping[str, Any]
+    ) -> None | dict[str, Any]:
         # print("KEYS:: ", t2res.keys())
         return self.get_kn_total_stats(
             kilonovaness=t2res["kilonovaness"],
@@ -156,7 +158,7 @@ class T2KilonovaStats(AbsTiedStateT2Unit):
         print("T2KILONOVASTATS:: process")
         for t2_view in t2_views:
             self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-            t2_res = get_payload(t2_view, dict[str, Any])
+            t2_res = get_payload(t2_view)
 
             if t2_view.unit == "T2KilonovaEval":
                 return self.kilonovaness_statistics(t2_res)

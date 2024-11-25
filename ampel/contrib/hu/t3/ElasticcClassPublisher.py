@@ -7,7 +7,7 @@
 # Last Modified Date:  11.04.2022
 # Last Modified By:    jno <jnordin@physik.hu-berlin.de>
 
-from collections.abc import Generator, Iterable
+from collections.abc import Generator, Iterable, Mapping
 from itertools import islice
 from typing import TYPE_CHECKING, TypeVar
 
@@ -190,7 +190,7 @@ class ElasticcClassPublisher(AbsT3Unit):
                             f"Got configs={t2view.config},{t2_view_extra.config} for "
                             f"stock:{t2view.stock},link:{t2view.link},unit:{t2view.unit}"  # type: ignore[str-bytes-safe]
                         )
-                    if not isinstance((body := t2view.get_payload()), dict):
+                    if not isinstance((body := t2view.get_payload()), Mapping):
                         continue
                     yield tran_view, t1_link, body["report"]
         self.logger.log(LogFlag.SHOUT, "filtered states", extra=stats)

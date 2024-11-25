@@ -19,6 +19,7 @@ from sfdmap2.sfdmap import SFDMap  # type: ignore[import]
 from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
 from ampel.base.decorator import abstractmethod
 from ampel.contrib.hu.t2.T2DigestRedshifts import T2DigestRedshifts
+from ampel.contrib.hu.t2.util import get_payload
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
 from ampel.view.LightCurve import LightCurve
@@ -86,9 +87,7 @@ class T2BaseLightcurveFitter(T2DigestRedshifts, AbsTabulatedT2Unit, abstract=Tru
                 if t2_view.unit != "T2PhaseLimit":
                     continue
                 self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-                t2_res = (
-                    res[-1] if isinstance(res := t2_view.get_payload(), list) else res
-                )
+                t2_res = get_payload(t2_view)
                 jdstart = t2_res["t_start"]
                 jdend = t2_res["t_end"]
 

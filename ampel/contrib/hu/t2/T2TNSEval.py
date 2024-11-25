@@ -7,7 +7,7 @@
 # Last Modified Date:  27.01.2021
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 import numpy as np
@@ -104,7 +104,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         "Observer": "Robot",
     }
 
-    def inspect_catalog(self, cat_res: dict[str, Any]) -> bool:
+    def inspect_catalog(self, cat_res: Mapping[str, Any]) -> bool:
         """
         Verify whether any catalog matching criteria prevents submission.
 
@@ -323,7 +323,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         return True
 
     def get_catalog_remarks(
-        self, lc: LightCurve, cat_res: dict[str, Any]
+        self, lc: LightCurve, cat_res: Mapping[str, Any]
     ) -> None | dict[str, Any]:
         """
         Look through catalogs for remarks to be added to report.
@@ -508,7 +508,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         t2_cat_match = t2_views[0]
         assert t2_cat_match.unit in (dep.unit for dep in self.t2_dependency)
         catalog_result = t2_cat_match.get_payload()
-        assert isinstance(catalog_result, dict)
+        assert isinstance(catalog_result, Mapping)
         if not self.inspect_catalog(catalog_result):
             return {"tns_candidate": False, "tns_eval": "Catalog match rejection."}
 

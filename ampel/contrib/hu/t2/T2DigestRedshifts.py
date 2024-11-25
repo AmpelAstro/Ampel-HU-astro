@@ -7,7 +7,7 @@
 # Last Modified Date:  19.10.2022
 # Last Modified By:    atownsend@physik.hu-berlin.de
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Any, Literal
 
 import numpy as np
@@ -87,7 +87,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
     ]
 
     def _get_lsphotoz_groupz(
-        self, t2_res: dict[str, Any]
+        self, t2_res: Mapping[str, Any]
     ) -> tuple[list[list[float]], list[list[float]]]:
         """
         Parse output from T2LSPhotoZTap and investigate whether any matches fulfill group
@@ -155,7 +155,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
         return group_z, group_dist
 
     def _get_catalogmatch_groupz(
-        self, t2_res: dict[str, Any]
+        self, t2_res: Mapping[str, Any]
     ) -> tuple[list[list[float]], list[list[float]]]:
         """
         Parse output from T2CatalogMatch.
@@ -314,7 +314,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
 
         return group_z, group_dist
 
-    def _get_matchbts_groupz(self, t2_res: dict[str, Any]) -> list[list[float]]:
+    def _get_matchbts_groupz(self, t2_res: Mapping[str, Any]) -> list[list[float]]:
         """
         Parse output from T2MatchBTS.
 
@@ -364,7 +364,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
         # Loop through t2_views and collect information.
         for t2_view in t2_views:
             self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-            t2_res = get_payload(t2_view, dict[str, Any])
+            t2_res = get_payload(t2_view)
 
             if t2_view.unit == "T2LSPhotoZTap":
                 new_zs, new_dists = self._get_lsphotoz_groupz(t2_res)
@@ -443,9 +443,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
                 if t2_view.unit != self.redshift_kind:
                     continue
                 self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-                t2_res = (
-                    res[-1] if isinstance(res := t2_view.get_payload(), list) else res
-                )
+                t2_res = get_payload(t2_view)
                 # Parse this
                 if self.redshift_kind == "T2MatchBTS":
                     if (

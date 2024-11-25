@@ -10,7 +10,7 @@
 
 import copy
 from collections.abc import Sequence
-from typing import Any, Literal
+from typing import Literal
 from urllib.parse import urljoin
 from urllib.request import urlopen
 
@@ -255,7 +255,7 @@ class T2RunPossis(T2RunSncosmo):
                     if t2_view.unit not in ["T2PropagateStockInfo", "T2HealpixProb"]:
                         continue
                     self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-                    t2_res = get_payload(t2_view, dict[str, Any])
+                    t2_res = get_payload(t2_view)
                     if "trigger_time" not in t2_res:
                         self.logger.info("No explosion time", extra={"t2res": t2_res})
                         return UnitResult(code=DocumentCode.T2_MISSING_INFO)

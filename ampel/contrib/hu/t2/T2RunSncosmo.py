@@ -24,6 +24,7 @@ from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
 from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
+from ampel.contrib.hu.t2.util import get_payload
 from ampel.model.PlotProperties import PlotProperties
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.plot.create import create_plot_record
@@ -285,9 +286,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                 if t2_view.unit != "T2PhaseLimit":
                     continue
                 self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-                t2_res = (
-                    res[-1] if isinstance(res := t2_view.get_payload(), list) else res
-                )
+                t2_res = get_payload(t2_view)
                 jdstart = t2_res["t_start"]
                 jdend = t2_res["t_end"]
 

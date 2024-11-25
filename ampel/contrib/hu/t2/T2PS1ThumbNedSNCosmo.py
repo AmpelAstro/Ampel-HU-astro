@@ -7,7 +7,7 @@
 # Last Modified Date:  14.10.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Literal
 
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
@@ -72,7 +72,7 @@ class T2PS1ThumbNedSNCosmo(AbsTiedLightCurveT2Unit):
             return UnitResult(code=DocumentCode.T2_UNEXPECTED_DEPENDENCY)
 
         snc_result = t2_views[0].get_payload()
-        if not isinstance(snc_result, dict):
+        if not isinstance(snc_result, Mapping):
             return UnitResult(code=DocumentCode.T2_UNEXPECTED_DEPENDENCY)
 
         if "data" not in snc_result:

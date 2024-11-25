@@ -187,9 +187,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                 if t2_view.unit != self.redshift_kind:
                     continue
                 self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-                t2_res = (
-                    res[-1] if isinstance(res := t2_view.get_payload(), list) else res
-                )
+                t2_res = get_payload(t2_view)
                 # Parse this
                 if self.redshift_kind == "T2MatchBTS":
                     if "bts_redshift" in t2_res and t2_res["bts_redshift"] != "-":
@@ -236,12 +234,13 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             # Not looking for any
             return (False, {})
 
-        abort, abort_maps = False, {}
+        abort = False
+        abort_maps: dict[str, Any] = {}
         for t2_view in t2_views:
             if t2_view.unit not in self.abort_map:
                 continue
             self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-            t2_res = get_payload(t2_view, dict[str, Any])
+            t2_res = get_payload(t2_view)
             abort_maps.update(t2_res)
 
             for abort_map in self.abort_map[t2_view.unit]:
@@ -269,9 +268,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                 if t2_view.unit != "T2PhaseLimit":
                     continue
                 self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-                t2_res = (
-                    res[-1] if isinstance(res := t2_view.get_payload(), list) else res
-                )
+                t2_res = get_payload(t2_view)
                 jdstart = t2_res["t_start"]
                 jdend = t2_res["t_end"]
 
