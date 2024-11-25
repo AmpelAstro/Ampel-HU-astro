@@ -1,7 +1,7 @@
 import json
 import os
 from collections.abc import Sequence
-from typing import Any, Literal, cast
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -10,6 +10,7 @@ from scipy import stats
 from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
+from ampel.contrib.hu.t2.util import get_payload
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
@@ -155,7 +156,7 @@ class T2KilonovaStats(AbsTiedStateT2Unit):
         print("T2KILONOVASTATS:: process")
         for t2_view in t2_views:
             self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-            t2_res = cast(dict[str, Any], t2_view.get_payload())
+            t2_res = get_payload(t2_view, dict[str, Any])
 
             if t2_view.unit == "T2KilonovaEval":
                 return self.kilonovaness_statistics(t2_res)

@@ -9,7 +9,7 @@
 
 import os
 from collections.abc import Sequence
-from typing import Any, Literal, cast
+from typing import Any, Literal
 
 import numpy as np
 import xgboost as xgb
@@ -22,6 +22,7 @@ from ampel.contrib.hu.t2.T2TabulatorRiseDecline import (
     FitFailed,
     T2TabulatorRiseDeclineBase,
 )
+from ampel.contrib.hu.t2.util import get_payload
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.struct.UnitResult import UnitResult
@@ -174,10 +175,10 @@ class T2MultiXgbClassifier(
             self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
             # So far only knows how to parse phases from T2TabulatorRiseDecline
             if t2_view.unit == "T2TabulatorRiseDecline":
-                t2_res = cast(dict[str, Any], t2_view.get_payload())
+                t2_res = get_payload(t2_view, dict[str, Any])
                 t2data.update(t2_res)
             if t2_view.unit == "T2ElasticcRedshiftSampler":
-                t2_res = cast(dict[str, Any], t2_view.get_payload())
+                t2_res = get_payload(t2_view, dict[str, Any])
                 # For some reason we trained xgb using z, zerr and host_sep
                 zdata = {"z": None, "z_err": None, "host_sep": None}
                 if t2_res["z_source"] in [

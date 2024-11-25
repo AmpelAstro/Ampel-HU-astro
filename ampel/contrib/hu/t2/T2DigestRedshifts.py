@@ -8,11 +8,12 @@
 # Last Modified By:    atownsend@physik.hu-berlin.de
 
 from collections.abc import Sequence
-from typing import Any, Literal, cast
+from typing import Any, Literal
 
 import numpy as np
 
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
+from ampel.contrib.hu.t2.util import get_payload
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.struct.UnitResult import UnitResult
@@ -363,7 +364,7 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
         # Loop through t2_views and collect information.
         for t2_view in t2_views:
             self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-            t2_res = cast(dict[str, Any], t2_view.get_payload())
+            t2_res = get_payload(t2_view, dict[str, Any])
 
             if t2_view.unit == "T2LSPhotoZTap":
                 new_zs, new_dists = self._get_lsphotoz_groupz(t2_res)

@@ -8,13 +8,14 @@
 # Last Modified By:    ernstand@physik.hu-berlin.de
 
 from collections.abc import Sequence
-from typing import Any, Literal, cast, no_type_check
+from typing import Any, Literal, no_type_check
 
 import numpy as np
 from astropy.coordinates import Distance, SkyCoord
 from astropy.cosmology import Planck15
 
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
+from ampel.contrib.hu.t2.util import get_payload
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
@@ -835,7 +836,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         # Check t2 ouputs
         for t2_view in t2_views:
             self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-            t2_res = cast(dict[str, Any], t2_view.get_payload())
+            t2_res = get_payload(t2_view, dict[str, Any])
 
             # Redshift
             if t2_view.unit == "T2DigestRedshifts":

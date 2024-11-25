@@ -9,7 +9,7 @@
 
 import os
 from collections.abc import Sequence
-from typing import Any, Literal, cast
+from typing import Any, Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -17,6 +17,7 @@ import pandas as pd  # type: ignore
 from uncertainties import unumpy  # type: ignore
 
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
+from ampel.contrib.hu.t2.util import get_payload
 from ampel.contrib.hu.util.flatten import flatten
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.model.StateT2Dependency import StateT2Dependency
@@ -108,7 +109,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
             self.filters_lc = self.filters
             if t2_view.unit == "T2BayesianBlocks":
                 self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-                t2_res = cast(dict[str, Any], t2_view.get_payload())
+                t2_res = get_payload(t2_view, dict[str, Any])
 
                 for key in self.filters:
                     if key not in t2_res or t2_res.get(key) is None:

@@ -11,7 +11,7 @@ import gc
 import os
 import warnings
 from collections.abc import Sequence
-from typing import Any, Literal, cast
+from typing import Any, Literal
 
 import backoff
 import matplotlib.pyplot as plt
@@ -26,6 +26,7 @@ from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
 from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
+from ampel.contrib.hu.t2.util import get_payload
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
@@ -240,7 +241,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             if t2_view.unit not in self.abort_map:
                 continue
             self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-            t2_res = cast(dict[str, Any], t2_view.get_payload())
+            t2_res = get_payload(t2_view, dict[str, Any])
             abort_maps.update(t2_res)
 
             for abort_map in self.abort_map[t2_view.unit]:
