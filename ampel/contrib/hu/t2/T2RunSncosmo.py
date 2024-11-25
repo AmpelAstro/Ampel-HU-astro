@@ -119,7 +119,9 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
     # Plot parameters
     plot_db: bool = False
     plot_props: None | PlotProperties = None  # Plot properties for SvgRecord creation
-    plot_matplotlib_suffix: None | str = None  # Suffix if stored (locally) through matplotlib (e.g. _crayzmodel.png). Will add transient name
+    plot_matplotlib_suffix: None | str = (
+        None  # Suffix if stored (locally) through matplotlib (e.g. _crayzmodel.png). Will add transient name
+    )
     plot_matplotlib_dir: str = "."  # Suffix if stored (locally) through matplotlib (e.g. _crayzmodel.png). Will add transient name
 
     # Units from which time limits to use or redshifts can be picked.

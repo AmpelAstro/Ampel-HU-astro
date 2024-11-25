@@ -969,13 +969,13 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                                             )
                                         )
                                     )
-                        output[
-                            "significance_of_fluctuation"
-                        ] = significance_of_fluctuation_before_peak
+                        output["significance_of_fluctuation"] = (
+                            significance_of_fluctuation_before_peak
+                        )
 
-                        output[
-                            "significance_of_fluctuation"
-                        ] = significance_of_fluctuation_after_peak
+                        output["significance_of_fluctuation"] = (
+                            significance_of_fluctuation_after_peak
+                        )
 
                         # Calculate the significance of each bayesian block, inside the excess region of the highest intensity
                         if (

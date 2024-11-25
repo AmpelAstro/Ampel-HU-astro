@@ -212,9 +212,9 @@ class RapidLco(RapidBase):
 
             # Update with information
             react_dict["name"] = submit_name + "_" + transient_name
-            react_dict["requests"][0]["configurations"][0]["target"][
-                "name"
-            ] = transient_name
+            react_dict["requests"][0]["configurations"][0]["target"]["name"] = (
+                transient_name
+            )
             react_dict["requests"][0]["configurations"][0]["target"]["ra"] = str(ra)
             react_dict["requests"][0]["configurations"][0]["target"]["dec"] = str(dec)
             # Some keys are not necessarily there

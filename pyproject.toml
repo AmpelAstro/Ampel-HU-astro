@@ -175,6 +175,9 @@ exclude = [
     "setup.py",
 ]
 
+[tool.ruff.format]
+line-ending = "auto"
+
 [tool.ruff.lint]
 select = [
     "E4",

@@ -22,8 +22,12 @@ class XShooterFilter(DecentFilter):
     """
 
     max_dec: float  # maximum allowed value for the declination
-    det_within: float  # the transient must have been detected within the last 'DET_WITHIN' days
-    ul_within: float  # the transient must AT LEAST one ulim within the last 'UL_WITHIN' days
+    det_within: (
+        float  # the transient must have been detected within the last 'DET_WITHIN' days
+    )
+    ul_within: (
+        float  # the transient must AT LEAST one ulim within the last 'UL_WITHIN' days
+    )
     # Updated parameters based on infant detections spring 2021. Defaults conservative
     max_chipsf: float = 4  # Best guess value 2
     max_seeratio: float = 2  # Best guess value 1.3

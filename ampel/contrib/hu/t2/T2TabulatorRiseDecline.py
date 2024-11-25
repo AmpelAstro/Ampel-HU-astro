@@ -82,8 +82,7 @@ def getBandBits(bands: Sequence):
     return index
 
 
-class FitFailed(RuntimeError):
-    ...
+class FitFailed(RuntimeError): ...
 
 
 class T2TabulatorRiseDeclineBase:

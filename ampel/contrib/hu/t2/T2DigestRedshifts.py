@@ -61,9 +61,12 @@ class T2DigestRedshifts(AbsTiedLightCurveT2Unit):
     # AmpelZ: equal to T2DigestRedshifts
     # T2ElasticcRedshiftSampler: Use a list of redshifts and weights from the sampler.
     # None : Use the fixed z value
-    redshift_kind: None | Literal[
-        "T2MatchBTS", "T2DigestRedshifts", "T2ElasticcRedshiftSampler", "AmpelZ"
-    ] = None
+    redshift_kind: (
+        None
+        | Literal[
+            "T2MatchBTS", "T2DigestRedshifts", "T2ElasticcRedshiftSampler", "AmpelZ"
+        ]
+    ) = None
 
     # It is also possible to use fixed redshift whenever a dynamic redshift kind is not possible
     # This could be either a single value or a list

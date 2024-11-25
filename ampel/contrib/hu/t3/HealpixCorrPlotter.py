@@ -39,9 +39,9 @@ class HealpixCorrPlotter(AbsPhotoT3Unit):
     )
 
     # What do we study
-    target_property: Literal[
-        "Abs fit peak mag", r"$\chi^2$ / d.o.f."
-    ] = "Abs fit peak mag"
+    target_property: Literal["Abs fit peak mag", r"$\chi^2$ / d.o.f."] = (
+        "Abs fit peak mag"
+    )
     target_range: list[float] = [-13.5, -17.5]
     max_pvalue: float = 0.9
 

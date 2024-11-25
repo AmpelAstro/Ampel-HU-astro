@@ -180,13 +180,16 @@ class DCachePublisher(AbsT3Unit):
         ssl_context = ssl.create_default_context(
             capath=os.environ.get("X509_CERT_DIR", None)
         )
-        async with TCPConnector(
-            limit=self.max_parallel_requests, ssl_context=ssl_context
-        ) as connector, ClientSession(
-            connector=connector,
-            headers={"Authorization": f"BEARER {self.authz.get()}"},
-            raise_for_status=True,
-        ) as session:
+        async with (
+            TCPConnector(
+                limit=self.max_parallel_requests, ssl_context=ssl_context
+            ) as connector,
+            ClientSession(
+                connector=connector,
+                headers={"Authorization": f"BEARER {self.authz.get()}"},
+                raise_for_status=True,
+            ) as session,
+        ):
             # ClientSession.request is a normal function returning an
             # async context manager. While this is kind of equivalent
             # to a coroutine, it can't be decorated with backoff. Wrap
@@ -339,9 +342,10 @@ def get_macaroon(
         ssl_context = ssl.create_default_context(
             capath=os.environ.get("X509_CERT_DIR", None)
         )
-        async with TCPConnector(ssl_context=ssl_context) as connector, ClientSession(
-            auth=user, connector=connector
-        ) as session:
+        async with (
+            TCPConnector(ssl_context=ssl_context) as connector,
+            ClientSession(auth=user, connector=connector) as session,
+        ):
             resp = await session.post(
                 f"https://{host}:{port}{path}",
                 headers={"Content-Type": "application/macaroon-request"},

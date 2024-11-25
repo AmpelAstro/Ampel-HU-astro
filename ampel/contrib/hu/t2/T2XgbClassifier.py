@@ -283,9 +283,7 @@ class T2XgbClassifier(AbsTiedStateT2Unit):
 
         # Can we find away round creating a numpy array?
         prob = self._classifiers[b].predict_proba(
-            np.array(
-                [[t2data.get(col) for col in self.use_cols]]
-            )
+            np.array([[t2data.get(col) for col in self.use_cols]])
         )
         t2out["prob0"] = float(prob[0][0])
         t2out["is_0"] = float(prob[0][0]) > 0.5
