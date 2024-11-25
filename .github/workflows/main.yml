@@ -30,7 +30,7 @@ jobs:
   unit_inventory:
     # Only run on pull requests
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
     # Check out the PR head on pull_request, otherwise default
     - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
