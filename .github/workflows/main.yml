@@ -25,7 +25,7 @@ jobs:
       format: true
   unit_inventory:
     # Only run on pull requests
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request_target'
     runs-on: ubuntu-24.04
     steps:
     # Check out the PR head on pull_request, otherwise default
