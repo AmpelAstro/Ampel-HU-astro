@@ -7,14 +7,12 @@
 # Last Modified Date: 12.04.2022
 # Last Modified By  : jnordin@physik.hu-berlin.de
 
-from typing import TypedDict, cast
+from typing import TypedDict
 
 import numpy as np
 
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.content.DataPoint import DataPoint
-from ampel.struct.UnitResult import UnitResult
-from ampel.types import UBson
 
 
 class QuantileEntry(TypedDict):
@@ -180,7 +178,7 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
     # ==================== #
     # AMPEL T2 MANDATORY   #
     # ==================== #
-    def process(self, datapoint: DataPoint) -> UBson | UnitResult:
+    def process(self, datapoint: DataPoint) -> RedshiftSamples:
         """
 
         Parses the provided datapoint for information regarding
@@ -263,7 +261,7 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
                 "z_samples": [z + p * dz for p in pulls],
             }
 
-            return cast(UBson, t2_output)
+            return t2_output
 
         # Extract values from photo-z quantiles
         # (assuming these always exist)
@@ -302,15 +300,13 @@ class T2ElasticcRedshiftSampler(AbsPointT2Unit):
                     )  # -9 seems to be null
                     t2_output["z_weights"].append(weight)
 
-            return cast(UBson, t2_output)
+            return t2_output
 
         # Only left with output dict for defult/hostless SNe
-        t2_output = {
+        return {
             "z_source": "default",
             "host_sep": np.nan,
             "galaxy_color": None,
             "z_samples": self.default_zs,
             "z_weights": self.default_weights,
         }
-
-        return cast(UBson, t2_output)

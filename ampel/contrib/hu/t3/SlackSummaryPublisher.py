@@ -10,14 +10,13 @@
 import datetime
 import io
 from collections.abc import Generator, Iterable, Mapping
-from typing import Any, cast
+from typing import Any
 
 import numpy as np
 import pandas as pd
 import requests
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackClientError
-from slack_sdk.web import SlackResponse
 
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.log.utils import log_exception
@@ -68,18 +67,14 @@ class SlackSummaryPublisher(AbsT3Unit):
         if self.dry_run:
             self.logger.info(m)
         else:
-            # we know this is a sync client; work around lazy type annotations
-            api = cast(
-                SlackResponse,
-                sc.api_call(
-                    "chat.postMessage",
-                    json={
-                        "channel": self.slack_channel,
-                        "text": m,
-                        "username": "AMPEL-live",
-                        "as_user": False,
-                    },
-                ),
+            api = sc.api_call(
+                "chat.postMessage",
+                json={
+                    "channel": self.slack_channel,
+                    "text": m,
+                    "username": "AMPEL-live",
+                    "as_user": False,
+                },
             )
             if not api["ok"]:
                 raise SlackClientError(api["error"])
@@ -216,7 +211,7 @@ class SlackSummaryPublisher(AbsT3Unit):
                 if (
                     t2record.unit == "T2LightCurveSummary"
                     or not (output := t2record.get_payload())
-                    or not isinstance(output, dict)
+                    or not isinstance(output, Mapping)
                 ):
                     continue
 
