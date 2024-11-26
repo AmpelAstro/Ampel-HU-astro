@@ -18,7 +18,7 @@ from ampel.contrib.hu.util.automation.jobfileWriter import writeJobfilesFromDict
 jobfile = ""
 
 
-EXEC_DIR = "./" #  "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/O4"
+EXEC_DIR = "./"  #  "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/ampel-results/O4"
 CONF_FILE = "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/ampel_conf.yaml"
 VAULT_FILE = "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/vault.yaml"
 JOBFILE_TEMP = "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampel-HU-astro/examples/remote/ligo_automated_template.yml"
@@ -35,13 +35,11 @@ if len(gw_names) < 1:
 
 print(gw_names)
 for k, gw_name in enumerate(gw_names):
-#gw_name = sys.argv[1]
+    # gw_name = sys.argv[1]
     print("#########################################################")
     print(f"############### - MAP {gw_name} - {k+1}/{len(gw_names)} - ###############")
     print("#########################################################")
-    gw_name = gw_name.replace("GW", "")
-    gw_name = gw_name.replace("S", "")
-    event_name = "S" + gw_name
+    event_name = "S" + (gw_name.replace("GW", "").replace("S", ""))
 
     client = GraceDb()
 
@@ -55,7 +53,6 @@ for k, gw_name in enumerate(gw_names):
     #    print("GraceDB API request exited with response code ", response.status_code)
     #    sys.exit()
     file_contents = response.json()
-
 
     fits_files = [key for key in file_contents if ".fits.gz" in key]
 
@@ -90,12 +87,12 @@ for k, gw_name in enumerate(gw_names):
         JOBFILE_TEMP, jobfile_list_dict, commonName="automated", saveDir=EXEC_DIR
     )[0]
 
-
     ########### execute the jobfile
     print(f"+++++++++\tEXECUTE JOBFILE \t{jobfile}\t +++++++++ \n")
 
-
     job_call = ""
-    job_call += f"ampel job --schema {jobfile} --config {CONF_FILE} --secrets {VAULT_FILE}"
+    job_call += (
+        f"ampel job --schema {jobfile} --config {CONF_FILE} --secrets {VAULT_FILE}"
+    )
     # print(job_call)
     executeJobfile(job_call, EXEC_DIR, max_retries=2)
