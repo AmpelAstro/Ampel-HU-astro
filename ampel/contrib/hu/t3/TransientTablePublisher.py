@@ -209,12 +209,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
         # Convert
         df = pd.DataFrame.from_dict(table_rows)
 
-        # if "map_name" in df.columns and "map_seed" in df.columns:
-        # df["map_name"] = np.char.replace(np.array(df["map_name"], dtype=str), "random", "random"+df["map_seed"])
-
-        # print(df["map_name"].iloc[0])
         if "map_seed" in df or self.rename_files:
-            # print("transienttablepublisher:: ", df["map_seed"].iloc[0])
             tmp_seed_name = df["map_seed"].iloc[0]
             if isinstance(tmp_seed_name, str):
                 self.file_name += "_" + tmp_seed_name
@@ -232,16 +227,13 @@ class TransientTablePublisher(AbsPhotoT3Unit):
         # Local save
         if self.local_path is not None:
             path_name = os.path.join(self.local_path, self.dir_name)
-            # print("PATHNAME::", path_name)
             if not os.path.exists(path_name):
                 os.makedirs(path_name, exist_ok=True)
             full_path = os.path.join(path_name, self.file_name)
-            # print("FILE PATH::", full_path)
 
             with open(full_path + "." + self.fmt, "w") as tmp_file:
                 tmp_file.close()
             if self.fmt == "csv":
-                # print(self.write_mode)
                 df.to_csv(full_path + ".csv", sep=";", mode=self.write_mode)
             elif self.fmt == "latex":
                 df.to_latex(full_path + ".tex")
@@ -259,7 +251,6 @@ class TransientTablePublisher(AbsPhotoT3Unit):
         # what was done, as well as the table itself.
 
         # take everything local_path and put it into new folder named after skymap
-        # print(df.keys)
         map_name_key = "map_name"
         if map_name_key in df and self.move_files:
             files_local_path = os.listdir(self.local_path)
@@ -278,7 +269,6 @@ class TransientTablePublisher(AbsPhotoT3Unit):
                 skymap_directory = os.path.join(
                     self.local_path + "/../" + skymap_dir_name
                 )
-                # print(skymap_directory)
                 os.makedirs(skymap_directory, exist_ok=True)
                 for file in files_local_path:
                     if file.find(".fits.gz") == -1:
