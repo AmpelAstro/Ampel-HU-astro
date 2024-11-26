@@ -45,6 +45,7 @@
 - ampel.contrib.hu.t2.T2BaseLightcurveFitter
 - ampel.contrib.hu.t2.T2DemoLightcurveFitter
 - ampel.contrib.hu.t2.T2PolynomialFit
+- ampel.contrib.hu.t2.T2RunParsnipRiseDecline
 - ampel.contrib.hu.t3.TransientInfoPrinter
 - ampel.contrib.hu.t3.TransientViewDumper
 - ampel.contrib.hu.t3.ChannelSummaryPublisher
@@ -67,6 +68,7 @@
 - ampel.contrib.hu.t3.ScoreTNSObjects
 - ampel.contrib.hu.t3.PlotTransientLightcurves
 - ampel.contrib.hu.t3.SubmitTNS
+- ampel.contrib.hu.t3.StreamTokenGenerator
 - ampel.contrib.hu.alert.load.WiseFileAlertLoader
 - ampel.contrib.hu.alert.NeoWisePhotometryAlertSupplier
 - ampel.contrib.hu.alert.DynamicShaperAlertConsumer
