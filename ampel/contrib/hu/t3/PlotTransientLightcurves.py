@@ -524,7 +524,7 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                     cutout_cache_dir=self.image_cache_dir,
                 )
                 pdf.savefig()
-                if self.save_png:
+                if self.save_png and self.image_cache_dir:
                     plt.savefig(
                         os.path.join(self.image_cache_dir, str(tran_view.id) + ".png")
                     )
