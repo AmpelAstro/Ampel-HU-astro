@@ -302,7 +302,8 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         detection_sigma = (
             3  # Detection sigma threshold to look for phase of first detection
         )
-        pull_range = [-10, 20]  # Phase range used when calculating uniform chi2/dof
+        # Phase range used when calculating uniform chi2/dof
+        pull_range = [-10, 20]
 
         z = sncosmo_model.get("z")
 
@@ -480,9 +481,11 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         # How to best serialize these for mongo storage?
         sncosmo_result["parameters"] = sncosmo_result["parameters"].tolist()
         sncosmo_result["data_mask"] = sncosmo_result["data_mask"].tolist()
-        try:
+
+        # sncosmo covariance is either None or an array
+        if isinstance(sncosmo_result["covariance"], np.ndarray):
             sncosmo_result["covariance"] = sncosmo_result["covariance"].tolist()
-        except KeyError:
+        else:
             sncosmo_result["covariance"] = []
 
         # For filtering purposes we want a proper dict
