@@ -91,6 +91,7 @@ requires an access token if data is to be retrieved.
 - [ScoreSingleObject](ampel/contrib/hu/t3/ScoreSingleObject.py): Calculate score based on how early a specific SN is detected.
 - [ScoreTNSObjects](ampel/contrib/hu/t3/ScoreTNSObjects.py): Calculate score based on detection time reported to TNS, if any..
 - [SlackSummaryPublisher](ampel/contrib/hu/t3/SlackSummaryPublisher.py)
+- [StreamTokenGenerator](ampel/contrib/hu/t3/StreamTokenGenerator.py): Stream based token generator for.
 - [SubmitTNS](ampel/contrib/hu/t3/SubmitTNS.py): Submit candidates to TNS (unless already submitted).
 - [TransientInfoPrinter](ampel/contrib/hu/t3/TransientInfoPrinter.py)
 - [TransientTablePublisher](ampel/contrib/hu/t3/TransientTablePublisher.py): Construct a table based on selected T2 output values.
