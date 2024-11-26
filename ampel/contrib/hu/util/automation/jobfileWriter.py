@@ -7,6 +7,8 @@
 # Last Modified Date:  20.03.2024
 # Last Modified By:    ernstand@physik.hu-berlin.de
 
+# ruff: noqa: T201
+
 import os
 import sys
 

@@ -220,7 +220,6 @@ class AstroColibriPublisher(AbsPhotoT3Unit):
                 tnsreport = next(iter(tview.extra["TNSReports"]))
                 tns_name = tnsreport["objname"]
                 tns_submission_time = tnsreport["discoverydate"]
-                print("FOUND TNS STUFF", tns_name, tns_submission_time)
             else:
                 self.logger.debug("No TNS name", extra={"tnsName": None})
                 continue
@@ -300,12 +299,10 @@ class AstroColibriPublisher(AbsPhotoT3Unit):
             # Ok, so we have a transient to react to
             if self.testcollect:
                 if post_update:
-                    print("Should send an update")
+                    self.logger.debug("Should send an update")
                 else:
-                    print("New submission")
-                print("*** Posting ***")
-                print(payload)
-                print("*** Done ***")
+                    self.logger.debug("New submission")
+                self.logger.debug(payload)
 
                 # Journal submission
                 jcontent = {
@@ -315,9 +312,10 @@ class AstroColibriPublisher(AbsPhotoT3Unit):
                 }
 
             else:
-                print("colibri submitting")
-                print(payload)
-                print(ipath)
+                self.logger.debug(
+                    "colibri submitting",
+                    extra={"payload": payload, "image_path": ipath},
+                )
                 jcontent = self.colibriclient.firestore_post(payload, image_path=ipath)
 
             if jcontent:

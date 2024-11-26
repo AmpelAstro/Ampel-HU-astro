@@ -226,10 +226,9 @@ class T2XgbClassifier(AbsTiedStateT2Unit):
                         # xgboost use None values.
                         pass
                     else:
-                        self.logger.info(
+                        self.logger.warn(
                             "Do not know how to handle z info", extra=dict(t2_res)
                         )
-                        print(t2_res)
                         return {"model": self.model_prefix, "xgbsuccess": False}
                 t2data.update(zdata)
 

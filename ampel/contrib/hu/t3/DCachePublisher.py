@@ -402,4 +402,4 @@ if __name__ == "__main__":
     opts = parser.parse_args()
     kwargs = dict(opts.__dict__)
     kwargs.pop("command")
-    print(opts.command(**kwargs))
+    print(opts.command(**kwargs))  # noqa: T201

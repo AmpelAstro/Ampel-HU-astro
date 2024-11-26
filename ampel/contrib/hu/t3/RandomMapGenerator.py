@@ -65,7 +65,7 @@ class RandomMapGenerator(AbsT4Unit):
             np.random.seed(self.seed)
         else:
             self.seed = np.random.random_integers(0, 2147483647)
-            print("RANDOMMAPGENERATOR:: ", self.seed)
+            self.logger.debug("RANDOMMAPGENERATOR", extra={"seed": self.seed})
             np.random.seed(self.seed)
 
         tmp_date = atime.Time(self.min_date)
@@ -113,7 +113,7 @@ class RandomMapGenerator(AbsT4Unit):
 
         file_name = f"{self.save_dir}{(self.map_name).replace('.fits.gz', '')}.fits.gz"
 
-        print("Saving map: ", file_name)
+        self.logger.debug(f"Saving map: {file_name}")
 
         hdr_simple = []
         hdr_simple.append(("SIMPLE", "T"))

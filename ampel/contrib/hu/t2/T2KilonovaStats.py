@@ -98,7 +98,9 @@ class T2KilonovaStats(AbsTiedStateT2Unit):
         if files:
             file = files[0]
         else:
-            print("T2KilonovaStats: No density file found for ", map_key, " Mpc.")
+            self.logger.error(
+                f"T2KilonovaStats: No density file found for {map_key} Mpc."
+            )
             return {}
 
         dist_range = file[: file.find("_")]

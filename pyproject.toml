@@ -190,7 +190,7 @@ select = [
     "UP", # pyupgrade
     "B", # bugbear
     "DTZ", # datetimez
-    # "T20", # print statements
+    "T20", # print statements
     # "PT", # pytest-style
     "RET", # return
     "SLF",

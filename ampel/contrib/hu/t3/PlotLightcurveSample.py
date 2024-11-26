@@ -165,9 +165,10 @@ class PlotLightcurveSample(AbsPhotoT3Unit):
             if not len(t2res) > 0:
                 return None
             if len(t2res) > 1:
-                # self.logger.info('Multiple T2 results, grabbing last', extra={'stock':tran_view.id, 't2res': t2res} )
-                print("why multiple?")
-                print(t2res)
+                self.logger.info(
+                    "Multiple T2 results, grabbing last",
+                    extra={"stock": tran_view.id, "t2res": t2res},
+                )
             t2body = t2res[-1].body[-1]
 
             # Check fit quality

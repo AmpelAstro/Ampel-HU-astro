@@ -59,13 +59,13 @@ class ScoreTNSObjects(AbsScoreCalculator):
         async for doc in self.client.search(
             ra=ra, dec=dec, radius=self.maxdist, units="arcsec"
         ):
-            print("got from tns", doc)
+            self.logger.debug("got from tns", extra={"doc": doc})
             if doc["name_prefix"] not in self.tns_prefix:
                 continue
             if (discdate := doc.get("discoverydate", None)) is None:
                 continue
             tdisc = Time(discdate, format="iso", scale="utc").jd
-            print(".... FOUND A DISC DATE", tdisc)
+            self.logger.debug("found a discovery date", extra={"tdisc": tdisc})
         return tdisc
 
     def evaluate(self, t2unit: str, t2_result: dict[str, Any]) -> float:
@@ -78,9 +78,6 @@ class ScoreTNSObjects(AbsScoreCalculator):
         if t2unit != "T2InfantCatalogEval":
             return 0
 
-        print("t2result")
-        print(t2_result)
-
         if (ra := t2_result.get("ra")) and (dec := t2_result.get("dec")):
             tjd = asyncio.run(self.get_tns_discovery(ra, dec))
         else:
@@ -92,6 +89,4 @@ class ScoreTNSObjects(AbsScoreCalculator):
 
         # calculate score
         tdiff = max(t2_result["t_max"] - tjd, self.mindiff)
-        print("time diff", tdiff)
-        print("score", (tdiff) ** self.powerscale)
         return (tdiff) ** self.powerscale

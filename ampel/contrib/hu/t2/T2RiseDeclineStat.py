@@ -123,8 +123,7 @@ class T2RiseDeclineBase(LogicalUnit):
                         dets.remove_rows(iCut)
 
         except ValueError:
-            print("debug")
-            print(pps)
+            self.logger.warn(f"{pps=}")
             dets = Table(rows=pps, names=("jd", "filter", "magpsf", "sigmapsf"))
 
         # First set of properties to derive
@@ -134,11 +133,10 @@ class T2RiseDeclineBase(LogicalUnit):
 
         try:
             o["mag_det"] = float(dets["magpsf"][dets["jd"] == o["jd_det"]][0])
-        except TypeError:
-            print("debug")
-            print(dets)
-            print(o["jd_det"])
-            print(dets["jd"] == o["jd_det"])
+        except TypeError as e:
+            self.logger.error(
+                f'{dets=} {o["jd_det"]=} {dets["jd"] == o["jd_det"]=}', exc_info=e
+            )
             o["mag_det"] = float(dets["magpsf"][dets["jd"] == o["jd_det"]][0])
 
         o["mag_last"] = float(dets["magpsf"][dets["jd"] == o["jd_last"]][0])
@@ -197,11 +195,11 @@ class T2RiseDeclineBase(LogicalUnit):
         min_mag_err = float(dets["sigmapsf"][dets["magpsf"] == min_mag][-1])
         try:
             last_mag_err = float(dets["sigmapsf"][dets["jd"] == o["jd_last"]][0])
-        except TypeError:
-            print("last mag err")
-            print(dets)
-            print(o)
-            print(dets["magpsf"] == o["mag_last"])
+        except TypeError as e:
+            self.logger.error(
+                f'last mag err {dets=} {o=} {dets["magpsf"] == o["mag_last"]=}',
+                exc_info=e,
+            )
             last_mag_err = float(dets["sigmapsf"][dets["magpsf"] == o["mag_last"]][0])
 
         det_mag_err = float(dets["sigmapsf"][dets["jd"] == o["jd_det"]][0])

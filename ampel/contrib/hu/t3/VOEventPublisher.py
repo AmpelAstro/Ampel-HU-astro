@@ -63,8 +63,6 @@ class VOEventPublisher(AbsPhotoT3Unit):
 
         for k, tran_view in enumerate(gen, 1):
             # Chategorized by stock (internal ampel ID) and channel
-            stock = tran_view.id
-            print(stock)
             assert tran_view.stock is not None
             channels = tran_view.stock.get("channel")
             assert channels is not None
@@ -139,6 +137,3 @@ class VOEventPublisher(AbsPhotoT3Unit):
 
             with open(self.fname, "wb") as fw:
                 vp.dump(v, fw)
-            with open(self.fname) as fr:
-                for l in fr.readlines():
-                    print(l.rstrip())

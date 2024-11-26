@@ -15,6 +15,8 @@ from ligo.gracedb.rest import GraceDb
 from ampel.contrib.hu.util.automation.jobfileCaller import executeJobfile
 from ampel.contrib.hu.util.automation.jobfileWriter import writeJobfilesFromDict
 
+# ruff: noqa: T201
+
 jobfile = ""
 
 

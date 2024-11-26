@@ -144,7 +144,7 @@ def convert(inp, outfmt="pandas", verbose=False, **kwargs):
         output = output.decode()
 
     if verbose:
-        print(f"Returning {mapping[outfmt][1]}")
+        print(f"Returning {mapping[outfmt][1]}")  # noqa: T201
 
     return output
 

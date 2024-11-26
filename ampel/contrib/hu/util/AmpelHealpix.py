@@ -20,6 +20,8 @@ import numpy as np
 import requests
 from astropy.time import Time
 
+# ruff: noqa: T201
+
 
 class AmpelHealpix:
     """
