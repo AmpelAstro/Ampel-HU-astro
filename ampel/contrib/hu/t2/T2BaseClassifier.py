@@ -211,7 +211,6 @@ class BaseClassifier(AmpelBaseModel):
     # Save / plot parameters
     parsnipplot_suffix: None | str = None
     parsnipplot_dir: None | str = None
-    #
     add_parsnip_from: None | str = None
 
     # Include features and ML results in t2_record
