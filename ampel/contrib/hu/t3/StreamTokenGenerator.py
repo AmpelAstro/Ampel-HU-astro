@@ -9,7 +9,7 @@
 
 import random
 import time
-from typing import Any
+from typing import Any, Literal
 
 from astropy.time import Time
 from requests_toolbelt.sessions import BaseUrlSession
@@ -36,7 +36,7 @@ class StreamTokenGenerator(AbsT3PlainUnit):
     archive: str = "https://ampel.zeuthen.desy.de/api/ztf/archive/v3/"
     resource_name: str = "ztf_stream_token"
 
-    mode: str = "cone"  # or "healpix" or "epoch". Default mode is cone.
+    mode: Literal["cone", "healpix", "epoch"] = "cone"
 
     # supply ra, dec and radius if mode is "cone"
     cone: None | dict[str, float] = None
@@ -46,7 +46,7 @@ class StreamTokenGenerator(AbsT3PlainUnit):
     pixels: None | list = None  # use when mode is "healpix"
 
     # default jd range: [ztf_start, jd_now]
-    jd_range: list = [2458195.0, float(Time.now().jd)]
+    jd_range: list[float] = [2458195.0, float(Time.now().jd)]
 
     #: seconds to wait for query to complete
     timeout: float = 60
@@ -87,9 +87,6 @@ class StreamTokenGenerator(AbsT3PlainUnit):
                 "candidate": candidate,
             }
 
-        else:
-            raise ValueError(' Invalid mode! must be "cone" OR "healpix" OR "epoch" ')
-
         session = BaseUrlSession(
             self.archive if self.archive.endswith("/") else self.archive + "/"
         )
@@ -115,7 +112,7 @@ class StreamTokenGenerator(AbsT3PlainUnit):
             delay *= 2
         else:
             raise RuntimeError(
-                f"{session.base_url}stream/{token} still locked after {time.time() - t0:.0f} s"
+                f"{response.url} still locked after {time.time() - t0:.0f} s"
             )
         response.raise_for_status()
         self.logger.info("Stream created", extra=response.json())
