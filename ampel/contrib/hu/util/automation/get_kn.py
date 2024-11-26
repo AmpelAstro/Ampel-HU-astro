@@ -30,9 +30,6 @@ JOBFILE_TEMP = "/mnt/c/Users/Public/Documents/Uni/master/masterarbeit/ampel/Ampe
 gw_names = sys.argv[1:]
 print(type(gw_names))
 
-if len(gw_names) < 1:
-    gw_names = [gw_names]
-
 print(gw_names)
 for k, gw_name in enumerate(gw_names):
     # gw_name = sys.argv[1]
