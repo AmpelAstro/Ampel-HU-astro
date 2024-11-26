@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              jnordin@physik.hu-berlin.de
 # Date:                29.03.2023
-# Last Modified Date:  21.04.2023
+# Last Modified Date:  27.05.2024
 # Last Modified By:    ernstand@physik.hu-berlin.de
 
 from collections.abc import Sequence

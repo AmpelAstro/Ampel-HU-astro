@@ -12,6 +12,7 @@ from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
 from ampel.contrib.hu.util.AmpelHealpix import AmpelHealpix
+from ampel.secret.NamedSecret import NamedSecret
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
 
@@ -22,6 +23,8 @@ class T2MatchGRB(AbsStateT2Unit, AbsTabulatedT2Unit):
     map_name: str
 
     event_list: list[dict] = []
+
+    UID: NamedSecret[str] = NamedSecret(label="astro-colibri/uid")
 
     ra: float = 0
     dec: float = 0
@@ -105,6 +108,7 @@ class T2MatchGRB(AbsStateT2Unit, AbsTabulatedT2Unit):
         # Request parameters (headers, body)
         headers = {"Content-Type": "application/json"}
         body = {
+            "uid": self.UID.get(),
             "filter": grb_filter,
             "time_range": {
                 "max": self.after_iso,

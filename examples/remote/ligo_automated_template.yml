@@ -1,11 +1,11 @@
-name: random-healpix
+name: ligo-kilonova
 parameters:
 - name: map_url_var
-  value: https://www.google.com
+  value: <<map_url>>
 - name: map_name_var
-  value: random.fits.gz #sim_98.13_58.62_1223725912.7.fits.gz
+  value: <<map_name>>
 - name: map_token_var
-  value: random.fits.gz_token #sim_98.13_58.62_1223725912.7.fits.gz_token
+  value: <<map_token>>
 - name: map_dir_var
   value: ./
 - name: trigger_jd_var
@@ -16,29 +16,15 @@ parameters:
   value: ./TransientTable.csv
 
 mongo:
-  prefix: random
+  prefix: healpix
   reset: true
 
 channel:
-- name: random
+- name: healpix
   access: [ZTF, ZTF_PUB, ZTF_PRIV]
   policy: []
 
 task:
-
-- title: generation
-  unit: T3Processor
-  config:
-    raise_exc: true
-    execute:
-      - unit: T3PlainUnitExecutor
-        config:
-          target:
-            unit: RandomMapGenerator
-            config:
-              map_name: "{{ job.parameters.map_name_var }}" #S200115j.fits.gz,0
-              save_dir: "{{ job.parameters.map_dir_var }}"
-              #seed: 1234
 
 - title: token
   unit: T3Processor
@@ -78,7 +64,7 @@ task:
             resource_name: "{{ job.parameters.map_token_var }}"
     shaper: ZiGWDataPointShaper
     directives:
-    - channel: random
+    - channel: healpix
       filter:
         config:
           trigger_jd: "{{ job.parameters.trigger_jd_var }}"
@@ -149,7 +135,6 @@ task:
                 map_name: "{{ job.parameters.map_name_var }}"
               unit: T2MatchGRB
             - config: &risedecline_config
-                #sigma_slope: 150
                 t_cadence: 3.
                 significant_bands: 
                 - 'ztfg'
@@ -338,7 +323,7 @@ task:
                   unit: T2DigestRedshifts
                 - unit: T2PropagateStockInfo
                 tabulator:
-                  - unit: ZTFT2Tabulator
+                - unit: ZTFT2Tabulator
               unit: T2RunPossis
             - config: &kilonova_config
                 max_redshift: 0.2
@@ -399,7 +384,7 @@ task:
               select:
                 unit: T3StockSelector
                 config:
-                  channel: random
+                  channel: healpix
               load:
                 unit: T3SimpleDataLoader
                 config:
@@ -408,7 +393,7 @@ task:
                     - T1
                     - T2DOC
                     - DATAPOINT
-                  channel: random
+                  channel: healpix
           stage:
             unit: T3SimpleStager
             config:
@@ -419,8 +404,8 @@ task:
                 #     desycloud_filename: S200115j
                 - unit: PlotTransientLightcurves
                   config:
-                    pdf_path: candidates.pdf
-                    save_png: true
+                    #pdf_path: candidates.pdf
+                    save_png: false
                     include_cutouts: true
                     #slack_channel: "#ztf_auto"
                     #slack_token:
