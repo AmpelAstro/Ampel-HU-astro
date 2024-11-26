@@ -106,7 +106,6 @@ class TransientTablePublisher(AbsPhotoT3Unit):
     def process(
         self, gen: Generator[TransientView, T3Send, None], t3s: None | T3Store = None
     ) -> None:
-        #    def process(self, gen: Generator[SnapView, T3Send, None], t3s: T3Store) -> None:
         """
         Loop through provided TransientViews and extract data according to the
         configured schema.
@@ -263,7 +262,9 @@ class TransientTablePublisher(AbsPhotoT3Unit):
                     "_rev_" + skymap_name[skymap_name.find(",") + 1 :]
                 )  # find "," and add rev version after that
 
-            print("TransientTablePublisher: TMP FILES MOVED TO " + skymap_dir_name)
+            self.logger.info(
+                f"TransientTablePublisher: TMP FILES MOVED TO {skymap_dir_name}"
+            )
 
             if self.local_path is not None:
                 skymap_directory = os.path.join(
