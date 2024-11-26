@@ -371,7 +371,7 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
     # Optionally, save a {stock}.png image of each individual event
     save_png: bool = False
     # Dir for saving png (thumbnails + single event if chosen)
-    image_cache_dir: str = "./image_cache"
+    image_cache_dir: str | None = "./image_cache"
 
     save_dir: str = "./images"  # dir for saving plots, pdf
 
@@ -387,7 +387,8 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
 
     def post_init(self) -> None:
         os.makedirs(self.save_dir, exist_ok=True)
-        os.makedirs(self.image_cache_dir, exist_ok=True)
+        if self.image_cache_dir:
+            os.makedirs(self.image_cache_dir, exist_ok=True)
         # Create temporary path if not set
         if not self.pdf_path:
             import tempfile
