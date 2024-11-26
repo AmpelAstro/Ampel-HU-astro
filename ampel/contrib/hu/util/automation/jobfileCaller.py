@@ -46,11 +46,13 @@ def executeJobfile(job_call, execute_directory, should_retry=True, max_retries=5
             if process.poll() is not None:
                 if process.returncode != 0:
                     print("BAD EXIT")
-                    print(process.stderr.read().decode("utf-8"), end="")  # type: ignore[union-attr]
+                    if process.stderr:
+                        print(process.stderr.read().decode("utf-8"), end="")
                     retry = True
                     break
-                print(process.stdout.read().decode("utf-8"), end="")  # type: ignore[union-attr]
-                process.stdout.close()  # type: ignore[union-attr]
+                if process.stdout:
+                    print(process.stdout.read().decode("utf-8"), end="")
+                    process.stdout.close()
                 break
 
             rlist = select([process.stdout], [], [], timeout)[0]

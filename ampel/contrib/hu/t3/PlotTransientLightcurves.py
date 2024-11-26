@@ -371,7 +371,9 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
     # Optionally, save a {stock}.png image of each individual event
     save_png: bool = False
     # Dir for saving png (thumbnails + single event if chosen)
-    image_cache_dir: None | str = "."
+    image_cache_dir: str | None = "./image_cache"
+
+    save_dir: str = "./images"  # dir for saving plots, pdf
 
     # Should ZTF cutouts be retrieved (requires remote archive access)
     include_cutouts: bool = False
@@ -384,6 +386,15 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
     slack_token: NamedSecret[str] | None = None
 
     def post_init(self) -> None:
+        os.makedirs(self.save_dir, exist_ok=True)
+        if self.image_cache_dir:
+            os.makedirs(self.image_cache_dir, exist_ok=True)
+        # Create temporary path if not set
+        if not self.pdf_path:
+            import tempfile
+
+            self.pdf_path = tempfile.mkstemp(".pdf", "candidates", self.save_dir)[1]
+
         # Possibly create a slack client
         if self.slack_channel and self.slack_token is not None:
             self.webclient = WebClient(self.slack_token.get())
@@ -393,7 +404,7 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
         tview: TransientView,
         nearby_z: float = 0.02,
         snia_minprob: float = 0.7,
-        min_kilonovaness=5,
+        min_kilonovaness=0,
     ) -> tuple[list, Any]:
         """
         Collect information from potential T2 documents,
@@ -440,13 +451,11 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
 
         t2res = tview.get_t2_body(unit="T2KilonovaStats")
         if isinstance(t2res, dict):
-            attributes.append("PercentHigher{:.5f}".format(t2res["gaus_perc"]))
+            attributes.append(f"PercentHigher{t2res['gaus_percent']:.5f} ")
             attributes.append(
-                "ExpectedCands{:.1f}+{:.1f}-{:.1f}".format(
-                    t2res["exp_kn"], t2res["exp_kn_pls"], t2res["exp_kn_min"]
-                )
+                f"ExpectedCands{t2res['exp_kn']:.1f}+{t2res['exp_kn_pls']:.1f}-{t2res['exp_kn_min']:.1f} "
             )
-            attributes.append("DistanceRange{}".format(t2res["dist_range"]))
+            attributes.append(f"DistanceRange{t2res['dist_range']}")
         return (attributes, z)
 
     def process(
@@ -515,7 +524,7 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                     cutout_cache_dir=self.image_cache_dir,
                 )
                 pdf.savefig()
-                if self.image_cache_dir is not None:
+                if self.save_png and self.image_cache_dir:
                     plt.savefig(
                         os.path.join(self.image_cache_dir, str(tran_view.id) + ".png")
                     )
