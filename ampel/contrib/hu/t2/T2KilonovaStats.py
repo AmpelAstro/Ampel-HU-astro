@@ -25,15 +25,6 @@ from ampel.types import UBson
 from ampel.view.T2DocView import T2DocView
 
 
-def jsonify(string: str):
-    tmp_str = string.replace("'", '"')
-    tmp_str = tmp_str.replace("None", "null")
-    tmp_str = tmp_str.replace("True", "true")
-    tmp_str = tmp_str.replace("False", "false")
-    tmp_str = tmp_str.replace("inf", "Infinity")
-    return tmp_str  # noqa: RET504
-
-
 def dejsonify(arg):
     try:
         return float(arg)
