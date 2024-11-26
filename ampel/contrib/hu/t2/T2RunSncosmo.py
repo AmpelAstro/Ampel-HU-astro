@@ -118,9 +118,12 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
 
     # Plot parameters
     plot_db: bool = False
-    plot_props: None | PlotProperties = None  # Plot properties for SvgRecord creation
-    plot_matplotlib_suffix: None | str = None  # Suffix if stored (locally) through matplotlib (e.g. _crayzmodel.png). Will add transient name
-    plot_matplotlib_dir: str = "."  # Suffix if stored (locally) through matplotlib (e.g. _crayzmodel.png). Will add transient name
+    # Plot properties for SvgRecord creation
+    plot_props: None | PlotProperties = None
+    # Suffix if stored (locally) through matplotlib (e.g. _crayzmodel.png). Will add transient name
+    plot_matplotlib_suffix: None | str = None
+    # Suffix if stored (locally) through matplotlib (e.g. _crayzmodel.png). Will add transient name
+    plot_matplotlib_dir: str = "."
 
     # Units from which time limits to use or redshifts can be picked.
     t2_dependency: Sequence[
@@ -301,7 +304,8 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         detection_sigma = (
             3  # Detection sigma threshold to look for phase of first detection
         )
-        pull_range = [-10, 20]  # Phase range used when calculating uniform chi2/dof
+        # Phase range used when calculating uniform chi2/dof
+        pull_range = [-10, 20]
 
         z = sncosmo_model.get("z")
 
@@ -440,11 +444,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             self.sncosmo_model.set(z=t2_output["z"])
 
         self.logger.debug(
-            "Starting fit with fit params {}, all parameters {} and start values {}".format(
-                self.fit_params,
-                self.sncosmo_model.param_names,
-                self.sncosmo_model.parameters,
-            )
+            f"Starting fit with fit params {self.fit_params}, all parameters {self.sncosmo_model.param_names} and start values {self.sncosmo_model.parameters}"
         )
 
         # Carry out fit. Bounds are directly carried from parameters
@@ -483,9 +483,16 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         # How to best serialize these for mongo storage?
         sncosmo_result["parameters"] = sncosmo_result["parameters"].tolist()
         sncosmo_result["data_mask"] = sncosmo_result["data_mask"].tolist()
-        try:
+
+        # try:
+        #     sncosmo_result["covariance"] = sncosmo_result["covariance"].tolist()
+        # except KeyError:
+        #     sncosmo_result["covariance"] = []
+
+        # sncosmo covariance is either None or an array
+        if isinstance(sncosmo_result["covariance"], np.ndarray):
             sncosmo_result["covariance"] = sncosmo_result["covariance"].tolist()
-        except KeyError:
+        else:
             sncosmo_result["covariance"] = []
 
         # For filtering purposes we want a proper dict
