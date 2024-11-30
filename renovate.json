@@ -1,6 +1,12 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "local>AmpelProject/renovate-config"
+  "packageRules": [
+    {
+      "matchPackagePatterns": ["^ampel-.*"],
+      "allowedVersions": "<0.9"
+    },
+    {
+      "matchManagers": ["poetry"],
+      "rangeStrategy": "in-range-only"
+    }
   ]
 }
