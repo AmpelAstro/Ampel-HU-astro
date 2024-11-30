@@ -54,7 +54,7 @@ requires an access token if data is to be retrieved.
 - [T2GetLensSNParameters](ampel/contrib/hu/t2/T2GetLensSNParameters.py)
 - [T2InfantCatalogEval](ampel/contrib/hu/t2/T2InfantCatalogEval.py): Evaluate whether a transient fulfills criteria for being a potentially infant (extragalactic) transient.
 - [T2KilonovaEval](ampel/contrib/hu/t2/T2KilonovaEval.py): Evaluate whether a transient fulfills criteria for being a potential kilonova-like event.
-- [T2KilonovaStats](ampel/contrib/hu/t2/T2KilonovaStats.py)
+- [T2KilonovaStats](ampel/contrib/hu/t2/T2KilonovaStats.py): Evaluate kilonovaness stats for transient given map distance and number of detections..
 - [T2LCQuality](ampel/contrib/hu/t2/T2LCQuality.py): determine the 'quality' of the light curve by computing ratios between the number of detection and that of upper limits.
 - [T2LSPhotoZTap](ampel/contrib/hu/t2/T2LSPhotoZTap.py): Query the NOIR DataLab service for photometric redshifts from the Legacy Survey.
 - [T2LoadRedshift](ampel/contrib/hu/t2/T2LoadRedshift.py): Add redshifts from external .csv.
