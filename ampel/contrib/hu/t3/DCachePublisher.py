@@ -8,40 +8,31 @@
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 
-import asyncio
 import datetime
 import gzip
 import io
 import os
-import ssl
 import sys
 import time
 import traceback
-from collections.abc import Generator
+from collections.abc import Callable, Generator, Iterable
 from functools import partial
-from typing import Any
+from typing import Any, TypeVar
 from xml.etree import ElementTree
 
 import backoff
 import pytz
-from aiohttp import ClientSession, TCPConnector, helpers
-from aiohttp.client_exceptions import (
-    ClientConnectionError,
-    ClientConnectorError,
-    ClientConnectorSSLError,
-    ClientResponseError,
-    ServerDisconnectedError,
-)
+import requests
 
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.struct.T3Store import T3Store
-from ampel.struct.UnitResult import UnitResult
-from ampel.types import UBson
 from ampel.util.json import AmpelEncoder
 from ampel.view.SnapView import SnapView
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
+
+_T = TypeVar("_T")
 
 
 class DCachePublisher(AbsT3Unit):
@@ -90,7 +81,9 @@ class DCachePublisher(AbsT3Unit):
             f.write(self.encoder.encode(tran_view).encode("utf-8"))
         return buf.getvalue()
 
-    async def create_directory(self, request, path_parts) -> None:
+    def create_directory(
+        self, session: requests.Session, path_parts: list[str]
+    ) -> None:
         path = []
         while len(path_parts) > 0:
             # NB: os.path.join drops any parts before those that start with /
@@ -100,29 +93,29 @@ class DCachePublisher(AbsT3Unit):
 
             if not self.dry_run:
                 url = os.path.join(self.base_dest, *path)
-                if not await self.exists(request, url):
-                    resp = await request("MKCOL", url, raise_for_status=False)
+                if not self.exists(session, url):
+                    resp = session.request("MKCOL", url)
                     # MKCOL on an existing directory returns 'Method not allowed'
-                    if not (resp.status < 400 or resp.status == 405):
+                    if not (resp.status_code < 400 or resp.status_code == 405):
                         resp.raise_for_status()
             self.existing_paths.add(tuple(path))
 
-    async def put(self, request, url, data, timeout=1.0):
+    def put(self, session: requests.Session, url, data, timeout=1.0):
         if self.dry_run:
             return
-        await request("PUT", url, data=data)
+        session.put(url, data=data)
 
-    async def exists(self, request, url):
+    def exists(self, session: requests.Session, url: str) -> bool:
         if self.dry_run:
-            return None
-        resp = await request("HEAD", url, raise_for_status=False)
-        return resp.status in {200, 201, 204}
+            return False
+        resp = session.head(url)
+        return resp.status_code in {200, 201, 204}
 
     @staticmethod
-    def is_permanent_error(exc):
-        if isinstance(exc, ClientResponseError):
-            return exc.code not in {403, 423, 500}
-        return isinstance(exc, ClientConnectorSSLError)
+    def is_permanent_error(exc: Exception):
+        if isinstance(exc, requests.HTTPError):
+            return exc.response.status_code not in {403, 423, 500}
+        return isinstance(exc, requests.ConnectionError)
 
     def _on_backoff(self, details):
         exc_typ, exc, _ = sys.exc_info()
@@ -157,77 +150,53 @@ class DCachePublisher(AbsT3Unit):
             },
         )
 
-    async def publish_transient(self, request, tran_view: SnapView) -> str:
+    def publish_transient(self, session: requests.Session, tran_view: SnapView) -> str:
         assert isinstance(tran_view.id, int)
         ztf_name = to_ztf_id(tran_view.id)
         # group such that there are a maximum of 17576 in the same directory
         prefix = [ztf_name[:7], ztf_name[7:9]]
 
-        await self.create_directory(request, [self.channel, *prefix])
+        self.create_directory(session, [self.channel, *prefix])
         base_dir = os.path.join(self.base_dest, self.channel, *prefix)
         fname = base_dir + f"/{ztf_name}.json.gz"
-        await self.put(request, fname, data=self.serialize(tran_view))
+        self.put(session, fname, data=self.serialize(tran_view))
 
         return fname
 
-    async def send_requests(self, unbound_tasks):
+    def send_requests(
+        self,
+        unbound_tasks: Iterable[Callable[[requests.Session], _T]],
+    ) -> Iterable[_T]:
         """
         Send a batch of requests
 
         :param unbound_tasks: sequence of callables that take a single argument
-            that is an aiohttp request object
+            that is a requests.Session
         """
-        ssl_context = ssl.create_default_context(
-            capath=os.environ.get("X509_CERT_DIR", None)
-        )
-        async with (
-            TCPConnector(
-                limit=self.max_parallel_requests, ssl_context=ssl_context
-            ) as connector,
-            ClientSession(
-                connector=connector,
-                headers={"Authorization": f"BEARER {self.authz.get()}"},
-                raise_for_status=True,
-            ) as session,
-        ):
-            # ClientSession.request is a normal function returning an
-            # async context manager. While this is kind of equivalent
-            # to a coroutine, it can't be decorated with backoff. Wrap
-            # it so it can be.
-            # Note that it is important to not actually enter the
-            # context manager here, as this would close the response
-            # on exit, causing read() to raise ClientConnectionError.
-            async def async_request(*args, **kwargs):
-                return await session.request(*args, **kwargs)
+        session = requests.Session()
+        session.headers["Authorization"] = f"BEARER {self.authz.get()}"
+        # verify should be a bool or a path to a CA cert dir
+        session.verify = os.environ.get("X509_CERT_DIR", True)
+        # robustify AsyncClient.request() against transitory failures
+        session.request = backoff.on_exception(  # type: ignore[method-assign]
+            backoff.expo,
+            requests.exceptions.RequestException,
+            logger=None,
+            giveup=self.is_permanent_error,
+            on_giveup=self._on_giveup,
+            on_backoff=self._on_backoff,
+        )(session.request)
 
-            # robustify Session.request() against transitory failures
-            request = backoff.on_exception(
-                backoff.expo,
-                (
-                    asyncio.TimeoutError,
-                    ClientResponseError,
-                    ClientConnectorError,
-                    ClientConnectionError,
-                    ServerDisconnectedError,
-                ),
-                logger=None,
-                giveup=self.is_permanent_error,
-                on_giveup=self._on_giveup,
-                on_backoff=self._on_backoff,
-            )(async_request)
-
-            tasks = [task(request) for task in unbound_tasks]
-            return await asyncio.gather(*tasks)
+        return (task(session) for task in unbound_tasks)
 
     def process(
         self, gen: Generator[SnapView, JournalAttributes, None], t3s: T3Store
-    ) -> UBson | UnitResult:
+    ) -> None:
         """
         Publish a transient batch
         """
-        loop = asyncio.get_event_loop()
         t0 = time.time()
-        self.updated_urls += loop.run_until_complete(
+        updated_urls = list(
             self.send_requests(
                 [
                     partial(self.publish_transient, tran_view=tran_view)
@@ -237,23 +206,17 @@ class DCachePublisher(AbsT3Unit):
         )
         self.dt += time.time() - t0
 
-        self.logger.info(
-            f"Published {len(self.updated_urls)} transients in {self.dt:.1f} s"
-        )
+        self.logger.info(f"Published {len(updated_urls)} transients in {self.dt:.1f} s")
 
         if not self.dry_run:
-            asyncio.get_event_loop().run_until_complete(
-                self.send_requests([self.publish_manifest])
-            )
+            self.send_requests([self.publish_manifest])
 
-        return None
-
-    async def publish_manifest(self, request) -> None:
+    def publish_manifest(self, session: requests.Session) -> None:
         prefix = os.path.join(self.base_dest, self.channel)
         manifest_dir = os.path.join(prefix, "manifest")
         # create any directories that descend from the base path
-        await self.create_directory(
-            request,
+        self.create_directory(
+            session,
             list(
                 os.path.split(
                     prefix[len(os.path.commonprefix((self.base_dest, manifest_dir))) :]
@@ -265,52 +228,51 @@ class DCachePublisher(AbsT3Unit):
         previous = None
 
         # Move the previous manifest aside.
-        async with await request(
-            "PROPFIND", latest, raise_for_status=False
-        ) as response:
-            if (
-                response.status < 400
-                and (
-                    element := ElementTree.fromstring(await response.text()).find(
-                        "**/{DAV:}prop/{DAV:}creationdate"
-                    )
+        response = session.request("PROPFIND", latest)
+        if (
+            response.status_code < 400
+            and (
+                element := ElementTree.fromstring(response.text).find(
+                    "**/{DAV:}prop/{DAV:}creationdate"
                 )
-                and (date := element.text)
-            ):
-                previous = os.path.join(manifest_dir, date + ".json.gz")
-                self.logger.info(f"Moving {latest} to {previous}")
-                await request(
+            )
+            and (date := element.text)
+        ):
+            previous = os.path.join(manifest_dir, date + ".json.gz")
+            self.logger.info(f"Moving {latest} to {previous}")
+            (
+                session.request(
                     "MOVE",
                     latest,
                     headers={"Destination": previous},
                 )
+            ).raise_for_status()
 
         # Write a new manifest with a link to previous manifest.
-        await request(
-            "PUT",
-            latest,
-            data=self.serialize(
-                {
-                    "time": datetime.datetime.now(tz=pytz.UTC).isoformat(),
-                    "previous": previous,
-                    "updated": self.updated_urls,
-                }
-            ),
-        )
+        (
+            session.put(
+                latest,
+                data=self.serialize(
+                    {
+                        "time": datetime.datetime.now(tz=pytz.UTC).isoformat(),
+                        "previous": previous,
+                        "updated": self.updated_urls,
+                    }
+                ),
+            )
+        ).raise_for_status()
 
         # Create and post a read-only macaroon for the prefix path
-        async with await request(
-            "POST",
+        response = session.post(
             prefix + "/",
             headers={"Content-Type": "application/macaroon-request"},
             json={
                 "caveats": ["activity:DOWNLOAD,LIST,READ_METADATA"],
                 "validity": "PT48h",
             },
-        ) as response:
-            authz = await response.json()
-        await request(
-            "PUT",
+        )
+        authz = response.json()
+        session.put(
             os.path.join(prefix, "macaroon"),
             data=authz["macaroon"],
         )
@@ -318,7 +280,7 @@ class DCachePublisher(AbsT3Unit):
 
 
 def get_macaroon(
-    user: helpers.BasicAuth,
+    user: requests.auth.HTTPBasicAuth,
     path: str,
     validity: str,
     activity: None | list[str] = None,
@@ -338,22 +300,16 @@ def get_macaroon(
     if caveats:
         body["caveats"] = caveats
 
-    async def fetch():
-        ssl_context = ssl.create_default_context(
-            capath=os.environ.get("X509_CERT_DIR", None)
-        )
-        async with (
-            TCPConnector(ssl_context=ssl_context) as connector,
-            ClientSession(auth=user, connector=connector) as session,
-        ):
-            resp = await session.post(
-                f"https://{host}:{port}{path}",
-                headers={"Content-Type": "application/macaroon-request"},
-                json=body,
-            )
-            return (await resp.json())["macaroon"]
-
-    return asyncio.get_event_loop().run_until_complete(fetch())
+    session = requests.Session()
+    # verify should be a bool or a path to a CA cert dir
+    session.verify = os.environ.get("X509_CERT_DIR", True)
+    resp = session.post(
+        f"https://{host}:{port}{path}",
+        headers={"Content-Type": "application/macaroon-request"},
+        json=body,
+        auth=user,
+    )
+    return (resp.json())["macaroon"]
 
 
 if __name__ == "__main__":
@@ -375,7 +331,7 @@ if __name__ == "__main__":
     p.add_argument(
         "-u",
         "--user",
-        type=lambda x: helpers.BasicAuth(*(x.split(":"))),
+        type=lambda x: requests.auth.HTTPBasicAuth(*(x.split(":"))),
         help="username:password for basic auth",
     )
     p.add_argument(
