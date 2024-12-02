@@ -7,9 +7,8 @@
 # Last Modified Date:  03.08.2020
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
-from typing import TypedDict
-
 import numpy as np
+from typing_extensions import TypedDict
 
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 from ampel.contrib.hu.t2 import xgb_trees

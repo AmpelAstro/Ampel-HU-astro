@@ -9,7 +9,7 @@
 
 import gc
 import os
-from typing import Any, TypedDict
+from typing import Any
 
 import joblib
 import lcdata
@@ -19,6 +19,7 @@ import numpy as np
 # Parsnip models - avoid importing these if running in the light mode?
 import parsnip
 from scipy.stats import chi2
+from typing_extensions import TypedDict
 
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.model.UnitModel import UnitModel
