@@ -90,7 +90,6 @@ class TNSMirrorDB:
 
 
 if __name__ == "__main__":
-    import asyncio
     import logging
     from argparse import ArgumentParser
 
@@ -109,7 +108,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     client = TNSClient(
-        args.api_key, args.timeout, args.max_requests, logging.getLogger()
+        args.api_key,
+        args.timeout,
+        args.max_requests,
+        logging.getLogger(),  # type: ignore[arg-type]
     )
     db = TNSMirrorDB(args.mongo_uri, args.db)
     if args.no_update:
@@ -117,14 +119,10 @@ if __name__ == "__main__":
     else:
         existing = set()
 
-    async def run():
-        chunk = []
-        async for doc in client.search(exclude=existing, public_timestamp=args.since):
-            chunk.append(doc)
-            if len(chunk) >= 100:
-                db.add_sources(chunk)
-                del chunk[:]
-        db.add_sources(chunk)
-        del chunk[:]
-
-    asyncio.get_event_loop().run_until_complete(run())
+    chunk = []
+    for doc in client.search(exclude=existing, public_timestamp=args.since):
+        chunk.append(doc)
+        if len(chunk) >= 100:
+            db.add_sources(chunk)
+            del chunk[:]
+    db.add_sources(chunk)

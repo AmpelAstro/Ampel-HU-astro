@@ -7,7 +7,6 @@
 # Last Modified Date:  8.1.2024
 # Last Modified By:    jno <jnordin@physik.hu-berlin.de>
 
-import asyncio
 from typing import Any
 
 from astropy.time import Time
@@ -54,10 +53,13 @@ class ScoreTNSObjects(AbsScoreCalculator):
             self.logger,
         )
 
-    async def get_tns_discovery(self, ra, dec):
+    def get_tns_discovery(self, ra: float, dec: float) -> None | float:
         tdisc = None
-        async for doc in self.client.search(
-            ra=ra, dec=dec, radius=self.maxdist, units="arcsec"
+        for doc in self.client.search(
+            ra=ra,
+            dec=dec,
+            radius=self.maxdist,
+            units="arcsec",
         ):
             self.logger.debug("got from tns", extra={"doc": doc})
             if doc["name_prefix"] not in self.tns_prefix:
@@ -79,7 +81,7 @@ class ScoreTNSObjects(AbsScoreCalculator):
             return 0
 
         if (ra := t2_result.get("ra")) and (dec := t2_result.get("dec")):
-            tjd = asyncio.run(self.get_tns_discovery(ra, dec))
+            tjd = self.get_tns_discovery(ra, dec)
         else:
             tjd = None
 

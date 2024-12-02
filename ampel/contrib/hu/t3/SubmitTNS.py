@@ -7,7 +7,6 @@
 # Last Modified Date:  1.03.2024
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
-import asyncio
 import time
 from collections.abc import Generator
 from typing import Any
@@ -55,13 +54,17 @@ class SubmitTNS(AbsPhotoT3Unit):
             self.logger,
         )
 
-    async def get_tns_names(self, ra, dec):
-        names = []
-        async for doc in self.client.search(
-            ra=ra, dec=dec, radius=self.maxdist, units="arcsec"
-        ):
-            names.extend(doc["internal_names"].split(", "))
-        return names
+    def get_tns_names(self, ra: float, dec: float) -> set[str]:
+        return {
+            name
+            for doc in self.client.search(
+                ra=ra,
+                dec=dec,
+                radius=self.maxdist,
+                units="arcsec",
+            )
+            for name in doc["internal_names"].split(", ")
+        }
 
     def sendReports(self, reports: list[dict]) -> dict:
         """
@@ -75,7 +78,7 @@ class SubmitTNS(AbsPhotoT3Unit):
         for atreport in reports:
             # Submit a report
             for _ in range(MAX_LOOP):
-                reportid = asyncio.run(self.client.sendReport(atreport))
+                reportid = self.client.sendReport(atreport)
                 if reportid:
                     break
                 time.sleep(SLEEP)
@@ -86,7 +89,7 @@ class SubmitTNS(AbsPhotoT3Unit):
             # Try to read reply
             for _ in range(MAX_LOOP):
                 time.sleep(SLEEP)
-                response = asyncio.run(self.client.reportReply(reportid))
+                response = self.client.reportReply(reportid)
                 if isinstance(response, list) or (
                     isinstance(response, dict) and "at_report" in response
                 ):
@@ -161,10 +164,8 @@ class SubmitTNS(AbsPhotoT3Unit):
 
             # directly check with TNS... unnecessary?
             if self.tns_doublecheck:
-                tnsmatch = asyncio.run(
-                    self.get_tns_names(
-                        ra=atdict["ra"]["value"], dec=atdict["dec"]["value"]
-                    )
+                tnsmatch = self.get_tns_names(
+                    ra=atdict["ra"]["value"], dec=atdict["dec"]["value"]
                 )
                 if atdict["internal_name"] in tnsmatch:
                     continue
