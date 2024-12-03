@@ -5971,6 +5971,7 @@ optional = false
 python-versions = ">=3.7"
 files = [
     {file = "schedule-1.2.2-py3-none-any.whl", hash = "sha256:5bef4a2a0183abf44046ae0d164cadcac21b1db011bdd8102e4a0c1e91e06a7d"},
+    {file = "schedule-1.2.2.tar.gz", hash = "sha256:15fe9c75fe5fd9b9627f3f19cc0ef1420508f9f9a46f45cd0769ef75ede5f0b7"},
 ]
 
 [package.extras]
@@ -7464,4 +7465,4 @@ ztf = ["ampel-ztf", "ztfquery"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "5273bdb82445b45a81822642b2ea86d7efe2ee22061d39d2611749806545376c"
+content-hash = "bf98a392b394e889fd1db598bee014a3e9569829e347b7a2c73d1ebab135eb6b"
