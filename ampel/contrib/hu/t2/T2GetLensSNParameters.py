@@ -59,9 +59,9 @@ class T2GetLensSNParameters(T2RunSncosmo):
                 band_table["time"], t0 - 7
             )  # find closest time to t0-7 days in each band
             if (t0 - 7 - self.unc) <= time_minus7 <= (t0 - 7 + self.unc):
-                band_table["epoch"][
-                    np.where(band_table["time"] == time_minus7)
-                ] = "minus7"
+                band_table["epoch"][np.where(band_table["time"] == time_minus7)] = (
+                    "minus7"
+                )
                 for row in band_table[
                     np.where(band_table["time"] == time_minus7)
                 ]:  # iterate over temporary table that is a subset of data
@@ -79,9 +79,9 @@ class T2GetLensSNParameters(T2RunSncosmo):
                 band_table["time"], t0 + 7
             )  # find closest time to t0+7 days in each band
             if (t0 + 7 - self.unc) <= time_plus7 <= (t0 + 7 + self.unc):
-                band_table["epoch"][
-                    np.where(band_table["time"] == time_plus7)
-                ] = "plus7"
+                band_table["epoch"][np.where(band_table["time"] == time_plus7)] = (
+                    "plus7"
+                )
                 for row in band_table[
                     np.where(band_table["time"] == time_plus7)
                 ]:  # iterate over temporary table that is a subset of data

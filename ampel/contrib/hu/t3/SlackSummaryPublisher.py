@@ -10,16 +10,15 @@
 import datetime
 import io
 from collections.abc import Generator, Iterable, Mapping
-from typing import Any, cast
+from typing import Any
 
 import numpy as np
 import pandas as pd
 import requests
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackClientError
-from slack_sdk.web import SlackResponse
 
-from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
+from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.log.utils import log_exception
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.struct.T3Store import T3Store
@@ -28,7 +27,7 @@ from ampel.view.TransientView import TransientView
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 
 
-class SlackSummaryPublisher(AbsT3ReviewUnit):
+class SlackSummaryPublisher(AbsT3Unit):
     """"""
 
     dry_run: bool = False
@@ -68,37 +67,36 @@ class SlackSummaryPublisher(AbsT3ReviewUnit):
         if self.dry_run:
             self.logger.info(m)
         else:
-            # we know this is a sync client; work around lazy type annotations
-            api = cast(
-                SlackResponse,
-                sc.api_call(
-                    "chat.postMessage",
-                    json={
-                        "channel": self.slack_channel,
-                        "text": m,
-                        "username": "AMPEL-live",
-                        "as_user": False,
-                    },
-                ),
+            api = sc.api_call(
+                "chat.postMessage",
+                json={
+                    "channel": self.slack_channel,
+                    "text": m,
+                    "username": "AMPEL-live",
+                    "as_user": False,
+                },
             )
             if not api["ok"]:
                 raise SlackClientError(api["error"])
 
         if len(frames) > 0:
             df = pd.DataFrame.from_records(frames)
-            # Set fill value for channel columns to False
-            for channel in channels:
-                df[channel].fillna(False, inplace=True)
-            # Set fill value for all other columns to MISSING
-            for field in set(df.columns.values).difference(channels):
-                df[field].fillna("MISSING", inplace=True)
+            # Set fill value for channel columns to False, and all others to MISSING
+            df.fillna(
+                {c: False for c in channels}
+                | {
+                    field: "MISSING"
+                    for field in set(df.columns.values).difference(channels)
+                },
+                inplace=True,
+            )
             # Move channel info at end
             df = df.reindex(
                 copy=False,
                 columns=[c for c in df.columns if c not in channels] + list(channels),
             )
 
-            filename = "Summary_%s.csv" % date
+            filename = f"Summary_{date}.csv"
 
             buffer = io.StringIO(filename)
             df.to_csv(buffer)
@@ -139,11 +137,16 @@ class SlackSummaryPublisher(AbsT3ReviewUnit):
             if self.full_photometry:
                 photometry_df = pd.concat(photometry, sort=False)
                 # Set fill value for channel columns to False
-                for channel in channels:
-                    photometry_df[channel].fillna(False, inplace=True)
-                # Set fill value for all other columns to MISSING
-                for field in set(photometry_df.columns.values).difference(channels):
-                    photometry_df[field].fillna("MISSING", inplace=True)
+                photometry_df.fillna(
+                    {c: False for c in channels}
+                    | {
+                        field: "MISSING"
+                        for field in set(photometry_df.columns.values).difference(
+                            channels
+                        )
+                    },
+                    inplace=True,
+                )
                 # Move channel info at end
                 photometry_df = photometry_df.reindex(
                     copy=False,
@@ -151,7 +154,7 @@ class SlackSummaryPublisher(AbsT3ReviewUnit):
                     + list(channels),
                 )
 
-                filename = "Photometry_%s.csv" % date
+                filename = f"Photometry_{date}.csv"
 
                 buffer = io.StringIO(filename)
                 photometry_df.to_csv(buffer)
@@ -208,7 +211,7 @@ class SlackSummaryPublisher(AbsT3ReviewUnit):
                 if (
                     t2record.unit == "T2LightCurveSummary"
                     or not (output := t2record.get_payload())
-                    or not isinstance(output, dict)
+                    or not isinstance(output, Mapping)
                 ):
                     continue
 

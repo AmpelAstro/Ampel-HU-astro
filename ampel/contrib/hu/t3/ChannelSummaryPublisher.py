@@ -38,7 +38,7 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
 
     dry_run: bool = False
     base_url: str = "https://desycloud.desy.de/remote.php/webdav/AMPEL/ZTF"
-    auth: NamedSecret[list] = NamedSecret(label="desycloud/valery")
+    auth: NamedSecret[list] = NamedSecret[list](label="desycloud/valery")
 
     def post_init(self) -> None:
         self.summary: dict[str, Any] = {}
@@ -73,10 +73,8 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
             assert isinstance(summary, dict)
             out.update(summary)
             last_detection = summary["last_detection"]
-            if last_detection < self._jd_range[0]:
-                self._jd_range[0] = last_detection
-            if last_detection > self._jd_range[1]:
-                self._jd_range[1] = last_detection
+            self._jd_range[0] = min(last_detection, self._jd_range[0])
+            self._jd_range[1] = max(last_detection, self._jd_range[1])
 
         return out
 

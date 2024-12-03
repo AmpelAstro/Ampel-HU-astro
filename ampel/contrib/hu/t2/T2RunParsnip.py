@@ -11,7 +11,7 @@ import gc
 import os
 import warnings
 from collections.abc import Sequence
-from typing import Literal
+from typing import Any, Literal
 
 import backoff
 import matplotlib.pyplot as plt
@@ -26,6 +26,7 @@ from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
 from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
+from ampel.contrib.hu.t2.util import get_payload
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
@@ -186,9 +187,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                 if t2_view.unit != self.redshift_kind:
                     continue
                 self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-                t2_res = (
-                    res[-1] if isinstance(res := t2_view.get_payload(), list) else res
-                )
+                t2_res = get_payload(t2_view)
                 # Parse this
                 if self.redshift_kind == "T2MatchBTS":
                     if "bts_redshift" in t2_res and t2_res["bts_redshift"] != "-":
@@ -235,12 +234,13 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             # Not looking for any
             return (False, {})
 
-        abort, abort_maps = False, {}
+        abort = False
+        abort_maps: dict[str, Any] = {}
         for t2_view in t2_views:
             if t2_view.unit not in self.abort_map:
                 continue
             self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-            t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
+            t2_res = get_payload(t2_view)
             abort_maps.update(t2_res)
 
             for abort_map in self.abort_map[t2_view.unit]:
@@ -268,9 +268,7 @@ class T2RunParsnip(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                 if t2_view.unit != "T2PhaseLimit":
                     continue
                 self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-                t2_res = (
-                    res[-1] if isinstance(res := t2_view.get_payload(), list) else res
-                )
+                t2_res = get_payload(t2_view)
                 jdstart = t2_res["t_start"]
                 jdend = t2_res["t_end"]
 

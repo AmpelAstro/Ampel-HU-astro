@@ -81,19 +81,21 @@ requires an access token if data is to be retrieved.
 - [CostCounter](ampel/contrib/hu/t3/CostCounter.py): Derive metrics for the total cost, as parsed by the provided documents.
 - [ElasticcClassPublisher](ampel/contrib/hu/t3/ElasticcClassPublisher.py): This unit is intended to submit classifications to the DESC TOM db during the ELAsTICC LSST alert simulation.
 - [HealpixCorrPlotter](ampel/contrib/hu/t3/HealpixCorrPlotter.py): Compare healpix coordinate P-value with output from T2RunSncosmo..
-- [HealpixTokenGenerator](ampel/contrib/hu/t3/HealpixTokenGenerator.py): Based on a URL to a Healpix map.
 - [PlotLightcurveSample](ampel/contrib/hu/t3/PlotLightcurveSample.py): Unit plots results from lightcurve fitters (RunSncosmo, RunParsnip).
 - [PlotTransientLightcurves](ampel/contrib/hu/t3/PlotTransientLightcurves.py): Create a (pdf) plot summarizing lightcurves of candidates provided to the unit.
-- [RandomMapGenerator](ampel/contrib/hu/t3/RandomMapGenerator.py): Generate smoothed circular healpix probability values around a random coordinate..
 - [RapidBase](ampel/contrib/hu/t3/RapidBase.py): Trigger rapid reactions.
 - [RapidLco](ampel/contrib/hu/t3/RapidLco.py): Submit LCO triggers for candidates passing criteria..
 - [RapidSedm](ampel/contrib/hu/t3/RapidSedm.py): Select transients for rapid reactions.
 - [ScoreSingleObject](ampel/contrib/hu/t3/ScoreSingleObject.py): Calculate score based on how early a specific SN is detected.
 - [ScoreTNSObjects](ampel/contrib/hu/t3/ScoreTNSObjects.py): Calculate score based on detection time reported to TNS, if any..
 - [SlackSummaryPublisher](ampel/contrib/hu/t3/SlackSummaryPublisher.py)
-- [StreamTokenGenerator](ampel/contrib/hu/t3/StreamTokenGenerator.py): Stream based token generator for.
 - [SubmitTNS](ampel/contrib/hu/t3/SubmitTNS.py): Submit candidates to TNS (unless already submitted).
 - [TransientInfoPrinter](ampel/contrib/hu/t3/TransientInfoPrinter.py)
 - [TransientTablePublisher](ampel/contrib/hu/t3/TransientTablePublisher.py): Construct a table based on selected T2 output values.
 - [TransientViewDumper](ampel/contrib/hu/t3/TransientViewDumper.py)
 - [VOEventPublisher](ampel/contrib/hu/t3/VOEventPublisher.py): Unit for creating a VOEvent pased on T2output and transient LightCurve.
+
+### T4 units (control):
+- [HealpixTokenGenerator](ampel/contrib/hu/t4/HealpixTokenGenerator.py): Based on a URL to a Healpix map.
+- [RandomMapGenerator](ampel/contrib/hu/t4/RandomMapGenerator.py): Generate smoothed circular healpix probability values around a random coordinate..
+- [StreamTokenGenerator](ampel/contrib/hu/t4/StreamTokenGenerator.py): Stream based token generator for.

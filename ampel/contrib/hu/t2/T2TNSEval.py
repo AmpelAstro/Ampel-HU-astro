@@ -7,7 +7,7 @@
 # Last Modified Date:  27.01.2021
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 import numpy as np
@@ -104,7 +104,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         "Observer": "Robot",
     }
 
-    def inspect_catalog(self, cat_res: dict[str, Any]) -> bool:
+    def inspect_catalog(self, cat_res: Mapping[str, Any]) -> bool:
         """
         Verify whether any catalog matching criteria prevents submission.
 
@@ -119,7 +119,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         for needed_cat in self.needed_catalogs:
             if not cat_res.get(needed_cat, False):
                 self.logger.debug(
-                    "no T2CATALOGMATCH results for %s" % needed_cat,
+                    f"no T2CATALOGMATCH results for {needed_cat}",
                     extra={"catalog_matches": cat_res},
                 )
                 return False
@@ -163,7 +163,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
 
         # cut away bright stars. TODO: this considers just the closest matches...
         # as well as fast moving stars
-        gaia_dr2 = cat_res.get("GAIADR2", None)
+        gaia_dr2 = cat_res.get("GAIADR2")
         if (
             gaia_dr2
             and gaia_dr2["Mag_G"] > 0
@@ -316,14 +316,14 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
 
         # cut on median dRB score
         drbs = [pp["body"]["drb"] for pp in pps if "drb" in pp["body"]]
-        if len(drbs) > 0 and np.median(drbs) < self.drb_minmed:
+        if len(drbs) > 0 and np.median(drbs) < self.drb_minmed:  # noqa: SIM103
             return False
 
         # congratulation Lightcurve, you made it!
         return True
 
     def get_catalog_remarks(
-        self, lc: LightCurve, cat_res: dict[str, Any]
+        self, lc: LightCurve, cat_res: Mapping[str, Any]
     ) -> None | dict[str, Any]:
         """
         Look through catalogs for remarks to be added to report.
@@ -337,10 +337,10 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         sdss_spec = cat_res.get("SDSS_spec", False)
         if sdss_spec:
             remarks["remarks"] = (
-                remarks["remarks"] + "SDSS spec-z %.3f. " % (sdss_spec["z"])
+                remarks["remarks"] + f"SDSS spec-z {sdss_spec['z']:.3f}. "
             )
         elif nedz:
-            remarks["remarks"] = remarks["remarks"] + "NED z %.3f. " % (nedz["z"])
+            remarks["remarks"] = remarks["remarks"] + f"NED z {nedz['z']:.3f}. "
 
         # tag AGNs
         milliquas = cat_res.get("milliquas", False)
@@ -460,8 +460,9 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
                     "limiting_flux": float("{:.2f}".format(pp["body"]["diffmaglim"])),
                     "filter_value": TNSFILTERID.get(pp["body"]["fid"]),
                 }
-                if pp["body"]["jd"] < atdict["discovery_datetime"]:
-                    atdict["discovery_datetime"] = pp["body"]["jd"]
+                atdict["discovery_datetime"] = min(
+                    pp["body"]["jd"], atdict["discovery_datetime"]
+                )
                 photdict.update(self.ztf_tns_at)
                 atdict["photometry"]["photometry_group"][str(ipp)] = photdict
 
@@ -497,7 +498,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         If needed by TNS, they need to be converted back at T3
         """
 
-        self.logger.debug("starting eval from %s" % (t2_views))
+        self.logger.debug(f"starting eval from {t2_views}")
 
         # i. Check whether the lightcurve passes selection criteria
         if not self.inspect_lc(light_curve):
@@ -507,7 +508,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         t2_cat_match = t2_views[0]
         assert t2_cat_match.unit in (dep.unit for dep in self.t2_dependency)
         catalog_result = t2_cat_match.get_payload()
-        assert isinstance(catalog_result, dict)
+        assert isinstance(catalog_result, Mapping)
         if not self.inspect_catalog(catalog_result):
             return {"tns_candidate": False, "tns_eval": "Catalog match rejection."}
 

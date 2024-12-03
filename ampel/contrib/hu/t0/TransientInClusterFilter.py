@@ -22,7 +22,9 @@ class TransientInClusterFilter(DecentFilter):
     """
 
     big_search_radius_arcmin: float  # conservative search radius around cluster position. Max in RASSEBCS is 16.a arcmin
-    cluserter_rad_multiplier: float  # if we want to enlarge the search region around each cluster.
+    cluserter_rad_multiplier: (
+        float  # if we want to enlarge the search region around each cluster.
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

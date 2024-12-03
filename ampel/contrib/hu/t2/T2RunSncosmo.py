@@ -24,6 +24,7 @@ from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
 from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
+from ampel.contrib.hu.t2.util import get_payload
 from ampel.model.PlotProperties import PlotProperties
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.plot.create import create_plot_record
@@ -118,12 +119,11 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
 
     # Plot parameters
     plot_db: bool = False
-    # Plot properties for SvgRecord creation
-    plot_props: None | PlotProperties = None
-    # Suffix if stored (locally) through matplotlib (e.g. _crayzmodel.png). Will add transient name
-    plot_matplotlib_suffix: None | str = None
-    # Suffix if stored (locally) through matplotlib (e.g. _crayzmodel.png). Will add transient name
-    plot_matplotlib_dir: str = "."
+    plot_props: None | PlotProperties = None  # Plot properties for SvgRecord creation
+    plot_matplotlib_suffix: None | str = (
+        None  # Suffix if stored (locally) through matplotlib (e.g. _crayzmodel.png). Will add transient name
+    )
+    plot_matplotlib_dir: str = "."  # Suffix if stored (locally) through matplotlib (e.g. _crayzmodel.png). Will add transient name
 
     # Units from which time limits to use or redshifts can be picked.
     t2_dependency: Sequence[
@@ -220,7 +220,6 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                         z = [float(t2_res["bts_redshift"])]
                         z_source = "BTS"
                 elif self.redshift_kind == "T2LoadRedshift":
-                    print(t2_res.keys)
                     if "T2LoadRedshift_z" in t2_res:
                         z = [float(t2_res["T2LoadRedshift_z"])]
                         z_source = "T2LoadRedshift"
@@ -256,9 +255,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         # We now simply pick the middle number
         if isinstance(z_weights, list):
             z = z[z_weights.index(max(z_weights))]  # type: ignore
-            print("INPUT")
-            print(z, z_weights)
-            print("SNCOSMOS z", z)
+            self.logger.warn(f"INPUT {z=} {z_weights=} SNCOSMOS z {z=}")
         elif isinstance(z, list):
             if len(z) % 2 != 0:
                 z = z[int(len(z) / 2)]  # type: ignore
@@ -286,9 +283,7 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                 if t2_view.unit != "T2PhaseLimit":
                     continue
                 self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-                t2_res = (
-                    res[-1] if isinstance(res := t2_view.get_payload(), list) else res
-                )
+                t2_res = get_payload(t2_view)
                 jdstart = t2_res["t_start"]
                 jdend = t2_res["t_end"]
 
@@ -456,20 +451,8 @@ class T2RunSncosmo(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                 self.fit_params,
                 bounds=self.sncosmo_bounds,
             )
-        except ValueError as e:
-            self.logger.info("Sncosmo fit error")
-            print("value error", e)
-            t2_output["run_error"] = True
-            return t2_output
-        except RuntimeError as e:
-            # Might have worked with different initial conditions?
-            print("value error", e)
-            self.logger.info("Sncosmo fit error")
-            t2_output["run_error"] = True
-            return t2_output
-        except DataQualityError as e:
-            print("value error", e)
-            self.logger.info("Sncosmo fit error")
+        except (ValueError, RuntimeError, DataQualityError) as e:
+            self.logger.error("Sncosmo fit error", exc_info=e)
             t2_output["run_error"] = True
             return t2_output
 

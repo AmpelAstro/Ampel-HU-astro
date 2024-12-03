@@ -109,9 +109,9 @@ class RapidBase(AbsPhotoT3Unit):
         if not self.slack_token:
             return False, None
 
-        from slack import WebClient
-        from slack.errors import SlackClientError
-        from slack.web.slack_response import SlackResponse
+        from slack_sdk import WebClient
+        from slack_sdk.errors import SlackClientError
+        from slack_sdk.web import SlackResponse
 
         sc = WebClient(self.slack_token.get())
         assert isinstance(tran_view.id, int)

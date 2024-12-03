@@ -25,7 +25,7 @@ class RapidLco(RapidBase):
     """
 
     # LCO trigger info
-    lco_api: NamedSecret[str] = NamedSecret(label="lco/jnordin")
+    lco_api: NamedSecret[str] = NamedSecret[str](label="lco/jnordin")
     # A dict of LCO API triggers to be sent for each SN that fulfills all
     # criteria. Assumed to have the following key content:
     # 'trigger_name': {'start_delay':X (days), 'end_delay':Y (days), 'api_form':Z}
@@ -212,9 +212,9 @@ class RapidLco(RapidBase):
 
             # Update with information
             react_dict["name"] = submit_name + "_" + transient_name
-            react_dict["requests"][0]["configurations"][0]["target"][
-                "name"
-            ] = transient_name
+            react_dict["requests"][0]["configurations"][0]["target"]["name"] = (
+                transient_name
+            )
             react_dict["requests"][0]["configurations"][0]["target"]["ra"] = str(ra)
             react_dict["requests"][0]["configurations"][0]["target"]["dec"] = str(dec)
             # Some keys are not necessarily there
@@ -244,7 +244,7 @@ class RapidLco(RapidBase):
             # Abort if we have errors
             if len(testreply.json()["errors"]) > 0:
                 self.logger.info(
-                    "Validating LCO trigger fails for for %s" % (transient_name),
+                    f"Validating LCO trigger fails for for {transient_name}",
                     extra={"target": transient_name, "react_dict": react_dict},
                 )
                 success = False
@@ -262,7 +262,7 @@ class RapidLco(RapidBase):
                 response.raise_for_status()
             except requests.exceptions.HTTPError:
                 self.logger.info(
-                    "Submit LCO fails for %s" % (transient_name),
+                    f"Submit LCO fails for {transient_name}",
                     extra={
                         "target": transient_name,
                         "react_dict": react_dict,
@@ -273,7 +273,7 @@ class RapidLco(RapidBase):
 
             # Look at the response
             self.logger.info(
-                "Submit LCO succeeds for %s" % (transient_name),
+                f"Submit LCO succeeds for {transient_name}",
                 extra={
                     "target": transient_name,
                     "react_dict": react_dict,

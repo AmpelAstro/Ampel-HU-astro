@@ -37,19 +37,13 @@ class ScoreSingleObject(AbsScoreCalculator):
         value given by time differents to provided tzero.
         """
 
-        print(t2unit)
-        print(t2_result)
-
         if t2unit != "T2InfantCatalogEval":
             return 0
 
         # Check if this is the desired object
         cdist = (t2_result["ra"] - self.ra) ** 2 + (t2_result["dec"] - self.dec) ** 2
-        print(cdist)
         if cdist > self.maxdist**2:
             return 0
-
-        print("score1")
 
         # Return score
         return (t2_result["t_max"] - self.tzero) ** self.powerscale

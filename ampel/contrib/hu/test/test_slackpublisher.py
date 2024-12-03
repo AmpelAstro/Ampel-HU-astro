@@ -10,7 +10,6 @@ from ampel.content.StockDocument import StockDocument
 from ampel.contrib.hu.t3.SlackSummaryPublisher import SlackSummaryPublisher
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.log.AmpelLogger import AmpelLogger
-from ampel.secret.NamedSecret import NamedSecret
 from ampel.struct.T3Store import T3Store
 from ampel.view.T2DocView import TYPE_STATE_T2, T2DocView
 from ampel.view.TransientView import TransientView
@@ -87,7 +86,7 @@ def test_slacksummary(t3_transient_views: list[TransientView], mocker):
                 "_id",
             ],
             "excitement": {"Low": 50, "Mid": 200, "High": 400},
-            "slack_token": NamedSecret(label="tokeytoke", value="xoxoxox"),
+            "slack_token": dict(label="tokeytoke", value="xoxoxox"),
             "slack_channel": "#ampel-live",
             "full_photometry": True,
             "logger": AmpelLogger.get_logger(),

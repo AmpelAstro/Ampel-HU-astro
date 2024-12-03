@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# File:                Ampel-ZTF/ampel/ztf/t3/resource/T3ZTFArchiveTokenGenerator.py
+# File:                Ampel-ZTF/ampel/ztf/t4/resource/T3ZTFArchiveTokenGenerator.py
 # License:             BSD-3-Clause
 # Author:              Akshay Eranhalodi
 # Date:                16.08.2024
@@ -14,15 +14,11 @@ from typing import Any, Literal
 from astropy.time import Time
 from requests_toolbelt.sessions import BaseUrlSession
 
-from ampel.abstract.AbsT3PlainUnit import AbsT3PlainUnit
+from ampel.abstract.AbsT4Unit import AbsT4Unit
 from ampel.secret.NamedSecret import NamedSecret
-from ampel.struct.Resource import Resource
-from ampel.struct.T3Store import T3Store
-from ampel.struct.UnitResult import UnitResult
-from ampel.types import UBson
 
 
-class StreamTokenGenerator(AbsT3PlainUnit):
+class StreamTokenGenerator(AbsT4Unit):
     """
     Stream based token generator for:
     1. Cone search
@@ -46,7 +42,7 @@ class StreamTokenGenerator(AbsT3PlainUnit):
     pixels: None | list = None  # use when mode is "healpix"
 
     # default jd range: [ztf_start, jd_now]
-    jd_range: list[float] = [2458195.0, float(Time.now().jd)]
+    jd_range: tuple[float, float] = (2458195.0, float(Time.now().jd))
 
     #: seconds to wait for query to complete
     timeout: float = 60
@@ -54,7 +50,7 @@ class StreamTokenGenerator(AbsT3PlainUnit):
     debug: bool = False
     query: dict[str, Any] | None = None
 
-    def process(self, t3s: T3Store) -> UBson | UnitResult:
+    def do(self) -> dict[str, str]:
         if self.candidate:
             candidate = self.candidate
         else:  # default candidate filter
@@ -117,10 +113,4 @@ class StreamTokenGenerator(AbsT3PlainUnit):
         response.raise_for_status()
         self.logger.info("Stream created", extra=response.json())
 
-        r = Resource(name=self.resource_name, value=token)
-        t3s.add_resource(r)
-
-        if self.debug:
-            return r.dict()
-
-        return None
+        return {self.resource_name: token}

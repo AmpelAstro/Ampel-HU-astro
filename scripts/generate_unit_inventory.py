@@ -69,7 +69,8 @@ loader = UnitLoader(config, db=None, provenance=False)
 bases = {
     "T0 units (alert filters)": ["AbsAlertFilter"],
     "T2 units (augment)": ["AbsPointT2Unit", "AbsTiedT2Unit", "AbsCustomStateT2Unit"],
-    "T3 units (react)": ["AbsT3PlainUnit", "AbsT3ReviewUnit"],
+    "T3 units (react)": ["AbsT3Unit"],
+    "T4 units (control)": ["AbsT4Unit"],
 }
 categories = {base: category for category, bases in bases.items() for base in bases}
 docs = {k: {} for k in bases}

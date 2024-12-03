@@ -10,9 +10,9 @@
 from collections.abc import Generator
 from typing import TypedDict
 
-from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
+from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.struct.T3Store import T3Store
-from ampel.types import T3Send, UBson
+from ampel.types import T3Send
 from ampel.view.SnapView import SnapView
 
 
@@ -24,7 +24,7 @@ class Costs(TypedDict):
     t2duration: dict[str, float]
 
 
-class CostCounter(AbsT3ReviewUnit):
+class CostCounter(AbsT3Unit):
     """
 
     Derive metrics for the total cost, as parsed by the provided documents:
@@ -43,7 +43,7 @@ class CostCounter(AbsT3ReviewUnit):
 
     def process(
         self, gen: Generator[SnapView, T3Send, None], t3s: None | T3Store = None
-    ) -> UBson:
+    ) -> Costs:
         """
         Loop through transients and add "costs".
         """
@@ -73,4 +73,4 @@ class CostCounter(AbsT3ReviewUnit):
                 for metadict in t2v.meta:
                     costs["t2duration"][unit] += metadict.get("duration", 0)
 
-        return costs  # type: ignore[return-value]
+        return costs

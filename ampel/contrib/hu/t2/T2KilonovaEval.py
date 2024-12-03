@@ -15,6 +15,7 @@ from astropy.coordinates import Distance, SkyCoord
 from astropy.cosmology import Planck15
 
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
+from ampel.contrib.hu.t2.util import get_payload
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
@@ -82,7 +83,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
     ideal_absmag: float = -15.5  # from gw170817
     absmag_range_rewards: list = [(0.5, 5), (2, 2), (4, 1)]
     min_absmag: float = -20  # AB magnitude -16 +- 4 DOI 10.3847/1538-4357/ac8e60
-    max_absmag: float = -12  #
+    max_absmag: float = -12
     min_obsmag: float = 19  #  Arxive: aa40689
     max_obsmag: float = 21
     min_ndet: int = 1
@@ -721,9 +722,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
 
         possible_modes = ["reward", "punish", "pass"]
         if self.distance_mode not in possible_modes:
-            raise ValueError(
-                "results: distance mode must be one of %r." % possible_modes
-            )
+            raise ValueError(f"results: distance mode must be one of {possible_modes}.")
 
         # reward/punish distance math depending on mode
         match self.distance_mode:
@@ -837,7 +836,7 @@ class T2KilonovaEval(AbsTiedLightCurveT2Unit):
         # Check t2 ouputs
         for t2_view in t2_views:
             self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-            t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
+            t2_res = get_payload(t2_view)
 
             # Redshift
             if t2_view.unit == "T2DigestRedshifts":

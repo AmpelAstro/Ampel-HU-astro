@@ -7,7 +7,7 @@
 # Last Modified Date:  14.09.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Literal
 
 from ampel.abstract.AbsTiedPointT2Unit import AbsTiedPointT2Unit
@@ -70,7 +70,7 @@ class T2PS1ThumbNedTap(AbsTiedPointT2Unit):
             return UnitResult(code=DocumentCode.T2_UNEXPECTED_DEPENDENCY)
 
         cat_results = t2_views[0].get_payload()
-        if not isinstance(cat_results, dict):
+        if not isinstance(cat_results, Mapping):
             return UnitResult(code=DocumentCode.T2_UNEXPECTED_DEPENDENCY)
 
         if "data" not in cat_results:

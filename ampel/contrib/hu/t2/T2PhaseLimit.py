@@ -141,7 +141,6 @@ class T2PhaseLimit(AbsStateT2Unit, AbsTabulatedT2Unit):
 
         flux_table = self.get_flux_table(datapoints)
 
-        #
         fflux_table = flux_table[
             (flux_table["flux"] < self.max_flux)
             & (flux_table["flux"] < 1e10)

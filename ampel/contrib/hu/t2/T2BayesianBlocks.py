@@ -66,7 +66,6 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
     # Work with fluxes instead of magnitude
     flux: bool = False
-    #
     plot_props: None | PlotProperties
     # Color of filters for the plots
 
@@ -455,9 +454,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                     self.ztfid = ZTFNoisifiedIdMapper.to_ext_id(light_curve.stock_id)
 
             if self.debug:
-                print("---------------------------")
-                print(f"Processing {self.ztfid}")
-                print("---------------------------")
+                self.logger.info(f"Processing {self.ztfid}")
             self.PlotColor = ["green", "red", "orange"]
 
             for entry in self.filters:
@@ -970,13 +967,13 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                                             )
                                         )
                                     )
-                        output[
-                            "significance_of_fluctuation"
-                        ] = significance_of_fluctuation_before_peak
+                        output["significance_of_fluctuation"] = (
+                            significance_of_fluctuation_before_peak
+                        )
 
-                        output[
-                            "significance_of_fluctuation"
-                        ] = significance_of_fluctuation_after_peak
+                        output["significance_of_fluctuation"] = (
+                            significance_of_fluctuation_after_peak
+                        )
 
                         # Calculate the significance of each bayesian block, inside the excess region of the highest intensity
                         if (
@@ -1372,15 +1369,15 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
         if self.debug and self.data_type in ["ztf_alert", "ztf_fp", "ztf_fp_noisy"]:
             for fil in self.filters_lc:
-                print(f"{fil}\n")
-                print(
+                self.logger.info(f"{fil}\n")
+                self.logger.info(
                     f"# excess regions: {output_per_filter[fil]['nu_of_excess_regions']}"
                 )
-                print(
+                self.logger.info(
                     f"# excess blocks: {output_per_filter[fil]['nu_of_excess_blocks']}"
                 )
-                print("--------")
-            print(
+                self.logger.info("--------")
+            self.logger.info(
                 f"coincident regions between g and r: {output_per_filter['coincide_peak_block']!s}"
             )
 

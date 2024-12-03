@@ -7,20 +7,19 @@
 # Last Modified Date:  03.08.2020
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import numpy as np
 from astropy.table import Table
 
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
-from ampel.base.AmpelBaseModel import AmpelBaseModel
-from ampel.protocol.LoggerProtocol import LoggerProtocol
+from ampel.base.LogicalUnit import LogicalUnit
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
 from ampel.view.LightCurve import LightCurve
 
 
-class T2RiseDeclineBase(AmpelBaseModel):
+class T2RiseDeclineBase(LogicalUnit):
     """
     Derive a number of simple metrics describing the rise, peak and decline of a lc.
 
@@ -78,9 +77,6 @@ class T2RiseDeclineBase(AmpelBaseModel):
         {"attribute": "isdiffpos", "operator": "!=", "value": "0"},
     ]
 
-    if TYPE_CHECKING:
-        logger: LoggerProtocol
-
     # For some reason we have duplicate photopoints. Why!!!
     # Through setting this we manually just keep the first of each occurance
     # Check ZTF18aacbccj,ZTF17aaaekyn for example. Has something to do whether a detection
@@ -117,9 +113,7 @@ class T2RiseDeclineBase(AmpelBaseModel):
                 unique_jd, counts = np.unique(dets["jd"], return_counts=True)
                 double_jd = list(unique_jd[(counts > 1)])
                 if len(double_jd) != 0:
-                    self.logger.info(
-                        "Cuting duplicate jd photopoints at %s" % (double_jd)
-                    )
+                    self.logger.info(f"Cuting duplicate jd photopoints at {double_jd}")
                     for jd in double_jd:
                         bDoubleJD = dets["jd"] == jd
                         MaxRb = dets["rb"][bDoubleJD].max()
@@ -129,8 +123,7 @@ class T2RiseDeclineBase(AmpelBaseModel):
                         dets.remove_rows(iCut)
 
         except ValueError:
-            print("debug")
-            print(pps)
+            self.logger.warn(f"{pps=}")
             dets = Table(rows=pps, names=("jd", "filter", "magpsf", "sigmapsf"))
 
         # First set of properties to derive
@@ -139,15 +132,14 @@ class T2RiseDeclineBase(AmpelBaseModel):
         o["ndet"] = dets["jd"].size
 
         try:
-            o["mag_det"] = float(dets["magpsf"][dets["jd"] == o["jd_det"]])
-        except TypeError:
-            print("debug")
-            print(dets)
-            print(o["jd_det"])
-            print(dets["jd"] == o["jd_det"])
-            o["mag_det"] = float(dets["magpsf"][dets["jd"] == o["jd_det"]])
+            o["mag_det"] = float(dets["magpsf"][dets["jd"] == o["jd_det"]][0])
+        except TypeError as e:
+            self.logger.error(
+                f'{dets=} {o["jd_det"]=} {dets["jd"] == o["jd_det"]=}', exc_info=e
+            )
+            o["mag_det"] = float(dets["magpsf"][dets["jd"] == o["jd_det"]][0])
 
-        o["mag_last"] = float(dets["magpsf"][dets["jd"] == o["jd_last"]])
+        o["mag_last"] = float(dets["magpsf"][dets["jd"] == o["jd_last"]][0])
         o["t_lc"] = o["jd_last"] - o["jd_det"]
 
         # Check if (d)real bogus present for any of these + host values
@@ -202,15 +194,15 @@ class T2RiseDeclineBase(AmpelBaseModel):
         min_mag_jd = float(dets["jd"][dets["magpsf"] == min_mag][-1])
         min_mag_err = float(dets["sigmapsf"][dets["magpsf"] == min_mag][-1])
         try:
-            last_mag_err = float(dets["sigmapsf"][dets["jd"] == o["jd_last"]])
-        except TypeError:
-            print("last mag err")
-            print(dets)
-            print(o)
-            print(dets["magpsf"] == o["mag_last"])
-            last_mag_err = float(dets["sigmapsf"][dets["magpsf"] == o["mag_last"]])
+            last_mag_err = float(dets["sigmapsf"][dets["jd"] == o["jd_last"]][0])
+        except TypeError as e:
+            self.logger.error(
+                f'last mag err {dets=} {o=} {dets["magpsf"] == o["mag_last"]=}',
+                exc_info=e,
+            )
+            last_mag_err = float(dets["sigmapsf"][dets["magpsf"] == o["mag_last"]][0])
 
-        det_mag_err = float(dets["sigmapsf"][dets["jd"] == o["jd_det"]])
+        det_mag_err = float(dets["sigmapsf"][dets["jd"] == o["jd_det"]][0])
         if (o["jd_last"] - min_mag_jd) < self.max_tsep:
             self.logger.info(
                 "Latest detection too close to peak light to calculate peak stats"

@@ -10,7 +10,7 @@
 from collections.abc import Generator
 from typing import Any, Literal
 
-from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
+from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.base.decorator import abstractmethod
 from ampel.struct.T3Store import T3Store
 from ampel.struct.UnitResult import UnitResult
@@ -18,7 +18,7 @@ from ampel.types import T3Send, UBson
 from ampel.view.SnapView import SnapView
 
 
-class AbsScoreCalculator(AbsT3ReviewUnit, abstract=True):
+class AbsScoreCalculator(AbsT3Unit, abstract=True):
     """
 
     Abstract class for units which evaluated the final performance of a pipepline.

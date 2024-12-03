@@ -21,6 +21,7 @@ from sfdmap2.sfdmap import SFDMap  # type: ignore[import]
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
 from ampel.contrib.hu.t2.T2RunSncosmo import T2RunSncosmo
+from ampel.contrib.hu.t2.util import get_payload
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.struct.UnitResult import UnitResult
@@ -254,11 +255,7 @@ class T2RunPossis(T2RunSncosmo):
                     if t2_view.unit not in ["T2PropagateStockInfo", "T2HealpixProb"]:
                         continue
                     self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-                    t2_res = (
-                        res[-1]
-                        if isinstance(res := t2_view.get_payload(), list)
-                        else res
-                    )
+                    t2_res = get_payload(t2_view)
                     if "trigger_time" not in t2_res:
                         self.logger.info("No explosion time", extra={"t2res": t2_res})
                         return UnitResult(code=DocumentCode.T2_MISSING_INFO)

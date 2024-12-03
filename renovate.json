@@ -1,6 +1,13 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "local>AmpelProject/renovate-config"
+    "github>AmpelProject/renovate-config",
+    "github>AmpelProject/renovate-config//regexManagers/githubActionsVersions"
+  ],
+  "baseBranches": ["main", "stable/v0.8"],
+  "packageRules": [
+    {
+      "matchPackagePatterns": ["^ampel-.*"],
+      "allowedVersions": "<0.11"
+    }
   ]
 }

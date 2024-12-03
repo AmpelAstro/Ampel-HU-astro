@@ -1,9 +1,4 @@
 name: stellarmay21
-parameters:
-- name: channelname
-  value: may21
-- name: date
-  value: "2024-05-21"
 
 mongo:
   prefix: evalOutburst
@@ -18,35 +13,39 @@ task:
 
 
 - title: token
-  unit: T3Processor
+  unit: T4Processor
   config:
     raise_exc: true
     execute:
-      - unit: T3PlainUnitExecutor
+      - unit: T4RunTimeContextUpdater
         config:
-          target:
-            unit: T3ZTFArchiveTokenGenerator
-            config:
-              date_str: "{{ job.parameters.date }}"
-              delta_t: 1.
-              resource_name: ztf_stream_token
-              candidate:
-                ndethist:
-                  $gte: 3.
-#                  $lte: 10.
-                drb:
-                  $gt: 0.995
-                magpsf:
-                  $lt: 18.5
-                rb:
-                  $gt: 0.3
-                isdiffpos: 
-                  $in:
-                  - "t"
-                  - "1"
+          execute: 
+            - unit: T4ZTFArchiveTokenGenerator
+              config:
+                date_str: "2024-05-21"
+                delta_t: 1.
+                resource_name: "%%ztf_stream_token"
+                candidate:
+                  ndethist:
+                    $gte: 3.
+      #                  $lte: 10.
+                  drb:
+                    $gt: 0.995
+                  magpsf:
+                    $lt: 18.5
+                  rb:
+                    $gt: 0.3
+                  isdiffpos: 
+                    $in:
+                    - "t"
+                    - "1"
 
 
 - title: filterStellarOUtburst
+  template:
+    live:
+      - resolve_run_time_aliases
+      - hash_t2_config
   unit: AlertConsumer
   config:
     iter_max: 100000
@@ -57,11 +56,11 @@ task:
         loader:
           unit: ZTFArchiveAlertLoader
           config:
-            resource_name: ztf_stream_token
+            stream: "%%ztf_stream_token"
               
     shaper: ZiDataPointShaper
     directives:
-    - channel: "{{ job.parameters.channelname }}"
+    - channel: "may21"
       filter:
         config:
           min_ndet: 3
@@ -152,91 +151,85 @@ task:
   unit: T3Processor
   config:
     raise_exc: true
-    execute:
-      - unit: T3ReviewUnitExecutor
-        config:
-          supply:
-            unit: T3DefaultBufferSupplier
+    supply:
+      unit: T3DefaultBufferSupplier
+      config:
+        select:
+          unit: T3StockSelector
+          config:
+            channel: "may21"
+        load:
+          unit: T3SimpleDataLoader
+          config:
+            directives:
+              - STOCK
+              - T1
+              - T2DOC
+              - DATAPOINT
+            channel: "may21"
+    stage:
+      unit: T3SimpleStager
+      config:
+        execute:
+          - unit: TransientTablePublisher
             config:
-              select:
-                unit: T3StockSelector
-                config:
-                  channel: "{{ job.parameters.channelname }}"
-              load:
-                unit: T3SimpleDataLoader
-                config:
-                  directives:
-                    - STOCK
-                    - T1
-                    - T2DOC
-                    - DATAPOINT
-                  channel: "{{ job.parameters.channelname }}"
-          stage:
-            unit: T3SimpleStager
-            config:
-              execute:
-                - unit: TransientTablePublisher
-                  config:
-                    include_stock: true
-                    include_channels: true
-                    # local_path: ./
-                    local_path: null
-                    table_schema:
-                      T2InfantCatalogEval:
-                        'ndet':
-                          - detections
-                    transient_table_schema:
-                      T2CatalogMatch:
-                        'NED z':
-                          - NEDz_extcats
-                          - z
-                        'NEDLVS z':
-                          - NEDLVS
-                          - z
-                        'SDSS spec z':
-                          - SDSS_spec
-                          - z
-                        'SDSS spec class':
-                          - SDSS_spec
-                          - bptclass
-                        'SDSS DR10 class':
-                          - SDSSDR10
-                          - type
+              slack_token: null
+              include_stock: true
+              include_channels: true
+              local_path: null
+              table_schema:
+                T2InfantCatalogEval:
+                  'ndet':
+                    - detections
+              transient_table_schema:
+                T2CatalogMatch:
+                  'NED z':
+                    - NEDz_extcats
+                    - z
+                  'NEDLVS z':
+                    - NEDLVS
+                    - z
+                  'SDSS spec z':
+                    - SDSS_spec
+                    - z
+                  'SDSS spec class':
+                    - SDSS_spec
+                    - bptclass
+                  'SDSS DR10 class':
+                    - SDSSDR10
+                    - type
                           
                          
 - title: PlotLightcurves
   unit: T3Processor
   config:
     raise_exc: true
-    execute:
-      - unit: T3ReviewUnitExecutor
-        config:
-          supply:
-            unit: T3DefaultBufferSupplier
+    supply:
+      unit: T3DefaultBufferSupplier
+      config:
+        select:
+          unit: T3StockSelector
+          config:
+            channel: "may21"
+        load:
+          unit: T3SimpleDataLoader
+          config:
+            directives:
+              - STOCK
+              - T1
+              - T2DOC
+              - DATAPOINT
+            channel: "may21"
+    stage:
+      unit: T3SimpleStager
+      config:
+        execute:
+          - unit: PlotTransientLightcurves
             config:
-              select:
-                unit: T3StockSelector
-                config:
-                  channel: "{{ job.parameters.channelname }}"
-              load:
-                unit: T3SimpleDataLoader
-                config:
-                  directives:
-                    - STOCK
-                    - T1
-                    - T2DOC
-                    - DATAPOINT
-                  channel: "{{ job.parameters.channelname }}"
-          stage:
-            unit: T3SimpleStager
-            config:
-              execute:
-                - unit: PlotTransientLightcurves
-                  config:
-                    pdf_path: candidates.pdf
-                    pdf_path: null
-                    save_png: false
-                    include_cutouts: true
-                    tabulator:
-                    - unit: ZTFT2Tabulator
+              pdf_path: candidates.pdf
+              pdf_path: null
+              save_png: false
+              include_cutouts: true
+              tabulator:
+              - unit: ZTFT2Tabulator
 

@@ -9,7 +9,7 @@
 
 import os
 from collections.abc import Sequence
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
 import xgboost as xgb
@@ -17,6 +17,7 @@ import xgboost as xgb
 from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
+from ampel.contrib.hu.t2.util import get_payload
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.types import UBson
 from ampel.view.T2DocView import T2DocView
@@ -195,20 +196,16 @@ class T2XgbClassifier(AbsTiedStateT2Unit):
         dict
         """
 
-        t2data = {}
+        t2data: dict[str, Any] = {}
         # Parse t2views - should not be more than one.
         for t2_view in t2_views:
             self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
             # So far only knows how to parse phases from T2TabulatorRiseDecline
             if t2_view.unit == "T2TabulatorRiseDecline":
-                t2_res = (
-                    res[-1] if isinstance(res := t2_view.get_payload(), list) else res
-                )
+                t2_res = get_payload(t2_view)
                 t2data.update(t2_res)
             if t2_view.unit == "T2ElasticcRedshiftSampler":
-                t2_res = (
-                    res[-1] if isinstance(res := t2_view.get_payload(), list) else res
-                )
+                t2_res = get_payload(t2_view)
                 # For some reason we trained xgb using z, zerr and host_sep
                 zdata = {"z": None, "z_err": None, "host_sep": None}
                 if t2_res["z_source"] in [
@@ -229,10 +226,9 @@ class T2XgbClassifier(AbsTiedStateT2Unit):
                         # xgboost use None values.
                         pass
                     else:
-                        self.logger.info(
-                            "Do not know how to handle z info", extra=t2_res
+                        self.logger.warn(
+                            "Do not know how to handle z info", extra=dict(t2_res)
                         )
-                        print(t2_res)
                         return {"model": self.model_prefix, "xgbsuccess": False}
                 t2data.update(zdata)
 
@@ -287,9 +283,7 @@ class T2XgbClassifier(AbsTiedStateT2Unit):
 
         # Can we find away round creating a numpy array?
         prob = self._classifiers[b].predict_proba(
-            np.array(
-                [[t2data[col] if col in t2data else None for col in self.use_cols]]
-            )
+            np.array([[t2data.get(col) for col in self.use_cols]])
         )
         t2out["prob0"] = float(prob[0][0])
         t2out["is_0"] = float(prob[0][0]) > 0.5

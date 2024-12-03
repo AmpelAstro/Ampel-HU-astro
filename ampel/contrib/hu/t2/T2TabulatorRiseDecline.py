@@ -82,11 +82,10 @@ def getBandBits(bands: Sequence):
     return index
 
 
-class FitFailed(RuntimeError):
-    ...
+class FitFailed(RuntimeError): ...
 
 
-class T2TabulatorRiseDeclineBase(AmpelBaseModel):
+class T2TabulatorRiseDeclineBase:
     """
      Derive a number of simple metrics describing the rise, peak and decline of a lc.
 
@@ -539,7 +538,6 @@ class BaseLightCurveFeatures(LogicalUnit, AmpelBaseModel):
 
     def extract_lightcurve_features(self, flux_table: Table) -> dict[str, float]:
         result = {}
-        #
         for band, fid in self.lightcurve_bands.items():
             if (in_band := flux_table[flux_table["band"] == fid]) is None:
                 continue
@@ -642,7 +640,7 @@ class T2TabulatorRiseDecline(
             ax.set_ylabel(band)
 
             # Create text string
-            title = "ndet: %s " % (t2result["ndet"])
+            title = f'ndet: {t2result["ndet"]} '
 
             for boolprop in [
                 "peaked",

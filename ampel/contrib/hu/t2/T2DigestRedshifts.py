@@ -7,17 +7,15 @@
 # Last Modified Date:  19.10.2022
 # Last Modified By:    atownsend@physik.hu-berlin.de
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Any, Literal
 
 import numpy as np
 
-# from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
 from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.content.DataPoint import DataPoint
-
-# from ampel.view.LightCurve import LightCurve
 from ampel.content.T1Document import T1Document
+from ampel.contrib.hu.t2.util import get_payload
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.struct.UnitResult import UnitResult
@@ -65,9 +63,12 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
     # AmpelZ: equal to T2DigestRedshifts
     # T2ElasticcRedshiftSampler: Use a list of redshifts and weights from the sampler.
     # None : Use the fixed z value
-    redshift_kind: None | Literal[
-        "T2MatchBTS", "T2DigestRedshifts", "T2ElasticcRedshiftSampler", "AmpelZ"
-    ] = None
+    redshift_kind: (
+        None
+        | Literal[
+            "T2MatchBTS", "T2DigestRedshifts", "T2ElasticcRedshiftSampler", "AmpelZ"
+        ]
+    ) = None
 
     # It is also possible to use fixed redshift whenever a dynamic redshift kind is not possible
     # This could be either a single value or a list
@@ -87,7 +88,7 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
     ]
 
     def _get_lsphotoz_groupz(
-        self, t2_res: dict[str, Any]
+        self, t2_res: Mapping[str, Any]
     ) -> tuple[list[list[float]], list[list[float]]]:
         """
         Parse output from T2LSPhotoZTap and investigate whether any matches fulfill group
@@ -155,7 +156,7 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
         return group_z, group_dist
 
     def _get_catalogmatch_groupz(
-        self, t2_res: dict[str, Any]
+        self, t2_res: Mapping[str, Any]
     ) -> tuple[list[list[float]], list[list[float]]]:
         """
         Parse output from T2CatalogMatch.
@@ -314,7 +315,7 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
 
         return group_z, group_dist
 
-    def _get_matchbts_groupz(self, t2_res: dict[str, Any]) -> list[list[float]]:
+    def _get_matchbts_groupz(self, t2_res: Mapping[str, Any]) -> list[list[float]]:
         """
         Parse output from T2MatchBTS.
 
@@ -341,7 +342,7 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
             else:
                 group_z[1].append(z)
 
-        self.logger.debug(" bts match yield %s" % (group_z))
+        self.logger.debug(f" bts match yield {group_z}")
 
         return group_z
 
@@ -364,9 +365,7 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
         # Loop through t2_views and collect information.
         for t2_view in t2_views:
             self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-            t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
-            # v0.8:
-            # t2_res =  t2_view.get_data()
+            t2_res = get_payload(t2_view)
 
             if t2_view.unit == "T2LSPhotoZTap":
                 new_zs, new_dists = self._get_lsphotoz_groupz(t2_res)
@@ -445,9 +444,7 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
                 if t2_view.unit != self.redshift_kind:
                     continue
                 self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-                t2_res = (
-                    res[-1] if isinstance(res := t2_view.get_payload(), list) else res
-                )
+                t2_res = get_payload(t2_view)
                 # Parse this
                 if self.redshift_kind == "T2MatchBTS":
                     if (

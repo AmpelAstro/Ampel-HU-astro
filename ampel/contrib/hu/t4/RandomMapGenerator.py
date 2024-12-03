@@ -13,14 +13,11 @@ import healpy as hp
 import numpy as np
 from astropy import units as u
 
-from ampel.abstract.AbsT3PlainUnit import AbsT3PlainUnit
-from ampel.struct.Resource import Resource
-from ampel.struct.T3Store import T3Store
-from ampel.struct.UnitResult import UnitResult
+from ampel.abstract.AbsT4Unit import AbsT4Unit
 from ampel.types import UBson
 
 
-class RandomMapGenerator(AbsT3PlainUnit):
+class RandomMapGenerator(AbsT4Unit):
     """
     Generate smoothed circular healpix probability values around a random coordinate.
     """
@@ -40,8 +37,9 @@ class RandomMapGenerator(AbsT3PlainUnit):
     min_date: str = "2019-06-12"
     max_date: str = "2023-10-01"
 
-    def process(self, t3s: T3Store) -> UBson | UnitResult:
+    def do(self) -> UBson:
         """Generate random coordinates, generate map around coordinates, save map and generated randoms"""
+
         # generate random coordinates
         self.generate_randoms()
 
@@ -58,10 +56,7 @@ class RandomMapGenerator(AbsT3PlainUnit):
             "rand_seed": self.seed,
         }
 
-        r = Resource(name="random_map", value=resource)
-        t3s.add_resource(r)
-
-        return None
+        return {"random_map": resource}
 
     def generate_randoms(self):
         """Generate random value pair for longitude, latitude, fwhm, trigger time, distance to be used in map generation."""
@@ -70,7 +65,7 @@ class RandomMapGenerator(AbsT3PlainUnit):
             np.random.seed(self.seed)
         else:
             self.seed = np.random.random_integers(0, 2147483647)
-            print("RANDOMMAPGENERATOR:: ", self.seed)
+            self.logger.debug("RANDOMMAPGENERATOR", extra={"seed": self.seed})
             np.random.seed(self.seed)
 
         tmp_date = atime.Time(self.min_date)
@@ -118,7 +113,7 @@ class RandomMapGenerator(AbsT3PlainUnit):
 
         file_name = f"{self.save_dir}{(self.map_name).replace('.fits.gz', '')}.fits.gz"
 
-        print("Saving map: ", file_name)
+        self.logger.debug(f"Saving map: {file_name}")
 
         hdr_simple = []
         hdr_simple.append(("SIMPLE", "T"))

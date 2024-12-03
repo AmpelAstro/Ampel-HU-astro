@@ -47,7 +47,7 @@ class VOEventPublisher(AbsPhotoT3Unit):
     # Selection of fields to output ("WHY?")
     name_filter: dict[str, str] = {"ZTF name": "ZTF", "TNS ID": "TNS"}
     # Which datapoints to include in submission?
-    which_photometry: Literal["first", "last"] = "first"  #
+    which_photometry: Literal["first", "last"] = "first"
     # Schema for state dependent T2s (one row for each)
     why_schema: dict[str, Any]
     # Temporary file name
@@ -63,8 +63,6 @@ class VOEventPublisher(AbsPhotoT3Unit):
 
         for k, tran_view in enumerate(gen, 1):
             # Chategorized by stock (internal ampel ID) and channel
-            stock = tran_view.id
-            print(stock)
             assert tran_view.stock is not None
             channels = tran_view.stock.get("channel")
             assert channels is not None
@@ -91,7 +89,8 @@ class VOEventPublisher(AbsPhotoT3Unit):
                 for t2res in tran_view.get_t2_views(unit=t2unit):
                     for label, path in table_entries.items():
                         assert t2res.body
-                        assert isinstance((body := t2res.body[-1]), dict)
+                        body = t2res.body[-1]
+                        assert isinstance(body, dict)
                         if result := get_by_path(body, path):
                             t2dict[label] = result
             if len(t2dict.keys()) == 0:
@@ -138,6 +137,3 @@ class VOEventPublisher(AbsPhotoT3Unit):
 
             with open(self.fname, "wb") as fw:
                 vp.dump(v, fw)
-            with open(self.fname) as fr:
-                for l in fr.readlines():
-                    print(l.rstrip())

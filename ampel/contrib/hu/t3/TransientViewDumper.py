@@ -50,7 +50,7 @@ class TransientViewDumper(AbsPhotoT3Unit):
     # If this is passed, files are always saved locally
     outputfile: None | str = None
 
-    desycloud_auth: NamedSecret[dict] = NamedSecret(label="desycloud")
+    desycloud_auth: NamedSecret[dict] = NamedSecret[dict](label="desycloud")
     desycloud_folder: str = "dumps"
     desycloud_filename: str = str(uuid.uuid1())
 
@@ -85,8 +85,6 @@ class TransientViewDumper(AbsPhotoT3Unit):
     ) -> UBson | UnitResult:
         count = 0
         for count, tran_view in enumerate(transients, 1):  # noqa: B007
-            print("TransientViewDumper:")
-            print(type(tran_view))
             self.outfile.write(self.encoder.encode(tran_view).encode("utf-8"))
             self.outfile.write(b"\n")
         self.outfile.close()

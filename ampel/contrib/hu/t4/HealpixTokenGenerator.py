@@ -13,16 +13,13 @@ import time
 from astropy.time import Time  # type: ignore
 from requests_toolbelt.sessions import BaseUrlSession
 
-from ampel.abstract.AbsT3PlainUnit import AbsT3PlainUnit
+from ampel.abstract.AbsT4Unit import AbsT4Unit
 from ampel.contrib.hu.util.AmpelHealpix import AmpelHealpix, deres
 from ampel.secret.NamedSecret import NamedSecret
-from ampel.struct.Resource import Resource
-from ampel.struct.T3Store import T3Store
-from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
 
 
-class HealpixTokenGenerator(AbsT3PlainUnit):
+class HealpixTokenGenerator(AbsT4Unit):
     """
     Based on a URL to a Healpix map:
     - find pixels given requested prob contour.
@@ -61,7 +58,7 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
 
     debug: bool = False
 
-    def process(self, t3s: T3Store) -> UBson | UnitResult:
+    def do(self) -> UBson:
         # Retrieve and process map
         ah = AmpelHealpix(
             map_name=self.map_name, map_url=self.map_url, save_dir=self.map_dir
@@ -141,11 +138,7 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
         }
         endpoint_count = "https://ampel.zeuthen.desy.de/api/ztf/archive/v3/alerts/healpix/skymap/count"
         response_count = session.post(endpoint_count, json=count_query_dict)
-        print(response_count.json())
         alert_count_nofilter = response_count.json()["count"]
-        # print("ALERT COUNT NO FILTER", alert_count_nofilter)
-
-        # print("HEALPIXTOKENGENERATOR::", query_dict)
 
         response = session.post(
             "streams/from_query",
@@ -174,7 +167,6 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
             )
         self.logger.info("Stream created", extra=response.json())
 
-        # print("TOKENGENERATOR AAAAAAAAAAAAAAAAA::", response.json()["remaining"]["items"])
         if response.json().get("remaining"):
             queried_alerts = response.json()["remaining"]["items"]
         else:
@@ -192,22 +184,12 @@ class HealpixTokenGenerator(AbsT3PlainUnit):
             "alert_count_query": queried_alerts,
         }
 
-        r = Resource(name=self.map_name, value=resource)
-        t3s.add_resource(r)
-        r = Resource(name=self.map_name + "_token", value=token)
-        t3s.add_resource(r)
-        r = Resource(name="healpix_map_dir", value=self.map_dir)
-        t3s.add_resource(r)
-        r = Resource(name="healpix_map_hash", value=map_hash)
-        t3s.add_resource(r)
-        r = Resource(name="healpix_map_name", value=self.map_name)
-        t3s.add_resource(r)
-        r = Resource(name="map_area", value=hp_area)
-        t3s.add_resource(r)
-        r = Resource(name="alert_count_nofilter", value=alert_count_nofilter)
-        t3s.add_resource(r)
-
-        if self.debug:
-            return r.dict()
-
-        return None
+        return {
+            self.map_name: resource,
+            self.map_name + "_token": token,
+            "healpix_map_dir": self.map_dir,
+            "healpix_map_hash": map_hash,
+            "healpix_map_name": self.map_name,
+            "map_area": hp_area,
+            "alert_count_nofilter": alert_count_nofilter,
+        }

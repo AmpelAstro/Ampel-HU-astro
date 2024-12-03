@@ -11,6 +11,7 @@ from functools import partial
 from typing import Literal
 
 from ampel.protocol.AmpelAlertProtocol import AmpelAlertProtocol
+from ampel.ztf.base.CatalogMatchUnit import ConeSearchRequest
 from ampel.ztf.t0.DecentFilter import DecentFilter
 
 
@@ -92,7 +93,7 @@ class RedshiftCatalogFilter(DecentFilter):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        query = {
+        query: ConeSearchRequest = {
             "name": self.catalog_name,
             "use": self.catalog_type,
             "rs_arcsec": self.catalog_match_radius,

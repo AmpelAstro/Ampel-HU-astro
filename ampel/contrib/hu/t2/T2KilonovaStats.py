@@ -9,7 +9,7 @@
 
 import json
 import os
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Any, Literal
 
 import numpy as np
@@ -19,6 +19,7 @@ from scipy import stats
 from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
+from ampel.contrib.hu.t2.util import get_payload
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
@@ -97,7 +98,9 @@ class T2KilonovaStats(AbsTiedStateT2Unit):
         if files:
             file = files[0]
         else:
-            print("T2KilonovaStats: No density file found for ", map_key, " Mpc.")
+            self.logger.error(
+                f"T2KilonovaStats: No density file found for {map_key} Mpc."
+            )
             return {}
 
         dist_range = file[: file.find("_")]
@@ -126,7 +129,9 @@ class T2KilonovaStats(AbsTiedStateT2Unit):
         res["gaus_percent"] = gaus_stats
         return res
 
-    def kilonovaness_statistics(self, t2res: dict[str, Any]) -> None | dict[str, Any]:
+    def kilonovaness_statistics(
+        self, t2res: Mapping[str, Any]
+    ) -> None | dict[str, Any]:
         return self.get_kn_total_stats(
             kilonovaness=t2res["kilonovaness"],
             map_area=t2res["map_area"],
@@ -141,7 +146,7 @@ class T2KilonovaStats(AbsTiedStateT2Unit):
     ) -> UBson | UnitResult:
         for t2_view in t2_views:
             self.logger.debug(f"Parsing t2 results from {t2_view.unit}")
-            t2_res = res[-1] if isinstance(res := t2_view.get_payload(), list) else res
+            t2_res = get_payload(t2_view)
 
             if t2_view.unit == "T2KilonovaEval":
                 return self.kilonovaness_statistics(t2_res)

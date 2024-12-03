@@ -183,11 +183,7 @@ class T2NedTap(AbsPointT2Unit):
         return None
 
     def is_spec(self, d: dict) -> bool:
-        if d.get("n_spectra", 0) > 0 or d["zflag"] == "SPEC":
-            return True
-        return False
+        return d.get("n_spectra", 0) > 0 or d["zflag"] == "SPEC"
 
     def is_unsafe_spec(self, d: dict) -> bool:
-        if d["zflag"] is None and d.get("zunc", 0) < 0.0001 and len(str(d["z"])) > 9:
-            return True
-        return False
+        return d["zflag"] is None and d.get("zunc", 0) < 0.0001 and len(str(d["z"])) > 9

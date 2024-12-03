@@ -13,6 +13,8 @@ import subprocess
 from select import select
 from subprocess import Popen
 
+# ruff: noqa: T201
+
 
 def executeJobfile(job_call, execute_directory, should_retry=True, max_retries=5):
     command = job_call

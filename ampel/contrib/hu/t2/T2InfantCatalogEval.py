@@ -7,7 +7,7 @@
 # Last Modified Date:  17.03.2021
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 import numpy as np
@@ -15,6 +15,7 @@ from astropy.coordinates import Distance, SkyCoord
 from astropy.cosmology import Planck15
 
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
+from ampel.contrib.hu.t2.util import get_payload
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
 from ampel.view.LightCurve import LightCurve
@@ -100,7 +101,7 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         {"attribute": "magfromlim", "operator": ">", "value": 0},
     ]
 
-    def inspect_catalog(self, cat_res: dict[str, Any]) -> None | dict[str, Any]:
+    def inspect_catalog(self, cat_res: Mapping[str, Any]) -> None | dict[str, Any]:
         """
         Check whether a redshift match can be found in matched catalogs.
         """
@@ -390,8 +391,9 @@ class T2InfantCatalogEval(AbsTiedLightCurveT2Unit):
         # we here only take the first without specific origin
         t2_cat_match = t2_views[0]
 
-        catalog_result = t2_cat_match.get_payload()
-        if not isinstance(catalog_result, dict):
+        try:
+            catalog_result = get_payload(t2_cat_match)
+        except ValueError:
             return {"action": False, "eval": "No catalog match result"}
 
         transient_info = self.inspect_catalog(catalog_result)

@@ -7,7 +7,6 @@
 # Last Modified Date:  29.12.2020
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
-import asyncio
 import datetime
 from typing import Any
 
@@ -25,7 +24,7 @@ class TNSMirrorUpdater(AbsOpsUnit):
     Sync a local mirror of the TNS database
     """
 
-    extcats_auth: NamedSecret[dict] = NamedSecret(label="extcats/writer")
+    extcats_auth: NamedSecret[dict] = NamedSecret[dict](label="extcats/writer")
     api_key: NamedSecret[dict]
     timeout: float = 60.0
     max_parallel_requests: int = 8
@@ -35,17 +34,17 @@ class TNSMirrorUpdater(AbsOpsUnit):
         now = datetime.datetime.now(tz=datetime.timezone.utc)
         last_run = beacon["updated"] if beacon else now - datetime.timedelta(days=7)
 
-        async def fetch():
+        def fetch():
             tns = TNSClient(
                 TNSToken(**self.api_key.get()),
                 self.timeout,
                 self.max_parallel_requests,
                 self.logger,
             )
-            return [item async for item in tns.search(public_timestamp=str(last_run))]
+            return tns.search(public_timestamp=str(last_run))
 
         if not self.dry_run:
-            new_reports = asyncio.get_event_loop().run_until_complete(fetch())
+            new_reports = fetch()
             TNSMirrorDB(
                 MongoClient(
                     self.context.config.get("resource.extcats", str, raise_exc=True),

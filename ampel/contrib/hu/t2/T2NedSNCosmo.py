@@ -7,7 +7,7 @@
 # Last Modified Date:  10.10.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Any, Literal
 
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
@@ -94,7 +94,7 @@ class T2NedSNCosmo(AbsTiedLightCurveT2Unit, T2SNCosmo):
             self.logger.error("Tied catalog match t2 record has no content")
             return UnitResult(code=DocumentCode.T2_MISSING_INFO)
 
-        if not isinstance(ned_tap_res, dict) or "data" not in ned_tap_res:
+        if not isinstance(ned_tap_res, Mapping) or "data" not in ned_tap_res:
             return UnitResult(
                 code=DocumentCode.T2_MISSING_INFO,
                 body={"msg": "Invalid/incompatible tied T2NedTap result"},

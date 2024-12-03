@@ -144,7 +144,7 @@ def convert(inp, outfmt="pandas", verbose=False, **kwargs):
         output = output.decode()
 
     if verbose:
-        print("Returning %s" % mapping[outfmt][1])
+        print(f"Returning {mapping[outfmt][1]}")  # noqa: T201
 
     return output
 
@@ -227,7 +227,7 @@ class T2LSPhotoZTap(AbsPointT2Unit):
         # First convert to string and then to dict
         ret_dict = convert(str(r.content.decode()), "pandas").to_dict(orient="records")
 
-        self.logger.debug("Got %s matches" % (len(ret_dict)))
+        self.logger.debug(f"Got {len(ret_dict)} matches")
 
         return ret_dict
 
