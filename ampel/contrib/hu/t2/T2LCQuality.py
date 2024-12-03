@@ -138,11 +138,11 @@ class T2LCQuality(AbsLightCurveT2Unit):
         plt.ylabel("Mag")
 
         # add text
-        textstr = (
-            "$n_{det}$: %d, $n_{lim}$: %d, $n_{lim}^{strong}$: %d, purity: %.3f, strength: %.3f"
-            % (len(dets), len(ulims), n_strong_ulims, purity, strength)
+        plt.title(
+            f"filter: {fid} "
+            f"$n_{{det}}$: {len(dets)}, $n_{{lim}}$: {len(ulims)}, "
+            f"$n_{{lim}}^{{strong}}$: {n_strong_ulims}, purity: {purity:.3f}, strength: {strength:.3f}"
         )
-        plt.title("filter: %d " % fid + textstr)
         plt.show()
 
     def process(self, light_curve: LightCurve) -> UBson | UnitResult:
