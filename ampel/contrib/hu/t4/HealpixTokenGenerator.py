@@ -139,9 +139,6 @@ class HealpixTokenGenerator(AbsT4Unit):
         endpoint_count = "https://ampel.zeuthen.desy.de/api/ztf/archive/v3/alerts/healpix/skymap/count"
         response_count = session.post(endpoint_count, json=count_query_dict)
         alert_count_nofilter = response_count.json()["count"]
-        # print("ALERT COUNT NO FILTER", alert_count_nofilter)
-
-        # print("HEALPIXTOKENGENERATOR::", query_dict)
 
         response = session.post(
             "streams/from_query",
@@ -170,7 +167,6 @@ class HealpixTokenGenerator(AbsT4Unit):
             )
         self.logger.info("Stream created", extra=response.json())
 
-        # print("TOKENGENERATOR AAAAAAAAAAAAAAAAA::", response.json()["remaining"]["items"])
         if response.json().get("remaining"):
             queried_alerts = response.json()["remaining"]["items"]
         else:
