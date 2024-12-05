@@ -41,7 +41,7 @@ ampel-interface = {version = ">=0.10.3a1,<0.11"}
 sncosmo = {version = "^2.5.0", optional = true}
 iminuit = {version = "^2.8.0", optional = true}
 sfdmap2 = {version = "^0.2.0", optional = true}
-numpy = "^1"
+numpy = ">=1"
 scipy = ">=1.4"
 beautifulsoup4 = "^4.10.0"
 backoff = "^2"
