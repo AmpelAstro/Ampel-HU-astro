@@ -7,12 +7,16 @@
 # Last Modified Date:  11.04.2022
 # Last Modified By:    jno <jnordin@physik.hu-berlin.de>
 
-from collections.abc import Generator, Iterable, Mapping
+from collections import defaultdict
+from collections.abc import Generator, Iterable, Mapping, Sequence
 from itertools import islice
 from typing import TYPE_CHECKING, TypeVar
 
 from ampel.abstract.AbsT3Unit import AbsT3Unit, T3Send
-from ampel.contrib.hu.t3.ElasticcTomClient import ElasticcTomClient
+from ampel.contrib.hu.t3.ElasticcTomClient import (
+    Elasticc2ClassificationDict,
+    ElasticcTomClient,
+)
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.log import LogFlag
 from ampel.secret.NamedSecret import NamedSecret
@@ -23,6 +27,8 @@ from ampel.view.TransientView import TransientView
 
 if TYPE_CHECKING:
     from ampel.content.JournalRecord import JournalRecord
+
+    from .ElasticcTomClient import Elasticc2Report, ElasticcClassification
 
 T = TypeVar("T")
 
@@ -66,6 +72,7 @@ class ElasticcClassPublisher(AbsT3Unit):
     broker_name: str = "AMPEL"
     broker_version: str = "v0.1"
     tom_url: str = "https://desc-tom.lbl.gov"
+    endpoint: str = "/elasticc2/brokermessage/"
     desc_user: NamedSecret[str]
     desc_password: NamedSecret[str]
 
@@ -80,7 +87,11 @@ class ElasticcClassPublisher(AbsT3Unit):
 
     def post_init(self) -> None:
         self.tomclient = ElasticcTomClient(
-            self.desc_user.get(), self.desc_password.get(), self.logger, self.tom_url
+            self.desc_user.get(),
+            self.desc_password.get(),
+            self.logger,
+            self.tom_url,
+            self.endpoint,
         )
 
     def search_journal_elasticc(self, tran_view: TransientView) -> dict[int, bool]:
@@ -148,6 +159,35 @@ class ElasticcClassPublisher(AbsT3Unit):
                     state_map[link] = False
         return state_map
 
+    @staticmethod
+    def _one_report_per_classifier(
+        reports: Sequence[ElasticcClassification],
+    ) -> Generator[Elasticc2Report, None, None]:
+        """
+        reformat a v0.9 brokerClassification for v0.9.1
+        see: https://raw.githubusercontent.com/LSSTDESC/elasticc/5d7b314b537197c99086acf019e6e2c1dc4aa267/alert_schema/elasticc.v0_9_1.brokerClassification.avsc
+        """
+        for report in reports:
+            by_classifier: defaultdict[
+                tuple[str, str], list[Elasticc2ClassificationDict]
+            ] = defaultdict(list)
+            for c in report["classifications"]:
+                by_classifier[(c["classifierName"], c["classifierParams"])].append(
+                    {"classId": c["classId"], "probability": c["probability"]}
+                )
+            for (name, params), classifications in by_classifier.items():
+                yield {
+                    "alertId": report["alertId"],
+                    "diaSourceId": report["diaSourceId"],
+                    "elasticcPublishTimestamp": report["elasticcPublishTimestamp"],
+                    "brokerIngestTimestamp": report["brokerIngestTimestamp"],
+                    "brokerName": report["brokerName"],
+                    "brokerVersion": report["brokerVersion"],
+                    "classifierName": name,
+                    "classifierParams": params,
+                    "classifications": classifications,
+                }
+
     def _get_reports(
         self, gen: Generator[TransientView, T3Send, None]
     ) -> Generator[tuple[TransientView, int, dict], None, None]:
@@ -206,14 +246,18 @@ class ElasticcClassPublisher(AbsT3Unit):
         for chunk in chunks(self._get_reports(gen), self.batch_size):
             tran_views: tuple[TransientView, ...]
             t1_links: tuple[int, ...]
-            class_reports: tuple[dict, ...]
+            class_reports: tuple[ElasticcClassification, ...]
             tran_views, t1_links, class_reports = zip(*chunk, strict=False)
 
             if self.dry_run:
                 continue
 
             # use the ElasticcTomClient
-            desc_response = self.tomclient.tom_post(class_reports)  # type: ignore[arg-type]
+            desc_response = self.tomclient.tom_post(
+                list(self._one_report_per_classifier(class_reports))
+                if "elasticc2" in self.endpoint
+                else class_reports
+            )
 
             if desc_response["success"]:
                 submitted += len(class_reports)

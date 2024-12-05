@@ -581,6 +581,11 @@ class T2TabulatorRiseDecline(
     #    def super().post_init(self):
     #        super().__init__(**kwargs)
 
+    #    def __init__(self, **kwargs):
+    #        super().__init__(**kwargs)
+    #    def super().post_init(self):
+    #        super().__init__(**kwargs)
+
     def test_plot(self, name, table, t2result):
         """
         for debugging

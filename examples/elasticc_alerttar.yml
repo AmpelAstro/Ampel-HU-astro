@@ -1,13 +1,11 @@
-# New elasticc version created Nov 22 2022
-# - Updated links to models
-# - Updated order of columns used for the xgb model.
-# - Downloads and parses a fixed list of alerts published at desc.
-# Further updated Dec 12
-# - Replace TabulatorRiseDecline and 3 copies of XgbClassifier with one
-#   unit. Maybe faster and less db documents?
+# AMPEL job which will
+# - Download a fixed set of 5000 elasticc alerts and inject into a local Mongo DB.
+# - Sample redshift distributions and calculate RiseDecline features.
+# - Run two different classification models (based on XGBoost and LightGBM).
+# - Combine the output into three different classifiers (SNGuess, FollowMe, Final).
+# - Write csv output into local file elasticcClassifications.csv
 
-
-name: elasticc-nov
+name: elasticc-demo
 parameters:
 - name: classifier_url
   value: https://box.hu-berlin.de/f/d1cec88c0bec4123b208/?dl=1
@@ -23,7 +21,7 @@ parameters:
   value: https://portal.nersc.gov/cfs/lsst/DESC_TD_PUBLIC/ELASTICC/5000alerts.tar.gz
 
 mongo:
-  prefix: ampel_elasticc
+  prefix: ElasticcDemo
   reset: true
 
 channel:
@@ -185,4 +183,39 @@ task:
   config:
     doc_limit: 50000
     max_try: 10
+
+- title: Print
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3ReviewUnitExecutor
+        config:
+          supply:
+            unit: T3DefaultBufferSupplier
+            config:
+              select:
+                unit: T3StockSelector
+                config:
+                  channel: Elasticc
+              load:
+                unit: T3SimpleDataLoader
+                config:
+                  directives:
+                    - STOCK
+                    - T2
+          stage:
+            unit: T3SimpleStager
+            config:
+              execute:
+                - unit: ElasticcClassTablePrinter
+                  config:
+                    print_stdout: true
+                    output_dir: "."
+                    output_file: 'elasticcClassifications.csv'
+                    classifier_map: 
+                      ElasticcLiveSNGuess: SNGuess
+                      ElasticcLiveSNGuessParsnip: FollowMe    
+                      ElasticcLiveSNGuessParsnipPrior: Final    
+                    min_prob: 0.05
 

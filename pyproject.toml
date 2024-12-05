@@ -147,6 +147,7 @@ module = [
   "ligo.*",
   "ztfquery.*",
   "joblib.*",
+  "confluent_kafka.*",
 ]
 ignore_missing_imports = true
 

@@ -11,6 +11,7 @@
 - ampel.contrib.hu.t0.StellarFilter
 - ampel.contrib.hu.t0.TransientInClusterFilter
 - ampel.contrib.hu.t0.XShooterFilter
+- ampel.contrib.hu.t2.KafkaAdapter
 - ampel.contrib.hu.t2.T2BaseLightcurveFitter
 - ampel.contrib.hu.t2.T2BayesianBlocks
 - ampel.contrib.hu.t2.T2BrightSNProb
@@ -55,6 +56,7 @@
 - ampel.contrib.hu.t3.ChannelSummaryPublisher
 - ampel.contrib.hu.t3.CostCounter
 - ampel.contrib.hu.t3.ElasticcClassPublisher
+- ampel.contrib.hu.t3.ElasticcClassTablePrinter
 - ampel.contrib.hu.t3.HealpixCorrPlotter
 - ampel.contrib.hu.t3.PlotLightcurveSample
 - ampel.contrib.hu.t3.PlotTransientLightcurves

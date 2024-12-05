@@ -1,0 +1,156 @@
+# Dev version for developic elasticc2 pipeline
+
+
+name: elasticc2-dev
+parameters:
+- name: parsnip_noknclassifier
+  value: https://box.hu-berlin.de/f/0365c6b710be4322902c/?dl=1
+- name: parsnip_noknmodel
+  value: https://box.hu-berlin.de/f/6b98c410769d4b69b9e8/?dl=1
+- name: model_stars_ulens_mdwarf_nova
+  value: https://box.hu-berlin.de/f/1a34803530504d108ec5/?dl=1
+- name: model_all
+  value: https://box.hu-berlin.de/f/ebb41733ced1429dbe5c/?dl=1
+- name: model_sn_vs_long
+  value: https://box.hu-berlin.de/f/33a3e9273d694265a0b9/?dl=1
+- name: model_kn_vs_parsnip
+  value: https://box.hu-berlin.de/f/43e53fa6f3bb42ddbfd7/?dl=1
+- name: model_agn_vs_kn_parsnip
+  value: https://box.hu-berlin.de/f/3a093b15fc5646808055/?dl=1
+- name: model_galactic_vs_non_galactic
+  value: https://box.hu-berlin.de/f/92e0eeba0103476dba96/?dl=1
+- name: model_all_wparsnip
+  value: https://box.hu-berlin.de/f/8c517c66b1344993bb82/?dl=1
+- name: alertsample
+  value: https://portal.nersc.gov/cfs/lsst/DESC_TD_PUBLIC/ELASTICC/5000alerts.tar.gz
+
+mongo:
+  prefix: Elasticc2
+  reset: true
+
+channel:
+- name: elasticc
+  access: []
+  policy: []
+  version: 1
+
+task:
+
+- title: ingest
+
+  unit: AlertConsumer
+  config:
+    iter_max: 10000
+    updates_buffer_size: 50000
+    compiler_opts: LSSTCompilerOptions
+
+    supplier:
+      unit: LSSTAlertSupplier
+      config:
+        deserialize: avro
+        loader:
+          config:
+            # start: 20000
+            file_path: elasticc2-biguns.tar.gz
+          unit: TarAlertLoader
+
+    shaper: {unit: LSSTDataPointShaper}
+
+    directives:
+    - channel: elasticc
+
+      filter:
+        unit: ReallySimpleLSSTFilter
+        on_stock_match: bypass
+        config:
+          min_ndet: 8000
+          # max_ndet: 50
+          min_tspan: 0
+          max_tspan: 10000
+
+      ingest:
+          mux:
+            unit: LSSTMongoMuxer
+            config:
+              projection:
+                _id: 0
+                id: 1
+            combine:
+            - unit: LSSTT1Combiner
+              state_t2:
+              - config:
+                  paths_xgbbinary:
+                    gal_vs_nongal: model_galactic_vs_non_galactic
+                    agn_vs_knsnlong: model_agn_vs_kn_parsnip
+                    kn_vs_snlong: model_kn_vs_parsnip
+                    sn_vs_long: model_sn_vs_long
+                  paths_xgbmulti:
+                    stars_ulens_mdwarf_nova:
+                      path: model_stars_ulens_mdwarf_nova
+                      classes: [2322, 2324, 2325, 2233, 2234, 2323, 2235]
+                    all:
+                      path: model_all
+                      classes: [2332, 2245, 2322, 2324, 2325, 2244, 2232, 2233, 2234, 2246, 2323, 2242, 2226, 2222, 2225, 2223, 2224, 2243, 2235]
+                    all_incl:
+                      path: model_all_wparsnip
+                      classes: [2332, 2245, 2322, 2324, 2325, 2244, 2232, 2233, 2234, 2246, 2323, 2242, 2226, 2222, 2225, 2223, 2224, 2243, 2235]
+                  paths_parsnip:
+                    snlong:
+                      model: elasticc2_run20_SNLONG_latentsize4_twin600_minlearnratem6.h5
+                      classifier: elasticc2_run20_SNLONG_latentsize4_twin600_minlearnratem6_pred_classifier.pkl
+                  tabulator:
+                  - unit: LSSTT2Tabulator
+                    config:
+                      zp: 31.4
+                unit: T2Elasticc2Classifier
+  inputs:
+    artifacts:
+      - name: alertsample
+        path: 5000alertsdir
+        http:
+          url: "{{ job.parameters.alertsample }}"
+      - name: model_galactic_vs_non_galactic
+        path: model_galactic_vs_non_galactic
+        http:
+          url: "{{ job.parameters.model_galactic_vs_non_galactic }}"
+      - name: model_agn_vs_kn_parsnip
+        path: model_agn_vs_kn_parsnip
+        http:
+          url: "{{ job.parameters.model_agn_vs_kn_parsnip }}"
+      - name: model_kn_vs_parsnip
+        path: model_kn_vs_parsnip
+        http:
+          url: "{{ job.parameters.model_kn_vs_parsnip }}"
+      - name: model_sn_vs_long
+        path: model_sn_vs_long
+        http:
+          url: "{{ job.parameters.model_sn_vs_long }}"
+      - name: model_stars_ulens_mdwarf_nova
+        path: model_stars_ulens_mdwarf_nova
+        http:
+          url: "{{ job.parameters.model_stars_ulens_mdwarf_nova }}"
+      - name: model_all
+        path: model_all
+        http:
+          url: "{{ job.parameters.model_all }}"
+      - name: parsnip_noknmodel
+        path: elasticc2_run20_SNLONG_latentsize4_twin600_minlearnratem6.h5
+        http:
+          url: "{{ job.parameters.parsnip_noknmodel }}"
+      - name: parsnip_noknclassifier
+        path: elasticc2_run20_SNLONG_latentsize4_twin600_minlearnratem6_pred_classifier.pkl
+        http:
+          url: "{{ job.parameters.parsnip_noknclassifier }}"
+      - name: model_all_wparsnip
+        path: model_all_wparsnip
+        http:
+          url: '{{ job.parameters.model_all_wparsnip }}'
+
+
+
+- title: t2_row3
+  multiplier: 8
+  unit: T2Worker
+  config:
+    doc_limit: 50000
+    max_try: 10

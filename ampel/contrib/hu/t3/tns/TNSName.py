@@ -16,7 +16,7 @@ class TNSName:
     e.g. 2019a represents (2019,1), while 2019aa represents (2019,27)
     """
 
-    __slots__ = ("year", "number")
+    __slots__ = ("number", "year")
     BASE = 26
 
     def __init__(self, year: int, number: int):

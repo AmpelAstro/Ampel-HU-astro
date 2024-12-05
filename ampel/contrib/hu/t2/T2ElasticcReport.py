@@ -7,6 +7,7 @@
 # Last Modified Date:  13.12.2022
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
+from collections import defaultdict
 from collections.abc import Sequence
 from typing import Literal
 
@@ -16,37 +17,38 @@ from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
 from ampel.contrib.hu.t2.util import get_payload
+from ampel.enum.DocumentCode import DocumentCode
 from ampel.model.StateT2Dependency import StateT2Dependency
+from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
 from ampel.view.T2DocView import T2DocView
 
 # Tying classification output classes with ELAsTICC taxonomy classes
 parsnip_taxonomy = {
-    # Correct Elasticc outputs but they changed?
-    # https://github.com/plasticc/taxonomy/blob/main/taxonomy.ipynb ?
-    "SLSN": 131,
-    "SNII": 113,
-    "SNIa": 111,
-    "SNibc": 112,
-    "SNIbc": 112,
-    "TDE": 132,
-    "CART": 134,
-    "ILOT": 133,
-    "Mdwarf-flare": 122,
-    "PISN": 135,
-    "KN": 121,
-    "SLSN-I": 131,
-    "SNIa91bg": 115,
-    "SNIax": 114,
-    "dwarf-nova": 123,
+    # extracted from https://github.com/LSSTDESC/elasticc/blob/bc0de488c5276ce61b650117db19e93634b10815/taxonomy/taxonomy.ipynb
+    #    'SLSN':  2242,   # never used?
+    "SNII": 2224,
+    "SNIa": 2222,
+    "SNibc": 2223,
+    "SNIbc": 2223,
+    "TDE": 2243,
+    "CART": 2245,
+    "ILOT": 2244,
+    "Mdwarf-flare": 2233,
+    "PISN": 2246,
+    "KN": 2232,
+    "SLSN-I": 2242,
+    "SNIa91bg": 2226,
+    "SNIax": 2225,
+    "dwarf-nova": 2234,
     # mssing
-    "uLens": 124,
+    "uLens": 2235,
 }
 
 # T2XgbClassifier can also yield direct evaluations for some cases
 # when the main run fails. We here map these to elasticc codes
-direct_evaluations = {"AGN": 22, "uLens": 124, "EB": 21}
+direct_evaluations = {"AGN": 2330, "uLens": 2235, "EB": 2320}
 
 
 # Prior section - can be applied as demo, but not matching the simulations.
@@ -596,7 +598,7 @@ zmap = {
 btsmap = {
     "SNIa": 663,
     "uLens": 10,
-    "SLSN": 14,
+    "SLSN-I": 14,
     "dwarf-nova": 10,
     "SNIa91bg": 10,
     "ILOT": 10,
@@ -616,7 +618,8 @@ galcol_prior: dict[str, list[float]] = {
     "ILOT": [1.1458356003495815, 0.5093055923613805],
     "KN": [1.3089799059907905, 0.3303618787483199],
     "PISN": [0.3426406749881123, 0.4465663913955291],
-    "SLSN": [0.37962520970022234, 0.3723189361658543],
+    #'SLSN': [0.37962520970022234, 0.3723189361658543],
+    "SLSN-I": [0.37962520970022234, 0.3723189361658543],
     "SNIa91bg": [1.8926892171924607, 0.4252978932935133],
     "SNIa": [0.6102884945155177, 0.39269590167347995],
     "SNIax": [0.6945950080255028, 0.36977359393920906],
@@ -666,19 +669,28 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
         StateT2Dependency[Literal["T2RunParsnip", "T2MultiXgbClassifier"]]
     ]
 
-    def submit(self, report: dict) -> str:
-        """
-        Placeholder for actually doing a quick T2 submit.
-        """
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
-        # Possibly check total probability
-        # psum = 0
-        # for klass in report['classifications']:
-        #    psum += klass['probability']
-        # if not abs(psum-1)<0.01:
-        #    self.log.info('Probability does not add.')
-
-        return "Not submitted."
+    @staticmethod
+    def _one_report_per_classifier(report: dict):
+        """
+        reformat a v0.9 brokerClassification for v0.9.1
+        see: https://raw.githubusercontent.com/LSSTDESC/elasticc/5d7b314b537197c99086acf019e6e2c1dc4aa267/alert_schema/elasticc.v0_9_1.brokerClassification.avsc
+        """
+        by_classifier = defaultdict(list)
+        for c in report["classifications"]:
+            by_classifier[(c["classifierName"], c["classifierParams"])].append(
+                {k: c[k] for k in ("classId", "probability")}
+            )
+        for (name, params), classifications in by_classifier.items():
+            new_report = report.copy()
+            new_report["classifications"] = [
+                {k: c[k] for k in ("classId", "probability")} for c in classifications
+            ]
+            new_report["classifierName"] = name
+            new_report["classifierParams"] = params
+            yield new_report
 
     def add_zprior(self, parsnip_prob: dict, z: float):
         """
@@ -698,6 +710,8 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
 
         # Reweight probabilities
         p = sum([v for v in scaled_prob.values()])
+        if not p > 0:
+            p = 1.0
 
         return {k: v / p for k, v in scaled_prob.items()}
 
@@ -714,6 +728,8 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
 
         # Reweight probabilities
         p = sum([v for v in scaled_prob.values()])
+        if not p > 0:
+            p = 1.0
 
         return {k: v / p for k, v in scaled_prob.items()}
 
@@ -767,12 +783,23 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
             return None
         return u - g
 
+    def make_unit_result(
+        self, compound: T1Document, class_report: dict[str, UBson]
+    ) -> UnitResult:
+        return UnitResult(
+            body={
+                "report": class_report,
+            },
+            code=DocumentCode.OK,
+            journal=JournalAttributes(extra={"link": compound["link"]}),
+        )
+
     def process(
         self,
         compound: T1Document,
         datapoints: Sequence[DataPoint],
         t2_views: Sequence[T2DocView],
-    ) -> UBson | UnitResult:
+    ) -> UnitResult:
         """
 
         Extract and combine results.
@@ -800,7 +827,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
         for metarecord in compound["meta"]:
             if isinstance(alert_id := metarecord.get("alert"), int):
                 class_report["alertId"] = alert_id
-                class_report["brokerIngestTimestamp"] = metarecord["ts"]
+                class_report["brokerIngestTimestamp"] = metarecord["ts"] * 1000
             if isinstance(alert_ts := metarecord.get("alert_ts"), int):
                 class_report["elasticcPublishTimestamp"] = alert_ts
 
@@ -874,10 +901,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
                     "probability": 1.0,
                 }
             )
-            return {
-                "report": class_report,
-                "t2_submit": self.submit(class_report),
-            }
+            return self.make_unit_result(compound, class_report)
 
         # Create first set of probabilities
         prob1 = is1
@@ -913,10 +937,7 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
         # If Parsnip did not run we are done here
         if parsnip_class is None:
             self.logger.debug("No Parsnip result, file simple report")
-            return {
-                "report": class_report,
-                "t2_submit": self.submit(class_report),
-            }
+            return self.make_unit_result(compound, class_report)
 
         # Create a new series of classifications including base Parsnip
         parsnip_classifications = [
@@ -993,7 +1014,4 @@ class T2ElasticcReport(AbsTiedStateT2Unit):
             class_report["classifications"] = parsnip_classifications
 
         # Return report
-        return {
-            "report": class_report,
-            "t2_submit": self.submit(class_report),
-        }
+        return self.make_unit_result(compound, class_report)
