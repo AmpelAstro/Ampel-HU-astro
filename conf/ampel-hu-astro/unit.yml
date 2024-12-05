@@ -19,8 +19,6 @@
 - ampel.contrib.hu.t2.T2DemoLightcurveFitter
 - ampel.contrib.hu.t2.T2DigestRedshifts
 - ampel.contrib.hu.t2.T2DustEchoEval
-- ampel.contrib.hu.t2.T2ElasticcAllClassifier
-- ampel.contrib.hu.t2.T2ElasticcKnClassifier
 - ampel.contrib.hu.t2.T2ElasticcRedshiftSampler
 - ampel.contrib.hu.t2.T2ElasticcReport
 - ampel.contrib.hu.t2.T2FastDecliner
