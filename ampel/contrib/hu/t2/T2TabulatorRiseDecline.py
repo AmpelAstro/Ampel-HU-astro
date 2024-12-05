@@ -484,7 +484,7 @@ class T2TabulatorRiseDeclineBase:
         return o
 
 
-class BaseLightCurveFeatures(LogicalUnit, AmpelBaseModel):
+class BaseLightCurveFeatures(LogicalUnit):
     """
     Calculate various features of the light curve using the light-curve
     package described in https://ui.adsabs.harvard.edu/abs/2021MNRAS.502.5147M%2F/abstract
@@ -526,7 +526,7 @@ class BaseLightCurveFeatures(LogicalUnit, AmpelBaseModel):
     }
 
     def init_lightcurve_extractor(self) -> None:
-        self.fluxextractor = light_curve.Extractor(
+        self._fluxextractor = light_curve.Extractor(
             *(
                 getattr(light_curve, k)(**(v or {}))
                 for k, v in self.lightcurve_features_flux.items()
@@ -552,8 +552,8 @@ class BaseLightCurveFeatures(LogicalUnit, AmpelBaseModel):
                     lcout = {
                         f"{k}_{band}_flux": v
                         for k, v in zip(
-                            self.fluxextractor.names,
-                            self.fluxextractor(
+                            self._fluxextractor.names,
+                            self._fluxextractor(
                                 in_band["time"], in_band["flux"], in_band["fluxerr"]
                             ),
                             strict=False,

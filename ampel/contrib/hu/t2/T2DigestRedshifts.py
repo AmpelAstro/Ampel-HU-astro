@@ -55,7 +55,7 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
     #                    "max_distance": "max arcsec in which to allow match,
     #                    "max_redshift": "max redshift to use",
     #                    "z_group": "which redshift group to assign to" }
-    catalogmatch_override: None | dict[str, Any]
+    catalogmatch_override: None | dict[str, Any] = None
 
     # Options for the get_redshift option
     # T2MatchBTS : Use the redshift published by BTS and  synced by that T2.

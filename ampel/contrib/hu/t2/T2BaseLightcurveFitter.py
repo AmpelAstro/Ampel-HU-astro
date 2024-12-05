@@ -59,7 +59,7 @@ class T2BaseLightcurveFitter(T2DigestRedshifts, AbsTabulatedT2Unit, abstract=Tru
     # Phase range usage. Current option:
     # T2PhaseLimit : use the jdmin jdmax provided in this unit output
     # None : use full datapoint range
-    phaseselect_kind: None | str
+    phaseselect_kind: None | str = None
 
     def post_init(self) -> None:
         """
