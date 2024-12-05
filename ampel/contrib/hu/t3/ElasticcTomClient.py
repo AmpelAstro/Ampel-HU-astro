@@ -8,10 +8,10 @@
 # Last Modified By:    jno <jnordin@physik.hu-berlin.de>
 
 import logging
-from collections.abc import Generator, Sequence
+from collections.abc import Callable, Generator, Sequence
 from io import BytesIO
 from math import isfinite
-from typing import Any, Callable, Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 import backoff
 import fastavro
@@ -148,6 +148,7 @@ class ElasticcTomClient:
 logger = logging.getLogger()
 
 _T = TypeVar("_T")
+
 
 class AvroDeserializer(Generic[_T]):
     def __init__(
