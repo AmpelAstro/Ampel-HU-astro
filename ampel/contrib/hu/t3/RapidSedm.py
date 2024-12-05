@@ -7,10 +7,13 @@
 # Last Modified Date:  06.02.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import datetime, requests
-from typing import Any, Tuple
-from ampel.secret.NamedSecret import NamedSecret
+import datetime
+from typing import Any
+
+import requests
+
 from ampel.contrib.hu.t3.RapidBase import RapidBase
+from ampel.secret.NamedSecret import NamedSecret
 from ampel.view.TransientView import TransientView
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 
@@ -96,14 +99,16 @@ class RapidSedm(RapidBase):
             "latest_mag"
         ]  # Assuming that the object is not declining?
         react_dict["obj_name"] = to_ztf_id(tran_view.id)
-        react_dict["inidate"] = datetime.datetime.utcnow()
-        react_dict["enddate"] = datetime.datetime.utcnow() + datetime.timedelta(days=2)
+        react_dict["inidate"] = datetime.datetime.now(tz=datetime.timezone.utc)
+        react_dict["enddate"] = datetime.datetime.now(
+            tz=datetime.timezone.utc
+        ) + datetime.timedelta(days=2)
 
         # We are still in debug stage, turn down priority
         # react_dict['priority'] = 1
 
         self.logger.debug(
-            "SEDM trigger for %s w dict %s" % (to_ztf_id(tran_view.id), react_dict)
+            f"SEDM trigger for {to_ztf_id(tran_view.id)} w dict {react_dict}"
         )
 
         # Make the post

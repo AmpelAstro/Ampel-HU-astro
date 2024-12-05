@@ -9,9 +9,8 @@
 
 import datetime
 import io
-from collections.abc import Mapping
-from typing import Any, cast
-from collections.abc import Iterable, Generator
+from collections.abc import Generator, Iterable, Mapping
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -19,17 +18,16 @@ import requests
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackClientError
 
-from ampel.types import T3Send
-from ampel.struct.T3Store import T3Store
-from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
+from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.log.utils import log_exception
 from ampel.secret.NamedSecret import NamedSecret
+from ampel.struct.T3Store import T3Store
+from ampel.types import T3Send
 from ampel.view.TransientView import TransientView
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
-from slack_sdk.web import SlackResponse
 
 
-class SlackSummaryPublisher(AbsT3ReviewUnit):
+class SlackSummaryPublisher(AbsT3Unit):
     """"""
 
     dry_run: bool = False
@@ -50,7 +48,9 @@ class SlackSummaryPublisher(AbsT3ReviewUnit):
         "isdiffpos",
     ]
 
-    def process(self, gen: Generator[TransientView, T3Send, None], t3s: T3Store) -> None:
+    def process(
+        self, gen: Generator[TransientView, T3Send, None], t3s: T3Store
+    ) -> None:
         """"""
         channels: set[str] = set()
         frames, photometry = self.combine_transients(gen, channels)
@@ -58,7 +58,7 @@ class SlackSummaryPublisher(AbsT3ReviewUnit):
         if len(frames) == 0 and self.quiet:
             return
 
-        date = str(datetime.date.today())
+        date = str(datetime.datetime.now(tz=datetime.timezone.utc).date())
 
         sc = WebClient(self.slack_token.get())
 
@@ -67,38 +67,36 @@ class SlackSummaryPublisher(AbsT3ReviewUnit):
         if self.dry_run:
             self.logger.info(m)
         else:
-            # we know this is a sync client; work around lazy type annotations
-            api = cast(
-                SlackResponse,
-                sc.api_call(
-                    "chat.postMessage",
-                    json={
-                        "channel": self.slack_channel,
-                        "text": m,
-                        "username": "AMPEL-live",
-                        "as_user": False,
-                    },
-                ),
+            api = sc.api_call(
+                "chat.postMessage",
+                json={
+                    "channel": self.slack_channel,
+                    "text": m,
+                    "username": "AMPEL-live",
+                    "as_user": False,
+                },
             )
             if not api["ok"]:
                 raise SlackClientError(api["error"])
 
         if len(frames) > 0:
-
             df = pd.DataFrame.from_records(frames)
-            # Set fill value for channel columns to False
-            for channel in channels:
-                df[channel].fillna(False, inplace=True)
-            # Set fill value for all other columns to MISSING
-            for field in set(df.columns.values).difference(channels):
-                df[field].fillna("MISSING", inplace=True)
+            # Set fill value for channel columns to False, and all others to MISSING
+            df.fillna(
+                {c: False for c in channels}
+                | {
+                    field: "MISSING"
+                    for field in set(df.columns.values).difference(channels)
+                },
+                inplace=True,
+            )
             # Move channel info at end
             df = df.reindex(
                 copy=False,
                 columns=[c for c in df.columns if c not in channels] + list(channels),
             )
 
-            filename = "Summary_%s.csv" % date
+            filename = f"Summary_{date}.csv"
 
             buffer = io.StringIO(filename)
             df.to_csv(buffer)
@@ -139,18 +137,24 @@ class SlackSummaryPublisher(AbsT3ReviewUnit):
             if self.full_photometry:
                 photometry_df = pd.concat(photometry, sort=False)
                 # Set fill value for channel columns to False
-                for channel in channels:
-                    photometry_df[channel].fillna(False, inplace=True)
-                # Set fill value for all other columns to MISSING
-                for field in set(photometry_df.columns.values).difference(channels):
-                    photometry_df[field].fillna("MISSING", inplace=True)
+                photometry_df.fillna(
+                    {c: False for c in channels}
+                    | {
+                        field: "MISSING"
+                        for field in set(photometry_df.columns.values).difference(
+                            channels
+                        )
+                    },
+                    inplace=True,
+                )
                 # Move channel info at end
                 photometry_df = photometry_df.reindex(
                     copy=False,
-                    columns=[c for c in df.columns if c not in channels] + list(channels)
+                    columns=[c for c in df.columns if c not in channels]
+                    + list(channels),
                 )
 
-                filename = "Photometry_%s.csv" % date
+                filename = f"Photometry_{date}.csv"
 
                 buffer = io.StringIO(filename)
                 photometry_df.to_csv(buffer)
@@ -192,7 +196,6 @@ class SlackSummaryPublisher(AbsT3ReviewUnit):
         photometry = []
 
         for transient in transients:
-
             mycols = set(self.cols)
 
             frame = {
@@ -206,9 +209,9 @@ class SlackSummaryPublisher(AbsT3ReviewUnit):
             # include other T2 results, flattened
             for t2record in transient.t2 or []:
                 if (
-                    t2record.unit == "T2LightCurveSummary" or
-                    not (output := t2record.get_payload()) or
-                    not isinstance(output, dict)
+                    t2record.unit == "T2LightCurveSummary"
+                    or not (output := t2record.get_payload())
+                    or not isinstance(output, Mapping)
                 ):
                     continue
 
@@ -220,14 +223,14 @@ class SlackSummaryPublisher(AbsT3ReviewUnit):
                 for key, value in res_flat.items():
                     try:
                         frame[key] = str(value)
-                    except ValueError as ve:
+                    except ValueError as ve:  # noqa: PERF203
                         log_exception(self.logger, ve)
 
             assert transient.stock
             frame.update(
                 {str(channel): True for channel in (transient.stock["channel"] or [])}
             )
-            channels.update((str(c) for c in transient.stock["channel"] or []))
+            channels.update(str(c) for c in transient.stock["channel"] or [])
 
             frames.append(frame)
 
@@ -271,64 +274,63 @@ def calculate_excitement(n_transients, date, thresholds, n_alerts=np.nan):
 
         return message
 
+    if not np.isnan(n_alerts):
+        message += " In total, " + str(n_alerts) + " alerts were ingested. \n"
     else:
-        if not np.isnan(n_alerts):
-            message += " In total, " + str(n_alerts) + " alerts were ingested. \n"
-        else:
-            message += "\n"
+        message += "\n"
 
-        if n_transients == 0:
-            message += (
-                "TRAGEDY! Sadly, it seems that no transients passed the "
-                "filters last night"
-            )
-            return message
+    if n_transients == 0:
+        message += (
+            "TRAGEDY! Sadly, it seems that no transients passed the "
+            "filters last night"
+        )
+        return message
 
-        elif n_transients == 1:
-            message += (
-                "LONE WOLF! It seems that there was just one transient"
-                " which passed the filters. Guess it's better than "
-                "nothing... :shrug: \n ~The results are summarised "
-                "below.~ That one result is shown below."
-            )
-            return message
+    if n_transients == 1:
+        message += (
+            "LONE WOLF! It seems that there was just one transient"
+            " which passed the filters. Guess it's better than "
+            "nothing... :shrug: \n ~The results are summarised "
+            "below.~ That one result is shown below."
+        )
+        return message
 
-        elif n_transients < thresholds["Low"]:
-            message += (
-                "MEH! We only found " + str(n_transients) + " "
-                "transients last night. :unamused: That's "
-                "disappointing. Hopefully we get more tomorrow!"
-            )
+    if n_transients < thresholds["Low"]:
+        message += (
+            "MEH! We only found " + str(n_transients) + " "
+            "transients last night. :unamused: That's "
+            "disappointing. Hopefully we get more tomorrow!"
+        )
 
-        elif n_transients < thresholds["Mid"]:
-            message += (
-                "NOT BAD! We found " + str(n_transients) + " "
-                "transients last night. :slightly_smiling_face: "
-                "Let's keep up the good work!"
-            )
+    elif n_transients < thresholds["Mid"]:
+        message += (
+            "NOT BAD! We found " + str(n_transients) + " "
+            "transients last night. :slightly_smiling_face: "
+            "Let's keep up the good work!"
+        )
 
-        elif n_transients < thresholds["High"]:
-            message += (
-                "IMPRESSIVE! We found " +
-                str(n_transients) +
-                " transients last night. :grin: That's exciting! Good "
-                "luck to anyone trying to check all of those by hand..."
-            )
+    elif n_transients < thresholds["High"]:
+        message += (
+            "IMPRESSIVE! We found "
+            + str(n_transients)
+            + " transients last night. :grin: That's exciting! Good "
+            "luck to anyone trying to check all of those by hand..."
+        )
 
-        else:
-            message += (
-                "WOW!!! We found " +
-                str(n_transients) +
-                " transients last night. :tada: That's loads! Now we "
-                "just need to figure out what to do with all of them..."
-            )
+    else:
+        message += (
+            "WOW!!! We found "
+            + str(n_transients)
+            + " transients last night. :tada: That's loads! Now we "
+            "just need to figure out what to do with all of them..."
+        )
 
-        message += "\n The results are summarised below. "
+    message += "\n The results are summarised below. "
 
     return message
 
 
-def flat_dict(d: Mapping[Any, Any], prefix: str="") -> dict[str, Any]:
+def flat_dict(d: Mapping[Any, Any], prefix: str = "") -> dict[str, Any]:
     """
     Loop through dictionary d
     Append any key, val pairs to the return list ret
@@ -339,7 +341,7 @@ def flat_dict(d: Mapping[Any, Any], prefix: str="") -> dict[str, Any]:
     if not isinstance(d, Mapping):
         return d
 
-    ret: dict[str,Any] = {}
+    ret: dict[str, Any] = {}
 
     for key, val in d.items():
         if isinstance(val, Mapping):

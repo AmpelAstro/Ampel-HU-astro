@@ -1,0 +1,266 @@
+# ---- so you want to understand a jobfile ----
+# ive tried to simplify this as much as possible while still keeping the most important 
+# features in here. the safest way to add stuff to a jobfile is to copy paste something 
+# that already works and then edit it to your heart's content. i.e. if you want to add
+# another T2 unit, copy one thats there to keep the formatting, and just change all the 
+# necessary names etc.
+# BEWARE: if you want to use a completely new Unit that you wrote yourself, you first need
+# to register it under \Ampel-HU-astro\conf\ampel-hu-astro in the format youll find there
+# then you need to re-run your ampel config build -out ampel_conf.yaml and see if it meets
+# all dependencies. otherwise, the unit will not be found on runtime and you will see errors
+
+
+name: ligo-kilonova
+# here you define parameters you can use further down
+parameters:
+- name: map_url_var
+  value: https://gracedb.ligo.org/api/superevents/S200115j/files/LALInference.fits.gz,0 
+- name: map_name_var
+  value: S200115j.fits.gz,0
+- name: map_token_var
+  value: S200115j.fits.gz,0_token
+- name: map_dir_var
+  value: ./
+- name: trigger_jd_var
+  value: 2458863.682951
+- name: export_fmt
+  value: csv
+- name: transienttable_path
+  value: ./TransientTable.csv
+
+
+# database stuff, useful to change channel names and prefix depending on type of job you run to not overwrite in database
+mongo:
+  prefix: starter
+  reset: true
+
+channel:
+- name: starter
+  access: [ZTF, ZTF_PUB, ZTF_PRIV]
+  policy: []
+
+task:
+
+# first thing run: downloads GW map and generates archive tokens to load ZTF alerts in a certain area of the map
+# here you would change this to whatever way you want to read your alerts: can be from file, archive etc. needs to have a generator which
+# then gets passed to the AlertConsumer
+- title: token
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3PlainUnitExecutor
+        config:
+          target:
+            unit: HealpixTokenGenerator
+            config: # a config is basically what gets passed to the class at init, sets class variables
+              pvalue_limit: 0.5
+              chunk_size: 2000
+              map_name: "{{ job.parameters.map_name_var }}" # this is how you access the parameters you defined in the beginning. ugly but useful
+              map_url: "{{ job.parameters.map_url_var }}"
+              map_dir: "{{ job.parameters.map_dir_var }}"
+              delta_time: 3
+              archive_token:
+                label: ztf/archive/token
+# input artifacts
+# input artifacts, similarly defined to output artifacts (see below), are files you require to 
+# be present upon starting your jobfile, i.e. files you are not loading on runtime, from some unit
+# these will be downloaded (if given a url) before the start of the actual job, and deleted upon completion
+# as this jobfile does not require any input artifacts, we skip this section
+# inputs:
+#     artifacts:
+#       - name: input_file
+#         path: input_dir # the local directory
+#         http:
+#           url: "{{ job.parameters.input_file_url }}"
+
+
+# this is alert processing. the consumer loads alerts via the AlertLoader from whatever source defined in the AlertLoader
+# they then get "shaped" into a format that all T2 Units that follow can use and process
+- title: alerts
+  unit: DynamicShaperAlertConsumer
+  config:
+    shaper_map:
+      map_name: healpix_map_name
+      healpix_info: "{{ job.parameters.map_name_var }}"
+    iter_max: 1000000
+    supplier:
+      unit: ZiAlertSupplier
+      config:
+        deserialize: null
+        loader:
+          unit: ZTFArchiveAlertLoader
+          config:
+            with_history: false
+            resource_name: "{{ job.parameters.map_token_var }}"
+    shaper: ZiGWDataPointShaper
+    directives:
+    - channel: starter
+    # if wanted, before they pass on to further processing, each alert passes a filter
+    # this usually filters for ZTF characteristics, i.e. realbogus score, coordinate, whatever you need
+    # to keep it simple, this "filter" randomly passes 50% of all alerts and discards the other 50%
+    # discarded alerts are not further processed by following T2 units
+      filter:
+        config:
+          passing_rate: 0.5
+        on_stock_match: bypass
+        unit: RandFilter
+      ingest:
+      # a stock t2 gets called exactly once per alert
+        stock_t2:
+        # this unit propagates database internal alert info
+          - unit: T2PropagateStockInfo
+          # if you need to remember a config for a Unit for example to re-use it in dependencies later
+          # you can save it to a variable using the &variable_name nomenclature
+          # it can be read out later using *variable_name
+            config: &propagate_stock_info_config
+              prop_paths:
+                trigger_time:
+                - journal
+                - healpix
+                - trigger_time
+                prob_contour:
+                - journal
+                - healpix
+                - cumprob
+                healpix_map:
+                - journal
+                - healpix
+                - map_name
+        mux:
+          combine:
+          # state t2s under a mux-combine get called again and again until all dependencies they have are met and they can 
+          # be evaluated in total. this means a T2 unit has access to all results from all other T2 unit in its combine at final runtime
+          # this of course also means that jobs take a lot longer to run if everything depends on everything
+          # in practice i usually have several more or less independent T2 and then one with lots of dependencies
+          - state_t2:
+          # this t2 gathers some information from the GW map depending on the ZTF alert 
+          # it does not have any other T2 dependencies and could probably be a stock t2 instead
+            - config: &healpixprob_config
+                map_name: "{{ job.parameters.map_name_var }}" 
+                pvalue_limit: 0.5
+                tabulator:
+                  - unit: ZTFT2Tabulator
+              unit: T2HealpixProb
+            - config: &digest_redshift_config
+                max_redshift_category: 6
+                # this T2 unit has a dependency: it needs results from T2CatalogMatch to function properly
+                # for this we need to pass it the config of T2CatalogMatch again, so that it gets the result from
+                # exactly this CatalogMatch unit, in case there is several
+                t2_dependency:
+                # if you need a config again further "down the line" in the yml (this does not necessarily mean "later" in time 
+                # of execution) you need to define it the first time it appears in the yml
+                # and then can reuse it afterwards, even though the unit (here T2CatalogMatch) will be called first
+                # as it is a dependency of the unit (T2DigestRedshift) where you defined the config itself
+                - config: &catalog_match_config
+                    catalogs:
+                      GLADEv23:
+                        keys_to_append:
+                        - z
+                        - dist
+                        - dist_err
+                        - flag1
+                        - flag2
+                        - flag3
+                        rs_arcsec: 10
+                        use: extcats
+                      NEDz:
+                        keys_to_append:
+                        - ObjType
+                        - Velocity
+                        - z
+                        rs_arcsec: 10.0
+                        use: catsHTM
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2CatalogMatch
+              unit: T2DigestRedshifts   
+            unit: ZiT1Combiner
+          insert:
+            point_t2:
+            - config: *catalog_match_config
+              ingest:
+                filter: PPSFilter
+                select: first
+                sort: jd
+              unit: T2CatalogMatch
+          unit: ZiArchiveMuxer
+          config:
+            future_days: 3
+            history_days: 50      
+
+
+- title: t2
+  unit: T2Worker
+  config:
+    send_beacon: false
+    raise_exc: true
+
+# this is where we define and call on T3 Units
+# they are usually post processing stuff, in this case:
+# saving parameters collected from T2 units to a csv table
+# but they could also include a unit that publishes alerts depending on
+# previous results, sends an automatic slack bot message, etc
+- title: react
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3ReviewUnitExecutor
+        config:
+          supply:
+            unit: T3DefaultBufferSupplier
+            config:
+              select:
+                unit: T3StockSelector
+                config:
+                  channel: starter
+              load:
+                unit: T3SimpleDataLoader
+                config:
+                  directives:
+                    - STOCK
+                    - T1
+                    - T2DOC
+                    - DATAPOINT
+                  channel: starter
+          stage:
+            unit: T3SimpleStager
+            config:
+              execute:
+              # this unit gets all results from the T2 units, and does not need to define them as dependencies
+              # of course if you specifically call on something in the class that may not get passed, you will get an error
+              # but thats then your fault for hard coding stuff
+                - unit: TransientTablePublisher
+                  config:
+                    include_stock: true
+                    include_channels: true
+                    convert_stock_to: ztf
+                    fmt: "{{ job.parameters.export_fmt }}"
+                    local_path: ./
+                    move_files: false
+                    transient_table_schema:
+                      T2HealpixProb:
+                        'map_area':
+                          - map_area
+                      T2PropagateStockInfo:
+                        'trigger_time':
+                          - trigger_time
+                        'prob_contour':
+                          - prob_contour
+                        'healpix_map':
+                          - healpix_map
+  # if you want to save any on-runtime generated data, such as the table we just generated in the T3 unit
+  # you need to define an output artifact, which knows where this data was saved
+  # while not doing this while running on your own machine wont generate an error and anything saved, stays saved
+  # on the cluster, anything not defined in an output artifact will get deleted upon completion of the job
+  # for example: in the first section, we downloaded and saved a GW map to disk, then read that out
+  # and generated tokens for the ZTF archive to access alerts in a region of the GW map
+  # this map data, which we downloaded on runtime, will not stay stored on the cluster, as we 
+  # did not define an output artifact to keep it
+  outputs:
+    artifacts:
+      - name: transienttable
+        path: "{{ job.parameters.transienttable_path }}"

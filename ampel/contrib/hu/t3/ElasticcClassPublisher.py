@@ -8,26 +8,32 @@
 # Last Modified By:    jno <jnordin@physik.hu-berlin.de>
 
 from collections import defaultdict
+from collections.abc import Generator, Iterable, Mapping, Sequence
 from itertools import islice
-from typing import Iterable, TYPE_CHECKING
-from collections.abc import Generator
+from typing import TYPE_CHECKING, TypeVar
 
-from ampel.struct.StockAttributes import StockAttributes
-from ampel.struct.JournalAttributes import JournalAttributes
+from ampel.abstract.AbsT3Unit import AbsT3Unit, T3Send
+from ampel.contrib.hu.t3.ElasticcTomClient import (
+    Elasticc2ClassificationDict,
+    ElasticcTomClient,
+)
 from ampel.enum.DocumentCode import DocumentCode
-from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit, T3Send
-from ampel.secret.NamedSecret import NamedSecret
-from ampel.view.TransientView import TransientView
-from ampel.view.T2DocView import T2DocView
-from ampel.struct.T3Store import T3Store
 from ampel.log import LogFlag
-
-from ampel.contrib.hu.t3.ElasticcTomClient import ElasticcTomClient
+from ampel.secret.NamedSecret import NamedSecret
+from ampel.struct.JournalAttributes import JournalAttributes
+from ampel.struct.StockAttributes import StockAttributes
+from ampel.struct.T3Store import T3Store
+from ampel.view.TransientView import TransientView
 
 if TYPE_CHECKING:
     from ampel.content.JournalRecord import JournalRecord
 
-def chunks(l: Iterable, n: int) -> Generator[list, None, None]:
+    from .ElasticcTomClient import Elasticc2Report, ElasticcClassification
+
+T = TypeVar("T")
+
+
+def chunks(l: Iterable[T], n: int) -> Generator[list[T], None, None]:
     source = iter(l)
     while True:
         chunk = list(islice(source, n))
@@ -36,7 +42,8 @@ def chunks(l: Iterable, n: int) -> Generator[list, None, None]:
         if len(chunk) < n:
             break
 
-class ElasticcClassPublisher(AbsT3ReviewUnit):
+
+class ElasticcClassPublisher(AbsT3Unit):
     """
 
     This unit is intended to submit classifications to the DESC TOM db during
@@ -62,8 +69,8 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
 
     """
 
-    broker_name: str = 'AMPEL'
-    broker_version: str = 'v0.1'
+    broker_name: str = "AMPEL"
+    broker_version: str = "v0.1"
     tom_url: str = "https://desc-tom.lbl.gov"
     endpoint: str = "/elasticc2/brokermessage/"
     desc_user: NamedSecret[str]
@@ -79,11 +86,15 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
     unit: str = "T2ElasticcReport"
 
     def post_init(self) -> None:
-        self.tomclient = ElasticcTomClient(self.desc_user.get(), self.desc_password.get(), self.logger, self.tom_url, self.endpoint)
+        self.tomclient = ElasticcTomClient(
+            self.desc_user.get(),
+            self.desc_password.get(),
+            self.logger,
+            self.tom_url,
+            self.endpoint,
+        )
 
-    def search_journal_elasticc(
-        self, tran_view: TransientView
-    ) -> dict[int,bool]:
+    def search_journal_elasticc(self, tran_view: TransientView) -> dict[int, bool]:
         """
         Look through the journal for mapping between alert ID, timestampe and state id.
 
@@ -106,56 +117,80 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
         # Create a list of states for which the list of units
         def select_submitted(entry: "JournalRecord") -> bool:
             return bool(
-                (entry.get("extra") is not None and ("descPutComplete" in entry["extra"])
-                and (entry["extra"]["descPutComplete"]) )
-                and (entry["extra"]["descPutUnit"]==self.unit)
-                and entry["unit"] and entry["unit"] == self.__class__.__name__
+                (
+                    entry.get("extra") is not None
+                    and ("descPutComplete" in entry["extra"])
+                    and (entry["extra"]["descPutComplete"])
+                )
+                and (entry["extra"]["descPutUnit"] == self.unit)
+                and entry["unit"]
+                and entry["unit"] == self.__class__.__name__
             )
 
         done_t1states = set()
 
         # All entries which we found should correspond to correctly sumitted classifications
-        if jentries := list(tran_view.get_journal_entries(tier=3, filter_func=select_submitted)):
+        if jentries := list(
+            tran_view.get_journal_entries(tier=3, filter_func=select_submitted)
+        ):
             for entry in jentries:
-                done_t1states.add( entry['extra']['t1State'])
+                done_t1states.add(entry["extra"]["t1State"])
 
         # Next section would look through the journal and find the elasticc alert
         # data needed. Here we are doing some short version of it
         # Perform another journal search and check whether this unit was run
         # for this state
         state_map = {}
+
         def select_alerts(entry: "JournalRecord") -> bool:
             return bool(
                 entry.get("alert") is not None and entry.get("link") is not None
             )
-        if jentries := list(tran_view.get_journal_entries(tier=0, filter_func=select_alerts)):
+
+        if jentries := list(
+            tran_view.get_journal_entries(tier=0, filter_func=select_alerts)
+        ):
             for entry in jentries:
-                assert isinstance(link := entry.get("link"), int)
+                link = entry.get("link")
+                assert isinstance(link, int)
                 if link in done_t1states:
                     state_map[link] = True
                 else:
-                    state_map[link]= False
+                    state_map[link] = False
         return state_map
 
     @staticmethod
-    def _one_report_per_classifier(reports: list[dict]):
+    def _one_report_per_classifier(
+        reports: Sequence[ElasticcClassification],
+    ) -> Generator[Elasticc2Report, None, None]:
         """
         reformat a v0.9 brokerClassification for v0.9.1
         see: https://raw.githubusercontent.com/LSSTDESC/elasticc/5d7b314b537197c99086acf019e6e2c1dc4aa267/alert_schema/elasticc.v0_9_1.brokerClassification.avsc
         """
         for report in reports:
-            by_classifier = defaultdict(list)
+            by_classifier: defaultdict[
+                tuple[str, str], list[Elasticc2ClassificationDict]
+            ] = defaultdict(list)
             for c in report["classifications"]:
-                by_classifier[(c["classifierName"], c["classifierParams"])].append({k: c[k] for k in ("classId", "probability")})
+                by_classifier[(c["classifierName"], c["classifierParams"])].append(
+                    {"classId": c["classId"], "probability": c["probability"]}
+                )
             for (name, params), classifications in by_classifier.items():
-                new_report = report.copy()
-                new_report["classifications"] = [{k: c[k] for k in ("classId", "probability")} for c in classifications]
-                new_report["classifierName"] = name
-                new_report["classifierParams"] = params
-                yield new_report
+                yield {
+                    "alertId": report["alertId"],
+                    "diaSourceId": report["diaSourceId"],
+                    "elasticcPublishTimestamp": report["elasticcPublishTimestamp"],
+                    "brokerIngestTimestamp": report["brokerIngestTimestamp"],
+                    "brokerName": report["brokerName"],
+                    "brokerVersion": report["brokerVersion"],
+                    "classifierName": name,
+                    "classifierParams": params,
+                    "classifications": classifications,
+                }
 
-    def _get_reports(self, gen: Generator[TransientView, T3Send, None]) -> Generator[tuple[TransientView,int,dict],None,None]:
-
+    def _get_reports(
+        self, gen: Generator[TransientView, T3Send, None]
+    ) -> Generator[tuple[TransientView, int, dict], None, None]:
         stats = {
             "stocks": 0,
             "views": 0,
@@ -173,39 +208,46 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
             for t1_link, submitted in state_alert.items():
                 stats["views"] += 1
                 if submitted:
-                    self.logger.debug('submitted', extra={'t1':t1_link})
+                    self.logger.debug("submitted", extra={"t1": t1_link})
                     stats["submitted"] += 1
                     continue
-                if t2views := tran_view.get_t2_views(unit=self.unit, link=t1_link, code=DocumentCode.OK):
+                if t2views := tran_view.get_t2_views(
+                    unit=self.unit, link=t1_link, code=DocumentCode.OK
+                ):
                     t2view = next(t2views, None)
                     if t2view is None:
-                        self.logger.debug('No T2Doc found', extra={'unit':self.unit})
+                        self.logger.debug("No T2Doc found", extra={"unit": self.unit})
                         stats["pending"] += 1
-                        continue   # No T2 ticket found
+                        continue  # No T2 ticket found
                     # Only reason there could be multiple views here is if we
                     # are running different configs... if so this unit wont work
                     # and needs to be redesigned!
-                    if (t2_view_extra := next(t2views, None)) is not None and t2_view_extra.config != t2view.config:
-                        raise RuntimeError(   
-                            'ElasticcClassPublisher cannot parse multiple configs. ' 
-                            f'Got configs={t2view.config},{t2_view_extra.config} for '
-                            f'stock:{t2view.stock},link:{t2view.link},unit:{t2view.unit}' # type: ignore[str-bytes-safe]
+                    if (
+                        t2_view_extra := next(t2views, None)
+                    ) is not None and t2_view_extra.config != t2view.config:
+                        raise RuntimeError(
+                            "ElasticcClassPublisher cannot parse multiple configs. "
+                            f"Got configs={t2view.config},{t2_view_extra.config} for "
+                            f"stock:{t2view.stock},link:{t2view.link},unit:{t2view.unit}"  # type: ignore[str-bytes-safe]
                         )
-                    if not isinstance((body := t2view.get_payload()), dict):
+                    if not isinstance((body := t2view.get_payload()), Mapping):
                         continue
                     yield tran_view, t1_link, body["report"]
         self.logger.log(LogFlag.SHOUT, "filtered states", extra=stats)
 
-    def process(self, gen: Generator[TransientView, T3Send, None], t3s: T3Store) -> None:
-        """
-
-        """
+    def process(
+        self, gen: Generator[TransientView, T3Send, None], t3s: T3Store
+    ) -> None:
+        """ """
 
         submitted = 0
         failed = 0
 
         for chunk in chunks(self._get_reports(gen), self.batch_size):
-            tran_views, t1_links, class_reports = zip(*chunk)
+            tran_views: tuple[TransientView, ...]
+            t1_links: tuple[int, ...]
+            class_reports: tuple[ElasticcClassification, ...]
+            tran_views, t1_links, class_reports = zip(*chunk, strict=False)
 
             if self.dry_run:
                 continue
@@ -217,14 +259,18 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
                 else class_reports
             )
 
-            if desc_response['success']:
+            if desc_response["success"]:
                 submitted += len(class_reports)
             else:
                 failed += len(class_reports)
-                body = desc_response.pop('response_body')
-                self.logger.error('desc post failed', extra={
-                        "descResponse":desc_response,
-                        "descReport": class_reports[0], })
+                body = desc_response.pop("response_body")
+                self.logger.error(
+                    "desc post failed",
+                    extra={
+                        "descResponse": desc_response,
+                        "descReport": class_reports[0],
+                    },
+                )
                 if self.raise_exc:
                     raise RuntimeError(f"Post failed: {body}")
 
@@ -232,35 +278,42 @@ class ElasticcClassPublisher(AbsT3ReviewUnit):
             # if as expected store to journal that transfer is complete.
             # if not as expected, log what data is available and possible
             # a t3 document with this content??
-            for tran_view, t1_link, class_report in zip(tran_views, t1_links, class_reports):
-                if desc_response['success']:
-                    gen.send((
-                        tran_view.id,
-                        StockAttributes(
-                            journal=JournalAttributes(
-                                extra={
-                                    "t1State": t1_link,
-                                    "descPutResponse": desc_response,
-                                    "descPutComplete": True,
-                                    "descPutUnit": self.unit,
+            for tran_view, t1_link, _ in zip(
+                tran_views, t1_links, class_reports, strict=False
+            ):
+                if desc_response["success"]:
+                    gen.send(
+                        (
+                            tran_view.id,
+                            StockAttributes(
+                                journal=JournalAttributes(
+                                    extra={
+                                        "t1State": t1_link,
+                                        "descPutResponse": desc_response,
+                                        "descPutComplete": True,
+                                        "descPutUnit": self.unit,
                                     },
-                                    ),
-                                    )
-                                ))
+                                ),
+                            ),
+                        )
+                    )
                 else:
-                    gen.send((
-                        tran_view.id,
-                        StockAttributes(
-                            journal=JournalAttributes(
-                                extra={
-                                    "t1State": t1_link,
-                                    "descPutResponse": desc_response,
-                                    "descPutComplete": False,
-                                    "descPutUnits": self.unit,
+                    gen.send(
+                        (
+                            tran_view.id,
+                            StockAttributes(
+                                journal=JournalAttributes(
+                                    extra={
+                                        "t1State": t1_link,
+                                        "descPutResponse": desc_response,
+                                        "descPutComplete": False,
+                                        "descPutUnits": self.unit,
                                     },
-                                    ),
-                                    )
-                                ))
+                                ),
+                            ),
+                        )
+                    )
 
-
-        self.logger.log(LogFlag.SHOUT, "reported", extra={"submitted": submitted, "failed": failed})
+        self.logger.log(
+            LogFlag.SHOUT, "reported", extra={"submitted": submitted, "failed": failed}
+        )

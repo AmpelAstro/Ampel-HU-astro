@@ -7,17 +7,17 @@
 # Last Modified Date:  06.02.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any
 from collections.abc import Generator
+from typing import Any
 
 from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.struct.JournalAttributes import JournalAttributes
+from ampel.struct.T3Store import T3Store
 from ampel.struct.UnitResult import UnitResult
+from ampel.types import T3Send, UBson
 from ampel.view.TransientView import TransientView
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
-from ampel.types import UBson, T3Send
-from ampel.struct.T3Store import T3Store
 
 
 # get the science records for the catalog match
@@ -57,9 +57,7 @@ class RapidBase(AbsPhotoT3Unit):
     # List of T2 unit names which should be collected for reaction
     t2info_from: list[str] = []
 
-
     def post_init(self) -> None:
-
         self.name = "RapidBase"
         self.logger.info(f"Initialized T3 RapidBase instance {self.name}")
 
@@ -67,15 +65,15 @@ class RapidBase(AbsPhotoT3Unit):
         for k in self.__annotations__:
             self.logger.info(f"Using {k}={getattr(self, k)}")
 
-
-    def process(self, gen: Generator[TransientView, T3Send, None], t3s: None | T3Store = None) -> UBson | UnitResult:
+    def process(
+        self, gen: Generator[TransientView, T3Send, None], t3s: None | T3Store = None
+    ) -> UBson | UnitResult:
         """
         Loop through transients and check for TNS names and/or candidates to submit
         """
 
         # We will here loop through transients and react individually
         for tv in gen:
-
             transientinfo = self.collect_info(tv)
             self.logger.info("reacting", extra={"tranId": tv.id})
 
@@ -91,7 +89,6 @@ class RapidBase(AbsPhotoT3Unit):
 
         return None
 
-
     def react(
         self, tran_view: TransientView, info: None | dict[str, Any]
     ) -> tuple[bool, None | dict[str, Any]]:
@@ -102,29 +99,24 @@ class RapidBase(AbsPhotoT3Unit):
         raise NotImplementedError("No real reaction implemented in RapidBase")
         return self.test_react(tran_view, info)
 
-
     def test_react(
         self, tran_view: TransientView, info: None | dict[str, Any]
     ) -> tuple[bool, None | dict[str, Any]]:
-        """ Trigger a test slack report """
+        """Trigger a test slack report"""
 
         success = False
 
         if not self.slack_token:
             return False, None
 
-        from slack import WebClient
-        from slack.errors import SlackClientError
-        from slack.web.slack_response import SlackResponse
-
+        from slack_sdk import WebClient
+        from slack_sdk.errors import SlackClientError
+        from slack_sdk.web import SlackResponse
 
         sc = WebClient(self.slack_token.get())
         assert isinstance(tran_view.id, int)
         ztf_name = to_ztf_id(tran_view.id)
-        msg = "Ampel RapidReact says: Look up %s. Provided info %s" % (
-            ztf_name,
-            info,
-        )
+        msg = f"Ampel RapidReact says: Look up {ztf_name}. Provided info {info}"
         api = sc.chat_postMessage(
             channel=self.slack_channel,
             text=msg,
@@ -134,8 +126,7 @@ class RapidBase(AbsPhotoT3Unit):
         assert isinstance(api, SlackResponse)
         if not api["ok"]:
             raise SlackClientError(api["error"])
-        else:
-            success = True
+        success = True
 
         description = "Sent SLACK msg"
         self.logger.info(description, extra={"channel": self.slack_channel})
@@ -144,7 +135,6 @@ class RapidBase(AbsPhotoT3Unit):
         jcontent = {"reaction": description, "success": success}
 
         return success, jcontent
-
 
     def collect_info(self, tran_view: TransientView) -> None | dict[str, Any]:
         """

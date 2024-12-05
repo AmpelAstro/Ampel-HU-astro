@@ -8,7 +8,7 @@
 # Last Modified By  : j. nordin <j.nordin@physik.hu-berlin.de>
 
 import enum
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 from astropy.coordinates import SkyCoord
 
@@ -23,7 +23,9 @@ class RcfFilter(AbsAlertFilter):
 
     min_ndet: int = 1  #: number of previous detections
     min_dist_to_sso: float  #: distance to nearest solar system object [arcsec]
-    min_gal_lat: float  #: minium distance from galactic plane. set to negative to disable cut.
+    min_gal_lat: (
+        float  #: minium distance from galactic plane. set to negative to disable cut.
+    )
     min_age: float  #: Age as calculated based on previous PP in alert
     max_ipac_age: float  #: Age as calculated based on alert keywords
     max_magpsf: float
@@ -68,7 +70,7 @@ class RcfFilter(AbsAlertFilter):
         is_bright_star = -11
         is_variable_star = -12
 
-    def _alert_has_keys(self, alert: Dict[str, Any]) -> bool:
+    def _alert_has_keys(self, alert: dict[str, Any]) -> bool:
         """
         check that given photopoint contains all the keys needed to filter
         """
@@ -81,15 +83,14 @@ class RcfFilter(AbsAlertFilter):
                 return False
         return True
 
-    def get_galactic_latitude(self, alert: Dict[str, Any]) -> float:
+    def get_galactic_latitude(self, alert: dict[str, Any]) -> float:
         """
         compute galactic latitude of the transient
         """
         coordinates = SkyCoord(alert["ra"], alert["dec"], unit="deg")
-        b = coordinates.galactic.b.deg
-        return b
+        return coordinates.galactic.b.deg
 
-    def previous_pointsource(self, alert: Dict[str, Any], age: float) -> bool:
+    def previous_pointsource(self, alert: dict[str, Any], age: float) -> bool:
         """
         Sets of cases under which a previous source likely existed.
 
@@ -101,13 +102,13 @@ class RcfFilter(AbsAlertFilter):
 
         if (
             alert["sgscore1"] > 0.76
-            and 0 < alert["distpsnr1"]
+            and alert["distpsnr1"] > 0
             and alert["distpsnr1"] < 2
         ):
             return True
         if (
             alert["sgscore1"] > 0.2
-            and 0 < alert["distpsnr1"]
+            and alert["distpsnr1"] > 0
             and alert["distpsnr1"] < 1
             and alert["srmag1"] > 0
         ):
@@ -119,7 +120,7 @@ class RcfFilter(AbsAlertFilter):
         # No clause fulfilled
         return False
 
-    def is_not_real(self, alert: Dict[str, Any], age: float) -> bool:
+    def is_not_real(self, alert: dict[str, Any], age: float) -> bool:
         """
         # Require a high RB score.
         # Generally requires >0.2, but is more stringent if close to a bright catalogued star.
@@ -159,7 +160,7 @@ class RcfFilter(AbsAlertFilter):
             return True
         if alert["rb"] < 0.35:
             if (
-                0 < alert["neargaia"]
+                alert["neargaia"] > 0
                 and alert["neargaia"] < 1.0
                 and alert["maggaia"] > 0
                 and alert["maggaia"] < 17.0
@@ -178,7 +179,7 @@ class RcfFilter(AbsAlertFilter):
                     return True
         if alert["rb"] < 0.45:
             if (
-                0 < alert["neargaia"]
+                alert["neargaia"] > 0
                 and alert["neargaia"] < 1.5
                 and alert["maggaia"] > 0
                 and alert["maggaia"] < 15.5
@@ -198,14 +199,14 @@ class RcfFilter(AbsAlertFilter):
 
         if alert["drb"] < 0.5:
             if (
-                0 < alert["distpsnr1"]
+                alert["distpsnr1"] > 0
                 and alert["distpsnr1"] < 3.0
                 and ps1mag < 16
                 and age > 90
             ):
                 return True
             if (
-                0 < alert["distpsnr1"]
+                alert["distpsnr1"] > 0
                 and alert["distpsnr1"] < 1.1
                 and ps1mag < 18
                 and age > 90
@@ -214,14 +215,14 @@ class RcfFilter(AbsAlertFilter):
 
         if alert["drb"] < 0.8:
             if (
-                0 < alert["distpsnr1"]
+                alert["distpsnr1"] > 0
                 and alert["distpsnr1"] < 1.5
                 and ps1mag < 15.5
                 and age > 90
             ):
                 return True
             if (
-                0 < alert["distpsnr1"]
+                alert["distpsnr1"] > 0
                 and alert["distpsnr1"] < 0.8
                 and ps1mag < 17.5
                 and age > 90
@@ -231,7 +232,7 @@ class RcfFilter(AbsAlertFilter):
         # Passed tests
         return False
 
-    def is_bright_star(self, alert: Dict[str, Any], age: float) -> bool:
+    def is_bright_star(self, alert: dict[str, Any], age: float) -> bool:
         """
         # Could this be residuals from a bright star?
         * Rejected as a bright star if any of:
@@ -242,9 +243,9 @@ class RcfFilter(AbsAlertFilter):
         """
 
         if (
-            0 < alert["neargaiabright"]
+            alert["neargaiabright"] > 0
             and alert["neargaiabright"] < 20
-            and 0 < alert["maggaiabright"]
+            and alert["maggaiabright"] > 0
             and alert["maggaiabright"] < 12
         ):
             return True
@@ -252,9 +253,9 @@ class RcfFilter(AbsAlertFilter):
         for d in ["1", "2", "3"]:
             for f in ["r", "i", "z"]:
                 if (
-                    0 < alert[f"distpsnr{d}"]
+                    alert[f"distpsnr{d}"] > 0
                     and alert[f"distpsnr{d}"] < 20
-                    and 0 < alert[f"s{f}mag{d}"]
+                    and alert[f"s{f}mag{d}"] > 0
                     and alert[f"s{f}mag{d}"] < 14
                     and alert[f"sgscore{d}"] > 0.9
                 ):
@@ -264,7 +265,7 @@ class RcfFilter(AbsAlertFilter):
         return False
 
     def is_variable_star(
-        self, alert: Dict[str, Any], age: float, m_peak: float, bright_detections: int
+        self, alert: dict[str, Any], age: float, m_peak: float, bright_detections: int
     ) -> bool:
         """
         Rejected as a variable source if any of:
@@ -288,46 +289,42 @@ class RcfFilter(AbsAlertFilter):
         if ps1maxmag <= 0:
             ps1maxmag = 99
 
-        if m_peak == alert["magpsf"]:
-            is_at_peak = True
-        else:
-            is_at_peak = False
+        is_at_peak = m_peak == alert["magpsf"]
 
         if (
             (age > 90 and bright_detections > 2)
             or (age > 365 and bright_detections > 1)
         ) and not (is_at_peak and alert["magpsf"] < 18.5):
             if (
-                0 < alert["magnr"]
+                alert["magnr"] > 0
                 and alert["magnr"] < 19.5
-                and 0 < alert["distnr"]
+                and alert["distnr"] > 0
                 and alert["distnr"] < 0.4
             ):
                 return True
             if (
-                0 < alert["magnr"]
+                alert["magnr"] > 0
                 and alert["magnr"] < 17.5
-                and 0 < alert["distnr"]
+                and alert["distnr"] > 0
                 and alert["distnr"] < 0.8
             ):
                 return True
             if (
-                0 < alert["magnr"]
+                alert["magnr"] > 0
                 and alert["magnr"] < 15.5
-                and 0 < alert["distnr"]
+                and alert["distnr"] > 0
                 and alert["distnr"] < 1.2
             ):
                 return True
 
-        if 0 < alert["maggaia"] and 0 < alert["neargaia"]:
+        if alert["maggaia"] > 0 and alert["neargaia"] > 0:
             if alert["neargaia"] < 0.35:
                 if age > 30 and alert["maggaia"] < 17:
                     return True
                 if age > 300 and alert["maggaia"] < 19 and alert["magpsf"] > 18.5:
                     return True
-            if alert["neargaia"] < 0.20:
-                if age > 90 and alert["maggaia"] < 18:
-                    return True
+            if alert["neargaia"] < 0.20 and age > 90 and alert["maggaia"] < 18:
+                return True
 
         if (
             alert["sgscore1"] > 0.25
@@ -345,20 +342,20 @@ class RcfFilter(AbsAlertFilter):
         ):
             return True
 
-        if (
+        if (  # noqa: SIM103
             age > 90
-            and 0 < alert["distnr"]  # shouldn't this be distnr?  was distnbr
+            and alert["distnr"] > 0  # shouldn't this be distnr?  was distnbr
             and alert["distnr"] < 0.5
             and not is_at_peak
+            and alert["magnr"] > 0
+            and alert["magnr"] < (alert["magpsf"] - 1)
         ):
-            if 0 < alert["magnr"] and alert["magnr"] < (alert["magpsf"] - 1):
-                return True
+            return True
 
         # Passed tests
         return False
 
     def process(self, alert: AmpelAlertProtocol) -> None | bool | int:
-
         # BASE REQUIREMENTS
 
         codes = self.RejectionCode
@@ -395,16 +392,18 @@ class RcfFilter(AbsAlertFilter):
             return codes.min_ssdistnr
 
         # find first detection date (with pos. detection)
-        jd_first_pps = 10 ** 30
+        jd_first_pps = 10**30
         m_peak = 100
         bright_detections = 0
         for al in alert.datapoints:
-            if not 'isdiffpos' in al.keys() or al["isdiffpos"] == "f" or al["isdiffpos"] == "0":
+            if (
+                "isdiffpos" not in al
+                or al["isdiffpos"] == "f"
+                or al["isdiffpos"] == "0"
+            ):
                 continue
-            if al["jd"] < jd_first_pps:
-                jd_first_pps = al["jd"]
-            if al["magpsf"] < m_peak:
-                m_peak = al["magpsf"]
+            jd_first_pps = min(al["jd"], jd_first_pps)
+            m_peak = min(al["magpsf"], m_peak)
             if al["magpsf"] < self.max_magpsf:
                 bright_detections += 1
 
@@ -412,8 +411,7 @@ class RcfFilter(AbsAlertFilter):
         age = latest["jd"] - latest["jdstarthist"]
 
         self.logger.debug(
-            "%s age %s m now %.2f m peak %.2f nbr previous bright %s"
-            % (alert.id, age, latest["magpsf"], m_peak, bright_detections),
+            f"{alert.id} age {age} m now {latest['magpsf']:.2f} m peak {m_peak:.2f} nbr previous bright {bright_detections}",
             extra={"age": age},
         )
         if age < self.min_age:
@@ -428,8 +426,7 @@ class RcfFilter(AbsAlertFilter):
                     return codes.max_ipac_age
             except KeyError:
                 self.logger.debug(
-                    "%s No jd end or start alert keywords. Letting through."
-                    % (alert.id)
+                    f"{alert.id} No jd end or start alert keywords. Letting through."
                 )
 
         # SEARCH POINT SOURCE UNDERNEATH

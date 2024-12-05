@@ -7,30 +7,25 @@
 # Last Modified Date:  2.12.2021
 # Last Modified By:    jn <jnordin@physik.hu-berlin.de>
 
-from typing import Any, ClassVar, Literal
 from functools import cached_property
-from ampel.types import UBson
+from typing import Any, ClassVar, Literal
 
-from extcats import CatalogQuery
-from pymongo import MongoClient
-from pymongo.errors import AutoReconnect
 import backoff
-
-
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
+from extcats import CatalogQuery
 from extcats.catquery_utils import get_closest, get_distances
 from numpy import asarray, degrees
+from pymongo import MongoClient
+from pymongo.errors import AutoReconnect
 
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.content.DataPoint import DataPoint
 from ampel.enum.DocumentCode import DocumentCode
-from ampel.struct.UnitResult import UnitResult
-
 from ampel.model.DPSelection import DPSelection
-
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
 from ampel.ztf.t2.T2CatalogMatch import CatalogModel
-
 
 
 class ExtcatsUnit:
@@ -38,7 +33,7 @@ class ExtcatsUnit:
     Interface to standard extcats
     """
 
-#    require = ("extcats",)
+    #    require = ("extcats",)
     extcat_path: None | str = None
 
     max_query_time: float = 300
@@ -46,10 +41,12 @@ class ExtcatsUnit:
     @cached_property
     def catq_client(self):
         # As this is for local use we assume authorization is not needed
-        #return MongoClient(self.resource["extcats"], **self.extcats.auth.get())
+        # return MongoClient(self.resource["extcats"], **self.extcats.auth.get())
         return MongoClient(self.extcat_path)
 
-    def get_extcats_query(self, catalog, logger, ra_key="ra", dec_key="dec", *args, **kwargs):
+    def get_extcats_query(
+        self, catalog, logger, ra_key="ra", dec_key="dec", *args, **kwargs
+    ):
         q = CatalogQuery.CatalogQuery(
             catalog,
             *args,
@@ -65,18 +62,15 @@ class ExtcatsUnit:
             logger=logger,
             max_time=self.max_query_time,
         )
-        for method in 'binaryserach', 'findclosest', 'findwithin':
-            setattr(
-                q,
-                method,
-                decorate(getattr(q, method))
-            )
+        for method in "binaryserach", "findclosest", "findwithin":
+            setattr(q, method, decorate(getattr(q, method)))
         return q
 
 
 class ExtcatsCatalogModel(CatalogModel):
-    catq_kwargs: dict[str,Any] = {}
+    catq_kwargs: dict[str, Any] = {}
     use: Literal["extcats"]
+
 
 class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
     """
@@ -91,7 +85,9 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
     """
 
     # run only on first datapoint by default
-    eligible: ClassVar[DPSelection] = DPSelection(filter='PPSFilter', sort='jd', select='first')
+    eligible: ClassVar[DPSelection] = DPSelection(
+        filter="PPSFilter", sort="jd", select="first"
+    )
 
     # Each value specifies a catalog in extcats or catsHTM format and the query parameters
     catalogs: dict[str, ExtcatsCatalogModel]
@@ -102,10 +98,7 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
     # Extcat config from context. Could add auhtorization
     require = ("extcats",)
 
-
-
     def post_init(self):
-
         # Select extcat
         assert self.resource
         self.extcat_path = self.resource["extcats"]
@@ -157,11 +150,8 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
         # initialize the catalog quer(ies). Use instance variable to aviod duplicates
         out_dict: dict[str, Any] = {}
         for catalog, cat_opts in self.catalogs.items():
-
             src = None
-            self.logger.debug(
-                f"Loading catalog {catalog} using options: {str(cat_opts)}"
-            )
+            self.logger.debug(f"Loading catalog {catalog} using options: {cat_opts!s}")
             # find out how ra/dec are called in the catalog
             catq_kwargs = cat_opts.catq_kwargs
             if catq_kwargs is None:
@@ -172,10 +162,8 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
                     catq_kwargs.get("dec_key", "dec"),
                 )
 
-
             # how do you want to support the catalog?
             if cat_opts.use == "extcats":
-
                 # get the catalog query object and do the query
                 catq = self.init_extcats_query(catalog, **cat_opts.catq_kwargs)
 
@@ -211,7 +199,6 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
                         src["dist2transient"] = dist
 
             elif cat_opts.use == "catsHTM":
-
                 # catshtm needs coordinates in radians
                 transient_coords = SkyCoord(transient_ra, transient_dec, unit="deg")
                 srcs, colnames, colunits = self.catshtm.cone_search(
@@ -221,8 +208,7 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
                     cat_opts.rs_arcsec,
                 )
 
-                if len(srcs) > 0:   # JN: Always true if at least one match is done?
-
+                if len(srcs) > 0:  # JN: Always true if at least one match is done?
                     # format to astropy Table
                     srcs_tab = Table(asarray(srcs), names=colnames)
 
@@ -275,14 +261,10 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
                 # Always include dist2transient
                 keys_to_append.add("dist2transient")
 
-
-
                 out_dict[catalog] = []
-
 
                 # Can skip full loop if we know there are no errors or weird formats?
                 for one_src in src:
-
                     to_add = {}
                     for field in keys_to_append:
                         try:

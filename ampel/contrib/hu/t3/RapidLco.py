@@ -7,8 +7,10 @@
 # Last Modified Date:  20.08.2020
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
-import datetime, requests
-from typing import Any, Tuple
+import datetime
+from typing import Any
+
+import requests
 
 from ampel.contrib.hu.t3.RapidBase import RapidBase
 from ampel.secret.NamedSecret import NamedSecret
@@ -23,7 +25,7 @@ class RapidLco(RapidBase):
     """
 
     # LCO trigger info
-    lco_api: NamedSecret[str] = NamedSecret(label="lco/jnordin")
+    lco_api: NamedSecret[str] = NamedSecret[str](label="lco/jnordin")
     # A dict of LCO API triggers to be sent for each SN that fulfills all
     # criteria. Assumed to have the following key content:
     # 'trigger_name': {'start_delay':X (days), 'end_delay':Y (days), 'api_form':Z}
@@ -170,7 +172,6 @@ class RapidLco(RapidBase):
         },
     }
 
-
     def react(
         self, tran_view: TransientView, info: None | dict[str, Any]
     ) -> tuple[bool, dict[str, Any]]:
@@ -186,11 +187,11 @@ class RapidLco(RapidBase):
         # Look for coordinates in the T2 info dicts.
         # Assuming ra and dec exists in there
         ra, dec = None, None
-        for t2unit, t2info in info.items():
-            if 'ra' in t2info.keys():
-                ra = t2info['ra']
-            if 'dec' in t2info.keys():
-                dec = t2info['dec']
+        for t2info in info.values():
+            if "ra" in t2info:
+                ra = t2info["ra"]
+            if "dec" in t2info:
+                dec = t2info["dec"]
         if ra is None or dec is None:
             # Look at the response
             self.logger.info(
@@ -200,35 +201,33 @@ class RapidLco(RapidBase):
                 },
             )
 
-
         # Step through all LCO submit forms
         success = True  # Will be set to false if any submit fails
         submitted = []
         responses = []
 
         for submit_name, submit_info in self.lco_payload.items():
-
             # Create submit dictionary
             react_dict = recursive_unfreeze(submit_info["api_form"])
 
             # Update with information
             react_dict["name"] = submit_name + "_" + transient_name
-            react_dict["requests"][0]["configurations"][0]["target"][
-                "name"
-            ] = transient_name
+            react_dict["requests"][0]["configurations"][0]["target"]["name"] = (
+                transient_name
+            )
             react_dict["requests"][0]["configurations"][0]["target"]["ra"] = str(ra)
             react_dict["requests"][0]["configurations"][0]["target"]["dec"] = str(dec)
             # Some keys are not necessarily there
-            timenow = datetime.datetime.utcnow()
-            if "start" in react_dict["requests"][0]["windows"][0].keys():
+            timenow = datetime.datetime.now(tz=datetime.timezone.utc)
+            if "start" in react_dict["requests"][0]["windows"][0]:
                 dtime = datetime.timedelta(days=submit_info["start_delay"])
                 react_dict["requests"][0]["windows"][0]["start"] = "%s" % (
-                    (timenow + dtime)
+                    timenow + dtime
                 )
-            if "end" in react_dict["requests"][0]["windows"][0].keys():
+            if "end" in react_dict["requests"][0]["windows"][0]:
                 dtime = datetime.timedelta(days=submit_info["end_delay"])
                 react_dict["requests"][0]["windows"][0]["end"] = "%s" % (
-                    (timenow + dtime)
+                    timenow + dtime
                 )
 
             self.logger.debug(
@@ -238,14 +237,14 @@ class RapidLco(RapidBase):
             # Make a test to validate
             testreply = requests.post(
                 "https://observe.lco.global/api/requestgroups/validate/",
-                headers={"Authorization": "Token {}".format(self.lco_api.get())},
+                headers={"Authorization": f"Token {self.lco_api.get()}"},
                 json=react_dict,
             )
 
             # Abort if we have errors
             if len(testreply.json()["errors"]) > 0:
                 self.logger.info(
-                    "Validating LCO trigger fails for for %s" % (transient_name),
+                    f"Validating LCO trigger fails for for {transient_name}",
                     extra={"target": transient_name, "react_dict": react_dict},
                 )
                 success = False
@@ -254,7 +253,7 @@ class RapidLco(RapidBase):
             # Submit full trigger
             response = requests.post(
                 "https://observe.lco.global/api/requestgroups/",
-                headers={"Authorization": "Token {}".format(self.lco_api.get())},
+                headers={"Authorization": f"Token {self.lco_api.get()}"},
                 json=react_dict,
             )
 
@@ -263,7 +262,7 @@ class RapidLco(RapidBase):
                 response.raise_for_status()
             except requests.exceptions.HTTPError:
                 self.logger.info(
-                    "Submit LCO fails for %s" % (transient_name),
+                    f"Submit LCO fails for {transient_name}",
                     extra={
                         "target": transient_name,
                         "react_dict": react_dict,
@@ -274,7 +273,7 @@ class RapidLco(RapidBase):
 
             # Look at the response
             self.logger.info(
-                "Submit LCO succeeds for %s" % (transient_name),
+                f"Submit LCO succeeds for {transient_name}",
                 extra={
                     "target": transient_name,
                     "react_dict": react_dict,

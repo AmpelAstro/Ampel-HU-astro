@@ -1,0 +1,72 @@
+name: timing
+
+mongo:
+  prefix: timing
+  reset: true
+
+channel:
+- name: timing
+  access: [ZTF, ZTF_PUB, ZTF_PRIV]
+  policy: []
+
+task:
+
+- title: HealpixToAlertToken
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3PlainUnitExecutor
+        config:
+          target:
+            unit: HealpixTokenGenerator
+            config:
+              pvalue_limit: 0.8 # results in around 290 alerts
+              chunk_size: 2000
+              map_name: "S200115j.fits.gz,0" 
+              map_url: https://gracedb.ligo.org/api/superevents/S200115j/files/LALInference.fits.gz,0
+              map_dir: './tmp'
+              # date_str: "2022-01-15" # 2020-02-13
+              delta_time: 3
+              archive_token:
+                label: ztf/archive/token
+
+- title: ProcessAlerts
+  unit: HealpixTokenConsumer
+  config:
+    map_name: "S200115j.fits.gz,0"
+    map_dir: "./tmp"
+    iter_max: 1000000
+    supplier:
+      unit: ZiAlertSupplier
+      config:
+        deserialize: null
+        loader:
+          unit: ZTFArchiveAlertLoader
+          config:
+            resource_name: "S200115j.fits.gz,0_token"
+    shaper: ZiDataPointShaper
+    directives:
+    - channel: timing
+      filter:
+        config:
+          passing_rate: 0
+        unit: RandFilter
+      ingest:
+        mux:
+          insert:
+            point_t2:
+            - config: 
+                test_parameter: 1
+              unit: DemoPointT2Unit
+          unit: ZiArchiveMuxer
+          config:
+            future_days: 3.
+            history_days: 50
+              
+- title: Run T2s
+  unit: T2Worker
+  config:
+    send_beacon: false
+    raise_exc: true
+

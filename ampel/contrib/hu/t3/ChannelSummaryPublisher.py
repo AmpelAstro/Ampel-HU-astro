@@ -7,21 +7,24 @@
 # Last Modified Date:  16.12.2020
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
-import datetime, backoff, requests
+import datetime
+from collections.abc import Generator
 from io import BytesIO, StringIO
+from typing import Any
+
+import backoff
+import requests
 from astropy.time import Time
 from pytz import timezone
 from requests.auth import HTTPBasicAuth
-from typing import Any
-from collections.abc import Generator
 
-from ampel.types import ChannelId, UBson, T3Send
-from ampel.struct.T3Store import T3Store
+from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
 from ampel.secret.NamedSecret import NamedSecret
+from ampel.struct.T3Store import T3Store
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import ChannelId, T3Send, UBson
 from ampel.util.json import AmpelEncoder, load
 from ampel.view.TransientView import TransientView
-from ampel.struct.UnitResult import UnitResult
-from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
 
 
 class ChannelSummaryPublisher(AbsPhotoT3Unit):
@@ -35,17 +38,14 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
 
     dry_run: bool = False
     base_url: str = "https://desycloud.desy.de/remote.php/webdav/AMPEL/ZTF"
-    auth: NamedSecret[list] = NamedSecret(label="desycloud/valery")
-
+    auth: NamedSecret[list] = NamedSecret[list](label="desycloud/valery")
 
     def post_init(self) -> None:
-
         self.summary: dict[str, Any] = {}
         self._jd_range = [float("inf"), -float("inf")]
         self._channels: set[ChannelId] = set()
         self.session = requests.Session()
         self.session.auth = HTTPBasicAuth(*self.auth.get())
-
 
     def extract_from_transient_view(
         self, tran_view: TransientView
@@ -73,15 +73,14 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
             assert isinstance(summary, dict)
             out.update(summary)
             last_detection = summary["last_detection"]
-            if last_detection < self._jd_range[0]:
-                self._jd_range[0] = last_detection
-            if last_detection > self._jd_range[1]:
-                self._jd_range[1] = last_detection
+            self._jd_range[0] = min(last_detection, self._jd_range[0])
+            self._jd_range[1] = max(last_detection, self._jd_range[1])
 
         return out
 
-
-    def process(self, gen: Generator[TransientView, T3Send, None], t3s: None | T3Store = None) -> UBson | UnitResult:
+    def process(
+        self, gen: Generator[TransientView, T3Send, None], t3s: None | T3Store = None
+    ) -> UBson | UnitResult:
         """
         load the stats from the alerts
         """
@@ -99,18 +98,17 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
         self.done()
         return None
 
-
     @backoff.on_exception(
         backoff.expo,
         (TimeoutError, requests.exceptions.HTTPError),
-        giveup=lambda exc: isinstance(exc, requests.exceptions.HTTPError) and
-        exc.response.status_code not in {400, 403, 405, 423, 500}
+        giveup=lambda exc: isinstance(exc, requests.exceptions.HTTPError)
+        and exc.response.status_code not in {400, 403, 405, 423, 500},
     )
     def done(self) -> None:
         """"""
         if len(self._channels) == 0:
             return
-        elif len(self._channels) > 1:
+        if len(self._channels) > 1:
             raise ValueError(
                 f"Got multiple channels ({list(self._channels)}) in summary"
             )
@@ -124,7 +122,7 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
             timestamp -= datetime.timedelta(days=1)
         filename = timestamp.strftime("channel-summary-%Y%m%d.json")
 
-        channel = list(self._channels)[0]
+        channel = next(iter(self._channels))
         basedir = f"{self.base_url}/{channel}"
         rep = self.session.head(basedir)
         if not (rep.ok or self.dry_run):
@@ -141,11 +139,9 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
         outfile = StringIO()
         outfile.write(AmpelEncoder(lossy=True).encode(self.summary))
         outfile.write("\n")
-        mb = len(outfile.getvalue().encode()) / 2.0 ** 20
-        self.logger.info(
-            "{}: {} transients {:.1f} MB".format(filename, len(self.summary), mb)
-        )
+        mb = len(outfile.getvalue().encode()) / 2.0**20
+        self.logger.info(f"{filename}: {len(self.summary)} transients {mb:.1f} MB")
         if not self.dry_run:
             self.session.put(
-                "{}/{}".format(basedir, filename), data=outfile.getvalue()
+                f"{basedir}/{filename}", data=outfile.getvalue()
             ).raise_for_status()

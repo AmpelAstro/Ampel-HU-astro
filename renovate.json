@@ -1,6 +1,19 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "local>AmpelProject/renovate-config"
+    "github>AmpelProject/renovate-config",
+    "github>AmpelProject/renovate-config//regexManagers/githubActionsVersions",
+    "github>AmpelProject/renovate-config//regexManagers/precommitVersions"
+  ],
+  "baseBranches": [
+    "main",
+    "stable/v0.8"
+  ],
+  "packageRules": [
+    {
+      "allowedVersions": "<0.11",
+      "matchPackageNames": [
+        "/^ampel-.*/"
+      ]
+    }
   ]
 }

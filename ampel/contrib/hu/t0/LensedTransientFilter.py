@@ -9,8 +9,8 @@
 
 from ampel.ztf.base.CatalogMatchFilter import CatalogMatchFilter
 
-class LensedTransientFilter(CatalogMatchFilter):
 
+class LensedTransientFilter(CatalogMatchFilter):
     ClusListSearchRadius: float
     MasterlensSearchRadius: float
     CastleQSOSearchRadius: float

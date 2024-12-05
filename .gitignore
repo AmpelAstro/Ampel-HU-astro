@@ -1,8 +1,16 @@
 /ampel_contrib_hu.egg-info/
 /ampel_hu_astro.egg-info/
 /build/
+/dist/
 __pycache__
 *.swp
 *.swo
 .DS_Store
 .mypy_cache
+*.gz
+*.png
+*.pdf
+*.html
+*.csv
+*.pt
+*.pkl

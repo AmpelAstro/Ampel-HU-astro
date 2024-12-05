@@ -7,50 +7,60 @@
 # Last Modified Date:  04.11.2019
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
-import asyncio
 import json
 import sys
+import time
 import traceback
-from functools import partial
-from typing import Dict
+from collections.abc import Generator
+from typing import Any
 
-import aiohttp
 import backoff
-from aiohttp import ClientSession, ClientTimeout
-from aiohttp.client_exceptions import (
-    ClientConnectionError,
-    ClientConnectorError,
-    ClientResponseError,
-    ServerDisconnectedError,
-)
+import requests
+from requests_toolbelt import MultipartEncoder
+from requests_toolbelt.sessions import BaseUrlSession
+
+from ampel.protocol.LoggerProtocol import LoggerProtocol
 
 from .TNSToken import TNSToken
 
 
-async def tns_post(
-    session: ClientSession,
-    semaphore: asyncio.Semaphore,
-    method: str,
-    token: TNSToken,
-    data: dict,
-    max_retries: int = 10,
-) -> dict:
-    """
-    post to TNS, asynchronously
-    """
-    async with semaphore:
+class TNSSession:
+    def __init__(self, base_url: str, token: TNSToken) -> None:
+        self._session = BaseUrlSession(base_url)
+        self._session.headers["User-Agent"] = "tns_marker" + json.dumps(
+            {"tns_id": token.id, "name": token.name, "type": "bot"}
+        )
+        self._token = token
+
+    def __call__(
+        self,
+        method: str,
+        data: dict | int,
+        payload_label: str = "data",
+        max_retries: int = 10,
+    ) -> dict[str, Any]:
+        """
+        post to TNS
+        """
+
+        m = MultipartEncoder(
+            fields={
+                "api_key": (
+                    None,
+                    self._token.api_key.encode(),
+                    "text/plain; charset=utf-8",
+                ),
+                payload_label: (None, json.dumps(data), "application/json"),
+            }
+        )
+
         for _ in range(max_retries):
-            with aiohttp.MultipartWriter("form-data") as mpwriter:
-                p: aiohttp.Payload = aiohttp.StringPayload(token.api_key)
-                p.set_content_disposition("form-data", name="api_key")
-                mpwriter.append(p)
-                p = aiohttp.JsonPayload(data)
-                p.set_content_disposition("form-data", name="data")
-                mpwriter.append(p)
-                resp = await session.post(
-                    "https://www.wis-tns.org/api/" + method, data=mpwriter
-                )
-            if resp.status == 429:
+            resp = self._session.post(
+                f"https://www.wis-tns.org/api/{method}",
+                data=m,
+                headers={"content-type": m.content_type},
+            )
+            if resp.status_code == 429:
                 wait = max(
                     (
                         int(resp.headers.get("x-cone-rate-limit-reset", 0))
@@ -60,39 +70,44 @@ async def tns_post(
                         1,
                     )
                 )
-                await asyncio.sleep(wait)
+                time.sleep(wait)
                 continue
-            else:
+            else:  # noqa: RET507
                 break
         resp.raise_for_status()
-        return await resp.json()
+        return resp.json()
 
 
 class TNSClient:
-    def __init__(self, token: TNSToken, timeout, maxParallelRequests, logger):
+    def __init__(
+        self,
+        token: TNSToken,
+        timeout: float,
+        maxParallelRequests: int,
+        logger: LoggerProtocol,
+    ) -> None:
         self.token = token
-        self.maxParallelRequests = maxParallelRequests
         self.logger = logger
+
+        session = TNSSession("https://www.wis-tns.org/api/", self.token)
         # robustify tns_post
-        self.tns_post = backoff.on_exception(
+        self.request = backoff.on_exception(
             backoff.expo,
-            (
-                TimeoutError,
-                ClientResponseError,
-                ClientConnectorError,
-                ClientConnectionError,
-                ServerDisconnectedError,
-            ),
+            requests.exceptions.RequestException,
             logger=None,
             giveup=self.is_permanent_error,
             on_giveup=self._on_giveup,
             on_backoff=self._on_backoff,
             max_time=timeout,
-        )(tns_post)
+        )(session.__call__)
 
     def _on_backoff(self, details):
         exc_typ, exc, _ = sys.exc_info()
-        err = traceback.format_exception_only(exc_typ, exc)[-1].rstrip("\n") if exc else None
+        err = (
+            traceback.format_exception_only(exc_typ, exc)[-1].rstrip("\n")
+            if exc
+            else None
+        )
         self.logger.warn(
             "backoff",
             extra={"exc": err, "wait": details["wait"], "tries": details["tries"]},
@@ -100,45 +115,43 @@ class TNSClient:
 
     def _on_giveup(self, details):
         exc_typ, exc, _ = sys.exc_info()
-        err = traceback.format_exception_only(exc_typ, exc)[-1].rstrip("\n") if exc else None
+        err = (
+            traceback.format_exception_only(exc_typ, exc)[-1].rstrip("\n")
+            if exc
+            else None
+        )
         self.logger.warn("gave up", extra={"exc": err, "tries": details["tries"]})
 
     @staticmethod
-    def is_permanent_error(exc):
-        if isinstance(exc, ClientResponseError):
-            return exc.code not in {500, 429}
-        else:
-            return False
+    def is_permanent_error(exc: Exception) -> bool:
+        if isinstance(exc, requests.exceptions.HTTPError):
+            return exc.response.status_code not in {500, 429, 404}
+        return False
 
-    async def search(self, exclude=set(), **params):
-        semaphore = asyncio.Semaphore(self.maxParallelRequests)
-        async with ClientSession(
-            headers={
-                "User-Agent": "tns_marker"
-                + json.dumps(
-                    {"tns_id": self.token.id, "name": self.token.name, "type": "bot"}
-                )
-            },
-        ) as session:
-            search = partial(
-                self.tns_post, session, semaphore, "get/search", self.token
-            )
-            get = partial(self.tns_post, session, semaphore, "get/object", self.token)
-            response = await search(params)
-            names = [item["objname"] for item in response["data"]["reply"]]
-            tasks = [
-                get({"objname": name})
-                for name in names
-                if not (exclude and name in exclude)
-            ]
-            self.logger.info(
-                "TNS search", extra={"params": params, "results": len(names)}
-            )
-            for fut in asyncio.as_completed(tasks):
-                item = await fut
-                yield item["data"]["reply"]
-
-    async def get(self, session, semaphore, objname):
-        return await self.tns_post(
-            session, semaphore, "get/object", self.token, {"objname": objname}
+    def search(
+        self,
+        exclude: None | set[str] = None,
+        **params: Any,
+    ) -> Generator[dict[str, Any], None, None]:
+        response = self.request("get/search", params)
+        names = [item["objname"] for item in response["data"]["reply"]]
+        self.logger.info("TNS search", extra={"params": params, "results": len(names)})
+        yield from (
+            self.request("get/object", {"objname": name})
+            for name in names
+            if not (exclude and name in exclude)
         )
+        return
+
+    def get(self, objname: str) -> dict[str, Any]:
+        return self.request("get/object", {"objname": objname})
+
+    def sendReport(self, report) -> None | int:
+        response = self.request("bulk-report", report)
+        if response["id_code"] == 200:
+            return response["data"]["report_id"]
+        return None
+
+    def reportReply(self, report_id: int) -> Any:
+        response = self.request("bulk-report-reply", report_id, "report_id")
+        return response["data"]["feedback"]

@@ -7,22 +7,21 @@
 # Last Modified Date:  13.12.2021
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
-from typing import Union
-import requests
-import backoff
-import pandas as pd
 import io
 from datetime import datetime
 
-from ampel.types import UBson
-from ampel.struct.UnitResult import UnitResult
-from ampel.view.LightCurve import LightCurve
-
-#from ampel.view.T2DocView import T2DocView
-from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
-from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper
-from ampel.enum.DocumentCode import DocumentCode
+import backoff
+import pandas as pd
+import requests
 from bson import tz_util
+
+# from ampel.view.T2DocView import T2DocView
+from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
+from ampel.enum.DocumentCode import DocumentCode
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
+from ampel.view.LightCurve import LightCurve
+from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper
 
 
 class T2MatchBTS(AbsLightCurveT2Unit):
@@ -35,8 +34,9 @@ class T2MatchBTS(AbsLightCurveT2Unit):
     """
 
     # Query used to get data from https://sites.astro.caltech.edu/ztf/bts/bts.php
-    bts_query: str = "https://sites.astro.caltech.edu/ztf/bts/explorer.php?f=s&format=csv"
-
+    bts_query: str = (
+        "https://sites.astro.caltech.edu/ztf/bts/explorer.php?f=s&format=csv"
+    )
 
     @backoff.on_exception(
         backoff.expo,
@@ -47,10 +47,11 @@ class T2MatchBTS(AbsLightCurveT2Unit):
     @backoff.on_exception(
         backoff.expo,
         requests.HTTPError,
-        giveup=lambda e: not isinstance(e, requests.HTTPError) or e.response.status_code not in {503, 429},
+        giveup=lambda e: not isinstance(e, requests.HTTPError)
+        or e.response.status_code not in {503, 429},
         max_time=60,
     )
-    def post_init(self)->None:
+    def post_init(self) -> None:
         """
         Obtain a synced copy of the BTS explorer output.
         """
@@ -62,13 +63,11 @@ class T2MatchBTS(AbsLightCurveT2Unit):
 
         if req.ok:
             df = pd.read_csv(io.StringIO(req.content.decode()))
-            df['synced_at'] = datetime.now(tz_util.utc).timestamp()
+            df["synced_at"] = datetime.now(tz_util.utc).timestamp()
             cols = df.columns
-            newcols = {col:'bts_'+col for col in cols}
+            newcols = {col: "bts_" + col for col in cols}
             df.rename(columns=newcols, inplace=True)
             self.bts_df = df
-
-
 
     def process(self, light_curve: LightCurve) -> UBson | UnitResult:
         """
@@ -102,12 +101,13 @@ class T2MatchBTS(AbsLightCurveT2Unit):
         if self.bts_df is None:
             return UnitResult(code=DocumentCode.T2_MISSING_INFO)
 
-
-        match = self.bts_df[self.bts_df['bts_ZTFID'] == ztf_name].to_dict(orient='index')
+        match = self.bts_df[self.bts_df["bts_ZTFID"] == ztf_name].to_dict(
+            orient="index"
+        )
 
         if len(match) == 0:
             # In case of now match, only returned timestamp when check was made
-            return {'bts_synced_at' : self.bts_df['bts_synced_at'][0]}
+            return {"bts_synced_at": self.bts_df["bts_synced_at"][0]}
 
         # Otherwise, return full match dictionary. Assuming unique BTS match, otherwise first entry is retrieved
-        return list(match.values())[0]
+        return next(iter(match.values()))

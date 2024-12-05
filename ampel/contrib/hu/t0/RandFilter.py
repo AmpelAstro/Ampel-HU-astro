@@ -8,15 +8,17 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from random import uniform
+
 from ampel.abstract.AbsAlertFilter import AbsAlertFilter
 
 
 class RandFilter(AbsAlertFilter):
+    passing_rate: float
 
-	passing_rate: float
+    def post_init(self):
+        self.logger.info(
+            f"RandFilter initialized with passing rate {self.passing_rate}"
+        )
 
-	def post_init(self):
-		self.logger.info(f"RandFilter initialized with passing rate {self.passing_rate}")
-
-	def process(self, alert) -> bool:
-		return uniform(0, 1) < self.passing_rate
+    def process(self, alert) -> bool:
+        return uniform(0, 1) < self.passing_rate

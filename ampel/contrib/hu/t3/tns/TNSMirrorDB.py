@@ -1,4 +1,5 @@
 import logging
+from contextlib import suppress
 
 import numpy
 from astropy.time import Time
@@ -40,10 +41,10 @@ class TNSMirrorDB:
         if not docs:
             return
 
-        ops = []
-        for doc in docs:
-            doc = self.apply_schema(doc)
-            ops.append(UpdateOne({"_id": doc["_id"]}, {"$set": doc}, upsert=True))
+        ops = [
+            UpdateOne({"_id": doc["_id"]}, {"$set": doc}, upsert=True)
+            for doc in map(self.apply_schema, docs)
+        ]
 
         try:
             result = self.collection.bulk_write(ops, ordered=False)
@@ -54,7 +55,7 @@ class TNSMirrorDB:
                     "modified": result.modified_count,
                 },
             )
-        except BulkWriteError as bwe:
+        except BulkWriteError:
             pass
 
     def get_names_for_location(self, ra, dec, radius):
@@ -77,10 +78,8 @@ class TNSMirrorDB:
         doc["pos"] = cls.geojson_key(doc.pop("radeg"), doc.pop("decdeg"))
         for k in ["ra", "dec"]:
             del doc[k]
-        try:
+        with suppress(ValueError):
             doc["discoverydate"] = Time(doc["discoverydate"]).datetime
-        except:
-            pass
         return doc
 
     @staticmethod
@@ -91,7 +90,6 @@ class TNSMirrorDB:
 
 
 if __name__ == "__main__":
-    import asyncio
     import logging
     from argparse import ArgumentParser
 
@@ -110,7 +108,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     client = TNSClient(
-        args.api_key, args.timeout, args.max_requests, logging.getLogger()
+        args.api_key,
+        args.timeout,
+        args.max_requests,
+        logging.getLogger(),  # type: ignore[arg-type]
     )
     db = TNSMirrorDB(args.mongo_uri, args.db)
     if args.no_update:
@@ -118,14 +119,10 @@ if __name__ == "__main__":
     else:
         existing = set()
 
-    async def run():
-        chunk = []
-        async for doc in client.search(exclude=existing, public_timestamp=args.since):
-            chunk.append(doc)
-            if len(chunk) >= 100:
-                db.add_sources(chunk)
-                del chunk[:]
-        db.add_sources(chunk)
-        del chunk[:]
-
-    asyncio.get_event_loop().run_until_complete(run())
+    chunk = []
+    for doc in client.search(exclude=existing, public_timestamp=args.since):
+        chunk.append(doc)
+        if len(chunk) >= 100:
+            db.add_sources(chunk)
+            del chunk[:]
+    db.add_sources(chunk)

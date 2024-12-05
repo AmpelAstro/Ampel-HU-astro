@@ -1,0 +1,506 @@
+name: ligo-kilonova
+parameters:
+- name: map_url_var
+  value: <<map_url>>
+- name: map_name_var
+  value: <<map_name>>
+- name: map_token_var
+  value: <<map_token>>
+- name: map_dir_var
+  value: ./
+- name: trigger_jd_var
+  value: 1234
+- name: export_fmt
+  value: csv
+- name: transienttable_path
+  value: ./TransientTable.csv
+
+mongo:
+  prefix: healpix
+  reset: true
+
+channel:
+- name: healpix
+  access: [ZTF, ZTF_PUB, ZTF_PRIV]
+  policy: []
+
+task:
+
+- title: token
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3PlainUnitExecutor
+        config:
+          target:
+            unit: HealpixTokenGenerator
+            config:
+              pvalue_limit: 0.9 
+              chunk_size: 2000
+              map_name: "{{ job.parameters.map_name_var }}" #S200115j.fits.gz,0
+              map_url: "{{ job.parameters.map_url_var }}"
+              map_dir: "{{ job.parameters.map_dir_var }}"
+              # date_str: "2022-01-15" # 2020-02-13
+              delta_time: 3
+              archive_token:
+                label: ztf/archive/token
+
+- title: alerts
+  unit: DynamicShaperAlertConsumer
+  config:
+    shaper_map:
+      map_name: healpix_map_name
+      healpix_info: "{{ job.parameters.map_name_var }}" # <<map_name>>
+    iter_max: 1000000
+    supplier:
+      unit: ZiAlertSupplier
+      config:
+        deserialize: null
+        loader:
+          unit: ZTFArchiveAlertLoader
+          config:
+            with_history: false
+            resource_name: "{{ job.parameters.map_token_var }}"
+    shaper: ZiGWDataPointShaper
+    directives:
+    - channel: healpix
+      filter:
+        config:
+          trigger_jd: "{{ job.parameters.trigger_jd_var }}"
+          map_dir: "{{ job.parameters.map_dir_var }}"
+          map_name: "{{ job.parameters.map_name_var }}"
+          gaia_excessnoise_sig_max: 999
+          gaia_plx_signif: 3
+          gaia_pm_signif: 3
+          gaia_rs: 10
+          gaia_veto_gmag_max: 20
+          gaia_veto_gmag_min: 9
+          min_ndet: 1
+          min_tspan: -1
+          max_tspan: 1
+          #min_archive_tspan: -99
+          max_archive_tspan: 0.1
+          min_drb: 0.3
+          min_gal_lat: 0
+          min_rb: 0.0
+          min_sso_dist: 20
+          ps1_confusion_rad: 3
+          ps1_confusion_sg_tol: 0.1
+          ps1_sgveto_rad: 1
+          ps1_sgveto_th: 0.8
+          max_fwhm: 5.5
+          max_elong: 2
+          max_magdiff: 1
+          max_nbad: 2
+        on_stock_match: bypass
+        unit: PredetectionFilter
+      ingest:
+        stock_t2:
+          - unit: T2PropagateStockInfo
+            config: &propagate_stock_info_config
+              prop_paths:
+                trigger_time:
+                - journal
+                - healpix
+                - trigger_time
+                prob_contour:
+                - journal
+                - healpix
+                - cumprob
+                healpix_map:
+                - journal
+                - healpix
+                - map_name
+                map_dist:
+                - journal
+                - healpix
+                - map_dist
+                map_dist_unc:
+                - journal
+                - healpix
+                - map_dist_unc
+        mux:
+          combine:
+          - state_t2:
+            - config: &healpixprob_config
+                map_name: "{{ job.parameters.map_name_var }}" # <<map_name>>
+                pvalue_limit: 0.9
+                tabulator:
+                  - unit: ZTFT2Tabulator
+              unit: T2HealpixProb
+            - config: &matchgrb_config
+                trigger_jd: "{{ job.parameters.trigger_jd_var }}"
+                map_dir: "{{ job.parameters.map_dir_var }}"
+                map_name: "{{ job.parameters.map_name_var }}"
+              unit: T2MatchGRB
+            - config: &risedecline_config
+                t_cadence: 3.
+                significant_bands: 
+                - 'ztfg'
+                - 'ztfr'
+                - 'ztfi'
+                tabulator:
+                - unit: ZTFT2Tabulator
+                  config:              
+              unit: T2TabulatorRiseDecline
+            - config: &digest_redshift_config
+                max_redshift_category: 6
+                t2_dependency:
+                - config: &catalog_match_config
+                    catalogs:
+                      GLADEv23:
+                        keys_to_append:
+                        - z
+                        - dist
+                        - dist_err
+                        - flag1
+                        - flag2
+                        - flag3
+                        rs_arcsec: 10
+                        use: extcats
+                      NEDz:
+                        keys_to_append:
+                        - ObjType
+                        - Velocity
+                        - z
+                        rs_arcsec: 10.0
+                        use: catsHTM
+                      NEDz_extcats:
+                        keys_to_append:
+                        - ObjType
+                        - Velocity
+                        - z
+                        post_filter:
+                          z:
+                            $gte: 0.002
+                            $lte: 0.03
+                        pre_filter: null
+                        rs_arcsec: 20.0
+                        use: extcats
+                      SDSS_spec:
+                        keys_to_append:
+                        - z
+                        - bptclass
+                        - subclass
+                        rs_arcsec: 10.0
+                        use: extcats
+                      LSPhotoZZou:
+                        all: true
+                        keys_to_append:
+                        - photoz
+                        - ra
+                        - dec
+                        - e_photoz
+                        - specz
+                        - _6
+                        - logMassBest
+                        - logMassInf
+                        - logMassSup
+                        rs_arcsec: 30.0
+                        use: extcats
+                      twoMPZ:
+                        all: true
+                        keys_to_append:
+                        - zPhoto
+                        - ra
+                        - dec
+                        - zSpec
+                        rs_arcsec: 30.0
+                        use: extcats
+                      wiseScosPhotoz:
+                        all: true
+                        keys_to_append:
+                        - zPhoto_Corr
+                        - ra
+                        - dec
+                        - wiseID
+                        - w1mCorr
+                        - w2mCorr
+                        rs_arcsec: 30.0
+                        use: extcats
+                      PS1_photoz:
+                        keys_to_append:
+                        - raMean
+                        - decMean
+                        - z_phot
+                        - z_photErr
+                        - z_phot0
+                        - _2
+                        rs_arcsec: 10.
+                        use: extcats
+                        pre_filter: null
+                        post_filter: null
+                      CRTS_DR1:
+                        keys_to_append:
+                        - CSID
+                        - VarType
+                        rs_arcsec: 5.0
+                        use: extcats
+                        pre_filter: null
+                        post_filter: null
+                      milliquas:
+                        keys_to_append:
+                        - name
+                        - broad_type
+                        - redshift
+                        - qso_prob
+                        rs_arcsec: 1.5
+                        use: extcats
+                        pre_filter: null
+                        post_filter: null
+                      GAIADR2:
+                        keys_to_append:
+                        - Plx
+                        - ErrPlx
+                        rs_arcsec: 5.0
+                        use: catsHTM
+                        pre_filter: null
+                        post_filter: null
+                      SDSSDR10:
+                        keys_to_append:
+                        - type
+                        rs_arcsec: 1.5
+                        use: catsHTM
+                        pre_filter: null
+                        post_filter: null
+                      wise_color:
+                        keys_to_append:
+                        - W1mW2
+                        rs_arcsec: 6.0
+                        use: extcats
+                        pre_filter: null
+                        post_filter: null
+                      TNS:
+                        keys_to_append:
+                        - objname
+                        - name
+                        - redshift
+                        - type
+                        - discoverydate
+                        - source_group
+                        rs_arcsec: 3.0
+                        use: extcats
+                        pre_filter: null
+                        post_filter: null
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2CatalogMatch
+              unit: T2DigestRedshifts
+            - config: &possis_config
+                possis_models:
+                  bns_maurice_1:
+                    model_gen: bns_m3_3comp
+                    mej_dyn: 0.01
+                    mej_wind: 0.03
+                    phi: 30
+                    cos_theta: 0.1
+                  bns_maurice_2:
+                    model_gen: bns_m3_3comp
+                    mej_dyn: 0.005
+                    mej_wind: 0.09
+                    phi: 30
+                    cos_theta: 0.1
+                  bns_maurice_3:
+                    model_gen: bns_m3_3comp
+                    mej_dyn: 0.01
+                    mej_wind: 0.03
+                    phi: 30
+                    cos_theta: 0.9
+                  bns_maurice_4:
+                    model_gen: bns_m3_3comp
+                    mej_dyn: 0.005
+                    mej_wind: 0.09
+                    phi: 30
+                    cos_theta: 0.9
+                explosion_time_jd: TriggerTime
+                max_ampelz_group: 7
+                redshift_kind: T2DigestRedshifts
+                t2_dependency:
+                - config: *digest_redshift_config
+                  unit: T2DigestRedshifts
+                - unit: T2PropagateStockInfo
+                tabulator:
+                - unit: ZTFT2Tabulator
+              unit: T2RunPossis
+            - config: &kilonova_config
+                max_redshift: 0.2
+                min_ndet: 2
+                t2_dependency:
+                - config: *matchgrb_config
+                  unit: T2MatchGRB
+                - config: *digest_redshift_config
+                  unit: T2DigestRedshifts
+                - unit: T2PropagateStockInfo
+                  config: *propagate_stock_info_config
+                - unit: T2RunPossis
+                  config: *possis_config
+                - unit: T2CatalogMatch
+                  config: *catalog_match_config
+                - unit: T2HealpixProb
+                  config: *healpixprob_config
+                - unit: T2TabulatorRiseDecline
+                  config: *risedecline_config
+              unit: T2KilonovaEval
+            - config: &knstats_config
+                t2_dependency:
+                - config: *kilonova_config
+                  unit: T2KilonovaEval
+              unit: T2KilonovaStats
+            unit: ZiT1Combiner
+          insert:
+            point_t2:
+            - config: *catalog_match_config
+              ingest:
+                filter: PPSFilter
+                select: first
+                sort: jd
+              unit: T2CatalogMatch
+          unit: ZiArchiveMuxer  # chunk size?
+          config:
+            future_days: 3
+            history_days: 50      
+
+
+- title: t2
+  unit: T2Worker
+  config:
+    send_beacon: false
+    raise_exc: true
+
+
+- title: react
+  unit: T3Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T3ReviewUnitExecutor
+        config:
+          supply:
+            unit: T3DefaultBufferSupplier
+            config:
+              select:
+                unit: T3StockSelector
+                config:
+                  channel: healpix
+              load:
+                unit: T3SimpleDataLoader
+                config:
+                  directives:
+                    - STOCK
+                    - T1
+                    - T2DOC
+                    - DATAPOINT
+                  channel: healpix
+          stage:
+            unit: T3SimpleStager
+            config:
+              execute:
+                # - unit: TransientViewDumper
+                #   config:
+                #     desycloud_folder: O4
+                #     desycloud_filename: S200115j
+                - unit: PlotTransientLightcurves
+                  config:
+                    #pdf_path: candidates.pdf
+                    save_png: false
+                    include_cutouts: true
+                    #slack_channel: "#ztf_auto"
+                    #slack_token:
+                      #label: "slack/ztf_ia/jno"
+                    tabulator:
+                      - unit: ZTFT2Tabulator
+                - unit: TransientTablePublisher
+                  config:
+                    include_stock: true
+                    include_channels: true
+                    convert_stock_to: ztf
+                    fmt: "{{ job.parameters.export_fmt }}"
+                    local_path: ./
+                    move_files: false
+                    rename_files: true # REMEMBER TO CHANGE THIS FOR CLUSTER STUFF OR ARTIFACT BREAKS
+                    table_schema:
+                      T2KilonovaEval:
+                        'ampel_z':
+                          - ampel_z
+                        'ampel_z_precision':
+                          - ampel_z_precision
+                        'ampel_dist':
+                          - ampel_dist                       
+                        'possis_abspeak':
+                          - possis_abspeak
+                        'possis_chisq':
+                          - possis_chisq
+                        'possis_ndof':
+                          - possis_ndof
+                        'chisquares':
+                          - chisquares
+                        'grb_spatial':
+                          - grb_spatial
+                        'kilonovaness':
+                          - kilonovaness
+                        'rejects':
+                          - rejects
+                        'kilonovaness_dec':
+                          - kilonovaness_dec
+                        'z_kilonovaness':
+                          - z_kilonovaness
+                        'possis_kilonovaness':
+                          - possis_kilonovaness
+                        'lc_kilonovaness':
+                          - lc_kilonovaness
+                        'cat_kilonovaness':
+                          - cat_kilonovaness
+                        'dist_kilonovaness':
+                          - dist_kilonovaness
+                        'ampel_healpix_dist':
+                          - ampel_healpix_dist
+                        'distance_sigma_diff':
+                          - distance_sigma_diff
+                        'mag_sigma_fid_1':
+                          - mag_sigma_fid_1
+                        'mag_sigma_fid_2':
+                          - mag_sigma_fid_2
+                        'rise_decline':
+                          - rise_decline
+                    transient_table_schema:
+                      T2KilonovaStats:
+                        'gaus_percent':
+                          - gaus_percent
+                        'exp_kn': 
+                          - exp_kn
+                        'exp_kn_pls': 
+                          - exp_kn_pls
+                        'exp_kn_min': 
+                          - exp_kn_min
+                        'dist_range': 
+                          - dist_range
+                      T2MatchGRB:
+                        'grb_temporal':
+                          - temporal_grb
+                      T2HealpixProb:
+                        'map_area':
+                          - map_area
+                        'map_dist':
+                          - map_dist
+                        'map_dist_unc':
+                          - map_dist_unc
+                        'map_name':
+                          - map_name
+                        'trigger_time':
+                          - trigger_time
+                        'map_seed':
+                          - seed
+                      T2PropagateStockInfo:
+                        'trigger_time':
+                          - trigger_time
+                        'prob_contour':
+                          - prob_contour
+                        'healpix_map':
+                          - healpix_map
+  outputs:
+    artifacts:
+      - name: transienttable
+        path: "{{ job.parameters.transienttable_path }}"

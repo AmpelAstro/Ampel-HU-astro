@@ -7,16 +7,21 @@
 # Last Modified Date:  27.01.2021
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
+from collections.abc import Mapping, Sequence
+from typing import Any
+
 import numpy as np
 from astropy.coordinates import SkyCoord
-from typing import Any
-from collections.abc import Sequence
-from ampel.types import UBson
+
+# T2 importing info from T3. Restructure?
+from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
+from ampel.contrib.hu.t3.tns.tns_ampel_util import (
+    TNSFILTERID,
+)
 from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
 from ampel.view.LightCurve import LightCurve
 from ampel.view.T2DocView import T2DocView
-from ampel.contrib.hu.t3.ampel_tns import TNSFILTERID   # T2 importing info from T3. Restructure?
-from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
 
 
 class T2TNSEval(AbsTiedLightCurveT2Unit):
@@ -68,7 +73,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
     ps1_sgveto_sgth: float = 0.8
     # Minimal median RB.
     rb_minmed: float = 0.3
-    drb_minmed: float = 0.95   # if drb found!
+    drb_minmed: float = 0.95  # if drb found!
     # Try to reject likely CV through rejecting objects that quickly get very bright
     cut_fastrise: bool = True
     # Require each PP to have a magpsf lower than the diffmaglim
@@ -99,8 +104,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         "Observer": "Robot",
     }
 
-
-    def inspect_catalog(self, cat_res: dict[str, Any]) -> bool:
+    def inspect_catalog(self, cat_res: Mapping[str, Any]) -> bool:
         """
         Verify whether any catalog matching criteria prevents submission.
 
@@ -111,12 +115,11 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
             self.logger.debug("no T2CATALOGMATCH results")
             return False
 
-
         # check that you have positive match in all of the necessary cataslogs:
         for needed_cat in self.needed_catalogs:
             if not cat_res.get(needed_cat, False):
                 self.logger.debug(
-                    "no T2CATALOGMATCH results for %s" % needed_cat,
+                    f"no T2CATALOGMATCH results for {needed_cat}",
                     extra={"catalog_matches": cat_res},
                 )
                 return False
@@ -160,7 +163,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
 
         # cut away bright stars. TODO: this considers just the closest matches...
         # as well as fast moving stars
-        gaia_dr2 = cat_res.get("GAIADR2", None)
+        gaia_dr2 = cat_res.get("GAIADR2")
         if (
             gaia_dr2
             and gaia_dr2["Mag_G"] > 0
@@ -173,7 +176,6 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
 
         # congratulation catalog, you made it!
         return True
-
 
     def inspect_lc(self, lc: LightCurve) -> bool:
         """
@@ -233,13 +235,13 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
             last_ulim = sorted(ulims, key=lambda x: x["body"]["jd"])[-1]
             pps_after_ndet = (
                 lc.get_photopoints(
-                    filters=self.lc_filters
-                    + [
+                    filters=[
+                        *self.lc_filters,
                         {
                             "attribute": "jd",
                             "operator": ">=",
                             "value": last_ulim["body"]["jd"],
-                        }
+                        },
                     ]
                 )
                 or []
@@ -275,8 +277,10 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
 
         # cut on distance to closest solar system object
         # TODO: how to make this check: ('0.0' in list(phot["ssdistnr"])
-        ssdist = np.array([pp["body"]["ssdistnr"] for pp in pps if "ssdistnr" in pp['body']])
-        ssdist[ssdist == None] = -999
+        ssdist = np.array(
+            [pp["body"]["ssdistnr"] for pp in pps if "ssdistnr" in pp["body"]]
+        )
+        ssdist[ssdist == None] = -999  # noqa: E711
 
         close_to_sso = np.logical_and(ssdist < self.ssdistnr_max, ssdist > 0)
         if np.any(close_to_sso):
@@ -291,7 +295,7 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         # TODO: Evaluate whether we should use the filters, and do a check for sufficient number of datapoints remaining
         # distpsnr1, sgscore1 = zip(*lc.get_tuples('distpsnr1', 'sgscore1', filters=self.lc_filters))
         if tups := lc.get_tuples("distpsnr1", "sgscore1"):
-            distpsnr1, sgscore1 = zip(*tups)
+            distpsnr1, sgscore1 = zip(*tups, strict=False)
         else:
             return False
         is_ps1_star = np.logical_and(
@@ -311,36 +315,44 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
             return False
 
         # cut on median dRB score
-        drbs = [pp["body"]["drb"] for pp in pps if "drb" in pp["body"].keys()]
-        if len(drbs) > 0 and np.median(drbs) < self.drb_minmed:
+        drbs = [pp["body"]["drb"] for pp in pps if "drb" in pp["body"]]
+        if len(drbs) > 0 and np.median(drbs) < self.drb_minmed:  # noqa: SIM103
             return False
 
         # congratulation Lightcurve, you made it!
         return True
 
-    def get_catalog_remarks(self, lc: LightCurve, cat_res: dict[str, Any]) -> None | dict[str, Any]:
+    def get_catalog_remarks(
+        self, lc: LightCurve, cat_res: Mapping[str, Any]
+    ) -> None | dict[str, Any]:
         """
         Look through catalogs for remarks to be added to report.
         """
 
         # Start building dict with remarks
-        remarks : dict[str, Any] = {"remarks":""}
+        remarks: dict[str, Any] = {"remarks": ""}
 
         # Check redshift
         nedz = cat_res.get("NEDz", False)
         sdss_spec = cat_res.get("SDSS_spec", False)
         if sdss_spec:
-            remarks["remarks"] = remarks["remarks"] + "SDSS spec-z %.3f. "%(sdss_spec["z"])
+            remarks["remarks"] = (
+                remarks["remarks"] + f"SDSS spec-z {sdss_spec['z']:.3f}. "
+            )
         elif nedz:
-            remarks["remarks"] = remarks["remarks"] + "NED z %.3f. "%(nedz["z"])
+            remarks["remarks"] = remarks["remarks"] + f"NED z {nedz['z']:.3f}. "
 
         # tag AGNs
         milliquas = cat_res.get("milliquas", False)
         sdss_spec = cat_res.get("SDSS_spec", False)
-        if (milliquas and milliquas["redshift"] is not None and milliquas["redshift"] > 0) or (
-            sdss_spec and sdss_spec["bptclass"] in [4, 5]
-        ):
-            remarks["remarks"] = remarks["remarks"] + "Known SDSS and/or MILLIQUAS QSO/AGN. "
+        if (
+            milliquas
+            and milliquas["redshift"] is not None
+            and milliquas["redshift"] > 0
+        ) or (sdss_spec and sdss_spec["bptclass"] in [4, 5]):
+            remarks["remarks"] = (
+                remarks["remarks"] + "Known SDSS and/or MILLIQUAS QSO/AGN. "
+            )
             remarks["at_type"] = 3
 
         # tag nuclear
@@ -350,16 +362,14 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
             and sdss_dr10["type"] == 3
             and sdss_dr10["dist2transient"] < self.nuclear_dist
         ):
-            remarks["remarks"] = remarks["remarks"] + "Close to core of SDSS DR10 galaxy. "
+            remarks["remarks"] = (
+                remarks["remarks"] + "Close to core of SDSS DR10 galaxy. "
+            )
             remarks["at_type"] = 4
 
         # tag noisy gaia
-        if (
-            tups := lc.get_tuples(
-                "distpsnr1", "sgscore1", filters=self.lc_filters
-            )
-        ):
-            distpsnr1, sgscore1 = zip(*tups)
+        if tups := lc.get_tuples("distpsnr1", "sgscore1", filters=self.lc_filters):
+            distpsnr1, sgscore1 = zip(*tups, strict=False)
             galaxylike_ps1 = np.logical_and(
                 np.array(distpsnr1) < 1.5, np.array(sgscore1) < 0.5
             )
@@ -380,21 +390,22 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
                     not np.any(galaxylike_ps1)
                 )  # TODO: check the logic
             ):
-                remarks["remarks"] = remarks["remarks"] + "Significant noise in Gaia DR2 - variable star cannot be excluded. "
+                remarks["remarks"] = (
+                    remarks["remarks"]
+                    + "Significant noise in Gaia DR2 - variable star cannot be excluded. "
+                )
 
-        if len(remarks["remarks"])==0:
+        if len(remarks["remarks"]) == 0:
             return None
-        else:
-            return remarks
+        return remarks
 
-
-    def get_lightcurve_info(self,  lc: LightCurve) -> None | dict[str, Any]:
+    def get_lightcurve_info(self, lc: LightCurve) -> None | dict[str, Any]:
         """
         Collect the data needed for the atreport. Return None in case
         you have to skip this transient for some reason.
         """
 
-        if (pos := lc.get_pos(ret="mean", filters=self.lc_filters)):
+        if pos := lc.get_pos(ret="mean", filters=self.lc_filters):
             ra, dec = pos
         else:
             return None
@@ -433,32 +444,36 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         # now add info on photometric detections: consider only candidates which
         # have some consecutive detection after the last ulim
         if pps := lc.get_photopoints(
-            filters=self.lc_filters
-            + [{"attribute": "jd", "operator": ">=", "value": last_non_obs}]
+            filters=[
+                *self.lc_filters,
+                {"attribute": "jd", "operator": ">=", "value": last_non_obs},
+            ]
         ):
             # Lets create a few photometry points: TODO: should they be the latest or the first?
             atdict["photometry"] = {"photometry_group": {}}
-            atdict["discovery_datetime"] = 10 ** 30
+            atdict["discovery_datetime"] = 10**30
             for ipp, pp in enumerate(pps[: self.nphot_submit]):
                 photdict = {  # TODO: do we need to round the numerical values?
                     "obsdate": pp["body"]["jd"],
-                    "flux": float("{0:.2f}".format(pp["body"]["magpsf"])),
-                    "flux_error": float("{0:.2f}".format(pp["body"]["sigmapsf"])),
-                    "limiting_flux": float("{0:.2f}".format(pp["body"]["diffmaglim"])),
+                    "flux": float("{:.2f}".format(pp["body"]["magpsf"])),
+                    "flux_error": float("{:.2f}".format(pp["body"]["sigmapsf"])),
+                    "limiting_flux": float("{:.2f}".format(pp["body"]["diffmaglim"])),
                     "filter_value": TNSFILTERID.get(pp["body"]["fid"]),
                 }
-                if pp["body"]["jd"] < atdict["discovery_datetime"]:
-                    atdict["discovery_datetime"] = pp["body"]["jd"]
+                atdict["discovery_datetime"] = min(
+                    pp["body"]["jd"], atdict["discovery_datetime"]
+                )
                 photdict.update(self.ztf_tns_at)
                 atdict["photometry"]["photometry_group"][str(ipp)] = photdict
 
         return atdict
 
-
     # ==================== #
     # AMPEL T2 MANDATORY   #
     # ==================== #
-    def process(self, light_curve: LightCurve, t2_views: Sequence[T2DocView]) -> UBson | UnitResult:
+    def process(
+        self, light_curve: LightCurve, t2_views: Sequence[T2DocView]
+    ) -> UBson | UnitResult:
         """
 
         Evaluate whether a transient passes thresholds for submission to TNS.
@@ -483,24 +498,19 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         If needed by TNS, they need to be converted back at T3
         """
 
-        self.logger.debug('starting eval from %s'%(t2_views) )
-
-
+        self.logger.debug(f"starting eval from {t2_views}")
 
         # i. Check whether the lightcurve passes selection criteria
         if not self.inspect_lc(light_curve):
-            return { 'tns_candidate' : False, 'tns_eval' : 'Poor lightcurve.' }
-
+            return {"tns_candidate": False, "tns_eval": "Poor lightcurve."}
 
         # ii. Check the catalog matching criteria
         t2_cat_match = t2_views[0]
         assert t2_cat_match.unit in (dep.unit for dep in self.t2_dependency)
         catalog_result = t2_cat_match.get_payload()
-        assert isinstance(catalog_result, dict)
+        assert isinstance(catalog_result, Mapping)
         if not self.inspect_catalog(catalog_result):
-            return { 'tns_candidate' : False, 'tns_eval' : 'Catalog match rejection.' }
-
-
+            return {"tns_candidate": False, "tns_eval": "Catalog match rejection."}
 
         # iii. Collect information for submission
 
@@ -508,12 +518,13 @@ class T2TNSEval(AbsTiedLightCurveT2Unit):
         # to easier override selection method
         atdict = self.get_lightcurve_info(light_curve)
         if atdict is None:
-            return { 'tns_candidate' : False, 'tns_eval' : 'Passes criteria, fails in info collection.' }
+            return {
+                "tns_candidate": False,
+                "tns_eval": "Passes criteria, fails in info collection.",
+            }
 
         catremarks = self.get_catalog_remarks(light_curve, catalog_result)
         if catremarks is not None:
             atdict.update(catremarks)
 
-        t2result = { 'tns_candidate' : True, 'tns_eval' : 'Good', 'atdict':atdict }
-
-        return t2result
+        return {"tns_candidate": True, "tns_eval": "Good", "atdict": atdict}
