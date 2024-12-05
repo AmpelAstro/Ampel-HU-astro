@@ -9,4 +9,9 @@ repos:
     - id: ruff
       args: [--fix]
     - id: ruff-format
+- repo: https://github.com/python-poetry/poetry
+  # renovate: datasource=pypi depName=poetry versioning=pep440
+  rev: "1.8.4"
+  hooks: 
+    - id: poetry-check
 fail_fast: false
