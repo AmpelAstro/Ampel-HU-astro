@@ -65,7 +65,6 @@ light-curve = {version = "^0.9.0", optional = true}
 ampel-lsst = {version = ">=0.10.0a0,<0.11", optional = true}
 ztfquery = {version = "^1.26.1", optional = true}
 ligo-gracedb = {version = "^2.12.0", optional = true}
-astro-datalab = {version = "^2", optional = true}
 snpy = {version = "^2.7.0", optional = true}
 
 [tool.poetry.group.dev.dependencies]
@@ -85,7 +84,6 @@ mongomock = "^4.1.2"
 elasticc = ["xgboost", "astro-parsnip", "timeout-decorator", "ampel-lsst", "light-curve"]
 extcats = ["extcats"]
 ligo = ["healpy", "sncosmo", "iminuit", "sfdmap2", "ampel-ztf", "ligo-gracedb"]
-legacy-surveys = ["astro-datalab"]
 slack = ["slack_sdk"]
 sncosmo = ["sncosmo", "iminuit", "sfdmap2"]
 snpy = ["snpy"]
@@ -129,7 +127,6 @@ module = [
   "astropy.*",
   "ampel.model.PlotProperties",
   "ampel.plot.utils",
-  "dl.*",
   "lcdata.*",
   "timeout_decorator.*",
   "parsnip.*",

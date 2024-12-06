@@ -9,19 +9,17 @@
 
 from collections import OrderedDict
 from collections.abc import Sequence
-from functools import partial
+from functools import cached_property, partial
 from io import BytesIO
 from math import acos, cos, pi, sin
 from typing import Any
+from urllib.parse import urlparse, urlunparse
 
 import backoff
 import numpy as np
 import requests
 from astropy.io.votable import parse_single_table
 from astropy.table import Table
-
-# Datalab
-from dl import authClient
 from pandas import read_csv
 
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
@@ -34,7 +32,7 @@ from ampel.types import UBson
 def convert(inp, outfmt="pandas", verbose=False, **kwargs):
     """
     *** Taken from datalab dl/helpers/util/convert ***
-    (to avoid loading alld ependencies)
+    (to avoid pulling in _all_ the dependencies)
 
     Convert input `inp` to a data structure defined by `outfmt`.
 
@@ -176,11 +174,23 @@ class T2LSPhotoZTap(AbsPointT2Unit):
     # Path to noir queries
     datalab_query_url: str = "https://datalab.noirlab.edu/query"
 
-    def post_init(self) -> None:
-        # obtain security token
-        self.token = authClient.login(self.datalab_user, self.datalab_pwd)
-
-    #        self.token = authClient.login(self.datalab_user, self.datalab_str)
+    @cached_property
+    def session(self) -> requests.Session:
+        """Obtain a session with an auth token"""
+        session = requests.Session()
+        parts = urlparse(self.datalab_query_url)
+        response = session.get(
+            urlunparse((parts.scheme, parts.netloc, "/auth/login", "", "", "")),
+            params={
+                "username": self.datalab_user,
+                "profile": "default",
+                "debug": "False",
+            },
+            headers={"X-DL-Password": self.datalab_pwd},
+        )
+        response.raise_for_status()
+        session.headers.update({"X-DL-AuthToken": response.text})
+        return session
 
     @backoff.on_exception(
         backoff.expo,
@@ -195,30 +205,17 @@ class T2LSPhotoZTap(AbsPointT2Unit):
         and e.response.status_code not in {503, 429},
         max_time=60,
     )
-    def _astrolab_query(
-        self, ra: float, dec: float
-    ) -> Sequence[
-        dict[str, Any]
-    ]:  # Does one need to add List[None] here for empty returns?
+    def _astrolab_query(self, ra: float, dec: float) -> Sequence[dict[str, Any]]:
         self.logger.debug(f"Querying {ra} {dec}")
 
-        # Original qery, using the wrong path (and also a lot of dependencies)
-        ## should be possible to adjust this:
-        ## qc = queryClient.queryClient()
-        ## qc.set_svc_url( 'https://datalab.noirlab.edu/query' )
-        ## But this yiels a split error
-        # Old query
-        # ret = queryClient.query(self.token, self.query % (ra, dec, float(self.match_radius) / 3600) )
-        # ret_dict = convert(ret,'pandas').to_dict(orient='records')
-        # New manual:
-        headers = {"X-DL-AuthToken": (self.token)}
-        sql = self.query % (ra, dec, float(self.match_radius) / 3600)
-        timeout = 300
-        r = requests.get(
+        r = self.session.get(
             f"{self.datalab_query_url}/query",
-            params={"sql": sql, "qfmt": "csv", "async": "0"},
-            headers=headers,
-            timeout=timeout,
+            params={
+                "sql": self.query % (ra, dec, self.match_radius / 3600),
+                "ofmt": "csv",
+                "async": "False",
+            },
+            timeout=300,
         )
         if not r.ok:
             self.logger.debug(f"DL query failed at {ra} {dec}" % (ra, dec))
