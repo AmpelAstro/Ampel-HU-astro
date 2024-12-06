@@ -89,7 +89,6 @@ requires an access token if data is to be retrieved.
 - [TransientInfoPrinter](ampel/contrib/hu/t3/TransientInfoPrinter.py)
 - [TransientTablePublisher](ampel/contrib/hu/t3/TransientTablePublisher.py): Construct a table based on selected T2 output values.
 - [TransientViewDumper](ampel/contrib/hu/t3/TransientViewDumper.py)
-- [VOEventPublisher](ampel/contrib/hu/t3/VOEventPublisher.py): Unit for creating a VOEvent pased on T2output and transient LightCurve.
 
 ### T4 units (control):
 - [HealpixTokenGenerator](ampel/contrib/hu/t4/HealpixTokenGenerator.py): Based on a URL to a Healpix map.
