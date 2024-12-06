@@ -67,7 +67,7 @@ class ExtcatsUnit:
         return q
 
 
-class ExtcatsCatalogModel(CatalogModel):
+class ExtcatsCatalogModel(CatalogModel):  # type: ignore[override]
     catq_kwargs: dict[str, Any] = {}
     use: Literal["extcats"]
 
