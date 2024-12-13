@@ -5,6 +5,7 @@ import pytest
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
 from ampel.contrib.hu.t2.T2RunSncosmo import T2RunSncosmo
+from ampel.log.AmpelLogger import AmpelLogger
 from ampel.view.T2DocView import T2DocView
 
 
@@ -25,6 +26,7 @@ def mock_t2runsncosmo():
         plot_matplotlib_suffix=None,
         plot_matplotlib_dir=".",
         t2_dependency=[],
+        logger=AmpelLogger.get_logger(),
     )
 
 
