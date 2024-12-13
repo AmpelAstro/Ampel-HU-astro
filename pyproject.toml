@@ -156,6 +156,7 @@ filterwarnings = [
     "ignore:Deprecated call to `pkg_resources.declare_namespace\\('ligo'\\):DeprecationWarning",
     "ignore:pkg_resources is deprecated:DeprecationWarning",
     "ignore:(?s).*Pyarrow will become a required dependency of pandas:DeprecationWarning",
+    "ignore:Python 3.14 will, by default, filter extracted tar archives and reject files or modify their metadata.:DeprecationWarning:sncosmo",
 ]
 
 [tool.black]
