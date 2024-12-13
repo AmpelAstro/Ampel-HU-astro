@@ -45,11 +45,13 @@ requires an access token if data is to be retrieved.
 - [T2BayesianBlocks](ampel/contrib/hu/t2/T2BayesianBlocks.py): T2 unit for running a bayesian block search algorithm to highlight excess regions.
 - [T2BrightSNProb](ampel/contrib/hu/t2/T2BrightSNProb.py): Derive a number of simple metrics describing the rise, peak and decline of a lc.
 - [T2CatalogMatchLocal](ampel/contrib/hu/t2/T2CatalogMatchLocal.py): Cross matches the position of a transient to those of sources in a set of catalogs.
+- [T2DemoLightcurveFitter](ampel/contrib/hu/t2/T2DemoLightcurveFitter.py): Demonstration class showing how methods of T2BaseLightcurveFitter can be used develop a specific classifier.
 - [T2DigestRedshifts](ampel/contrib/hu/t2/T2DigestRedshifts.py): Compare potential matches from different T2 units providing redshifts.
 - [T2DustEchoEval](ampel/contrib/hu/t2/T2DustEchoEval.py)
 - [T2ElasticcRedshiftSampler](ampel/contrib/hu/t2/T2ElasticcRedshiftSampler.py): Parse the elasticc diaSource host information and returns a list of redshifts and weights.
 - [T2ElasticcReport](ampel/contrib/hu/t2/T2ElasticcReport.py): Parse a series of T2 results from T2RunParsnip and T2XgbClassifier, and create combined classifications according to the taxonomy of https://github.com/LSSTDESC/elasticc/blob/main/taxonomy/taxonomy.ipynb.
 - [T2FastDecliner](ampel/contrib/hu/t2/T2FastDecliner.py): Determine decline rate in two last obs.
+- [T2GetLensSNParameters](ampel/contrib/hu/t2/T2GetLensSNParameters.py)
 - [T2InfantCatalogEval](ampel/contrib/hu/t2/T2InfantCatalogEval.py): Evaluate whether a transient fulfills criteria for being a potentially infant (extragalactic) transient.
 - [T2KilonovaEval](ampel/contrib/hu/t2/T2KilonovaEval.py): Evaluate whether a transient fulfills criteria for being a potential kilonova-like event.
 - [T2KilonovaStats](ampel/contrib/hu/t2/T2KilonovaStats.py): Evaluate kilonovaness stats for transient given map distance and number of detections..
@@ -60,7 +62,12 @@ requires an access token if data is to be retrieved.
 - [T2MultiXgbClassifier](ampel/contrib/hu/t2/T2MultiXgbClassifier.py): For a range of xgboost classifier models, find a classification.
 - [T2NedSNCosmo](ampel/contrib/hu/t2/T2NedSNCosmo.py): Fits lightcurves using SNCOSMO (using SALT2 defaultwise) with redshift constrained by catalog matching results.
 - [T2NedTap](ampel/contrib/hu/t2/T2NedTap.py): See also: https://ned.ipac.caltech.edu/tap/sync?QUERY=SELECT+*+FROM+TAP_SCHEMA.tables&REQUEST=doQuery&LANG=ADQL&FORMAT=text Export all NED: https://ned.ipac.caltech.edu/tap/sync?QUERY=SELECT+*+FROM+NEDTAP.objdir&REQUEST=doQuery&LANG=ADQL&FORMAT=text.
+- [T2RunParsnip](ampel/contrib/hu/t2/T2RunParsnip.py): Gathers information and runs the parsnip model and classifier.
+- [T2RunParsnipRiseDecline](ampel/contrib/hu/t2/T2RunParsnipRiseDecline.py)
+- [T2RunPossis](ampel/contrib/hu/t2/T2RunPossis.py): Load a POSSIS kilnova model and fit to a LightCurve object as process is called.
+- [T2RunSncosmo](ampel/contrib/hu/t2/T2RunSncosmo.py): Gathers information and runs Sncosmo.
 - [T2RunSnoopy](ampel/contrib/hu/t2/T2RunSnoopy.py): Gathers information and runs snoopy.
+- [T2RunTDE](ampel/contrib/hu/t2/T2RunTDE.py): Create a TDE model and fit to a LightCurve object as process is called.
 - [T2TNSEval](ampel/contrib/hu/t2/T2TNSEval.py): Evalute whether a transient fulfills criteria for submission to TNS.
 - [T2XgbClassifier](ampel/contrib/hu/t2/T2XgbClassifier.py): Load a series of xgboost classifier models (distinguished by number of detections) and return a classification.
 
