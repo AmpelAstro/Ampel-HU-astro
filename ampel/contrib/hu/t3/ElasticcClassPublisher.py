@@ -161,8 +161,8 @@ class ElasticcClassPublisher(AbsT3Unit):
 
     @staticmethod
     def _one_report_per_classifier(
-        reports: Sequence[ElasticcClassification],
-    ) -> Generator[Elasticc2Report, None, None]:
+        reports: "Sequence[ElasticcClassification]",
+    ) -> "Generator[Elasticc2Report, None, None]":
         """
         reformat a v0.9 brokerClassification for v0.9.1
         see: https://raw.githubusercontent.com/LSSTDESC/elasticc/5d7b314b537197c99086acf019e6e2c1dc4aa267/alert_schema/elasticc.v0_9_1.brokerClassification.avsc
