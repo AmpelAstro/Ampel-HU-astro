@@ -75,6 +75,7 @@ requires an access token if data is to be retrieved.
 - [AstroColibriPublisher](ampel/contrib/hu/t3/AstroColibriPublisher.py): Publish results to AstroColibri.
 - [ChannelSummaryPublisher](ampel/contrib/hu/t3/ChannelSummaryPublisher.py): Create a json file with summary statistics for the channel.
 - [CostCounter](ampel/contrib/hu/t3/CostCounter.py): Derive metrics for the total cost, as parsed by the provided documents.
+- [ElasticcClassPublisher](ampel/contrib/hu/t3/ElasticcClassPublisher.py): This unit is intended to submit classifications to the DESC TOM db during the ELAsTICC LSST alert simulation.
 - [ElasticcClassTablePrinter](ampel/contrib/hu/t3/ElasticcClassTablePrinter.py): Unit which will print Elasticc unit classifications to STDOUT and/or an output csv file.
 - [HealpixCorrPlotter](ampel/contrib/hu/t3/HealpixCorrPlotter.py): Compare healpix coordinate P-value with output from T2RunSncosmo..
 - [PlotLightcurveSample](ampel/contrib/hu/t3/PlotLightcurveSample.py): Unit plots results from lightcurve fitters (RunSncosmo, RunParsnip).
