@@ -20,7 +20,7 @@ Contributed Ampel units from HU/DESY group
    If not, point poetry at an installation of Python 3.10 with (`conda run -n poetry)` `poetry env use PATH_TO_PYTHON_310`
 4. (`conda run -n poetry`) `poetry install -E "ztf sncosmo extcats notebook"`
 5. `cd notebooks`
-6. (`conda run -n poetry`) `poetry run jupyter notebook`
+6. (`conda run -n poetry`) `poetry run jupyter notebook`<f
 
 This will allow a number of Demo / access / development notebooks to be run. Note that most of them
 requires an access token if data is to be retrieved.
@@ -66,9 +66,7 @@ requires an access token if data is to be retrieved.
 - [T2RunParsnipRiseDecline](ampel/contrib/hu/t2/T2RunParsnipRiseDecline.py)
 - [T2RunPossis](ampel/contrib/hu/t2/T2RunPossis.py): Load a POSSIS kilnova model and fit to a LightCurve object as process is called.
 - [T2RunSncosmo](ampel/contrib/hu/t2/T2RunSncosmo.py): Gathers information and runs Sncosmo.
-- [T2RunSnoopy](ampel/contrib/hu/t2/T2RunSnoopy.py): Gathers information and runs snoopy.
 - [T2RunTDE](ampel/contrib/hu/t2/T2RunTDE.py): Create a TDE model and fit to a LightCurve object as process is called.
-- [T2TNSEval](ampel/contrib/hu/t2/T2TNSEval.py): Evalute whether a transient fulfills criteria for submission to TNS.
 - [T2XgbClassifier](ampel/contrib/hu/t2/T2XgbClassifier.py): Load a series of xgboost classifier models (distinguished by number of detections) and return a classification.
 
 ### T3 units (react):
@@ -95,3 +93,4 @@ requires an access token if data is to be retrieved.
 - [HealpixTokenGenerator](ampel/contrib/hu/t4/HealpixTokenGenerator.py): Based on a URL to a Healpix map.
 - [RandomMapGenerator](ampel/contrib/hu/t4/RandomMapGenerator.py): Generate smoothed circular healpix probability values around a random coordinate..
 - [StreamTokenGenerator](ampel/contrib/hu/t4/StreamTokenGenerator.py): Stream based token generator for.
+
