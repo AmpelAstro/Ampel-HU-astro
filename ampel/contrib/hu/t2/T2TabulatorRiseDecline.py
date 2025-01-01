@@ -10,7 +10,8 @@
 import os
 import re
 from collections.abc import Iterable, Sequence
-from typing import TYPE_CHECKING, Any
+from contextlib import suppress
+from typing import Any
 
 import light_curve
 import numpy as np
@@ -19,11 +20,95 @@ from scipy.optimize import curve_fit
 
 from ampel.abstract.AbsStateT2Unit import AbsStateT2Unit
 from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
-from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.base.LogicalUnit import LogicalUnit
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
-from ampel.protocol.LoggerProtocol import LoggerProtocol
+
+# from ampel.protocol.LoggerProtocol import LoggerProtocol
+
+
+# Define the exponential model function
+def exponential_model(x, a, b):
+    return a * np.exp(b * x)
+
+
+# Define the exponential rise and fill model based on Villar et al.
+def supernova_villar_model(t, A, t_0, tau_rise, tau_fall):
+    return A * np.exp(-(t - t_0) / tau_fall) / (1 + np.exp(-(t - t_0) / tau_rise))
+
+
+# Function to fit the Villar model to the data
+def fit_supernova_villar(t, f, f_err, peak_uncertainty, debugplot=False):
+    lower_bounds = [
+        0,
+        -peak_uncertainty * 10,
+        0,
+        0,
+    ]  # Lower bounds for A, t_0, tau_rise, tau_fall
+    upper_bounds = [
+        np.inf,
+        peak_uncertainty * 10,
+        100,
+        100,
+    ]  # Upper bounds for A, t_0, tau_rise, tau_fall
+
+    # Perform curve fitting
+    popt, pcov = curve_fit(
+        supernova_villar_model,
+        t,
+        f,
+        sigma=f_err,
+        bounds=(lower_bounds, upper_bounds),
+        maxfev=10000,
+    )
+
+    # popt contains the optimized parameters: A, t_0, tau_rise, and tau_fall
+    A, t_0, tau_rise, tau_fall = popt
+
+    # Calculate the fitted values
+    z_fit = supernova_villar_model(t, *popt)
+    chi2dof = sum((z_fit - f) ** 2 / f_err**2) / len(t)
+
+    if debugplot:
+        # Plot debug figure ...
+        import matplotlib.pyplot as plt
+
+        plt.figure()
+        plt.scatter(t, f, label="Data", color="blue")
+        plt.plot(t, z_fit, label="Fitted Villar Model", color="red")
+        plt.title(
+            f"t_0 = {t_0:.2f}, tau_rise = {tau_rise:.2f}, tau_fall = {tau_fall:.2f}, chi= {chi2dof:.2f}, len= {len(t)}"
+        )
+        plt.xlabel("Time")
+        plt.ylabel("Brightness (z)")
+        plt.legend()
+
+        import random
+        import string
+
+        def make_unique(filename):
+            return f'{filename.rsplit(".", 1)[0]}_{"".join(random.choices(string.ascii_lowercase + string.digits, k=4))}.{filename.rsplit(".", 1)[1]}'
+
+        plt.savefig(make_unique("expdebug.png"))
+        plt.close()
+
+    # Optionally, return the parameters and the fitted curve
+    return A, t_0, tau_rise, tau_fall, z_fit, chi2dof, pcov
+
+
+# Function to fit exponential curve to data
+def fit_exponential_rise(x, z):
+    # Perform curve fitting
+    popt, pcov = curve_fit(exponential_model, x, z)
+
+    # popt contains the optimized parameters a and b
+    a, b = popt
+
+    # Calculate the fitted values
+    z_fit = exponential_model(x, *popt)
+
+    # Optionally, return the parameters and the fitted curve
+    return a, b, z_fit
 
 
 def getMag(tab: Table, err=False, time=False):
@@ -151,15 +236,13 @@ class T2TabulatorRiseDeclineBase:
         ["ztfr", "ztfi"],
     ]
     max_tgap: int = 30
+    min_expfit_det: int = 4  # Fit exponential model if a band has this many detections or more (Warning: possibly time-consuming). Turn off by providing large value.
 
     # Cut the lightcurve if longer than this limit.
     # Motivated by worse classification for longer (inbalanced training?)
     # max_ndet: int = 20
     # For new training round, change this
     max_ndet: int = 200000
-
-    if TYPE_CHECKING:
-        logger: LoggerProtocol
 
     def get_bandfeatures(self, ftable):
         """
@@ -199,7 +282,8 @@ class T2TabulatorRiseDeclineBase:
                     banddata["rise_slope_" + band] = fit[1]
                     banddata["rise_slopesig_" + band] = fit[1] / np.sqrt(cov[1][1])
                 except RuntimeError:
-                    self.logger.info("Risetime curve fit failed.")
+                    pass
+            #                    self.logger.debug("Risetime curve fit failed.")
             if len(fallt) > 1:
                 try:
                     fit, cov = curve_fit(
@@ -212,7 +296,47 @@ class T2TabulatorRiseDeclineBase:
                     banddata["fall_slope_" + band] = fit[1]
                     banddata["fall_slopesig_" + band] = fit[1] / np.sqrt(cov[1][1])
                 except RuntimeError:
-                    self.logger.info("Falltime curve fit failed.")
+                    pass
+            #                    self.logger.debug("Falltime curve fit failed.")
+
+            # Possible fit exponential components if sufficient data
+            if len(bt) > self.min_expfit_det and len(fallt) > 1 and len(riset) > 1:
+                # Fit exponetial rise/fall a la Villar
+                try:
+                    (
+                        A,
+                        t_0,
+                        tau_rise,
+                        tau_fall,
+                        f_fi,
+                        chi_dof,
+                        pcov,
+                    ) = fit_supernova_villar(
+                        bt["time"] - max_flux_time,
+                        bt["flux"],
+                        bt["fluxerr"],
+                        peak_uncertainty=self.t_cadence,
+                    )
+                    # Stor parameters (not A nor t_0)
+                    banddata["tau_rise_" + band] = tau_rise
+                    banddata["tau_fall_" + band] = tau_fall
+                    banddata["tau_chidof_" + band] = chi_dof
+                    banddata["tau_dof_" + band] = len(bt)
+                except RuntimeError:
+                    pass
+            #                    self.logger.debug("Rise/fall fit failed.")
+            elif len(bt) > self.min_expfit_det / 2:
+                # Fit exponetial, if less data
+                try:
+                    A, tau, f_fit = fit_exponential_rise(
+                        bt["time"] - max_flux_time, bt["flux"]
+                    )
+                    # Stor parameters (not A nor t_0)
+                    banddata["tau_exp_" + band] = tau
+                    banddata["tau_dof_" + band] = len(bt)
+                except RuntimeError:
+                    pass
+            #                    self.logger.debug("Exp fit failed.")
 
             # Check for flux decline until the time for a possible second bump
             if (
@@ -380,17 +504,13 @@ class T2TabulatorRiseDeclineBase:
         )
 
         # Check fails irregularly
-        try:
+        with suppress(TypeError):
             o["mag_min"] = float(
                 getMag(flux_table[flux_table["flux"] == max(flux_table["flux"])])
             )
-        except TypeError:
-            self.logger.info("Mag min extraction failed.")
 
-        try:
+        with suppress(TypeError):
             o["jd_min"] = float(flux_table["time"][np.argmax(flux_table["flux"])])
-        except TypeError:
-            self.logger.info("JD at mag min extraction failed.")
 
         # Check for non-signficant obs between det and last
         ultab = flux_table[band_mask & ~sig_mask]
@@ -526,7 +646,7 @@ class BaseLightCurveFeatures(LogicalUnit):
     }
 
     def init_lightcurve_extractor(self) -> None:
-        self._fluxextractor = light_curve.Extractor(
+        self.fluxextractor = light_curve.Extractor(
             *(
                 getattr(light_curve, k)(**(v or {}))
                 for k, v in self.lightcurve_features_flux.items()
@@ -552,8 +672,8 @@ class BaseLightCurveFeatures(LogicalUnit):
                     lcout = {
                         f"{k}_{band}_flux": v
                         for k, v in zip(
-                            self._fluxextractor.names,
-                            self._fluxextractor(
+                            self.fluxextractor.names,
+                            self.fluxextractor(
                                 in_band["time"], in_band["flux"], in_band["fluxerr"]
                             ),
                             strict=False,
