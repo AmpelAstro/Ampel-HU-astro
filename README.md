@@ -67,6 +67,7 @@ requires an access token if data is to be retrieved.
 - [T2RunPossis](ampel/contrib/hu/t2/T2RunPossis.py): Load a POSSIS kilnova model and fit to a LightCurve object as process is called.
 - [T2RunSncosmo](ampel/contrib/hu/t2/T2RunSncosmo.py): Gathers information and runs Sncosmo.
 - [T2RunTDE](ampel/contrib/hu/t2/T2RunTDE.py): Create a TDE model and fit to a LightCurve object as process is called.
+- [T2TNSEval](ampel/contrib/hu/t2/T2TNSEval.py): Evalute whether a transient fulfills criteria for submission to TNS.
 - [T2XgbClassifier](ampel/contrib/hu/t2/T2XgbClassifier.py): Load a series of xgboost classifier models (distinguished by number of detections) and return a classification.
 
 ### T3 units (react):
@@ -93,4 +94,3 @@ requires an access token if data is to be retrieved.
 - [HealpixTokenGenerator](ampel/contrib/hu/t4/HealpixTokenGenerator.py): Based on a URL to a Healpix map.
 - [RandomMapGenerator](ampel/contrib/hu/t4/RandomMapGenerator.py): Generate smoothed circular healpix probability values around a random coordinate..
 - [StreamTokenGenerator](ampel/contrib/hu/t4/StreamTokenGenerator.py): Stream based token generator for.
-
