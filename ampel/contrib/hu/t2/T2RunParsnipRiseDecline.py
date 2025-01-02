@@ -72,9 +72,8 @@ def get_probability_evolution(
         ]
         if len(classifications) == 0:
             continue
-        elif len(classifications) > 1:
-            print("get_probability_evolution warning - grabbing random class results")
-        # print('deb', classtype, classifier, classlabel, allresult)
+        #if len(classifications) > 1:
+        #    print("get_probability_evolution warning - grabbing random class results")
         if classifications[-1]["features"]["ndet"] == 0:
             continue
         time = classifications[-1]["features"]["jd_last"]
