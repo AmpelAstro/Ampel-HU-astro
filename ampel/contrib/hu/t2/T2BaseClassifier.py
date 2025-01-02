@@ -217,7 +217,7 @@ class BaseClassifier:
     return_features: bool = False
 
     result_adapter: None | UnitModel = None
-    
+
     def read_class_models(self) -> None:
         self._class_xgbbinary = {
             label: joblib.load(path) for label, path in self.paths_xgbbinary.items()
