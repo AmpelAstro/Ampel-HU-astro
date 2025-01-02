@@ -97,7 +97,7 @@ class T2RunSncosmo(T2BaseLightcurveFitter):
     # Plot parameters
     plot_db: bool = False
     plot_props: None | PlotProperties = None  # Plot properties for SvgRecord creation
-    plot_suffix: None | str = ( 
+    plot_suffix: None | str = (
         None  # Suffix if stored (locally) through matplotlib (e.g. _crayzmodel.png). Will add transient name
     )
     plot_dir: str = "."  # Suffix if stored (locally) through matplotlib (e.g. _crayzmodel.png). Will add transient name
