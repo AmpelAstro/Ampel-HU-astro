@@ -25,7 +25,6 @@ from sncosmo.fitting import DataQualityError
 # from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
-from ampel.contrib.hu.t2.util import get_payload
 from ampel.contrib.hu.t2.T2BaseLightcurveFitter import T2BaseLightcurveFitter
 from ampel.model.PlotProperties import PlotProperties
 from ampel.model.StateT2Dependency import StateT2Dependency

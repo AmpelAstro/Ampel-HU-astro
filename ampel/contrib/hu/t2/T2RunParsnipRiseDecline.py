@@ -38,7 +38,9 @@ dcast_class = {
 }
 
 
-def get_probability_evolution(classouts, classtype, classifier, classifier_name, classlabel=None):
+def get_probability_evolution(
+    classouts, classtype, classifier, classifier_name, classlabel=None
+):
     """
     Helpfunction to sort through the output of T2RunParsnipRiseDecline and extract
     evolution of probability fo be of one class.
@@ -65,12 +67,14 @@ def get_probability_evolution(classouts, classtype, classifier, classifier_name,
     t, c = [], []
     for allresult in classouts:
         # Get classifications for this classifier series (could be many)
-        classifications = [ c for c in allresult["classifications"] if c["name"]==classifier_name ]
-        if len(classifications)==0:
+        classifications = [
+            c for c in allresult["classifications"] if c["name"] == classifier_name
+        ]
+        if len(classifications) == 0:
             continue
-        elif len(classifications)>1:
-            print('get_probability_evolution warning - grabbing random class results')
-        #print('deb', classtype, classifier, classlabel, allresult)
+        elif len(classifications) > 1:
+            print("get_probability_evolution warning - grabbing random class results")
+        # print('deb', classtype, classifier, classlabel, allresult)
         if classifications[-1]["features"]["ndet"] == 0:
             continue
         time = classifications[-1]["features"]["jd_last"]
@@ -100,7 +104,6 @@ class T2RunParsnipRiseDecline(
     BaseLightCurveFeatures,
     BaseClassifier,
 ):
-
     def post_init(self) -> None:
         """
         Retrieve models and potentially dustmaps.
