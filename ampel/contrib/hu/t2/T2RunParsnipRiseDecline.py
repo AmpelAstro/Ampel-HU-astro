@@ -72,7 +72,7 @@ def get_probability_evolution(
         ]
         if len(classifications) == 0:
             continue
-        #if len(classifications) > 1:
+        # if len(classifications) > 1:
         #    print("get_probability_evolution warning - grabbing random class results")
         if classifications[-1]["features"]["ndet"] == 0:
             continue
