@@ -387,13 +387,7 @@ class T2RunSncosmo(T2BaseLightcurveFitter):
                 tname = ZTFNoisifiedIdMapper().to_ext_id(stock_id)
 
             # Add some info
-            plot_fig_text = "{} {} {} \nchisq {:.2f}\nndof {}".format(
-                tname,
-                self.sncosmo_model_name,
-                self.redshift_kind,
-                chisq,
-                ndof,
-            )
+            plot_fig_text = f"{tname} {self.sncosmo_model_name} {self.redshift_kind} \nchisq {chisq:.2f}\nndof {ndof}"
             plot_extra = {
                 "model": self.sncosmo_model_name,
                 "redshift_kind": self.redshift_kind,
