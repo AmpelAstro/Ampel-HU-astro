@@ -97,14 +97,12 @@ class T2RunSncosmo(T2BaseLightcurveFitter):
     # Plot parameters
     plot_db: bool = False
     plot_props: None | PlotProperties = None  # Plot properties for SvgRecord creation
-    plot_suffix: None | str = (
-        None  # Suffix if stored (locally) through matplotlib (e.g. _crayzmodel.png). Will add transient name
-    )
+    plot_suffix: None | str = None  # Suffix if stored (locally) through matplotlib (e.g. _crayzmodel.png). Will add transient name
     plot_dir: str = "."  # Suffix if stored (locally) through matplotlib (e.g. _crayzmodel.png). Will add transient name
 
     # These are the units through which we look for redshifts
     # Which units should this be changed to
-    t2_dependency: Sequence[                         # type: ignore[assignment] 
+    t2_dependency: Sequence[  # type: ignore[assignment]
         StateT2Dependency[
             Literal[
                 "T2CatalogMatch",
@@ -356,7 +354,7 @@ class T2RunSncosmo(T2BaseLightcurveFitter):
             }
             if len(chisqs) > 0:
                 # At least one good fit
-                bestz = min(chisqs, key=chisqs.get)     # type: ignore[arg-type]
+                bestz = min(chisqs, key=chisqs.get)  # type: ignore[arg-type]
                 t2_output["sncosmo_result"] = fit_allz[bestz]["fitresult"]
                 t2_output["best_z"] = bestz
                 fitted_model = fit_allz[bestz]["fitted_model"]
@@ -368,16 +366,16 @@ class T2RunSncosmo(T2BaseLightcurveFitter):
             else:
                 fitted_model = None
                 t2_output["success"] = False
-                t2_output["sncosmo_result"] = {'chisq': -1, 'ndof': -1}
+                t2_output["sncosmo_result"] = {"chisq": -1, "ndof": -1}
 
-        chisq: float = -1.
+        chisq: float = -1.0
         ndof: int = 0
-        if  isinstance(t2_output["sncosmo_result"], dict):
-            chisq = float(t2_output["sncosmo_result"]['chisq'])        
-            ndof = t2_output["sncosmo_result"]['ndof']
- 
+        if isinstance(t2_output["sncosmo_result"], dict):
+            chisq = float(t2_output["sncosmo_result"]["chisq"])
+            ndof = t2_output["sncosmo_result"]["ndof"]
+
         # Save plot
-        if fitted_model and chisq>0 and (self.plot_props or self.plot_suffix):
+        if fitted_model and chisq > 0 and (self.plot_props or self.plot_suffix):
             # Construct name JN: What are the standards for noisified?
             stock_id = "-".join([str(v) for v in self.get_stock_id(datapoints)])
             tname = "-".join([str(v) for v in self.get_stock_name(datapoints)])
@@ -410,7 +408,7 @@ class T2RunSncosmo(T2BaseLightcurveFitter):
                 pulls=True,
                 figtext=plot_fig_text,
                 ncol=3,
-                # sncosmo using old syntax, crashing if cmap not given 
+                # sncosmo using old syntax, crashing if cmap not given
                 cmap=plt.cm.jet_r,  #  type: ignore[attr-defined]
                 # fill_data_marker = self.fit_mask, # Activate if add fit mask
             )
