@@ -21,7 +21,6 @@ def mock_t2runsncosmo():
         sncosmo_model_name="salt2",
         redshift_kind=None,
         fixed_z=None,
-        backup_z=None,
         scale_z=None,
         sncosmo_bounds={},
         apply_mwcorrection=False,
@@ -29,8 +28,8 @@ def mock_t2runsncosmo():
         noisified=False,
         plot_db=False,
         plot_props=None,
-        plot_matplotlib_suffix=None,
-        plot_matplotlib_dir=".",
+        plot_suffix=None,
+        plot_dir=".",
         t2_dependency=[],
         tabulator=[UnitModel(unit="ZTFT2Tabulator")],
         logger=AmpelLogger.get_logger(),
@@ -68,7 +67,9 @@ def test_T2RunSncosmo_no_phaselimit(mock_t2runsncosmo):
     datapoints = [MagicMock(spec=DataPoint)]
     t2_views = [MagicMock(spec=T2DocView)]
 
-    with patch.object(mock_t2runsncosmo, "_get_redshift", return_value=(0.1, "Fixed")):
+    with patch.object(
+        mock_t2runsncosmo, "get_redshift", return_value=([0.1], ["Fixed"], [1.0])
+    ):
         result = mock_t2runsncosmo.process(compound, datapoints, t2_views)
 
     assert isinstance(result, dict)
@@ -79,14 +80,16 @@ def test_T2RunSncosmo_fit_error(mock_t2runsncosmo):
     compound, datapoints, t2_views = inputs()
 
     with (
-        patch.object(mock_t2runsncosmo, "_get_redshift", return_value=(0.1, "Fixed")),
+        patch.object(
+            mock_t2runsncosmo, "get_redshift", return_value=([0.1], ["Fixed"], [1.0])
+        ),
         patch.object(mock_t2runsncosmo, "_get_phaselimit", return_value=(0, 1000)),
         patch("sncosmo.fit_lc", side_effect=RuntimeError("fit error")),
     ):
         result = mock_t2runsncosmo.process(compound, datapoints, t2_views)
 
     assert isinstance(result, dict)
-    assert result["run_error"] is True
+    assert result["success"] is False
 
 
 def test_T2RunSncosmo_success(mock_t2runsncosmo):
@@ -95,15 +98,18 @@ def test_T2RunSncosmo_success(mock_t2runsncosmo):
     mock_fit_result = {
         "parameters": np.array([0.1]),
         "data_mask": np.array([True]),
-        "covariance": None,
+        "covariance": np.array([0.01]),
         "param_names": ["z"],
         "chisq": 1.0,
         "ndof": 1,
+        "success": True,
     }
     mock_fitted_model = Mock()
 
     with (
-        patch.object(mock_t2runsncosmo, "_get_redshift", return_value=(0.1, "Fixed")),
+        patch.object(
+            mock_t2runsncosmo, "get_redshift", return_value=([0.1], ["Fixed"], [1.0])
+        ),
         patch.object(mock_t2runsncosmo, "_get_phaselimit", return_value=(0, 1000)),
         patch("sncosmo.fit_lc", return_value=(mock_fit_result, mock_fitted_model)),
         patch.object(
@@ -114,4 +120,4 @@ def test_T2RunSncosmo_success(mock_t2runsncosmo):
 
     assert isinstance(result, dict)
     assert "sncosmo_result" in result
-    assert result["fit_metrics"] == {"metric": 1.0}
+    assert result["sncosmo_result"]["fit_metrics"] == {"metric": 1.0}

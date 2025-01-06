@@ -172,7 +172,7 @@ class T2RunTDE(T2RunSncosmo):
             self.fit_params = copy.deepcopy(self.sncosmo_model.param_names)
 
         # If redshift _should_ be provided we remove this from fit parameters
-        if self.redshift_kind is not None or self.backup_z is not None:
+        if self.redshift_kind is not None or self.fixed_z is not None:
             self.fit_params.remove("z")
 
         self.default_param_vals = self.sncosmo_model.parameters

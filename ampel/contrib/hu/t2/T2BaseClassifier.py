@@ -21,7 +21,6 @@ import parsnip
 from scipy.stats import chi2
 from typing_extensions import TypedDict
 
-from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.model.UnitModel import UnitModel
 
 # All parsnip predictions that are not floats
@@ -179,7 +178,7 @@ def run_parsnip_zsample(
     return result_dict
 
 
-class BaseClassifier(AmpelBaseModel):
+class BaseClassifier:
     """
 
     Base class for carrying out parsnip and/or xgb classifications.
@@ -220,14 +219,14 @@ class BaseClassifier(AmpelBaseModel):
     result_adapter: None | UnitModel = None
 
     def read_class_models(self) -> None:
-        self.class_xgbbinary = {
+        self._class_xgbbinary = {
             label: joblib.load(path) for label, path in self.paths_xgbbinary.items()
         }
-        self.class_xgbmulti: dict[str, Any] = {
+        self._class_xgbmulti: dict[str, Any] = {
             label: {**joblib.load(pathdir["path"]), "classes": pathdir["classes"]}
             for label, pathdir in self.paths_xgbmulti.items()
         }
-        self.class_parsnip = {
+        self._class_parsnip = {
             label: {
                 "classifier": parsnip.Classifier.load(paths["classifier"]),
                 "model": parsnip.load_model(paths["model"], threads=1),
@@ -244,11 +243,11 @@ class BaseClassifier(AmpelBaseModel):
         Classify based on features ordered according to columns
         """
 
-        return self.class_xgbbinary[classlabel]["model"].predict_proba(
+        return self._class_xgbbinary[classlabel]["model"].predict_proba(
             np.array(
                 [
                     features.get(col, np.nan)
-                    for col in self.class_xgbbinary[classlabel]["columns"]
+                    for col in self._class_xgbbinary[classlabel]["columns"]
                 ]
             ).reshape(1, -1)
         )
@@ -259,31 +258,31 @@ class BaseClassifier(AmpelBaseModel):
         Classify based on features ordered according to columns
         """
 
-        if self.class_xgbmulti[classlabel]["model"].objective == "multi:softmax":
+        if self._class_xgbmulti[classlabel]["model"].objective == "multi:softmax":
             # Single type classifier
-            modelguess = self.class_xgbmulti[classlabel]["model"].predict(
+            modelguess = self._class_xgbmulti[classlabel]["model"].predict(
                 np.array(
                     [
                         features.get(col, np.nan)
-                        for col in self.class_xgbmulti[classlabel]["columns"]
+                        for col in self._class_xgbmulti[classlabel]["columns"]
                     ]
                 ).reshape(1, -1)
             )
-            pvals = [np.zeros(len(self.class_xgbmulti[classlabel]["classes"]))]
+            pvals = [np.zeros(len(self._class_xgbmulti[classlabel]["classes"]))]
             pvals[0][modelguess] = 1
-        elif self.class_xgbmulti[classlabel]["model"].objective == "multi:softprob":
+        elif self._class_xgbmulti[classlabel]["model"].objective == "multi:softprob":
             # Multiple
-            pvals = self.class_xgbmulti[classlabel]["model"].predict_proba(
+            pvals = self._class_xgbmulti[classlabel]["model"].predict_proba(
                 np.array(
                     [
                         features.get(col, np.nan)
-                        for col in self.class_xgbmulti[classlabel]["columns"]
+                        for col in self._class_xgbmulti[classlabel]["columns"]
                     ]
                 ).reshape(1, -1)
             )
 
         return {
-            self.class_xgbmulti[classlabel]["classes"][k]: float(prob)
+            self._class_xgbmulti[classlabel]["classes"][k]: float(prob)
             for k, prob in enumerate(list(pvals[0]))
         }
 
@@ -315,8 +314,8 @@ class BaseClassifier(AmpelBaseModel):
             lctable,
             zsample,
             zw,
-            self.class_parsnip[model_label]["model"],
-            self.class_parsnip[model_label]["classifier"],
+            self._class_parsnip[model_label]["model"],
+            self._class_parsnip[model_label]["classifier"],
             self.parsnip_zeropoint_offset,
             plot_path=fname,
         )
@@ -345,7 +344,7 @@ class BaseClassifier(AmpelBaseModel):
         if len(flux_table) < 4:
             parsnip_class["Failed"] = "few det"
         else:
-            models = parsnip_models if parsnip_models else self.class_parsnip.keys()
+            models = parsnip_models if parsnip_models else self._class_parsnip.keys()
             if (
                 self.add_parsnip_from is not None
                 and self.add_parsnip_from not in models
@@ -393,7 +392,7 @@ class BaseClassifier(AmpelBaseModel):
 
         ### Run binary XGB classifiers
         # Either run all loaded models or the specified list
-        models = xgb_binarymodels if xgb_binarymodels else self.class_xgbbinary.keys()
+        models = xgb_binarymodels if xgb_binarymodels else self._class_xgbbinary.keys()
         binary_class: dict[str, Any] = {
             model_name: self.get_xgb_class(model_name, features)
             for model_name in models
@@ -401,7 +400,7 @@ class BaseClassifier(AmpelBaseModel):
 
         ### Run multi XGB classifiers
         # Either run all loaded models or the specified list
-        models = xgb_multimodels if xgb_multimodels else self.class_xgbmulti.keys()
+        models = xgb_multimodels if xgb_multimodels else self._class_xgbmulti.keys()
         multi_class: dict[str, Any] = {
             model_name: self.get_multixgb_class(model_name, features)
             for model_name in models

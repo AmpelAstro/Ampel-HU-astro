@@ -20,7 +20,7 @@ Contributed Ampel units from HU/DESY group
    If not, point poetry at an installation of Python 3.10 with (`conda run -n poetry)` `poetry env use PATH_TO_PYTHON_310`
 4. (`conda run -n poetry`) `poetry install -E "ztf sncosmo extcats notebook"`
 5. `cd notebooks`
-6. (`conda run -n poetry`) `poetry run jupyter notebook`
+6. (`conda run -n poetry`) `poetry run jupyter notebook`<f
 
 This will allow a number of Demo / access / development notebooks to be run. Note that most of them
 requires an access token if data is to be retrieved.

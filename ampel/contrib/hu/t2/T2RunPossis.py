@@ -206,8 +206,8 @@ class T2RunPossis(T2RunSncosmo):
                 tmp_fit_params = copy.deepcopy(tmp_sncosmo_model.param_names)
 
             # If redshift _should_ be provided we remove this from fit parameters
-            if self.redshift_kind is not None or self.backup_z is not None:
-                tmp_fit_params.remove("z")
+            if self.redshift_kind is not None or self.fixed_z is not None:
+                self.fit_params.remove("z")
 
             # If explosion time should be fixed, do so
             # If explosion time should be fixed, do so

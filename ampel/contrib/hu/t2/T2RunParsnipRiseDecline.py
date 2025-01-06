@@ -38,7 +38,9 @@ dcast_class = {
 }
 
 
-def get_probability_evolution(classouts, classtype, classifier, classlabel=None):
+def get_probability_evolution(
+    classouts, classtype, classifier, classifier_name, classlabel=None
+):
     """
     Helpfunction to sort through the output of T2RunParsnipRiseDecline and extract
     evolution of probability fo be of one class.
@@ -64,10 +66,18 @@ def get_probability_evolution(classouts, classtype, classifier, classlabel=None)
     """
     t, c = [], []
     for allresult in classouts:
-        if allresult["classifications"]["features"]["ndet"] == 0:
+        # Get classifications for this classifier series (could be many)
+        classifications = [
+            c for c in allresult["classifications"] if c["name"] == classifier_name
+        ]
+        if len(classifications) == 0:
             continue
-        time = allresult["classifications"]["features"]["jd_last"]
-        classresult = allresult["classifications"][classifier]
+        # if len(classifications) > 1:
+        #    print("get_probability_evolution warning - grabbing random class results")
+        if classifications[-1]["features"]["ndet"] == 0:
+            continue
+        time = classifications[-1]["features"]["jd_last"]
+        classresult = classifications[-1][classifier]
         # Parsnip specific - can this destroy?
         if "Failed" in classresult:
             continue
