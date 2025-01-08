@@ -1,0 +1,315 @@
+name: run_lcana_ipacfpdir
+mongo:
+  prefix: d600_job
+  reset: true
+channel:
+- name: lcana
+  access: [ZTF, ZTF_PUB, ZTF_PRIV]
+  policy: []
+  version: 1
+task:
+- title: FPT0
+  template: hash_t2_config
+  unit: AlertConsumer
+  config:
+    iter_max: 10000
+    supplier:
+      unit: ZTFIPACForcedPhotometryAlertSupplier
+      config:
+        alert_history: false
+        name_file: /home/jnordin/tmp/dr3_masterlist_18t23_v270724.csv
+        loader:
+          unit: DirFileNamesLoader
+          config:
+            folder: /home/jnordin/github/ampelMay24/Ampel-HU-astro/notebooks/dr3_600
+            extension: "txt"
+    shaper: ZiDataPointShaper
+    compiler_opts: ZiCompilerOptions
+    directives:
+    - channel: lcana
+      ingest:
+        mux:
+          unit: ZiMongoMuxer
+          insert:
+            point_t2:
+            - config: &catalog_match_config
+                catalogs:
+                  GLADEv23:
+                    keys_to_append:
+                    - z
+                    - dist
+                    - dist_err
+                    - flag1
+                    - flag2
+                    - flag3
+                    rs_arcsec: 10.
+                    use: extcats
+                  NEDz:
+                    keys_to_append:
+                    - ObjType
+                    - Velocity
+                    - z
+                    rs_arcsec: 10.
+                    use: catsHTM
+                  SDSS_spec:
+                    keys_to_append:
+                    - z
+                    - bptclass
+                    - subclass
+                    rs_arcsec: 10.
+                    use: extcats
+                    all: False
+                  LSPhotoZZou:
+                    keys_to_append:
+                    - photoz
+                    - ra
+                    - dec
+                    - e_photoz
+                    - specz
+                    - _6
+                    - logMassBest
+                    - logMassInf
+                    - logMassSup
+                    rs_arcsec: 10.
+                    use: extcats
+                    pre_filter: null
+                    post_filter: null
+                    all: False
+                  wiseScosPhotoz:
+                    keys_to_append:
+                    - zPhoto_Corr
+                    - ra
+                    - dec
+                    - wiseID
+                    - w1mCorr
+                    - w2mCorr
+                    rs_arcsec: 10.
+                    use: extcats
+                    pre_filter: null
+                    post_filter: null
+                  twoMPZ:
+                    keys_to_append:
+                    - zPhoto
+                    - ra
+                    - dec
+                    - zSpec
+                    rs_arcsec: 10.
+                    use: extcats
+                    pre_filter: null
+                    post_filter: null
+                  PS1_photoz:
+                    keys_to_append:
+                    - raMean
+                    - decMean
+                    - z_phot
+                    - z_photErr
+                    - z_phot0
+                    - _2
+                    rs_arcsec: 10.
+                    use: extcats
+                    pre_filter: null
+                    post_filter: null
+              ingest:
+                filter: PPSFilter
+                select: first
+                sort: jd
+              unit: T2CatalogMatch
+          combine:
+          - state_t2:
+            - unit: T2DigestRedshifts
+              config: &digest_config
+                max_redshift_category: 7
+                t2_dependency:
+                - config: *catalog_match_config
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2CatalogMatch
+            - config:
+                significant_bands:
+                - ztfg
+                - ztfr
+                - ztfi
+                t_cadence: 3
+                tabulator:
+                - unit: ZTFFPTabulator
+              unit: T2TabulatorRiseDecline
+            - config:
+                fixed_z: 0.08
+                plot_props:
+                  disk_save: /home/jnordin/tmp/ztfsalt2z
+                  fig_text:
+                    arg_keys:
+                    - stock
+                    - model
+                    - redshift_kind
+                    - chisq
+                    - ndof
+                    format_str: "%s %s \nz-source %s \nchisq %.2f ndof %s"
+                  file_name:
+                    arg_keys:
+                    - stock
+                    - model
+                    - redshift_kind
+                    format_str: '%s_%s_%s.svg'
+                  height: 6
+                  id_mapper: ZTFIdMapper
+                  tags:
+                  - SALT
+                  - SNCOSMO
+                  title:
+                    arg_keys:
+                    - stock
+                    - model
+                    - redshift_kind
+                    format_str: '%s %s %s'
+                  width: 10
+                redshift_kind: null
+                sncosmo_model_name: salt2
+                t2_dependency:
+                - config: *catalog_match_config
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2CatalogMatch
+                tabulator:
+                - config:
+                    inclusion_sigma: 3
+                  unit: ZTFFPTabulator
+              unit: T2RunSncosmo
+            - config:
+                max_redshift_category: 7
+                plot_props:
+                  disk_save: /home/jnordin/tmp/ztfsalt
+                  fig_text:
+                    arg_keys:
+                    - stock
+                    - model
+                    - redshift_kind
+                    - chisq
+                    - ndof
+                    format_str: "%s %s \nz-source %s \nchisq %.2f ndof %s"
+                  file_name:
+                    arg_keys:
+                    - stock
+                    - model
+                    - redshift_kind
+                    format_str: '%s_%s_%s.svg'
+                  height: 6
+                  id_mapper: null
+                  tags:
+                  - SALT
+                  - SNCOSMO
+                  title:
+                    arg_keys:
+                    - stock
+                    - model
+                    - redshift_kind
+                    format_str: '%s %s %s'
+                  width: 10
+                redshift_kind: T2DigestRedshifts
+                sncosmo_model_name: salt2
+                t2_dependency:
+                - config: *catalog_match_config
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2CatalogMatch
+                tabulator:
+                - config:
+                    inclusion_sigma: 3
+                  unit: ZTFFPTabulator
+              unit: T2RunSncosmo
+            - config:
+                add_parsnip_from: snlong
+                classifier_name: rdp
+                classifier_version: '0.1'
+                max_redshift_category: 7
+                parsnip_zeropoint_offset: 0
+                parsnipplot_dir: /home/jnordin/tmp/ztfparsnip_fp
+                parsnipplot_suffix: png
+                paths_parsnip:
+                  snlong:
+                    classifier: /home/jnordin/data/parsnip/ztf_classifier.pkl
+                    model: /home/jnordin/data/parsnip/parsnip_ps1_ztf.pt
+                paths_xgbbinary: {}
+                paths_xgbmulti:
+                  early:
+                    classes:
+                    - slsn
+                    - snia
+                    - snibc
+                    - snii
+                    - sniin
+                    path: /home/jnordin/github/ampelJul24/Ampel-HU-astro/scripts/risedecline_sets_v2/early/models_multivar/sn_long/model_sn_long
+                  last_parsnip:
+                    classes:
+                    - slsn
+                    - snia
+                    - snibc
+                    - snii
+                    - sniin
+                    path: /home/jnordin/github/ampelJul24/Ampel-HU-astro/scripts/risedecline_sets_v2/lastalert/pa/models_multivar/sn_long/model_sn_long
+                  last_prd:
+                    classes:
+                    - slsn
+                    - snia
+                    - snibc
+                    - snii
+                    - sniin
+                    path: /home/jnordin/github/ampelJul24/Ampel-HU-astro/scripts/risedecline_sets_v2/lastalert/rdp/models_multivar/sn_long/model_sn_long
+                  last_risedec:
+                    classes:
+                    - slsn
+                    - snia
+                    - snibc
+                    - snii
+                    - sniin
+                    path: /home/jnordin/github/ampelJul24/Ampel-HU-astro/scripts/risedecline_sets_v2/lastalert/rd/models_multivar/sn_long/model_sn_long
+                  later:
+                    classes:
+                    - slsn
+                    - snia
+                    - snibc
+                    - snii
+                    - sniin
+                    path: /home/jnordin/github/ampelJul24/Ampel-HU-astro/scripts/risedecline_sets_v2/late/models_multivar/sn_long/model_sn_long
+                  sample1:
+                    classes:
+                    - slsn
+                    - snia
+                    - snibc
+                    - snii
+                    - sniin
+                    path: /home/jnordin/data/noiztf/v240809/xgb_models/model_sn_long_sample1
+                redshift_kind: T2DigestRedshifts
+                return_features: true
+                significant_bands:
+                - ztfg
+                - ztfr
+                - ztfi
+                t2_dependency:
+                - config: *catalog_match_config
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2CatalogMatch
+                t_cadence: 3.0
+                tabulator:
+                - config:
+                    inclusion_sigma: 2
+                  unit: ZTFFPTabulator
+              unit: T2RunParsnipRiseDecline
+            unit: ZiT1Combiner
+
+- title: Run T2s
+  unit: T2Worker
+  config:
+    send_beacon: false
+    raise_exc: true
+
+
