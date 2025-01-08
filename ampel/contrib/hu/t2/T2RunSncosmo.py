@@ -352,7 +352,7 @@ class T2RunSncosmo(T2BaseLightcurveFitter):
             chisqs: dict[str, float] = {
                 z: float(fitatz["fitresult"]["chisq"] / fitatz["fitresult"]["ndof"])
                 for z, fitatz in fit_allz.items()
-                if "fitresult" in fitatz and fitatz["fitresult"]["success"]
+                if "fitresult" in fitatz and fitatz["fitresult"]["success"] and fitatz["fitresult"]["ndof"]>0
             }
             if len(chisqs) > 0:
                 # At least one good fit
