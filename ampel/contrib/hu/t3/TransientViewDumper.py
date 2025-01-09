@@ -21,8 +21,9 @@ from ampel.secret.NamedSecret import NamedSecret
 from ampel.struct.T3Store import T3Store
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import T3Send, UBson
-from ampel.util.json import AmpelEncoder
 from ampel.view.TransientView import TransientView
+
+from .DCachePublisher import dump_json
 
 
 def strip_auth_from_url(url):
@@ -77,15 +78,12 @@ class TransientViewDumper(AbsPhotoT3Unit):
         else:
             self.outfile = GzipFile(self.outputfile + ".json.gz", mode="w")
 
-        # don't bother preserving immutable types
-        self.encoder = AmpelEncoder(lossy=True)
-
     def process(
         self, transients: Generator[TransientView, T3Send, None], t3s: T3Store
     ) -> UBson | UnitResult:
         count = 0
         for count, tran_view in enumerate(transients, 1):  # noqa: B007
-            self.outfile.write(self.encoder.encode(tran_view).encode("utf-8"))
+            self.outfile.write(dump_json(tran_view))
             self.outfile.write(b"\n")
         self.outfile.close()
         self.logger.info(f"Total number of transients written: {count}")

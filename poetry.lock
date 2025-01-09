@@ -32,39 +32,38 @@ ampel-core = ">=0.10.0a0,<0.11"
 
 [[package]]
 name = "ampel-core"
-version = "0.10.2"
+version = "0.10.4.post0"
 description = "Alice in Modular Provenance-Enabled Land"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "ampel_core-0.10.2-py3-none-any.whl", hash = "sha256:33188dae6934c69a06d905154fce18f2874c4cf14fe7ba2e42da078d31b35b2e"},
-    {file = "ampel_core-0.10.2.tar.gz", hash = "sha256:b6a0935fe097c48998898d4108ba01ddb30ceeb08e2e923311d3c2e1cfa6ab24"},
+    {file = "ampel_core-0.10.4.post0-py3-none-any.whl", hash = "sha256:b395356cf8ab8825b732d1c8b51d0996ba6b6139fffb1b495340a64efb87e326"},
+    {file = "ampel_core-0.10.4.post0.tar.gz", hash = "sha256:87a5f5a95e1258e2050e00c20a46a870c97ace8fd82700b522f13245e93763e2"},
 ]
 
 [package.dependencies]
-ampel-interface = ">=0.10.2a0,<0.11"
+ampel-interface = ">=0.10.4,<0.11"
 prometheus-client = ">=0.16"
 psutil = ">=6.0.0,<7.0.0"
 pymongo = ">=4.0,<5.0"
-requests = ">=2.0,<3.0"
 schedule = ">=1.0.0,<2.0.0"
-sjcl = ">=0.2.1,<0.3.0"
 xxhash = ">=3.0.0,<4.0.0"
-yq = ">=3.0.0,<4.0.0"
 
 [package.extras]
+encrypted-secrets = ["sjcl (>=0.2.1,<0.3.0)"]
 server = ["fastapi (>=0.95)", "setproctitle (>=1.3.3,<2.0.0)", "uvicorn[standard] (>=0.21.1)"]
 slack = ["slack-sdk (>=3.18.1,<4.0.0)"]
+transform = ["yq (>=3.0.0,<4.0.0)"]
 
 [[package]]
 name = "ampel-interface"
-version = "0.10.3"
+version = "0.10.4.post1"
 description = "Base classes for the Ampel analysis platform"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "ampel_interface-0.10.3-py3-none-any.whl", hash = "sha256:2e5e023d8919c87551fbead6455e01c6267700b11ad1e1cb81ff42581f5d5b50"},
-    {file = "ampel_interface-0.10.3.tar.gz", hash = "sha256:98f3291681815dee665f8cbabc50e900ae8cce55998ed4d690227823f47999f7"},
+    {file = "ampel_interface-0.10.4.post1-py3-none-any.whl", hash = "sha256:2250ba544bea8e9d09e6277d692e45600268157d3f6af88a712190fcc70a1834"},
+    {file = "ampel_interface-0.10.4.post1.tar.gz", hash = "sha256:629f9d56d1a39b646a0d2bccb2631a2d67f81a43d8abe95faed1412c4f2132d5"},
 ]
 
 [package.dependencies]
@@ -76,13 +75,13 @@ xxhash = ">=3.0.0,<4.0.0"
 
 [[package]]
 name = "ampel-lsst"
-version = "0.10.0a1"
+version = "0.10.0a2"
 description = "Legacy Survey of Space and Time support for the Ampel system"
 optional = true
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "ampel_lsst-0.10.0a1-py3-none-any.whl", hash = "sha256:e803660691a62f66c67145cc1abe924b8193df371e26f46971e69048c0ad8acd"},
-    {file = "ampel_lsst-0.10.0a1.tar.gz", hash = "sha256:e11d6ce2f281925ea28d3a1cb7b54e6f56494b8a9a59832b81fa5e10c5bc6a02"},
+    {file = "ampel_lsst-0.10.0a2-py3-none-any.whl", hash = "sha256:f4d712a8775b541f027b96568b92b3247fa91bd84b7c6c95754e37828f217e07"},
+    {file = "ampel_lsst-0.10.0a2.tar.gz", hash = "sha256:abea448cbdabe699b3e085bc89c4513682a2b6ec5162b3a84ed0cd8cfd13f434"},
 ]
 
 [package.dependencies]
@@ -91,21 +90,21 @@ astropy = ">=5"
 fastavro = ">=1.3.2,<2.0.0"
 
 [package.extras]
-kafka = ["confluent-kafka (>=2.6.1,<3.0.0)"]
+kafka = ["confluent-kafka[schemaregistry] (>=2.6.1,<3.0.0)"]
 
 [[package]]
 name = "ampel-photometry"
-version = "0.10.0"
+version = "0.10.1"
 description = "Photometry add-on for the Ampel system"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "ampel_photometry-0.10.0-py3-none-any.whl", hash = "sha256:c3669601ddfca62dcc1b9294eee806f42692a68b377501bbba7c8267e623845d"},
-    {file = "ampel_photometry-0.10.0.tar.gz", hash = "sha256:14af2bcfb0152b07275f5a9e1be85f6d7db91fd9aaa626812773e2480ce7f719"},
+    {file = "ampel_photometry-0.10.1-py3-none-any.whl", hash = "sha256:a15ea46f5243e9df9ac9d2172bd8647fc9b482532b108346ce5ccf3bd7c8db35"},
+    {file = "ampel_photometry-0.10.1.tar.gz", hash = "sha256:004d6626f69251fb7804f321ea4df60101494ea8160a16196a76fa09d78689f6"},
 ]
 
 [package.dependencies]
-ampel-core = ">=0.10.0a0,<0.11"
+ampel-interface = ">=0.10.4.post0,<0.11"
 astropy = ">=5"
 
 [[package]]
@@ -123,18 +122,18 @@ mpl = ["matplotlib"]
 
 [[package]]
 name = "ampel-ztf"
-version = "0.10.3a3"
+version = "0.10.3a4"
 description = "Zwicky Transient Facility support for the Ampel system"
 optional = true
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "ampel_ztf-0.10.3a3-py3-none-any.whl", hash = "sha256:9a79e51fd22172267b231a2040d9d53060743d71fcdb20f42a0e722036ccc9ca"},
-    {file = "ampel_ztf-0.10.3a3.tar.gz", hash = "sha256:c74c0ce3904281a11672af2c6e208dd1247323415644dc700b2df944fec681a2"},
+    {file = "ampel_ztf-0.10.3a4-py3-none-any.whl", hash = "sha256:cfbe9d2c9256ffa93714970f49e54ce6cff0ad5dc46fc6a8385c9bd16a23f61f"},
+    {file = "ampel_ztf-0.10.3a4.tar.gz", hash = "sha256:4cc90b7db2a3bba67e9cd1ed6a0d542d05a0618be1bf5f63570d0e0ce827a6e5"},
 ]
 
 [package.dependencies]
 ampel-alerts = ">=0.10.1,<0.11"
-ampel-core = ">=0.10.2,<0.11"
+ampel-core = ">=0.10.3,<0.11"
 ampel-photometry = ">=0.10.0a0,<0.11"
 astropy = ">=5.0"
 backoff = ">=2.0.0,<3.0.0"
@@ -197,20 +196,6 @@ files = [
     {file = "appnope-0.1.4-py2.py3-none-any.whl", hash = "sha256:502575ee11cd7a28c0205f379b525beefebab9d161b7c964670864014ed7213c"},
     {file = "appnope-0.1.4.tar.gz", hash = "sha256:1de3860566df9caf38f01f86f65e0e13e379af54f9e4bee1e66b48f2efffd1ee"},
 ]
-
-[[package]]
-name = "argcomplete"
-version = "3.5.3"
-description = "Bash tab completion for argparse"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "argcomplete-3.5.3-py3-none-any.whl", hash = "sha256:2ab2c4a215c59fd6caaff41a869480a23e8f6a5f910b266c1808037f4e375b61"},
-    {file = "argcomplete-3.5.3.tar.gz", hash = "sha256:c12bf50eded8aebb298c7b7da7a5ff3ee24dffd9f5281867dfe1424b58c55392"},
-]
-
-[package.extras]
-test = ["coverage", "mypy", "pexpect", "ruff", "wheel"]
 
 [[package]]
 name = "argon2-cffi"
@@ -796,60 +781,60 @@ test = ["pytest"]
 
 [[package]]
 name = "confluent-kafka"
-version = "2.7.0"
+version = "2.8.0"
 description = "Confluent's Python client for Apache Kafka"
 optional = true
 python-versions = ">=3.7"
 files = [
-    {file = "confluent_kafka-2.7.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:65bb3a73e8f044e73fa8577e6a079d4dde3765ae6bf8d3d608aad183439cc374"},
-    {file = "confluent_kafka-2.7.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:b9b4c5b31d24cdb9930be47d4c9dd7840f0c0a94259c8f9ce02c4ce38609dac1"},
-    {file = "confluent_kafka-2.7.0-cp310-cp310-manylinux_2_28_aarch64.whl", hash = "sha256:9d5405c877f646e579613f7ba9133371b6e173c71dd585c14184a5d9533d83cf"},
-    {file = "confluent_kafka-2.7.0-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:8bc18cd064bcf7d86c2ffb902188946ac5c1ae0d1988035adf9bf19e4f30c069"},
-    {file = "confluent_kafka-2.7.0-cp310-cp310-win_amd64.whl", hash = "sha256:79d46be5d6fa6efda286dfe4e6f88cff21d1458ae8013315998e45e6a4d6e369"},
-    {file = "confluent_kafka-2.7.0-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:7c42d0b63b5147e2e0ff35b89eea8b7542d61c05ace40aa2c9c5390e94b5c389"},
-    {file = "confluent_kafka-2.7.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:c62be1fa9c05240310880d5babbacd1bc5a923249197efee03b9db697b71f017"},
-    {file = "confluent_kafka-2.7.0-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:84aab3f8bfeaa31cbf22b3c11d6f9c751c7cd90be7ca5ce58f379b2e91d9042c"},
-    {file = "confluent_kafka-2.7.0-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:a1a64a7c29f79fd536b19284340fb025992ee7bb6ef06a856c98f864424b27a3"},
-    {file = "confluent_kafka-2.7.0-cp311-cp311-win_amd64.whl", hash = "sha256:004952e98e64966115bb4c1836a28d439036f921f228dc6718409956ee3e854d"},
-    {file = "confluent_kafka-2.7.0-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:a397d9e2be15c9311ea51279785e75d9bf439bf15f3565043545440cc608ef40"},
-    {file = "confluent_kafka-2.7.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:5664d177dc7859e1a6c86f1b325adf6b87e84873ad2115ef63d2a539716dcb62"},
-    {file = "confluent_kafka-2.7.0-cp312-cp312-manylinux_2_28_aarch64.whl", hash = "sha256:e9adda0c1ad6d713bb9b4ad058d0df3a22dd919820232bb47478f11270d60341"},
-    {file = "confluent_kafka-2.7.0-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:0a51c6509cc7f494cd181a534bc9f346cff0df02b56c4ca69b0f9c621dc75186"},
-    {file = "confluent_kafka-2.7.0-cp312-cp312-win_amd64.whl", hash = "sha256:dc8cfb93768a6e0de5c15f25a76a9e753400839a334da30572a275cf89393ead"},
-    {file = "confluent_kafka-2.7.0-cp313-cp313-macosx_13_0_arm64.whl", hash = "sha256:b907b98daba9b5710a8b20e486d5da38c15d73aaa6475f19ddc51f6307d0747b"},
-    {file = "confluent_kafka-2.7.0-cp313-cp313-macosx_13_0_x86_64.whl", hash = "sha256:33606ec063407fad33e04eae8bf066fbe6ced2130c4d58b0a9d244c7fb347332"},
-    {file = "confluent_kafka-2.7.0-cp313-cp313-manylinux_2_28_aarch64.whl", hash = "sha256:9c3afbec1845d95ccd0cd5e5b986f68d8107b45425e10f1fedeffa908c498f64"},
-    {file = "confluent_kafka-2.7.0-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:81a985d1ba1d0e66e99cb4bca7bfe302f3bbf06dd6e20be07dfe9661a1eedae3"},
-    {file = "confluent_kafka-2.7.0-cp313-cp313-win_amd64.whl", hash = "sha256:d1cb3d365bb4fdb063654625cd1a1f64a2c1f1b3f324510ea3e008710ef76093"},
-    {file = "confluent_kafka-2.7.0-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:16b4787178e3765f3b3bedf8b7b6f4ddc7734dae606b350c387d11beeb8bc113"},
-    {file = "confluent_kafka-2.7.0-cp37-cp37m-manylinux_2_28_aarch64.whl", hash = "sha256:d9cf2c6aec99db3952036312513611c6600eccfecd0b904460c18d6cbcae05b8"},
-    {file = "confluent_kafka-2.7.0-cp37-cp37m-manylinux_2_28_x86_64.whl", hash = "sha256:1dbda5fdc5f053fa3ae6c9d81db571d1fb30e92dece77cca20d37473cf7d8363"},
-    {file = "confluent_kafka-2.7.0-cp37-cp37m-win_amd64.whl", hash = "sha256:a569559c1e76ce3bf557cbc6d31b9695a643f6b68213efcb3529b7a603eabdd7"},
-    {file = "confluent_kafka-2.7.0-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:1d142754af7245cf7e30c62964436d0e94141325062c9a9e09b32bb715999b43"},
-    {file = "confluent_kafka-2.7.0-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:a500b5ed1d3403707e9a4737f14b120561387a49d770e7928bfa656714e612de"},
-    {file = "confluent_kafka-2.7.0-cp38-cp38-manylinux_2_28_aarch64.whl", hash = "sha256:685568534714f3f2e891bff036453c7ae8f521946cd508a822151591809159ed"},
-    {file = "confluent_kafka-2.7.0-cp38-cp38-manylinux_2_28_x86_64.whl", hash = "sha256:a060db173e3d5dbc765ce2c31c92af003486ac0b1729f78526e79f52a3a0c3b7"},
-    {file = "confluent_kafka-2.7.0-cp38-cp38-win_amd64.whl", hash = "sha256:7b68bdeba3309a42910622e1211580f9fb8612d0b15b8e8b62de782e8e92f2f1"},
-    {file = "confluent_kafka-2.7.0-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:7a27596530ef034786554d1f29ecec0b79c8182e29802034c5676ea368479224"},
-    {file = "confluent_kafka-2.7.0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:728e20ee530bf56caa21102301de828fbd6ffa88d099f822ac5b70d3b15cf752"},
-    {file = "confluent_kafka-2.7.0-cp39-cp39-manylinux_2_28_aarch64.whl", hash = "sha256:62e0391c22a315c5897d046fb743be32ebbf6ff7391df36e2dd3e7d951f57a54"},
-    {file = "confluent_kafka-2.7.0-cp39-cp39-manylinux_2_28_x86_64.whl", hash = "sha256:32f95f1040edcefe1aa68b71b6bd7c801f1f9814a5cf5d5267a405c624f0b6d8"},
-    {file = "confluent_kafka-2.7.0-cp39-cp39-win_amd64.whl", hash = "sha256:27c81961b8864f0eb4c7ed8024aec3ed3ae3f249446b592840a173594cad66fb"},
-    {file = "confluent_kafka-2.7.0.tar.gz", hash = "sha256:bf2b74bb9c68901ad345440e091b9a8a4490a38db3161b87d44f476650f3c0c6"},
+    {file = "confluent_kafka-2.8.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:1ecac5681dbef34f30271c0a0a0a23b7221ae9c560e78415dbf4555e7cd7913e"},
+    {file = "confluent_kafka-2.8.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:b6526119b466d63acb1c9f04b9f31077089c831c3087b5b2026cf856d6587d07"},
+    {file = "confluent_kafka-2.8.0-cp310-cp310-manylinux_2_28_aarch64.whl", hash = "sha256:99505cbe7b42da288dfbc827cd5d11ca1c51ec66a7ba6c0d2faca88a01e34530"},
+    {file = "confluent_kafka-2.8.0-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:3d7bf431a544f70fc306b3f0dfe6c81439c1479e84ed0281214b97d919e7412e"},
+    {file = "confluent_kafka-2.8.0-cp310-cp310-win_amd64.whl", hash = "sha256:7b38bdc076689abf2844c7e5dd603eb785be5265091f1db5a95d93a5400f51cf"},
+    {file = "confluent_kafka-2.8.0-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:5de7ab587ecdc153a029d992e7d470fc68ab943e38931b18fc4a01074afd5c5c"},
+    {file = "confluent_kafka-2.8.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:52a87d1a73ad91d4f81e35a8e6e961a5ad0c49ecdb198e47bd106262e968253e"},
+    {file = "confluent_kafka-2.8.0-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:f03b12d009cfb16649b0e51c06514312d5cbbbe9b06e71cf4ad781b378f8b79f"},
+    {file = "confluent_kafka-2.8.0-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:1a01feeac7f27bff079ad1a29f1cf1b149235a975d67d7de20c1935f44b14293"},
+    {file = "confluent_kafka-2.8.0-cp311-cp311-win_amd64.whl", hash = "sha256:69bfeeecca6077592e3349811f564602da3cbea328c78e2ed80c8de6ebd36634"},
+    {file = "confluent_kafka-2.8.0-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:80bf43c098df04008dd6a517a9f745b67885af9c35c09d220f4d19661ae4d647"},
+    {file = "confluent_kafka-2.8.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:3f5e5b18c7acf50777545e817e563b0fa9c74badbabf30474665c03ae8ddcc23"},
+    {file = "confluent_kafka-2.8.0-cp312-cp312-manylinux_2_28_aarch64.whl", hash = "sha256:c540935d89acf1bc173fddd0b9b978ece348345f5a0fccf549ea8663cfa5152c"},
+    {file = "confluent_kafka-2.8.0-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:79ae80fd9aa0d71689d7189591faf00354907b728c172f4f97a6d23797972025"},
+    {file = "confluent_kafka-2.8.0-cp312-cp312-win_amd64.whl", hash = "sha256:68ebba11c2a33f530d62318c997d40b77e627bfa821683bede0edb043d99504f"},
+    {file = "confluent_kafka-2.8.0-cp313-cp313-macosx_13_0_arm64.whl", hash = "sha256:dd3bc67d589dd486d128a159e918ecf3765f8154474edf9f6f701f701de735a1"},
+    {file = "confluent_kafka-2.8.0-cp313-cp313-macosx_13_0_x86_64.whl", hash = "sha256:4c0e655df9faef450654700db3fda163ddbc4b68f5bf5c7633cf1bf9d932d892"},
+    {file = "confluent_kafka-2.8.0-cp313-cp313-manylinux_2_28_aarch64.whl", hash = "sha256:abff7c4853e2d118563229329ca0a1f148ee5004cbcb9a8dad9dc8e796fcc477"},
+    {file = "confluent_kafka-2.8.0-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:e75230b51456de5cfaefe94c35f3de5101864d8c21518f114d5cd9dd1d7d43b1"},
+    {file = "confluent_kafka-2.8.0-cp313-cp313-win_amd64.whl", hash = "sha256:fd8181d2866dd182c3247f61740cd2bc1526c9ae1d9e541cd96c44f0f72d4460"},
+    {file = "confluent_kafka-2.8.0-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:d710286091a1bb82f5b52b5b7602f9e3d54a5e179e24f073dabc8482db1e89a5"},
+    {file = "confluent_kafka-2.8.0-cp37-cp37m-manylinux_2_28_aarch64.whl", hash = "sha256:4eba9658accb8bd17c5e230b887e966fdd96c98f455150932cc619bf495292ef"},
+    {file = "confluent_kafka-2.8.0-cp37-cp37m-manylinux_2_28_x86_64.whl", hash = "sha256:959209ca6259a1cc18598d171d0f65aa7399bc9d56839b1ef3999e7f7cda81b3"},
+    {file = "confluent_kafka-2.8.0-cp37-cp37m-win_amd64.whl", hash = "sha256:762a80920d675265cecb786a709a976c105f5cae6ec830ecaaae048cdbfe61e5"},
+    {file = "confluent_kafka-2.8.0-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:162419f82072a793ca1da926bbc3e0864b50276c053d7977e351321ed5ab770a"},
+    {file = "confluent_kafka-2.8.0-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:6257a8b45555b79f59aae4254e32b9d3a2b9fe7202e6eb74e2f26b110a2205c1"},
+    {file = "confluent_kafka-2.8.0-cp38-cp38-manylinux_2_28_aarch64.whl", hash = "sha256:1a0a3b2283b233477fdce1913d59d443fbc188c7ee7aa382fc5ae470b91ff43e"},
+    {file = "confluent_kafka-2.8.0-cp38-cp38-manylinux_2_28_x86_64.whl", hash = "sha256:8584a98538fceb374690344697d561c271ce03e9799044ebf986c1e2b1d22a6a"},
+    {file = "confluent_kafka-2.8.0-cp38-cp38-win_amd64.whl", hash = "sha256:3a8d336c946e456be1737b9760f8dbe8f8acfbc7e14234c821e43b3016be2040"},
+    {file = "confluent_kafka-2.8.0-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:55daa621c31603372367fbbf4b66b1b0475e3e89a9fcc0de5c58509455b52c2d"},
+    {file = "confluent_kafka-2.8.0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:60d85216f7598e0911303554664c0d432815a115ed06a0ea19e04059dcbba2d7"},
+    {file = "confluent_kafka-2.8.0-cp39-cp39-manylinux_2_28_aarch64.whl", hash = "sha256:1d13d8b638d4d6cb66ca7c80e47104654fdeb22e645b7fdaacbc06761c553ba8"},
+    {file = "confluent_kafka-2.8.0-cp39-cp39-manylinux_2_28_x86_64.whl", hash = "sha256:5445598ee20733225fd4aa871845f08defcd1882be1d2c4876a501cdfadf2bbd"},
+    {file = "confluent_kafka-2.8.0-cp39-cp39-win_amd64.whl", hash = "sha256:55d7b3e3571208a03b539f587609aa21e16b42b032c357e9fee7f336cc07b71d"},
+    {file = "confluent_kafka-2.8.0.tar.gz", hash = "sha256:56c4aa8e9de6f6e8e3ecf86d396372e76631ec75b107cdb5248c7405ec7c5fa1"},
 ]
 
 [package.extras]
-all = ["attrs", "attrs", "avro (>=1.11.1,<2)", "avro (>=1.11.1,<2)", "azure-identity", "azure-identity", "azure-keyvault-keys", "azure-keyvault-keys", "boto3", "boto3", "cachetools", "cachetools", "cel-python (>=0.1.5)", "cel-python (>=0.1.5)", "confluent-kafka", "fastapi", "fastavro (<1.8.0)", "fastavro (<1.8.0)", "fastavro (<2)", "fastavro (<2)", "flake8", "google-api-core", "google-api-core", "google-auth", "google-auth", "google-cloud-kms", "google-cloud-kms", "googleapis-common-protos", "googleapis-common-protos", "hkdf (==0.0.3)", "hkdf (==0.0.3)", "httpx (<0.28.0)", "httpx (<0.28.0)", "hvac", "hvac", "jsonata-python", "jsonata-python", "jsonschema", "jsonschema", "opentelemetry-distro", "opentelemetry-exporter-otlp", "protobuf", "protobuf", "psutil", "pydantic", "pyrsistent", "pyrsistent", "pytest", "pytest-timeout", "pyyaml (>=6.0.0)", "pyyaml (>=6.0.0)", "requests", "requests", "requests-mock", "respx", "six", "sphinx", "sphinx-rtd-theme", "tink", "tink", "urllib3 (<2.0.0)", "urllib3 (>=2.0.0,<3)", "uvicorn"]
-avro = ["attrs", "avro (>=1.11.1,<2)", "cachetools", "fastavro (<1.8.0)", "fastavro (<2)", "httpx (<0.28.0)", "requests"]
-dev = ["attrs", "attrs", "avro (>=1.11.1,<2)", "avro (>=1.11.1,<2)", "azure-identity", "azure-identity", "azure-keyvault-keys", "azure-keyvault-keys", "boto3", "boto3", "cachetools", "cachetools", "cel-python (>=0.1.5)", "cel-python (>=0.1.5)", "confluent-kafka", "fastapi", "fastavro (<1.8.0)", "fastavro (<1.8.0)", "fastavro (<2)", "fastavro (<2)", "flake8", "google-api-core", "google-api-core", "google-auth", "google-auth", "google-cloud-kms", "google-cloud-kms", "googleapis-common-protos", "googleapis-common-protos", "hkdf (==0.0.3)", "hkdf (==0.0.3)", "httpx (<0.28.0)", "httpx (<0.28.0)", "hvac", "hvac", "jsonata-python", "jsonata-python", "jsonschema", "jsonschema", "protobuf", "protobuf", "pydantic", "pyrsistent", "pyrsistent", "pytest", "pytest-timeout", "pyyaml (>=6.0.0)", "pyyaml (>=6.0.0)", "requests", "requests", "requests-mock", "respx", "six", "sphinx", "sphinx-rtd-theme", "tink", "tink", "urllib3 (<2.0.0)", "urllib3 (>=2.0.0,<3)", "uvicorn"]
-docs = ["attrs", "avro (>=1.11.1,<2)", "azure-identity", "azure-keyvault-keys", "boto3", "cachetools", "cel-python (>=0.1.5)", "fastavro (<1.8.0)", "fastavro (<2)", "google-api-core", "google-auth", "google-cloud-kms", "googleapis-common-protos", "hkdf (==0.0.3)", "httpx (<0.28.0)", "hvac", "jsonata-python", "jsonschema", "protobuf", "pyrsistent", "pyyaml (>=6.0.0)", "requests", "sphinx", "sphinx-rtd-theme", "tink"]
-examples = ["attrs", "avro (>=1.11.1,<2)", "azure-identity", "azure-keyvault-keys", "boto3", "cachetools", "cel-python (>=0.1.5)", "confluent-kafka", "fastapi", "fastavro (<1.8.0)", "fastavro (<2)", "google-api-core", "google-auth", "google-cloud-kms", "googleapis-common-protos", "hkdf (==0.0.3)", "httpx (<0.28.0)", "hvac", "jsonata-python", "jsonschema", "protobuf", "pydantic", "pyrsistent", "pyyaml (>=6.0.0)", "requests", "six", "tink", "uvicorn"]
-json = ["attrs", "cachetools", "httpx (<0.28.0)", "jsonschema", "pyrsistent"]
-protobuf = ["attrs", "cachetools", "googleapis-common-protos", "httpx (<0.28.0)", "protobuf"]
-rules = ["attrs", "azure-identity", "azure-keyvault-keys", "boto3", "cachetools", "cel-python (>=0.1.5)", "google-api-core", "google-auth", "google-cloud-kms", "hkdf (==0.0.3)", "httpx (<0.28.0)", "hvac", "jsonata-python", "pyyaml (>=6.0.0)", "tink"]
-schemaregistry = ["attrs", "cachetools", "httpx (<0.28.0)"]
+all = ["attrs", "attrs", "avro (>=1.11.1,<2)", "avro (>=1.11.1,<2)", "azure-identity", "azure-identity", "azure-keyvault-keys", "azure-keyvault-keys", "boto3", "boto3", "cachetools", "cachetools", "cel-python (>=0.1.5)", "cel-python (>=0.1.5)", "confluent-kafka", "fastapi", "fastavro (<1.8.0)", "fastavro (<1.8.0)", "fastavro (<2)", "fastavro (<2)", "flake8", "google-api-core", "google-api-core", "google-auth", "google-auth", "google-cloud-kms", "google-cloud-kms", "googleapis-common-protos", "googleapis-common-protos", "hkdf (==0.0.3)", "hkdf (==0.0.3)", "httpx", "httpx", "hvac", "hvac", "jsonata-python", "jsonata-python", "jsonschema", "jsonschema", "opentelemetry-distro", "opentelemetry-exporter-otlp", "protobuf", "protobuf", "psutil", "pydantic", "pyrsistent", "pyrsistent", "pytest", "pytest-timeout", "pytest_cov", "pyyaml (>=6.0.0)", "pyyaml (>=6.0.0)", "requests", "requests", "requests-mock", "respx", "six", "sphinx", "sphinx-rtd-theme", "tink", "tink", "urllib3 (<2.0.0)", "urllib3 (>=2.0.0,<3)", "uvicorn"]
+avro = ["attrs", "avro (>=1.11.1,<2)", "cachetools", "fastavro (<1.8.0)", "fastavro (<2)", "httpx", "requests"]
+dev = ["attrs", "attrs", "avro (>=1.11.1,<2)", "avro (>=1.11.1,<2)", "azure-identity", "azure-identity", "azure-keyvault-keys", "azure-keyvault-keys", "boto3", "boto3", "cachetools", "cachetools", "cel-python (>=0.1.5)", "cel-python (>=0.1.5)", "confluent-kafka", "fastapi", "fastavro (<1.8.0)", "fastavro (<1.8.0)", "fastavro (<2)", "fastavro (<2)", "flake8", "google-api-core", "google-api-core", "google-auth", "google-auth", "google-cloud-kms", "google-cloud-kms", "googleapis-common-protos", "googleapis-common-protos", "hkdf (==0.0.3)", "hkdf (==0.0.3)", "httpx", "httpx", "hvac", "hvac", "jsonata-python", "jsonata-python", "jsonschema", "jsonschema", "protobuf", "protobuf", "pydantic", "pyrsistent", "pyrsistent", "pytest", "pytest-timeout", "pytest_cov", "pyyaml (>=6.0.0)", "pyyaml (>=6.0.0)", "requests", "requests", "requests-mock", "respx", "six", "sphinx", "sphinx-rtd-theme", "tink", "tink", "urllib3 (<2.0.0)", "urllib3 (>=2.0.0,<3)", "uvicorn"]
+docs = ["attrs", "avro (>=1.11.1,<2)", "azure-identity", "azure-keyvault-keys", "boto3", "cachetools", "cel-python (>=0.1.5)", "fastavro (<1.8.0)", "fastavro (<2)", "google-api-core", "google-auth", "google-cloud-kms", "googleapis-common-protos", "hkdf (==0.0.3)", "httpx", "hvac", "jsonata-python", "jsonschema", "protobuf", "pyrsistent", "pyyaml (>=6.0.0)", "requests", "sphinx", "sphinx-rtd-theme", "tink"]
+examples = ["attrs", "avro (>=1.11.1,<2)", "azure-identity", "azure-keyvault-keys", "boto3", "cachetools", "cel-python (>=0.1.5)", "confluent-kafka", "fastapi", "fastavro (<1.8.0)", "fastavro (<2)", "google-api-core", "google-auth", "google-cloud-kms", "googleapis-common-protos", "hkdf (==0.0.3)", "httpx", "hvac", "jsonata-python", "jsonschema", "protobuf", "pydantic", "pyrsistent", "pyyaml (>=6.0.0)", "requests", "six", "tink", "uvicorn"]
+json = ["attrs", "cachetools", "httpx", "jsonschema", "pyrsistent"]
+protobuf = ["attrs", "cachetools", "googleapis-common-protos", "httpx", "protobuf"]
+rules = ["attrs", "azure-identity", "azure-keyvault-keys", "boto3", "cachetools", "cel-python (>=0.1.5)", "google-api-core", "google-auth", "google-cloud-kms", "hkdf (==0.0.3)", "httpx", "hvac", "jsonata-python", "pyyaml (>=6.0.0)", "tink"]
+schemaregistry = ["attrs", "cachetools", "httpx"]
 soaktest = ["opentelemetry-distro", "opentelemetry-exporter-otlp", "psutil"]
-tests = ["attrs", "avro (>=1.11.1,<2)", "azure-identity", "azure-keyvault-keys", "boto3", "cachetools", "cel-python (>=0.1.5)", "fastavro (<1.8.0)", "fastavro (<2)", "flake8", "google-api-core", "google-auth", "google-cloud-kms", "googleapis-common-protos", "hkdf (==0.0.3)", "httpx (<0.28.0)", "hvac", "jsonata-python", "jsonschema", "protobuf", "pyrsistent", "pytest", "pytest-timeout", "pyyaml (>=6.0.0)", "requests", "requests-mock", "respx", "tink", "urllib3 (<2.0.0)", "urllib3 (>=2.0.0,<3)"]
+tests = ["attrs", "avro (>=1.11.1,<2)", "azure-identity", "azure-keyvault-keys", "boto3", "cachetools", "cel-python (>=0.1.5)", "fastavro (<1.8.0)", "fastavro (<2)", "flake8", "google-api-core", "google-auth", "google-cloud-kms", "googleapis-common-protos", "hkdf (==0.0.3)", "httpx", "hvac", "jsonata-python", "jsonschema", "protobuf", "pyrsistent", "pytest", "pytest-timeout", "pytest_cov", "pyyaml (>=6.0.0)", "requests", "requests-mock", "respx", "tink", "urllib3 (<2.0.0)", "urllib3 (>=2.0.0,<3)"]
 
 [[package]]
 name = "contourpy"
@@ -3746,22 +3731,22 @@ wcwidth = "*"
 
 [[package]]
 name = "protobuf"
-version = "5.29.2"
+version = "5.29.3"
 description = ""
 optional = true
 python-versions = ">=3.8"
 files = [
-    {file = "protobuf-5.29.2-cp310-abi3-win32.whl", hash = "sha256:c12ba8249f5624300cf51c3d0bfe5be71a60c63e4dcf51ffe9a68771d958c851"},
-    {file = "protobuf-5.29.2-cp310-abi3-win_amd64.whl", hash = "sha256:842de6d9241134a973aab719ab42b008a18a90f9f07f06ba480df268f86432f9"},
-    {file = "protobuf-5.29.2-cp38-abi3-macosx_10_9_universal2.whl", hash = "sha256:a0c53d78383c851bfa97eb42e3703aefdc96d2036a41482ffd55dc5f529466eb"},
-    {file = "protobuf-5.29.2-cp38-abi3-manylinux2014_aarch64.whl", hash = "sha256:494229ecd8c9009dd71eda5fd57528395d1eacdf307dbece6c12ad0dd09e912e"},
-    {file = "protobuf-5.29.2-cp38-abi3-manylinux2014_x86_64.whl", hash = "sha256:b6b0d416bbbb9d4fbf9d0561dbfc4e324fd522f61f7af0fe0f282ab67b22477e"},
-    {file = "protobuf-5.29.2-cp38-cp38-win32.whl", hash = "sha256:e621a98c0201a7c8afe89d9646859859be97cb22b8bf1d8eacfd90d5bda2eb19"},
-    {file = "protobuf-5.29.2-cp38-cp38-win_amd64.whl", hash = "sha256:13d6d617a2a9e0e82a88113d7191a1baa1e42c2cc6f5f1398d3b054c8e7e714a"},
-    {file = "protobuf-5.29.2-cp39-cp39-win32.whl", hash = "sha256:36000f97ea1e76e8398a3f02936aac2a5d2b111aae9920ec1b769fc4a222c4d9"},
-    {file = "protobuf-5.29.2-cp39-cp39-win_amd64.whl", hash = "sha256:2d2e674c58a06311c8e99e74be43e7f3a8d1e2b2fdf845eaa347fbd866f23355"},
-    {file = "protobuf-5.29.2-py3-none-any.whl", hash = "sha256:fde4554c0e578a5a0bcc9a276339594848d1e89f9ea47b4427c80e5d72f90181"},
-    {file = "protobuf-5.29.2.tar.gz", hash = "sha256:b2cc8e8bb7c9326996f0e160137b0861f1a82162502658df2951209d0cb0309e"},
+    {file = "protobuf-5.29.3-cp310-abi3-win32.whl", hash = "sha256:3ea51771449e1035f26069c4c7fd51fba990d07bc55ba80701c78f886bf9c888"},
+    {file = "protobuf-5.29.3-cp310-abi3-win_amd64.whl", hash = "sha256:a4fa6f80816a9a0678429e84973f2f98cbc218cca434abe8db2ad0bffc98503a"},
+    {file = "protobuf-5.29.3-cp38-abi3-macosx_10_9_universal2.whl", hash = "sha256:a8434404bbf139aa9e1300dbf989667a83d42ddda9153d8ab76e0d5dcaca484e"},
+    {file = "protobuf-5.29.3-cp38-abi3-manylinux2014_aarch64.whl", hash = "sha256:daaf63f70f25e8689c072cfad4334ca0ac1d1e05a92fc15c54eb9cf23c3efd84"},
+    {file = "protobuf-5.29.3-cp38-abi3-manylinux2014_x86_64.whl", hash = "sha256:c027e08a08be10b67c06bf2370b99c811c466398c357e615ca88c91c07f0910f"},
+    {file = "protobuf-5.29.3-cp38-cp38-win32.whl", hash = "sha256:84a57163a0ccef3f96e4b6a20516cedcf5bb3a95a657131c5c3ac62200d23252"},
+    {file = "protobuf-5.29.3-cp38-cp38-win_amd64.whl", hash = "sha256:b89c115d877892a512f79a8114564fb435943b59067615894c3b13cd3e1fa107"},
+    {file = "protobuf-5.29.3-cp39-cp39-win32.whl", hash = "sha256:0eb32bfa5219fc8d4111803e9a690658aa2e6366384fd0851064b963b6d1f2a7"},
+    {file = "protobuf-5.29.3-cp39-cp39-win_amd64.whl", hash = "sha256:6ce8cc3389a20693bfde6c6562e03474c40851b44975c9b2bf6df7d8c4f864da"},
+    {file = "protobuf-5.29.3-py3-none-any.whl", hash = "sha256:0a18ed4a24198528f2333802eb075e59dea9d679ab7a6c5efb017a59004d849f"},
+    {file = "protobuf-5.29.3.tar.gz", hash = "sha256:5da0f41edaf117bde316404bad1a486cb4ededf8e4a54891296f648e8e076620"},
 ]
 
 [[package]]
@@ -3839,47 +3824,6 @@ python-versions = ">=3.8"
 files = [
     {file = "pycparser-2.22-py3-none-any.whl", hash = "sha256:c3702b6d3dd8c7abc1afa565d7e63d53a1d0bd86cdc24edd75470f4de499cfcc"},
     {file = "pycparser-2.22.tar.gz", hash = "sha256:491c8be9c040f5390f5bf44a5b07752bd07f56edf992381b05c701439eec10f6"},
-]
-
-[[package]]
-name = "pycryptodome"
-version = "3.21.0"
-description = "Cryptographic library for Python"
-optional = false
-python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,>=2.7"
-files = [
-    {file = "pycryptodome-3.21.0-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:dad9bf36eda068e89059d1f07408e397856be9511d7113ea4b586642a429a4fd"},
-    {file = "pycryptodome-3.21.0-cp27-cp27m-manylinux2010_i686.whl", hash = "sha256:a1752eca64c60852f38bb29e2c86fca30d7672c024128ef5d70cc15868fa10f4"},
-    {file = "pycryptodome-3.21.0-cp27-cp27m-manylinux2010_x86_64.whl", hash = "sha256:3ba4cc304eac4d4d458f508d4955a88ba25026890e8abff9b60404f76a62c55e"},
-    {file = "pycryptodome-3.21.0-cp27-cp27m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:7cb087b8612c8a1a14cf37dd754685be9a8d9869bed2ffaaceb04850a8aeef7e"},
-    {file = "pycryptodome-3.21.0-cp27-cp27m-musllinux_1_1_aarch64.whl", hash = "sha256:26412b21df30b2861424a6c6d5b1d8ca8107612a4cfa4d0183e71c5d200fb34a"},
-    {file = "pycryptodome-3.21.0-cp27-cp27m-win32.whl", hash = "sha256:cc2269ab4bce40b027b49663d61d816903a4bd90ad88cb99ed561aadb3888dd3"},
-    {file = "pycryptodome-3.21.0-cp27-cp27m-win_amd64.whl", hash = "sha256:0fa0a05a6a697ccbf2a12cec3d6d2650b50881899b845fac6e87416f8cb7e87d"},
-    {file = "pycryptodome-3.21.0-cp27-cp27mu-manylinux2010_i686.whl", hash = "sha256:6cce52e196a5f1d6797ff7946cdff2038d3b5f0aba4a43cb6bf46b575fd1b5bb"},
-    {file = "pycryptodome-3.21.0-cp27-cp27mu-manylinux2010_x86_64.whl", hash = "sha256:a915597ffccabe902e7090e199a7bf7a381c5506a747d5e9d27ba55197a2c568"},
-    {file = "pycryptodome-3.21.0-cp27-cp27mu-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a4e74c522d630766b03a836c15bff77cb657c5fdf098abf8b1ada2aebc7d0819"},
-    {file = "pycryptodome-3.21.0-cp27-cp27mu-musllinux_1_1_aarch64.whl", hash = "sha256:a3804675283f4764a02db05f5191eb8fec2bb6ca34d466167fc78a5f05bbe6b3"},
-    {file = "pycryptodome-3.21.0-cp36-abi3-macosx_10_9_universal2.whl", hash = "sha256:2480ec2c72438430da9f601ebc12c518c093c13111a5c1644c82cdfc2e50b1e4"},
-    {file = "pycryptodome-3.21.0-cp36-abi3-macosx_10_9_x86_64.whl", hash = "sha256:de18954104667f565e2fbb4783b56667f30fb49c4d79b346f52a29cb198d5b6b"},
-    {file = "pycryptodome-3.21.0-cp36-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:2de4b7263a33947ff440412339cb72b28a5a4c769b5c1ca19e33dd6cd1dcec6e"},
-    {file = "pycryptodome-3.21.0-cp36-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0714206d467fc911042d01ea3a1847c847bc10884cf674c82e12915cfe1649f8"},
-    {file = "pycryptodome-3.21.0-cp36-abi3-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:7d85c1b613121ed3dbaa5a97369b3b757909531a959d229406a75b912dd51dd1"},
-    {file = "pycryptodome-3.21.0-cp36-abi3-musllinux_1_1_aarch64.whl", hash = "sha256:8898a66425a57bcf15e25fc19c12490b87bd939800f39a03ea2de2aea5e3611a"},
-    {file = "pycryptodome-3.21.0-cp36-abi3-musllinux_1_2_i686.whl", hash = "sha256:932c905b71a56474bff8a9c014030bc3c882cee696b448af920399f730a650c2"},
-    {file = "pycryptodome-3.21.0-cp36-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:18caa8cfbc676eaaf28613637a89980ad2fd96e00c564135bf90bc3f0b34dd93"},
-    {file = "pycryptodome-3.21.0-cp36-abi3-win32.whl", hash = "sha256:280b67d20e33bb63171d55b1067f61fbd932e0b1ad976b3a184303a3dad22764"},
-    {file = "pycryptodome-3.21.0-cp36-abi3-win_amd64.whl", hash = "sha256:b7aa25fc0baa5b1d95b7633af4f5f1838467f1815442b22487426f94e0d66c53"},
-    {file = "pycryptodome-3.21.0-pp27-pypy_73-manylinux2010_x86_64.whl", hash = "sha256:2cb635b67011bc147c257e61ce864879ffe6d03342dc74b6045059dfbdedafca"},
-    {file = "pycryptodome-3.21.0-pp27-pypy_73-win32.whl", hash = "sha256:4c26a2f0dc15f81ea3afa3b0c87b87e501f235d332b7f27e2225ecb80c0b1cdd"},
-    {file = "pycryptodome-3.21.0-pp310-pypy310_pp73-macosx_10_15_x86_64.whl", hash = "sha256:d5ebe0763c982f069d3877832254f64974139f4f9655058452603ff559c482e8"},
-    {file = "pycryptodome-3.21.0-pp310-pypy310_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:7ee86cbde706be13f2dec5a42b52b1c1d1cbb90c8e405c68d0755134735c8dc6"},
-    {file = "pycryptodome-3.21.0-pp310-pypy310_pp73-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:0fd54003ec3ce4e0f16c484a10bc5d8b9bd77fa662a12b85779a2d2d85d67ee0"},
-    {file = "pycryptodome-3.21.0-pp310-pypy310_pp73-win_amd64.whl", hash = "sha256:5dfafca172933506773482b0e18f0cd766fd3920bd03ec85a283df90d8a17bc6"},
-    {file = "pycryptodome-3.21.0-pp39-pypy39_pp73-macosx_10_15_x86_64.whl", hash = "sha256:590ef0898a4b0a15485b05210b4a1c9de8806d3ad3d47f74ab1dc07c67a6827f"},
-    {file = "pycryptodome-3.21.0-pp39-pypy39_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f35e442630bc4bc2e1878482d6f59ea22e280d7121d7adeaedba58c23ab6386b"},
-    {file = "pycryptodome-3.21.0-pp39-pypy39_pp73-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:ff99f952db3db2fbe98a0b355175f93ec334ba3d01bbde25ad3a5a33abc02b58"},
-    {file = "pycryptodome-3.21.0-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:8acd7d34af70ee63f9a849f957558e49a98f8f1634f86a59d2be62bb8e93f71c"},
-    {file = "pycryptodome-3.21.0.tar.gz", hash = "sha256:f7787e0d469bdae763b876174cf2e6c0f7be79808af26b1da96f1a64bcf47297"},
 ]
 
 [[package]]
@@ -4043,13 +3987,13 @@ test = ["pytest", "pytest-doctestplus (>=0.7)"]
 
 [[package]]
 name = "pygments"
-version = "2.19.0"
+version = "2.19.1"
 description = "Pygments is a syntax highlighting package written in Python."
 optional = true
 python-versions = ">=3.8"
 files = [
-    {file = "pygments-2.19.0-py3-none-any.whl", hash = "sha256:4755e6e64d22161d5b61432c0600c923c5927214e7c956e31c23923c89251a9b"},
-    {file = "pygments-2.19.0.tar.gz", hash = "sha256:afc4146269910d4bdfabcd27c24923137a74d562a23a320a41a55ad303e19783"},
+    {file = "pygments-2.19.1-py3-none-any.whl", hash = "sha256:9ea1544ad55cecf4b8242fab6dd35a93bbce657034b0611ee383099054ab6d8c"},
+    {file = "pygments-2.19.1.tar.gz", hash = "sha256:61c16d2a8576dc0649d9f39e089b5f02bcd27fba10d8fb4dcc28173f7a45151f"},
 ]
 
 [package.extras]
@@ -4999,13 +4943,13 @@ files = [
 
 [[package]]
 name = "setuptools"
-version = "75.7.0"
+version = "75.8.0"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "setuptools-75.7.0-py3-none-any.whl", hash = "sha256:84fb203f278ebcf5cd08f97d3fb96d3fbed4b629d500b29ad60d11e00769b183"},
-    {file = "setuptools-75.7.0.tar.gz", hash = "sha256:886ff7b16cd342f1d1defc16fc98c9ce3fde69e087a4e1983d7ab634e5f41f4f"},
+    {file = "setuptools-75.8.0-py3-none-any.whl", hash = "sha256:e3982f444617239225d675215d51f6ba05f845d4eec313da4418fdbb56fb27e3"},
+    {file = "setuptools-75.8.0.tar.gz", hash = "sha256:c5afc8f407c626b8313a86e10311dd3f661c6cd9c09d4bf8c15c0e11f9f2b0e6"},
 ]
 
 [package.extras]
@@ -5103,19 +5047,6 @@ files = [
     {file = "six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274"},
     {file = "six-1.17.0.tar.gz", hash = "sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81"},
 ]
-
-[[package]]
-name = "sjcl"
-version = "0.2.1"
-description = "Decrypt and encrypt messages compatible to the 'Stanford Javascript Crypto Library (SJCL)' message format."
-optional = false
-python-versions = "*"
-files = [
-    {file = "sjcl-0.2.1.tar.gz", hash = "sha256:3761ba01f9f049eaa2f67516054b7bfb2e27fe8bc7c9c630da7168fba58f0c57"},
-]
-
-[package.dependencies]
-pycryptodome = "*"
 
 [[package]]
 name = "slack-sdk"
@@ -5397,17 +5328,6 @@ files = [
     {file = "tomli-2.2.1-cp313-cp313-win_amd64.whl", hash = "sha256:a38aa0308e754b0e3c67e344754dff64999ff9b513e691d0e786265c93583c69"},
     {file = "tomli-2.2.1-py3-none-any.whl", hash = "sha256:cb55c73c5f4408779d0cf3eef9f762b9c9f147a77de7b258bef0a5628adc85cc"},
     {file = "tomli-2.2.1.tar.gz", hash = "sha256:cd45e1dc79c835ce60f7404ec8119f2eb06d38b1deba146f07ced3bbc44505ff"},
-]
-
-[[package]]
-name = "tomlkit"
-version = "0.13.2"
-description = "Style preserving TOML library"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "tomlkit-0.13.2-py3-none-any.whl", hash = "sha256:7a974427f6e119197f670fbbbeae7bef749a6c14e793db934baefc1b5f03efde"},
-    {file = "tomlkit-0.13.2.tar.gz", hash = "sha256:fff5fe59a87295b278abd31bec92c15d9bc4a06885ab12bcea52c71119392e79"},
 ]
 
 [[package]]
@@ -5833,17 +5753,6 @@ pyspark = ["cloudpickle", "pyspark", "scikit-learn"]
 scikit-learn = ["scikit-learn"]
 
 [[package]]
-name = "xmltodict"
-version = "0.14.2"
-description = "Makes working with XML feel like you are working with JSON"
-optional = false
-python-versions = ">=3.6"
-files = [
-    {file = "xmltodict-0.14.2-py2.py3-none-any.whl", hash = "sha256:20cc7d723ed729276e808f26fb6b3599f786cbc37e06c65e192ba77c40f20aac"},
-    {file = "xmltodict-0.14.2.tar.gz", hash = "sha256:201e7c28bb210e374999d1dde6382923ab0ed1a8a5faeece48ab525b7810a553"},
-]
-
-[[package]]
 name = "xxhash"
 version = "3.5.0"
 description = "Python binding for xxHash"
@@ -5974,26 +5883,6 @@ files = [
     {file = "xxhash-3.5.0-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:b150b8467852e1bd844387459aa6fbe11d7f38b56e901f9f3b3e6aba0d660240"},
     {file = "xxhash-3.5.0.tar.gz", hash = "sha256:84f2caddf951c9cbf8dc2e22a89d4ccf5d86391ac6418fe81e3c67d0cf60b45f"},
 ]
-
-[[package]]
-name = "yq"
-version = "3.4.3"
-description = "Command-line YAML/XML processor - jq wrapper for YAML/XML documents"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "yq-3.4.3-py3-none-any.whl", hash = "sha256:547e34bc3caacce83665fd3429bf7c85f8e8b6b9aaee3f953db1ad716ff3434d"},
-    {file = "yq-3.4.3.tar.gz", hash = "sha256:ba586a1a6f30cf705b2f92206712df2281cd320280210e7b7b80adcb8f256e3b"},
-]
-
-[package.dependencies]
-argcomplete = ">=1.8.1"
-PyYAML = ">=5.3.1"
-tomlkit = ">=0.11.6"
-xmltodict = ">=0.11.0"
-
-[package.extras]
-tests = ["build", "coverage", "mypy", "ruff", "wheel"]
 
 [[package]]
 name = "zipp"

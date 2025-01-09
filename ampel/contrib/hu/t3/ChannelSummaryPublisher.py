@@ -9,7 +9,7 @@
 
 import datetime
 from collections.abc import Generator
-from io import BytesIO, StringIO
+from io import BytesIO
 from typing import Any
 
 import backoff
@@ -23,8 +23,9 @@ from ampel.secret.NamedSecret import NamedSecret
 from ampel.struct.T3Store import T3Store
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import ChannelId, T3Send, UBson
-from ampel.util.json import AmpelEncoder, load
 from ampel.view.TransientView import TransientView
+
+from .DCachePublisher import type_adapter
 
 
 class ChannelSummaryPublisher(AbsPhotoT3Unit):
@@ -46,6 +47,8 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
         self._channels: set[ChannelId] = set()
         self.session = requests.Session()
         self.session.auth = HTTPBasicAuth(*self.auth.get())
+
+        self._adapter = type_adapter(dict)
 
     def extract_from_transient_view(
         self, tran_view: TransientView
@@ -130,16 +133,16 @@ class ChannelSummaryPublisher(AbsPhotoT3Unit):
         try:
             rep = self.session.get(f"{basedir}/{filename}")
             rep.raise_for_status()
-            partial_summary = next(load(BytesIO(rep.content)))
+            partial_summary = self._adapter.validate_json(rep.content)
             partial_summary.update(self.summary)
             self.summary = partial_summary
         except (requests.exceptions.HTTPError, StopIteration):
             pass
 
-        outfile = StringIO()
-        outfile.write(AmpelEncoder(lossy=True).encode(self.summary))
-        outfile.write("\n")
-        mb = len(outfile.getvalue().encode()) / 2.0**20
+        outfile = BytesIO()
+        outfile.write(self._adapter.dump_json(self.summary))
+        outfile.write(b"\n")
+        mb = len(outfile.getvalue()) / 2.0**20
         self.logger.info(f"{filename}: {len(self.summary)} transients {mb:.1f} MB")
         if not self.dry_run:
             self.session.put(
