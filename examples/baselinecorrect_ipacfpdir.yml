@@ -1,0 +1,55 @@
+name: baselinecorrect_ipacfpdir
+mongo:
+  prefix: bts_bcorr
+  reset: true
+channel:
+- name: lcana
+  access: [ZTF, ZTF_PUB, ZTF_PRIV]
+  policy: []
+  version: 1
+task:
+- title: FPT0
+  template: hash_t2_config
+  unit: AlertConsumer
+  config:
+    iter_max: 100000
+    supplier:
+      unit: ZTFIPACForcedPhotometryAlertSupplier
+      config:
+        alert_history: false
+        save_file_dir: /home/jnordin/tmp/baselinecorr
+        name_file: /home/jnordin/data/ztf_ipacfp/bts_explorer_241122.csv
+        file_keys: 
+          id: "ZTFID"
+          ra: "RA"
+          dec: "Dec"
+          raunit: "hourangle"
+          decunit: "deg"
+        loader:
+          unit: DirFileNamesLoader
+          config:
+            folder: /home/jnordin/github/ampelMay24/Ampel-HU-astro/notebooks/dr3_bts
+            extension: "txt"
+    shaper: ZiDataPointShaper
+    compiler_opts: ZiCompilerOptions
+    directives:
+    - channel: lcana
+      ingest:
+        mux:
+          unit: ZiMongoMuxer
+          insert:
+          combine:
+          - state_t2:
+            - config:
+                significant_bands:
+                - ztfg
+                - ztfr
+                - ztfi
+                t_cadence: 3
+                tabulator:
+                - unit: ZTFFPTabulator
+              unit: T2TabulatorRiseDecline
+            unit: ZiT1Combiner
+
+
+
