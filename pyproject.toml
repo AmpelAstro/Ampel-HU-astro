@@ -56,7 +56,13 @@ slack-sdk = {version = "^3", optional = true}
 xgboost = {version = "^2.0.0", optional = true}
 astro-parsnip = {version = "^1.4.1", optional = true}
 # torch 2.5 required for py313 support
-torch = {version = ">=2.5", python = ">=3.13", optional = true}
+# torch 2.2 the last to support intel macs
+# on linux, pypi torch includes CUDA
+torch = [
+   {version = ">=2.5", markers = 'sys_platform == "linux"', source="pytorch-cpu", optional = true},
+#    {version = ">=2.5", markers = 'sys_platform == "darwin" and platform_machine != "x86_64"', optional = true},
+#    {version = "<2.3", markers = 'sys_platform == "darwin" and platform_machine == "x86_64"', optional = true}
+]
 timeout-decorator = {version = "^0.5", optional = true}
 jupyter = {version = "^1.0.0", optional = true}
 more-itertools = "^10.0.0"
@@ -83,7 +89,7 @@ types-pyyaml = "^6.0.12.20240311"
 mongomock = "^4.1.2"
 
 [tool.poetry.extras]
-elasticc = ["xgboost", "astro-parsnip", "timeout-decorator", "ampel-lsst", "light-curve"]
+elasticc = ["xgboost", "astro-parsnip", "timeout-decorator", "ampel-lsst", "light-curve", "torch"]
 extcats = ["extcats"]
 ligo = ["healpy", "sncosmo", "iminuit", "sfdmap2", "ampel-ztf", "ligo-gracedb"]
 slack = ["slack_sdk"]
@@ -97,6 +103,11 @@ lsst = ["ampel-lsst"]
 name = "desy-gitlab"
 url = "https://gitlab.desy.de/api/v4/projects/jakob.van.santen%2Fampel-pypi-demo/packages/pypi/simple"
 priority = "supplemental"
+
+[[tool.poetry.source]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "explicit"
 
 [tool.conda-lock]
 channels = ["conda-forge"]
