@@ -151,7 +151,10 @@ addopts = "--cov=ampel --showlocals -ra"
 filterwarnings = [
     "error",
     "always:numpy.ndarray size changed:RuntimeWarning",
-    "always:invalid escape sequence:SyntaxWarning",
+    # LaTeX in snpy docstrings
+    "default:invalid escape sequence:SyntaxWarning",
+    # dangling fits file in snpy
+    "default:unclosed:ResourceWarning",
     "ignore:Deprecated call to `pkg_resources.declare_namespace\\('ligo'\\):DeprecationWarning",
     "ignore:pkg_resources is deprecated:DeprecationWarning",
     "ignore:(?s).*Pyarrow will become a required dependency of pandas:DeprecationWarning",
