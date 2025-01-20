@@ -132,6 +132,7 @@ build-backend = "poetry.core.masonry.api"
 namespace_packages = true
 show_error_codes = true
 check_untyped_defs = true
+packages = ["ampel"]
 
 [[tool.mypy.overrides]]
 module = [
