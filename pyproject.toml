@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ampel-hu-astro"
-version = "0.10.0a6"
+version = "0.10.0a7"
 license = "BSD-3-Clause"
 readme = "README.md"
 description = "Astronomy units for the Ampel system from HU-Berlin"
@@ -34,8 +34,8 @@ include = [
 [tool.poetry.dependencies]
 python = "^3.10"
 ampel-plot = {version = "^0.9.0a2"}
-ampel-ztf = {version = ">=0.10.2,<0.11", extras = ["kafka"], optional = true}
-ampel-photometry = {version = ">=0.10.1,<0.11"}
+ampel-ztf = {version = ">=0.10.3a3,<0.11", extras = ["kafka", "fp"], optional = true}
+ampel-photometry = {version = ">=0.10.0,<0.11"}
 ampel-alerts = {version = ">=0.10.1,<0.11"}
 ampel-interface = {version = ">=0.10.4.post2,<0.11"}
 # mainline sncosmo does not support numpy 2 or python 3.13

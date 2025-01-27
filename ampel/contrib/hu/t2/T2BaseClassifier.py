@@ -282,7 +282,7 @@ class BaseClassifier:
             )
 
         return {
-            self._class_xgbmulti[classlabel]["classes"][k]: float(prob)
+            str(self._class_xgbmulti[classlabel]["classes"][k]): float(prob)
             for k, prob in enumerate(list(pvals[0]))
         }
 
