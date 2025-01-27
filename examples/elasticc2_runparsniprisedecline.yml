@@ -32,6 +32,7 @@ task:
             # https://portal.nersc.gov/cfs/lsst/DESC_TD_PUBLIC/ELASTICC/5000alerts.tar.gz            
             folder: artifacts/NITE60562
             extension: "*avro.gz"
+            avro_schema: https://raw.githubusercontent.com/LSSTDESC/elasticc/c47fbd301b87f915c77ac0046d7845c68c306444/alert_schema/elasticc.v0_9.alert.avsc
           unit: ElasticcDirAlertLoader
 
     shaper: {unit: LSSTDataPointShaper}
@@ -53,13 +54,11 @@ task:
             combine:
             - unit: LSSTT1Combiner
               state_t2:
-              - unit: T2MatchBTS
               - config:
                   classifier_name: elasticcTest
                   classifier_version: "01"
                   fixed_z: 0.2
-                  t2_dependency:
-                  - unit: T2MatchBTS
+                  t2_dependency: []
                   paths_xgbbinary: {}
                   paths_xgbmulti:
                     all:
