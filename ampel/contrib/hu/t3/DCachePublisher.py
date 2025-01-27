@@ -16,23 +16,32 @@ import sys
 import time
 import traceback
 from collections.abc import Callable, Generator, Iterable
-from functools import partial
+from functools import lru_cache, partial
 from typing import Any, TypeVar
 from xml.etree import ElementTree
 
 import backoff
 import pytz
 import requests
+from pydantic import TypeAdapter
 
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.struct.T3Store import T3Store
-from ampel.util.json import AmpelEncoder
 from ampel.view.SnapView import SnapView
 from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 
 _T = TypeVar("_T")
+
+
+@lru_cache
+def type_adapter(type: type[_T]) -> TypeAdapter[_T]:
+    return TypeAdapter(type)
+
+
+def dump_json(obj: Any) -> bytes:
+    return type_adapter(type(obj)).dump_json(obj)  # type: ignore[arg-type]
 
 
 class DCachePublisher(AbsT3Unit):
@@ -70,15 +79,13 @@ class DCachePublisher(AbsT3Unit):
         self.existing_paths: set[tuple[str, ...]] = set()
         self.dt = 0.0
 
-        # don't bother preserving immutable types
-        self.encoder = AmpelEncoder(lossy=True)
         assert self.resource
         self.base_dest = self.resource["dcache"] + self.base_dir
 
     def serialize(self, tran_view: SnapView | dict[str, Any]) -> bytes:
         buf = io.BytesIO()
         with gzip.GzipFile(fileobj=buf, mode="w") as f:
-            f.write(self.encoder.encode(tran_view).encode("utf-8"))
+            f.write(dump_json(tran_view))
         return buf.getvalue()
 
     def create_directory(

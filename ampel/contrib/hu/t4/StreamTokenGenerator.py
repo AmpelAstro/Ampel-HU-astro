@@ -102,7 +102,7 @@ class StreamTokenGenerator(AbsT4Unit):
         delay = 1
         while time.time() - t0 < self.timeout:
             response = session.get(f"stream/{token}")
-            if response.status_code not in (423, 404):
+            if response.status_code not in (423, 404, 408, 502, 503, 504):
                 break
             time.sleep(random.uniform(0, delay))
             delay *= 2
