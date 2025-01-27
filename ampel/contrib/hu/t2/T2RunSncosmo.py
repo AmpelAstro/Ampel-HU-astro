@@ -279,7 +279,10 @@ class T2RunSncosmo(T2BaseLightcurveFitter):
         sncosmo_result["parameters"] = sncosmo_result["parameters"].tolist()
         sncosmo_result["data_mask"] = sncosmo_result["data_mask"].tolist()
         try:
-            sncosmo_result["covariance"] = sncosmo_result["covariance"].tolist()
+            if sncosmo_result["covariance"] is None:
+                sncosmo_result["covariance"] = []
+            else:
+                sncosmo_result["covariance"] = sncosmo_result["covariance"].tolist()
         except KeyError:
             sncosmo_result["covariance"] = []
 
