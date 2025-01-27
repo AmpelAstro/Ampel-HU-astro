@@ -35,7 +35,7 @@ include = [
 python = "^3.10"
 ampel-plot = {version = "^0.9.0a2"}
 ampel-ztf = {version = ">=0.10.3a3,<0.11", extras = ["kafka", "fp"], optional = true}
-ampel-photometry = {version = ">=0.10.0,<0.11"}
+ampel-photometry = {version = ">=0.10.1,<0.11"}
 ampel-alerts = {version = ">=0.10.1,<0.11"}
 ampel-interface = {version = ">=0.10.4.post2,<0.11"}
 # mainline sncosmo does not support numpy 2 or python 3.13
