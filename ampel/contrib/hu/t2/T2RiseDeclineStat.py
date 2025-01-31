@@ -379,7 +379,7 @@ class T2RiseDeclineStat(AbsLightCurveT2Unit, T2RiseDeclineBase):
         plt.ylabel("Mag")
 
         # Create text string
-        title = f'ndet: {outdict["ndet"]} rb {outdict["rb_med"]:.2f} drb {outdict["drb_med"]:.2f} '
+        title = f"ndet: {outdict['ndet']} rb {outdict['rb_med']:.2f} drb {outdict['drb_med']:.2f} "
 
         for boolprop in ["peaked", "pure", "rising", "norise", "hasgaps"]:
             if outdict[f"bool_{boolprop}"]:

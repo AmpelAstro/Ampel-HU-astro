@@ -87,7 +87,7 @@ def fit_supernova_villar(t, f, f_err, peak_uncertainty, debugplot=False):
         import string
 
         def make_unique(filename):
-            return f'{filename.rsplit(".", 1)[0]}_{"".join(random.choices(string.ascii_lowercase + string.digits, k=4))}.{filename.rsplit(".", 1)[1]}'
+            return f"{filename.rsplit('.', 1)[0]}_{''.join(random.choices(string.ascii_lowercase + string.digits, k=4))}.{filename.rsplit('.', 1)[1]}"
 
         plt.savefig(make_unique("expdebug.png"))
         plt.close()
@@ -765,7 +765,7 @@ class T2TabulatorRiseDecline(
             ax.set_ylabel(band)
 
             # Create text string
-            title = f'ndet: {t2result["ndet"]} '
+            title = f"ndet: {t2result['ndet']} "
 
             for boolprop in [
                 "peaked",

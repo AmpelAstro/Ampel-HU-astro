@@ -158,7 +158,7 @@ class T2Observability(AbsLightCurveT2Unit):
                 min_moon_dist=observatory.constraints.min_moon_dist,
             )
 
-            out_dict[name][f"night{k+1}"] = {"start": ret[0].iso, "end": ret[-1].iso}
+            out_dict[name][f"night{k + 1}"] = {"start": ret[0].iso, "end": ret[-1].iso}
 
         # return the info as dictionary
         return out_dict
