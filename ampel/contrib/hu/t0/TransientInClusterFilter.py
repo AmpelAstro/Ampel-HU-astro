@@ -64,7 +64,7 @@ class TransientInClusterFilter(DecentFilter):
 
         if nearby_clusters is None:
             self.logger.debug(
-                f"rejected: no cluster from RASSEBCS within {self.big_search_radius_arcmin*60:.2f} arcsec from alert position"
+                f"rejected: no cluster from RASSEBCS within {self.big_search_radius_arcmin * 60:.2f} arcsec from alert position"
             )
             return None
 

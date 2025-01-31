@@ -300,9 +300,9 @@ def get_macaroon(
     """
     caveats = []
     if activity:
-        caveats.append(f'activity:{",".join(activity)}')
+        caveats.append(f"activity:{','.join(activity)}")
     if ip:
-        caveats.append(f'ip:{",".join(ip)}')
+        caveats.append(f"ip:{','.join(ip)}")
     body: dict[str, Any] = {"validity": validity}
     if caveats:
         body["caveats"] = caveats
