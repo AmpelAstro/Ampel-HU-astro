@@ -19,6 +19,8 @@ from ampel.contrib.hu.t2.T2TabulatorRiseDecline import (
     BaseLightCurveFeatures,
     T2TabulatorRiseDeclineBase,
 )
+from ampel.struct.JournalAttributes import JournalAttributes
+from ampel.struct.UnitResult import UnitResult
 from ampel.view.T2DocView import T2DocView
 
 # Correct types for parsnip properties
@@ -121,7 +123,7 @@ class T2RunParsnipRiseDecline(
         compound: T1Document,
         datapoints: Iterable[DataPoint],
         t2_views: Sequence[T2DocView],
-    ) -> dict[str, Any]:
+    ) -> UnitResult:
         """
             Process datapoints belonging to one state of one transient.
             A commong Table is generated which is used as input
@@ -148,30 +150,33 @@ class T2RunParsnipRiseDecline(
         # fitdatainfo contains redshift, if requested
         (flux_table, fitdatainfo) = self.get_fitdata(list(datapoints), t2_views)
 
-        if flux_table is None:
-            return {"fitdatainfo": fitdatainfo}
-
-        ## Calculate lightcurve features
-        # Obtain RiseDecline features
-        features = self.compute_stats(flux_table)
-        # Calculate light_curve features
-        lcfeat = self.extract_lightcurve_features(flux_table)
-        features.update(lcfeat)
-        # Create averaged values
-        avgfeat = self.average_filtervalues(features)
-        features.update(avgfeat)
-        t2_output: dict[str, Any] = {
-            "risedeclinefeatures": features,
+        t2_body: dict[str, Any] = {
             "fitdatainfo": fitdatainfo,
         }
 
-        ## Run the classifiers
-        t2_output["classifications"] = self.classify(
-            features,
-            flux_table,
-            fitdatainfo["z"],
-            redshift_weights=fitdatainfo["z_weights"],
-            transient_name=str(compound.get("stock")),
-        )
+        if flux_table is not None:
+            ## Calculate lightcurve features
+            # Obtain RiseDecline features
+            features = self.compute_stats(flux_table)
+            # Calculate light_curve features
+            features.update(self.extract_lightcurve_features(flux_table))
+            # Create averaged values
+            features.update(self.average_filtervalues(features))
+            t2_body["risedeclinefeatures"] = features
 
-        return t2_output
+            ## Run the classifiers
+            t2_body["classifications"] = self.classify(
+                features,
+                flux_table,
+                fitdatainfo["z"],
+                redshift_weights=fitdatainfo["z_weights"],
+                transient_name=str(compound.get("stock")),
+            )
+
+        # Prepare t2 document
+        return UnitResult(
+            body=t2_body,
+            adapter=self.result_adapter,
+            # record the link in the stock journal so we can tell which states have been reported
+            journal=JournalAttributes(extra={"link": compound["link"]}),
+        )
