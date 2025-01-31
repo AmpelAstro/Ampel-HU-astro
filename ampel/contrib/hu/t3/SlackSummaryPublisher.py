@@ -281,8 +281,7 @@ def calculate_excitement(n_transients, date, thresholds, n_alerts=np.nan):
 
     if n_transients == 0:
         message += (
-            "TRAGEDY! Sadly, it seems that no transients passed the "
-            "filters last night"
+            "TRAGEDY! Sadly, it seems that no transients passed the filters last night"
         )
         return message
 

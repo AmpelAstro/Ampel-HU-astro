@@ -64,9 +64,7 @@ class T2NedTap(AbsPointT2Unit):
             self.logger.debug(f"Transient position (ra, dec): {ra:.4f}, {dec:.4f} deg")
 
         if self.mongo_data and self.mongo_confid:
-            e = self._load_mongo_export(
-                self.mongo_data, f"stock:\"{datapoint['stock']}"
-            )
+            e = self._load_mongo_export(self.mongo_data, f'stock:"{datapoint["stock"]}')
             if e is None:
                 if not self.do_query_if_missing:
                     return UnitResult(tag=["NO_QUERY", "EXT_NOT_FOUND"], code=2)

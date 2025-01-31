@@ -132,6 +132,6 @@ def test_slacksummary(t3_transient_views: list[TransientView], mocker):
     content = requests.post.call_args_list[1][1]["files"]["file"]  # type: ignore[attr-defined]
     with StringIO(content) as f:
         rows = list(csv.DictReader(f))
-    assert len(rows) == sum(
-        len(v.t0 or []) for v in t3_transient_views
-    ), "1 row per photopoint"
+    assert len(rows) == sum(len(v.t0 or []) for v in t3_transient_views), (
+        "1 row per photopoint"
+    )

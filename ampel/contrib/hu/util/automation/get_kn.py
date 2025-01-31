@@ -36,7 +36,9 @@ print(gw_names)
 for k, gw_name in enumerate(gw_names):
     # gw_name = sys.argv[1]
     print("#########################################################")
-    print(f"############### - MAP {gw_name} - {k+1}/{len(gw_names)} - ###############")
+    print(
+        f"############### - MAP {gw_name} - {k + 1}/{len(gw_names)} - ###############"
+    )
     print("#########################################################")
     event_name = "S" + (gw_name.replace("GW", "").replace("S", ""))
 
