@@ -291,7 +291,10 @@ def create_stamp_plot(cutouts: dict, ax, cutout_type: str):
     cutout_type assumed to be one of Science, Template, Difference
     """
 
-    data = next(iter(cutouts.values()))[f"cutout{cutout_type}"]
+    cutouts_for_candidate = next(iter(cutouts.values()), None)
+    if cutouts_for_candidate is None:
+        return
+    data = cutouts_for_candidate[f"cutout{cutout_type}"]
 
     with gzip.open(io.BytesIO(data), "rb") as f:
         data = fits.open(io.BytesIO(f.read()), ignore_missing_simple=True)[0].data
