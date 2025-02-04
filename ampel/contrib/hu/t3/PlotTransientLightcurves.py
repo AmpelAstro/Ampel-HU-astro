@@ -10,6 +10,7 @@
 import gzip
 import io
 import os
+import tempfile
 from collections.abc import Generator, Iterable
 from contextlib import nullcontext
 from typing import Any
@@ -392,15 +393,13 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
         os.makedirs(self.save_dir, exist_ok=True)
         if self.image_cache_dir:
             os.makedirs(self.image_cache_dir, exist_ok=True)
-        # Create temporary path if not set
-        if not self.pdf_path:
-            import tempfile
-
-            self.pdf_path = tempfile.mkstemp(".pdf", "candidates", self.save_dir)[1]
 
         # Possibly create a slack client
         if self.slack_channel and self.slack_token is not None:
             self.webclient = WebClient(self.slack_token.get())
+        elif not self.pdf_path:
+            # Create temporary path if not set
+            self.pdf_path = tempfile.mkstemp(".pdf", "candidates", self.save_dir)[1]
 
     def attributes_from_t2(
         self,
