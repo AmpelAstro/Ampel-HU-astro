@@ -7,22 +7,13 @@
 # Last Modified Date:  11.04.2022
 # Last Modified By:    jno <jnordin@physik.hu-berlin.de>
 
-import logging
-from collections.abc import Callable, Generator, Sequence
-from io import BytesIO
-from math import isfinite
-from typing import Any, Generic, TypeVar
+from collections.abc import Sequence
+from typing import Any
 
 import backoff
-import fastavro
 import requests
-from confluent_kafka import TIMESTAMP_NOT_AVAILABLE
 from requests import HTTPError
 from typing_extensions import TypedDict
-
-from ampel.lsst.alert.load.HttpSchemaRepository import parse_schema
-from ampel.util.collections import get_chunks
-from ampel.ztf.t0.load.AllConsumingConsumer import AllConsumingConsumer
 
 
 class ClassificationDict(TypedDict):
@@ -143,123 +134,3 @@ class ElasticcTomClient:
             "response": response.status_code,
             "response_body": response.text,
         }
-
-
-logger = logging.getLogger()
-
-_T = TypeVar("_T")
-
-
-class AvroDeserializer(Generic[_T]):
-    def __init__(
-        self,
-        schema: str | dict,
-        validator: Callable[[Any], _T],
-        timestamp_field: str | None = None,
-    ):
-        self._schema = parse_schema(schema)
-        self._timestamp_field = timestamp_field
-        self._validator = validator
-
-    def __call__(self, message) -> _T:
-        payload = fastavro.schemaless_reader(
-            BytesIO(message.value()), self._schema, None
-        )
-        assert isinstance(payload, dict)
-        if self._timestamp_field is not None:
-            timestamp_kind, timestamp = message.timestamp()
-            if timestamp_kind != TIMESTAMP_NOT_AVAILABLE:
-                payload[self._timestamp_field] = timestamp
-        return self._validator(payload)
-
-
-def chunks_from_kafka(
-    broker: str,
-    topic: str,
-    group_id: str,
-    avro_schema: str | dict,
-    validator: Callable[[Any], _T],
-    timestamp_field: str | None = None,
-    timeout: float = 30,
-    chunk_size: int = 1000,
-    **consumer_config,
-) -> Generator[list[_T], None, None]:
-    """
-    Yield chunks of messages a topic, forever
-    """
-    consumer = AllConsumingConsumer(
-        broker,
-        timeout=timeout,
-        topics=[topic],
-        auto_commit=False,
-        logger=logger,  # type: ignore[arg-type]
-        **{"group.id": group_id} | consumer_config,
-    )
-    deserializer = AvroDeserializer(avro_schema, validator, timestamp_field)
-    while True:
-        for chunk in get_chunks(map(deserializer, consumer), chunk_size):
-            yield chunk
-            consumer.commit()
-        logger.debug("no more chunks")
-
-
-if __name__ == "__main__":
-    from argparse import ArgumentParser
-
-    from pydantic import TypeAdapter
-
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format="%(asctime)s %(levelname)-8s %(name)s:%(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-
-    parser = ArgumentParser()
-    parser.add_argument("--bootstrap")
-    parser.add_argument("--topic")
-    parser.add_argument("--group")
-    parser.add_argument("--schema")
-    parser.add_argument("--tom")
-    parser.add_argument("-u", "--user")
-    parser.add_argument("-p", "--password")
-    parser.add_argument("--endpoint", default="/elasticc2/brokermessage/")
-    parser.add_argument("--timestamp", default=None, type=str)
-    parser.add_argument("--timeout", type=float, default=30)
-    parser.add_argument("--chunk-size", type=int, default=1000)
-
-    args = parser.parse_args()
-
-    validator = TypeAdapter(ElasticcClassification).validate_python
-
-    tom_client = ElasticcTomClient(
-        tom_url=args.tom,
-        desc_username=args.user,
-        desc_password=args.password,
-        endpoint=args.endpoint,
-        logger=logger,
-    )
-
-    # disable logical type conversion, in particular int -> datetime for timestamp-millis
-    fastavro.read.LOGICAL_READERS.clear()
-    try:
-        for chunk in chunks_from_kafka(
-            broker=args.bootstrap,
-            topic=args.topic,
-            group_id=args.group,
-            avro_schema=args.schema,
-            validator=validator,
-            timestamp_field=args.timestamp,
-            timeout=args.timeout,
-            chunk_size=args.chunk_size,
-        ):
-            for report in chunk:
-                for classification in report["classifications"]:
-                    if not isfinite(classification["probability"]):
-                        classification["probability"] = 0
-            logger.info(f"posting {len(chunk)} classifications")
-            response = tom_client.tom_post(chunk)
-            if not response["success"]:
-                logger.error(response["response_body"])
-                raise RuntimeError(f"POST failed with status {response['response']}")
-    except KeyboardInterrupt:
-        logger.info("exiting")
