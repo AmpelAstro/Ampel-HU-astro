@@ -62,17 +62,16 @@ class ElasticcTomBridge(AbsT4Unit):
         validator = TypeAdapter(ElasticcClassification).validate_python
         # disable logical type conversion, in particular int -> datetime for timestamp-millis
         fastavro.read.LOGICAL_READERS.clear()
-        while True:
-            for chunk in get_chunks(self.consumer, self.chunk_size):
-                meta_records = [message.pop("__kafka") for message in chunk]
-                yield [
-                    validator(
-                        {self.timestamp_field: meta["timestamp"]["created"], **message}
-                    )
-                    for message, meta in zip(chunk, meta_records, strict=True)
-                ]
-                self.consumer.acknowledge(meta_records)
-            self.logger.debug("no more chunks")
+        for chunk in get_chunks(self.consumer, self.chunk_size):
+            meta_records = [message.pop("__kafka") for message in chunk]
+            yield [
+                validator(
+                    {self.timestamp_field: meta["timestamp"]["created"], **message}
+                )
+                for message, meta in zip(chunk, meta_records, strict=True)
+            ]
+            self.consumer.acknowledge(meta_records)
+        self.logger.debug("no more chunks")
 
     def do(self) -> None:
         try:
