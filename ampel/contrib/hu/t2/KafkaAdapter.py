@@ -7,6 +7,7 @@ from fastavro import schemaless_writer
 from ampel.abstract.AbsUnitResultAdapter import AbsUnitResultAdapter
 from ampel.base.AmpelUnit import AmpelUnit
 from ampel.lsst.alert.load.HttpSchemaRepository import parse_schema
+from ampel.lsst.alert.load.KafkaAlertLoader import SASLAuthentication
 from ampel.struct.UnitResult import UnitResult
 from ampel.util.mappings import get_by_path
 
@@ -15,6 +16,8 @@ class KafkaReporter(AmpelUnit):
     broker: str
     topic: str
     avro_schema: dict | str
+
+    auth: None | SASLAuthentication = None
 
     producer_config: dict[str, Any] = {}
     delivery_timeout: float = 10.0
@@ -27,6 +30,7 @@ class KafkaReporter(AmpelUnit):
             **{
                 "bootstrap.servers": self.broker,
             }
+            | (self.auth.librdkafka_config() if self.auth else {})
             | self.producer_config
         )
 

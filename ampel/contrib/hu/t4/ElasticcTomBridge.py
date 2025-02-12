@@ -7,8 +7,9 @@
 # Last Modified Date:  12.02.2025
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from math import isfinite
+from typing import Any, TypeVar
 
 import fastavro
 from pydantic import TypeAdapter
@@ -20,6 +21,8 @@ from ampel.model.UnitModel import UnitModel
 from ampel.util.collections import get_chunks
 
 from ..t3.ElasticcTomClient import ElasticcClassification, ElasticcTomClient
+
+_T = TypeVar("_T")
 
 
 class ElasticcTomBridge(AbsT4Unit):
@@ -55,28 +58,29 @@ class ElasticcTomBridge(AbsT4Unit):
         )
         self.consumer = AuxUnitRegister.new_unit(self.loader, sub_type=KafkaAlertLoader)
 
-    def chunks(self) -> Generator[list[ElasticcClassification], None, None]:
+    def chunks(self, validator: Callable[[Any], _T]) -> Generator[list[_T], None, None]:
         """
         Yield chunks of messages, forever
         """
-        validator = TypeAdapter(ElasticcClassification).validate_python
-        # disable logical type conversion, in particular int -> datetime for timestamp-millis
-        fastavro.read.LOGICAL_READERS.clear()
-        while True:
-            for chunk in get_chunks(self.consumer, self.chunk_size):
-                meta_records = [message.pop("__kafka") for message in chunk]
-                yield [
-                    validator(
-                        {self.timestamp_field: meta["timestamp"]["created"], **message}
-                    )
-                    for message, meta in zip(chunk, meta_records, strict=True)
-                ]
-                self.consumer.acknowledge(meta_records)
-            self.logger.debug("no more chunks")
+        for chunk in get_chunks(self.consumer, self.chunk_size):
+            meta_records = [message.pop("__kafka") for message in chunk]
+            yield [
+                validator(
+                    {self.timestamp_field: meta["timestamp"]["created"], **message}
+                )
+                for message, meta in zip(chunk, meta_records, strict=True)
+            ]
+            self.consumer.acknowledge(meta_records)
+        self.logger.debug("no more chunks")
 
     def do(self) -> None:
+        # disable logical type conversion, in particular int -> datetime for timestamp-millis
+        fastavro.read.LOGICAL_READERS.clear()
+
         try:
-            for chunk in self.chunks():
+            for chunk in self.chunks(
+                TypeAdapter(ElasticcClassification).validate_python
+            ):
                 for report in chunk:
                     for classification in report["classifications"]:
                         if not isfinite(classification["probability"]):
