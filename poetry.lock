@@ -88,6 +88,7 @@ files = [
 [package.dependencies]
 ampel-ztf = ">=0.10.3a0,<0.11"
 astropy = ">=5"
+confluent-kafka = {version = ">=2.6.1,<3.0.0", extras = ["schemaregistry"], optional = true, markers = "extra == \"kafka\""}
 fastavro = ">=1.3.2,<2.0.0"
 
 [package.extras]
@@ -544,6 +545,17 @@ numpy = ">=1.21"
 py-cpuinfo = "*"
 
 [[package]]
+name = "cachetools"
+version = "5.5.1"
+description = "Extensible memoizing collections and decorators"
+optional = true
+python-versions = ">=3.7"
+files = [
+    {file = "cachetools-5.5.1-py3-none-any.whl", hash = "sha256:b76651fdc3b24ead3c648bbdeeb940c1b04d365b38b4af66788f9ec4a81d42bb"},
+    {file = "cachetools-5.5.1.tar.gz", hash = "sha256:70f238fbba50383ef62e55c6aff6d9673175fe59f7c6782c7a0b9e38f4a9df95"},
+]
+
+[[package]]
 name = "certifi"
 version = "2024.12.14"
 description = "Python package for providing Mozilla's CA Bundle."
@@ -881,6 +893,11 @@ files = [
     {file = "confluent_kafka-2.8.0-cp39-cp39-win_amd64.whl", hash = "sha256:55d7b3e3571208a03b539f587609aa21e16b42b032c357e9fee7f336cc07b71d"},
     {file = "confluent_kafka-2.8.0.tar.gz", hash = "sha256:56c4aa8e9de6f6e8e3ecf86d396372e76631ec75b107cdb5248c7405ec7c5fa1"},
 ]
+
+[package.dependencies]
+attrs = {version = "*", optional = true, markers = "extra == \"schemaregistry\""}
+cachetools = {version = "*", optional = true, markers = "extra == \"schemaregistry\""}
+httpx = {version = "*", optional = true, markers = "extra == \"schemaregistry\""}
 
 [package.extras]
 all = ["attrs", "attrs", "avro (>=1.11.1,<2)", "avro (>=1.11.1,<2)", "azure-identity", "azure-identity", "azure-keyvault-keys", "azure-keyvault-keys", "boto3", "boto3", "cachetools", "cachetools", "cel-python (>=0.1.5)", "cel-python (>=0.1.5)", "confluent-kafka", "fastapi", "fastavro (<1.8.0)", "fastavro (<1.8.0)", "fastavro (<2)", "fastavro (<2)", "flake8", "google-api-core", "google-api-core", "google-auth", "google-auth", "google-cloud-kms", "google-cloud-kms", "googleapis-common-protos", "googleapis-common-protos", "hkdf (==0.0.3)", "hkdf (==0.0.3)", "httpx", "httpx", "hvac", "hvac", "jsonata-python", "jsonata-python", "jsonschema", "jsonschema", "opentelemetry-distro", "opentelemetry-exporter-otlp", "protobuf", "protobuf", "psutil", "pydantic", "pyrsistent", "pyrsistent", "pytest", "pytest-timeout", "pytest_cov", "pyyaml (>=6.0.0)", "pyyaml (>=6.0.0)", "requests", "requests", "requests-mock", "respx", "six", "sphinx", "sphinx-rtd-theme", "tink", "tink", "urllib3 (<2.0.0)", "urllib3 (>=2.0.0,<3)", "uvicorn"]
@@ -6248,4 +6265,4 @@ ztf = ["ampel-ztf", "ztfquery"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "92eb16d62fc6470f96d80308e4f27683c21dc93304eb10018df3ffde6a323aa1"
+content-hash = "f008e59c3edaa0cb26cf729fea2fa5173019158e7a6e0552bb42f80fd84009e2"
