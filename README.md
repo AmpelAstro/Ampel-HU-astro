@@ -92,6 +92,7 @@ requires an access token if data is to be retrieved.
 - [TransientViewDumper](ampel/contrib/hu/t3/TransientViewDumper.py)
 
 ### T4 units (control):
+- [ElasticcTomBridge](ampel/contrib/hu/t4/ElasticcTomBridge.py): Bridge between Elasticc classifications and the DESC TOM system.
 - [HealpixTokenGenerator](ampel/contrib/hu/t4/HealpixTokenGenerator.py): Based on a URL to a Healpix map.
 - [RandomMapGenerator](ampel/contrib/hu/t4/RandomMapGenerator.py): Generate smoothed circular healpix probability values around a random coordinate..
 - [StreamTokenGenerator](ampel/contrib/hu/t4/StreamTokenGenerator.py): Stream based token generator for.
