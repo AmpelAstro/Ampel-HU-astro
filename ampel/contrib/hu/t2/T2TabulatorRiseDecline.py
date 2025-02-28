@@ -448,9 +448,10 @@ class T2TabulatorRiseDeclineBase:
         o: dict[str, Any] = {}
 
         # Create subset of table with significant detections in significant bands
-        band_mask = [
-            bandobs in self.significant_bands for bandobs in flux_table["band"]
-        ]
+        band_mask = np.asarray(
+            [bandobs in self.significant_bands for bandobs in flux_table["band"]],
+            dtype=bool,
+        )
         sig_mask = np.abs((flux_table["flux"]) / flux_table["fluxerr"]) > self.sigma_det
 
         det_table = flux_table[band_mask & sig_mask]
