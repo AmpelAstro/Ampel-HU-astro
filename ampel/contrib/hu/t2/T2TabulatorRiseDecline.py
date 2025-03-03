@@ -322,6 +322,12 @@ class T2TabulatorRiseDeclineBase:
                     banddata["tau_fall_" + band] = tau_fall
                     banddata["tau_chidof_" + band] = chi_dof
                     banddata["tau_dof_" + band] = len(bt)
+                except ValueError as exc:
+                    # triggered in attempt to SVD final jacobian containing inf or NaN
+                    if "array must not contain infs or NaNs" in exc.args:
+                        pass
+                    else:
+                        raise
                 except RuntimeError:
                     pass
             #                    self.logger.debug("Rise/fall fit failed.")
