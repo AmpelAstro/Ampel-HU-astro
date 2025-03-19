@@ -10,17 +10,17 @@ Contributed Ampel units from HU/DESY group
 
 ## Installing
 
-1. [Install poetry](https://python-poetry.org/docs/#installation). If you install poetry with conda, be sure to install it in its own environment, e.g. `conda create -n poetry`.
+1. [Install poetry](https://python-poetry.org/docs/#installation).
 2. `git clone https://github.com/AmpelProject/Ampel-HU-astro.git; cd Ampel-HU-astro`
-3. Check your virtualenv setup with `poetry env info` (or `conda run -n poetry poetry env info` if using conda). The output should include:
+3. Check your virtualenv setup with `poetry env info`. The output should include:
    ```
    Virtualenv
-   Python:         3.10.x
+   Python:         3.12.x
    ```
-   If not, point poetry at an installation of Python 3.10 with (`conda run -n poetry)` `poetry env use PATH_TO_PYTHON_310`
-4. (`conda run -n poetry`) `poetry install -E "ztf sncosmo extcats notebook"`
+   If not, point poetry at an installation of Python 3.12 with `poetry env use python3.12` (assuming that python3.12 is in your `PATH`)
+4. `poetry install -E "ztf sncosmo extcats notebook"`
 5. `cd notebooks`
-6. (`conda run -n poetry`) `poetry run jupyter notebook`<f
+6. `poetry run jupyter notebook`
 
 This will allow a number of Demo / access / development notebooks to be run. Note that most of them
 requires an access token if data is to be retrieved.
