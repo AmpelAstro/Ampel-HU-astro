@@ -239,7 +239,7 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
                         elif cat_match["photoz"] < 0.2:
                             group_z[4].append(cat_match["photoz"])
                             group_dist[4].append(cat_match["dist2transient"])
-                        elif cat_match["dist2transient"] < 20:
+                        elif cat_match["photoz"] < 0.4:
                             group_z[5].append(cat_match["photoz"])
                             group_dist[5].append(cat_match["dist2transient"])
                         else:
@@ -274,13 +274,13 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
                 if cat_name == "PS1_photoz":
                     ps1_z_phot = float(cat_match["z_phot"]) / 1000
                     if cat_match["z_phot"] is not None and ps1_z_phot > -0.1:
-                        if ps1_z_phot < 0.2:
+                        if ps1_z_phot < 0.1:
                             group_z[3].append(ps1_z_phot)
                             group_dist[3].append(cat_match["dist2transient"])
-                        elif ps1_z_phot < 0.4:
+                        elif ps1_z_phot < 0.2:
                             group_z[4].append(ps1_z_phot)
                             group_dist[4].append(cat_match["dist2transient"])
-                        elif cat_match["dist2transient"] < 20:
+                        elif ps1_z_phot < 0.4:
                             group_z[5].append(ps1_z_phot)
                             group_dist[5].append(cat_match["dist2transient"])
                         else:
