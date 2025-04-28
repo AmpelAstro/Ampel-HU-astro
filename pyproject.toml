@@ -41,8 +41,7 @@ ampel-ztf = {version = ">=0.10.3a3,<0.11", extras = ["kafka", "fp"], optional = 
 ampel-photometry = {version = ">=0.10.1,<0.11"}
 ampel-alerts = {version = ">=0.10.1,<0.11"}
 ampel-interface = {version = ">=0.10.4.post2,<0.11"}
-# mainline sncosmo does not support numpy 2 or python 3.13
-sncosmo = {version = "^2.11.2.post0", optional = true, source = "desy-gitlab"}
+sncosmo = {version = "^2.12", optional = true}
 iminuit = {version = "^2.8.0", optional = true}
 sfdmap2 = {version = "^0.2.0", optional = true}
 numpy = ">=1"
@@ -95,11 +94,6 @@ snpy = ["snpy"]
 notebook = ["jupyter"]
 ztf = ["ampel-ztf", "ztfquery"]
 lsst = ["ampel-lsst"]
-
-[[tool.poetry.source]]
-name = "desy-gitlab"
-url = "https://gitlab.desy.de/api/v4/projects/jakob.van.santen%2Fampel-pypi-demo/packages/pypi/simple"
-priority = "supplemental"
 
 [tool.conda-lock]
 channels = ["conda-forge"]
