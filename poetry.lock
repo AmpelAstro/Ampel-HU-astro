@@ -6462,21 +6462,21 @@ files = [
 
 [[package]]
 name = "xgboost"
-version = "2.1.4"
+version = "3.0.0"
 description = "XGBoost Python Package"
 optional = true
-python-versions = ">=3.8"
+python-versions = ">=3.10"
 groups = ["main"]
 markers = "extra == \"elasticc\""
 files = [
-    {file = "xgboost-2.1.4-py3-none-macosx_10_15_x86_64.macosx_11_0_x86_64.macosx_12_0_x86_64.whl", hash = "sha256:78d88da184562deff25c820d943420342014dd55e0f4c017cc4563c2148df5ee"},
-    {file = "xgboost-2.1.4-py3-none-macosx_12_0_arm64.whl", hash = "sha256:523db01d4e74b05c61a985028bde88a4dd380eadc97209310621996d7d5d14a7"},
-    {file = "xgboost-2.1.4-py3-none-manylinux2014_aarch64.whl", hash = "sha256:57c7e98111aceef4b689d7d2ce738564a1f7fe44237136837a47847b8b33bade"},
-    {file = "xgboost-2.1.4-py3-none-manylinux2014_x86_64.whl", hash = "sha256:f1343a512e634822eab30d300bfc00bf777dc869d881cc74854b42173cfcdb14"},
-    {file = "xgboost-2.1.4-py3-none-manylinux_2_28_aarch64.whl", hash = "sha256:d366097d0db047315736f46af852feaa907f6d7371716af741cdce488ae36d20"},
-    {file = "xgboost-2.1.4-py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:8df6da72963969ab2bf49a520c3e147b1e15cbeddd3aa0e3e039b3532c739339"},
-    {file = "xgboost-2.1.4-py3-none-win_amd64.whl", hash = "sha256:8bbfe4fedc151b83a52edbf0de945fd94358b09a81998f2945ad330fd5f20cd6"},
-    {file = "xgboost-2.1.4.tar.gz", hash = "sha256:ab84c4bbedd7fae1a26f61e9dd7897421d5b08454b51c6eb072abc1d346d08d7"},
+    {file = "xgboost-3.0.0-py3-none-macosx_10_15_x86_64.whl", hash = "sha256:ed8cffd7998bd9431c3b0287a70bec8e45c09b43c9474d9dfd261627713bd890"},
+    {file = "xgboost-3.0.0-py3-none-macosx_12_0_arm64.whl", hash = "sha256:314104bd3a1426a40f0c9662eef40e9ab22eb7a8068a42a8d198ce40412db75c"},
+    {file = "xgboost-3.0.0-py3-none-manylinux2014_aarch64.whl", hash = "sha256:72c3405e8dfc37048f9fe339a058fa12b9f0f03bc31d3e56f0887eed2ed2baa1"},
+    {file = "xgboost-3.0.0-py3-none-manylinux2014_x86_64.whl", hash = "sha256:72d39e74649e9b628c4221111aa6a8caa860f2e853b25480424403ee61085126"},
+    {file = "xgboost-3.0.0-py3-none-manylinux_2_28_aarch64.whl", hash = "sha256:7bdee5787f86b83bebd75e2c96caf854760788e5f4203d063da50db5bf0efc5f"},
+    {file = "xgboost-3.0.0-py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:61c7e391e373b8a5312503525c0689f83ef1912a1236377022865ab340f465a4"},
+    {file = "xgboost-3.0.0-py3-none-win_amd64.whl", hash = "sha256:0ea74e97f95b1eddfd27a46b7f22f72ec5a5322e1dc7cb41c9c23fb580763df9"},
+    {file = "xgboost-3.0.0.tar.gz", hash = "sha256:45e95416df6f6f01d9a62e60cf09fc57e5ee34697f3858337c796fac9ce3b9ed"},
 ]
 
 [package.dependencies]
@@ -6486,7 +6486,6 @@ scipy = "*"
 
 [package.extras]
 dask = ["dask", "distributed", "pandas"]
-datatable = ["datatable"]
 pandas = ["pandas (>=1.2)"]
 plotting = ["graphviz", "matplotlib"]
 pyspark = ["cloudpickle", "pyspark", "scikit-learn"]
@@ -6712,4 +6711,4 @@ ztf = ["ampel-ztf", "ztfquery"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10"
-content-hash = "3f6d4d4040b7d2f266f8fba13090a5f3257973f52f3790ea924518fa19655ae9"
+content-hash = "20f41bbdbca27ff0d596b62c7b692961b786b7e929c6135bc6ee6d000e2a7cd3"
