@@ -2,6 +2,7 @@ name: lensingFromToken
 
 mongo:
   prefix: LensJob_live
+  reset: false
 
 channel:
 - name: Lens_z
@@ -22,7 +23,7 @@ task:
           execute: 
             - unit: T4ZTFArchiveTokenGenerator
               config:
-                days_ago: 5.
+                days_ago: 1.
                 resource_name: "%%ztf_stream_token"
                 candidate:
                   ndethist:
@@ -202,29 +203,6 @@ task:
             - unit: T2GetLensSNParameters
               config:
                 sncosmo_model_name: salt2
-                #plot_props:
-                  #disk_save: /Users/alicetownsend/lens/newtest
-                  #fig_text:
-                  #  arg_keys:
-                  #  - stock
-                  #  - chisq
-                  #  - ndof
-                  #  format_str: "%s \nchisq %.2f ndof %s"
-                  #file_name:
-                  #  arg_keys:
-                  #  - stock
-                  #  - redshift_kind
-                  #  format_str: '%s_%s.svg'
-                  #height: 6
-                  #id_mapper: null
-                  #tags:
-                  #- SALT
-                  #- SNCOSMO
-                  #title:
-                  #  arg_keys:
-                  #  - stock
-                  #  format_str: '%s'
-                  #width: 10
                 redshift_kind: T2DigestRedshifts
                 max_redshift_category: 7
                 unc: 3.
@@ -260,19 +238,10 @@ task:
       unit: T3DefaultBufferSupplier
       config:
         select:
-          #unit: T3StockSelector
-          #config:
-          #  channel: Lens_z
           unit: T3FilteringStockSelector
           config:
             channel: Lens_z
             t2_filter:
-              #unit: T2DigestRedshifts
-              #match:
-              #  ampel_z:
-              #    "$gt": 0.1
-              #  ampel_dist:
-              #    "$lt": 3.
               unit: T2GetLensSNParameters
               match:
                 pass_all_cuts: true
@@ -303,11 +272,27 @@ task:
         execute:
           - unit: PlotTransientLightcurves
             config:
-              pdf_path: /Users/alicetownsend/lens/newtest/candidates_live.pdf
+              pdf_path: /Users/jnordin/tmp/candidates_live.pdf
               save_png: false
               include_cutouts: true
-              slack_channel: "#lensedsn-vetting"
-              slack_token:
-                label: "slack/ztf_ia/token"                                     
+              slack_channel: null
+              slack_token: null 
               tabulator:
               - unit: ZTFT2Tabulator
+          - unit: SkyPortalPublisher 
+            config:
+              groups:
+              - ZTF
+              filters:
+              - g 
+              annotate: false
+              include_photometry: true 
+#              cutouts:
+#              - unit: ZTFCutoutImages
+#                config:
+#                  eligible: last
+#              process_names:
+#              - TNSNames
+              base_url: https://fritz.science
+              token: 
+                label: icare/jno 
