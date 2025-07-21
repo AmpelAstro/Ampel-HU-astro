@@ -346,7 +346,7 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
 
         return group_z
 
-    def get_ampelZ(self, t2_views: Sequence[T2DocView]) -> UBson | UnitResult:
+    def get_ampelZ(self, t2_views: Sequence[T2DocView]) -> dict[str, UBson]:
         """
 
         Parse t2_views from catalogs that were part of the redshift studies.
@@ -375,7 +375,7 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
                 new_zs = self._get_matchbts_groupz(t2_res)
             else:
                 self.logger.error(f"No instructions for dealing with {t2_view.unit}")
-                return UnitResult(code=DocumentCode.T2_MISSING_INFO)
+                return {}
 
             for k in range(7):
                 if len(new_zs[k]) > 0:
@@ -407,6 +407,74 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
 
         return t2_output
 
+    def get_hostCol(self, t2_views: Sequence[T2DocView]) -> dict:
+        """
+
+        Parse t2_views from catalogs and extract host galaxy color information.
+
+        If a Wise catalog match within 3" is found, a W1-W2 color is returned.
+        If a PS1 matchin within 10", general host colors are returned from there.
+
+        """
+
+        # Extracted information added here
+        host_info: dict[str, UBson] = {}
+
+        # Loop through t2_views and collect information.
+        for t2_view in t2_views:
+            if t2_view.unit not in {"T2CatalogMatch", "T2CatalogMatchLocal"}:
+                continue
+            t2_res = get_payload(t2_view)
+
+            for cat_name, cat_matches in t2_res.items():
+                if cat_matches is None or cat_matches is False:
+                    continue
+                # List or dict depending on whether the closest or all matches are returned from.
+                if isinstance(cat_matches, list):
+                    cat_match_list = cat_matches
+                elif isinstance(cat_matches, tuple):
+                    cat_match_list = list(cat_matches)
+                else:
+                    cat_match_list = [cat_matches]
+
+                for cat_match in cat_match_list:
+                    # All catalogs have different structure, so doing this individually
+
+                    if cat_name == "WISE" and cat_match["dist2transient"] < 3:
+                        # Only W1-W2 color
+                        if (
+                            cat_match.get("Mag_W1", -1) > 0
+                            and cat_match.get("Mag_W2", -1) > 0
+                        ):
+                            host_info["col_wise_w1w2"] = (
+                                cat_match["Mag_W1"] - cat_match["Mag_W2"]
+                            )
+                    elif cat_name == "PS1" and cat_match["dist2transient"] < 10:
+                        # Which color to use? skipping y for now
+                        if (
+                            cat_match.get("gPSFMag", -1) > 0
+                            and cat_match.get("rPSFMag", -1) > 0
+                        ):
+                            host_info["col_ps1_gr"] = (
+                                cat_match["gPSFMag"] - cat_match["rPSFMag"]
+                            )
+                        if (
+                            cat_match.get("iPSFMag", -1) > 0
+                            and cat_match.get("rPSFMag", -1) > 0
+                        ):
+                            host_info["col_ps1_ri"] = (
+                                cat_match["rPSFMag"] - cat_match["iPSFMag"]
+                            )
+                        if (
+                            cat_match.get("iPSFMag", -1) > 0
+                            and cat_match.get("zPSFMag", -1) > 0
+                        ):
+                            host_info["col_ps1_iz"] = (
+                                cat_match["iPSFMag"] - cat_match["zPSFMag"]
+                            )
+
+        return host_info
+
     def get_redshift(
         self, t2_views
     ) -> tuple[None | list[float], None | str, None | list[float]]:
@@ -422,6 +490,7 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
         z_source: None | str = None
         z_weights: None | list[float] = None
 
+        t2_res: UBson | dict[str, Any] = {}
         if self.redshift_kind in [
             "T2DigestRedshifts",
             "AmpelZ",
@@ -431,9 +500,9 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
                 isinstance(t2_res, dict)
                 and "ampel_z" in t2_res
                 and t2_res["ampel_z"] is not None
-                and t2_res["group_z_nbr"] <= self.max_redshift_category
+                and t2_res["group_z_nbr"] <= self.max_redshift_category  # type: ignore[operator]
             ):
-                z = [float(t2_res["ampel_z"])]
+                z = [float(t2_res["ampel_z"])]  # type: ignore[arg-type]
                 z_source = "AMPELz_group" + str(t2_res["group_z_nbr"])
         elif self.redshift_kind in [
             "T2MatchBTS",
@@ -497,4 +566,8 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
             self.logger.error("Missing tied t2 views")
             return UnitResult(code=DocumentCode.T2_MISSING_INFO)
 
-        return self.get_ampelZ(t2_views)
+        infocol = self.get_hostCol(t2_views)
+        ampelz = self.get_ampelZ(t2_views)
+        if ampelz is not None:
+            infocol.update(ampelz)
+        return infocol

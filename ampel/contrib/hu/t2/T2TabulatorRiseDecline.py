@@ -9,6 +9,10 @@
 
 import os
 import re
+import sys
+
+# Exponential fit frequently returns overflow warnings
+import warnings
 from collections.abc import Iterable, Sequence
 from contextlib import suppress
 from typing import Any
@@ -16,7 +20,10 @@ from typing import Any
 import light_curve
 import numpy as np
 from astropy.table import Table
+from light_curve.light_curve_py import RainbowFit
+from scipy.interpolate import make_smoothing_spline
 from scipy.optimize import curve_fit
+from scipy.signal import find_peaks
 
 from ampel.abstract.AbsStateT2Unit import AbsStateT2Unit
 from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
@@ -24,7 +31,61 @@ from ampel.base.LogicalUnit import LogicalUnit
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
 
-# from ampel.protocol.LoggerProtocol import LoggerProtocol
+warnings.filterwarnings("ignore")
+
+
+# Parameter limits - fits exceedings these are not considered
+RISEDEC_LIMITS: dict[str, dict] = {}
+
+# Tau fit
+RISEDEC_LIMITS["tau"] = {
+    "fall": [0.01, 75],
+    "rise": [0.01, 75],
+    "exp": [-10, 10],
+}
+# Spline fit
+RISEDEC_LIMITS["spline"] = {
+    "offsetratio": [0.0, 10.0],
+    "ratioevo": [-99.0, 10.0],
+    "splineflux": [-99.0, 100000.0],
+    #    'peaksflux':[-99.,10000.], # Not yet implemented as splineflux check comes first and "should" be sufficient
+}
+# Bandfeatures
+RISEDEC_LIMITS["band"] = {
+    "rise_slope": [-100.0, 1000.0],
+    #    'rise_slopesig':[0.,100.], # Not yet implemented - again assumed slope check sufficient.
+    "fall_slope": [-100.0, 1000.0],
+}
+# Limits from lightkurve package
+RISEDEC_LIMITS["lightkurve"] = {
+    "linear_fit_slope": [-100.0, 100.0],
+    "linear_fit_slope_sigma": [-100.0, 10.0],
+    "bazin_fit_baseline": [-100.0, 100.0],
+    "bazin_fit_amplitude": [-99.0, 10000.0],
+    "bazin_fit_reduced_chi2": [-99.0, 100.0],
+    "bazin_fit_rise_time": [-99.0, 1000.0],
+    "bazin_fit_fall_time": [-99.0, 1000.0],
+    "standard_deviation": [-99.0, 1000.0],
+    "maximum_slope": [-99.0, 10000.0],
+    "villar_fit_amplitude": [-99.0, 10000.0],
+    "villar_fit_baseline": [-99.0, 1000.0],
+    "villar_fit_rise_time": [-99.0, 1000.0],
+    "villar_fit_fall_time": [-99.0, 1000.0],
+    "villar_fit_plateau_duration": [-99.0, 1000.0],
+    "villar_fit_reduced_chi2": [-99.0, 100.0],
+    "excess_variance": [-99.0, 100.0],
+    "kurtosis": [-99.0, 100.0],
+    "period_0": [-99.0, 300.0],
+    "eta_e": [-99.0, 1000000.0],
+}
+RISEDEC_LIMITS["rainbow"] = {
+    "rainbow_rise_time": [-99.0, 300.0],
+    "rainbow_t_color": [-99.0, 300.0],
+    "rainbow_Tmin": [-99.0, 100000.0],
+    "rainbow_Tmax": [-99.0, 100000.0],
+    "rainbow_fall_time": [-99.0, 300.0],
+    "rainbow_amplitude": [-99.0, 10000.0],
+}
 
 
 # Define the exponential model function
@@ -109,6 +170,263 @@ def fit_exponential_rise(x, z):
 
     # Optionally, return the parameters and the fitted curve
     return a, b, z_fit
+
+
+def check_lightkurve(fitmethod: str, fitresults: float) -> bool:
+    """
+    Investigate outcome from lightkurve package fit.
+    Will look whether limits for the {fitmethod} is provided in RISEDEC_LIMITS.
+    If so, check whether the fit results are within these limits.
+    Return False if limits exists and fit results are outside these limits, otherwise True.
+    """
+
+    if fitmethod == "rainbow":
+        sys.exit("should not be here")
+
+    if fitmethod not in RISEDEC_LIMITS["lightkurve"]:
+        # No limits for this fit method
+        return True
+
+    return bool(
+        RISEDEC_LIMITS["lightkurve"][fitmethod][0]
+        < fitresults
+        < RISEDEC_LIMITS["lightkurve"][fitmethod][1]
+    )
+
+
+def check_rainbow(fitresults: dict) -> bool:
+    """
+    Directly check the Rainbow fit method. Only accept if all limits are passed.
+    """
+    for prop, meas in fitresults.items():
+        if prop not in RISEDEC_LIMITS["rainbow"]:
+            continue
+        if not (
+            RISEDEC_LIMITS["rainbow"][prop][0]
+            < meas
+            < RISEDEC_LIMITS["rainbow"][prop][1]
+        ):
+            return False
+    return True
+
+
+def spline_analysis(
+    tab: Table,
+    band: str,
+    spline_lam=0.1,
+    do_plot=False,
+    int_step=3.0,
+    width=2,
+    height=None,
+    distance=3,
+    wlen=None,
+    plateau_size=None,
+    dt_fluxevo: float = 20.0,
+) -> dict:
+    """
+    Do weighted spline of band lc and extract features.
+    tab assumed to be of one band, with time, flux and flux_unc fields.
+
+    Input:
+    tab: AstropyTable, containing the light curve data for one band with at least three columns:
+        'jd': Julian Date (time)
+        'flux': Flux values
+        'fluxerr': Uncertainties in the flux
+    band: name of band
+    spline_lam: Regularization parameter for the spline smoothing (default is 0.1).
+    do_plot: Whether or not to plot the spline and peaks (default is False).
+    int_step: The interpolation step size (default is 3.).
+    width, height, distance, wlen, plateau_size: Parameters for find_peaks, which help control how peaks are detected (these can be adjusted to suit the data).
+    dt_fluxevo: Time offset for computing the peak flux evolution.
+
+
+    Output:
+
+    <band>_splineflux: The total flux from the spline interpolation over the entire light curve.
+    <band>_splineerr:  The total error in the flux calculated from the spline of the flux uncertainties.
+    <band>_splinethalf:  The duration (in time) between the points where the spline flux is greater than half of its maximum value.
+    <band>_dethalf: The number of data points  that lie within the range of times where the spline flux is greater than half of its maximum value.
+    <band>_peaksnbr: The number of peaks identified in the smoothed flux.
+    <band>_peaksflux (list):  The flux values at the detected peaks.
+    <band>_peaksjd (list): The Julian Date values at the detected peaks.
+    <band>_offsetpeakflux (list): The flux values at the peaks, shifted by a specified time offset (dt_fluxevo).
+    <band>_offsetpeakratio: The ratio of the flux at the shifted peak to the flux at the original peak.
+    <band>_dtrise63: The time difference between the first peak and the point where the flux first rises to 63% of the peak flux (rise time).
+    <band>_dtfall63: The time difference between the first peak and the point where the flux falls to 63% of the peak flux (fall time).
+    <band>_peakstdiff: The time differences between consecutive peaks.
+    <band>_valleyflux: The flux values at the valleys between peaks, calculated as the midpoint between consecutive peaks.
+
+    """
+
+    if len(tab) < 6:
+        return {}
+
+    spl = make_smoothing_spline(
+        tab["time"], tab["flux"], w=1.0 / tab["fluxerr"] ** 2, lam=spline_lam
+    )
+    dspl = make_smoothing_spline(
+        tab["time"], tab["fluxerr"], w=1.0 / tab["fluxerr"] ** 2, lam=spline_lam
+    )
+    tphase = np.arange(
+        tab["time"].min() + int_step, tab["time"].max() - int_step, int_step
+    )
+    finterp = spl(tphase)
+
+    if do_plot:
+        import matplotlib.pyplot as plt
+
+        plt.plot(tphase, finterp, "-.")
+
+    prominence = tab["flux"].max() / 5
+    peaks, _ = find_peaks(
+        finterp,
+        distance=distance,
+        prominence=prominence,
+        width=width,
+        wlen=wlen,
+        plateau_size=plateau_size,
+        height=height,
+    )
+
+    if do_plot:
+        plt.plot(tphase, finterp)
+        _ = [
+            plt.axvline(p, color="k", alpha=0.3, linestyle="dashed")
+            for p in tphase[peaks]
+        ]
+        plt.plot(tphase[peaks], finterp[peaks], "X", ms=12, alpha=0.5)
+
+    # Collect features
+    odict: dict[str, float | list[float]] = {}
+    if len(peaks) > 0:
+        # Proceed if integrated flux makes sense
+        splineflux = float(sum(finterp * int_step))
+        if not (
+            RISEDEC_LIMITS["spline"]["splineflux"][0]
+            < splineflux
+            < RISEDEC_LIMITS["spline"]["splineflux"][1]
+        ):
+            return {}
+
+        odict[band + "_splineflux"] = splineflux
+        odict[band + "_splineerr"] = float(sum(dspl(tphase) * int_step))
+
+        foo = tphase[finterp > (finterp.max() / 2)]
+        odict[band + "_splinethalf"] = float(foo[-1] - foo[0])
+        odict[band + "_dethalf"] = int(
+            sum((tab["time"] > foo[0]) & (tab["time"] < foo[-1]))
+        )
+        odict[band + "_peaksnbr"] = len(peaks)
+        odict[band + "_peaksflux"] = [float(f) for f in finterp[peaks]]
+        odict[band + "_peakstime"] = [float(f) for f in tphase[peaks]]
+
+        # Extracting flux at offset position
+        try:
+            odict[band + "_offsetpeakflux"] = [
+                float(f) for f in finterp[peaks + int(dt_fluxevo / int_step)]
+            ]
+            odict[band + "_offsetpeakratio"] = [
+                off / flux
+                for off, flux in zip(
+                    odict[band + "_offsetpeakflux"],  # type: ignore[arg-type]
+                    odict[band + "_peaksflux"],  # type: ignore[arg-type]
+                    strict=False,
+                )
+            ]
+        except IndexError:
+            # Happens if not enough elements after peak
+            pass
+
+        # Looking at rise and deline time to 63% flux (~0.5 mag) for first peak.
+        foo = np.where(finterp / 0.63 < odict[band + "_peaksflux"][0])[0]  # type: ignore[index]
+        try:
+            odict[band + "_dtrise63"] = float(
+                tphase[peaks[0]] - tphase[max(foo[foo < peaks[0]])]
+            )
+            odict[band + "_dtfall63"] = float(
+                tphase[min(foo[foo > peaks[0]])] - tphase[peaks[0]]
+            )
+        except ValueError:
+            # In case the array does not extend to these limits
+            pass
+
+        if len(peaks) > 1:
+            odict[band + "_peakstdiff"] = [
+                float(f) for f in tphase[peaks][1:] - tphase[peaks][0:-1]
+            ]
+            odict[band + "_valleyflux"] = [
+                float(f)
+                for f in finterp[
+                    [int(f) for f in np.floor((peaks[1:] + peaks[0:-1]) / 2)]
+                ]
+            ]
+
+    return odict
+
+
+def spline_colevo(
+    featuredict: dict, color_list: list[list[str]], dt_fluxevo: float = 20.0
+) -> dict:
+    """
+    Check whether there are multiple bands available, sufficient to calculate color properties.
+
+    Input Parameters:
+
+    featuredict (type: dict):
+        A dictionary containing the extracted features from the light curve analysis: peak fluxes (<band>_peaksflux) and offset peak fluxes (<band>_offsetpeakflux) for different bands.
+    color_list (type: list of tuples):
+        List of tuples for which color values will be calculated. Each tuple contains two band names, like ('g', 'r').
+    dt_fluxevo (type: int, default is 20):
+        The time step (in days) assumed used when calculating the flux evolution ratio (ratioevo).
+
+    Output:
+    cdict (type: dict):
+            peakratio_<band1>_<band2>: The ratio of the first peak flux of <band1> to <band2>.
+            offsetratio_<band1>_<band2>: The ratio of the offset peak flux of <band1> to <band2>.
+            ratioevo_<band1>_<band2>: The ratio evolution, calculated as the difference between the peak ratio and the offset ratio, normalized by dt_fluxevo.
+
+    """
+    # Look for color terms
+    # Again, we only do this for the first peak - different peak numbers in different bands would need more careful checking
+    cdict = {}
+    for colpair in color_list:
+        if (
+            colpair[0] + "_peaksflux" not in featuredict
+            or colpair[1] + "_peaksflux" not in featuredict
+        ):
+            continue
+
+        cdict["peakratio_" + colpair[0] + "_" + colpair[1]] = (
+            featuredict[colpair[0] + "_peaksflux"][0]
+            / featuredict[colpair[1] + "_peaksflux"][0]
+        )
+        try:
+            if (
+                RISEDEC_LIMITS["spline"]["offsetratio"][0]
+                < (
+                    offsetratio := featuredict[colpair[0] + "_offsetpeakflux"][0]
+                    / featuredict[colpair[1] + "_offsetpeakflux"][0]
+                )
+                < RISEDEC_LIMITS["spline"]["offsetratio"][1]
+            ):
+                cdict["offsetratio_" + colpair[0] + "_" + colpair[1]] = offsetratio
+            if (
+                RISEDEC_LIMITS["spline"]["ratioevo"][0]
+                < (
+                    ratioevo := (
+                        cdict["peakratio_" + colpair[0] + "_" + colpair[1]]
+                        - offsetratio
+                    )
+                    / dt_fluxevo
+                )
+                < RISEDEC_LIMITS["spline"]["ratioevo"][1]
+            ):
+                cdict["ratioevo_" + colpair[0] + "_" + colpair[1]] = ratioevo
+        except KeyError:
+            # In case offsetpeak could not be defined
+            pass
+
+    return cdict
 
 
 def getMag(tab: Table, err=False, time=False):
@@ -226,7 +544,7 @@ class T2TabulatorRiseDeclineBase:
     sigma_det: float = 5.0
     sigma_slope: float = 3.0  # Threshold for having detected a slope (flux/day)
     dt_fluxevo: float = 20.0  # Calculating flux ratio between peak and this time (roughly modeled after SNIa 2nd peak)
-    color_list: Sequence[Sequence[str]] = [
+    color_list: list[list[str]] = [
         ["lsstu", "lsstg"],
         ["lsstg", "lsstr"],
         ["lsstr", "lssti"],
@@ -258,12 +576,20 @@ class T2TabulatorRiseDeclineBase:
         banddata = {}
         tscale = np.mean(ftable["time"])
 
+        # Get absolute height scale for peak finding
+        heightscale = ftable["flux"].max() / 5
+
         for band in set(ftable["band"]):
             bt = ftable[ftable["band"] == band]
 
             max_flux = bt["flux"].max()
             max_flux_time = bt[bt["flux"] == max_flux]["time"][0]
             banddata["jd_peak_" + band] = max_flux_time
+
+            # Time above half flux
+            halft = bt[bt["flux"] > max_flux / 2]["time"]
+            if len(halft) > 2:
+                banddata["time_halfpeak_" + band] = halft.max() - halft.min()
 
             # Divide Table
             riset = bt[bt["time"] <= max_flux_time]
@@ -279,8 +605,14 @@ class T2TabulatorRiseDeclineBase:
                         sigma=riset["fluxerr"],
                         absolute_sigma=True,
                     )
-                    banddata["rise_slope_" + band] = fit[1]
-                    banddata["rise_slopesig_" + band] = fit[1] / np.sqrt(cov[1][1])
+                    if (
+                        RISEDEC_LIMITS["band"]["rise_slope"][0]
+                        < (rise := fit[1])
+                        < RISEDEC_LIMITS["band"]["rise_slope"][1]
+                    ):
+                        banddata["rise_slope_" + band] = rise
+                        banddata["rise_slopesig_" + band] = rise / np.sqrt(cov[1][1])
+
                 except RuntimeError:
                     pass
             #                    self.logger.debug("Risetime curve fit failed.")
@@ -293,8 +625,14 @@ class T2TabulatorRiseDeclineBase:
                         sigma=fallt["fluxerr"],
                         absolute_sigma=True,
                     )
-                    banddata["fall_slope_" + band] = fit[1]
-                    banddata["fall_slopesig_" + band] = fit[1] / np.sqrt(cov[1][1])
+                    if (
+                        RISEDEC_LIMITS["band"]["fall_slope"][0]
+                        < (fall := fit[1])
+                        < RISEDEC_LIMITS["band"]["fall_slope"][1]
+                    ):
+                        banddata["fall_slope_" + band] = fall
+                        banddata["fall_slopesig_" + band] = fall / np.sqrt(cov[1][1])
+
                 except RuntimeError:
                     pass
             #                    self.logger.debug("Falltime curve fit failed.")
@@ -317,11 +655,21 @@ class T2TabulatorRiseDeclineBase:
                         bt["fluxerr"],
                         peak_uncertainty=self.t_cadence,
                     )
-                    # Stor parameters (not A nor t_0)
-                    banddata["tau_rise_" + band] = tau_rise
-                    banddata["tau_fall_" + band] = tau_fall
-                    banddata["tau_chidof_" + band] = chi_dof
-                    banddata["tau_dof_" + band] = len(bt)
+                    # Stor parameters (not A nor t_0) if fit was successful
+                    if (
+                        RISEDEC_LIMITS["tau"]["rise"][0]
+                        < tau_rise
+                        < RISEDEC_LIMITS["tau"]["rise"][1]
+                    ) and (
+                        RISEDEC_LIMITS["tau"]["fall"][0]
+                        < tau_fall
+                        < RISEDEC_LIMITS["tau"]["fall"][1]
+                    ):
+                        banddata["tau_rise_" + band] = tau_rise
+                        banddata["tau_fall_" + band] = tau_fall
+                        banddata["tau_chidof_" + band] = chi_dof
+                        banddata["tau_dof_" + band] = len(bt)
+
                 except ValueError as exc:
                     # triggered in attempt to SVD final jacobian containing inf or NaN
                     if "array must not contain infs or NaNs" in exc.args:
@@ -338,8 +686,14 @@ class T2TabulatorRiseDeclineBase:
                         bt["time"] - max_flux_time, bt["flux"]
                     )
                     # Stor parameters (not A nor t_0)
-                    banddata["tau_exp_" + band] = tau
-                    banddata["tau_dof_" + band] = len(bt)
+                    if (
+                        RISEDEC_LIMITS["tau"]["exp"][0]
+                        < tau
+                        < RISEDEC_LIMITS["tau"]["exp"][1]
+                    ):
+                        banddata["tau_exp_" + band] = tau
+                        banddata["tau_dof_" + band] = len(bt)
+
                 except RuntimeError:
                     pass
             #                    self.logger.debug("Exp fit failed.")
@@ -357,6 +711,23 @@ class T2TabulatorRiseDeclineBase:
                 banddata["fluxevo_ratio_" + band] = (
                     np.mean(fallt["flux"][isecpeak]) / max_flux
                 )
+
+            # Run the spline analysis
+            banddata.update(
+                spline_analysis(
+                    bt,
+                    band,
+                    int_step=self.t_cadence,
+                    height=heightscale,
+                    dt_fluxevo=self.dt_fluxevo,
+                )
+            )
+
+        # Combine spline data into colors if available
+        if len(self.color_list) > 0:
+            banddata.update(
+                spline_colevo(banddata, self.color_list, dt_fluxevo=self.dt_fluxevo)
+            )
 
         # Check whether we have a significant rise detected in any band.
         risepulls = [
@@ -454,13 +825,19 @@ class T2TabulatorRiseDeclineBase:
         o: dict[str, Any] = {}
 
         # Create subset of table with significant detections in significant bands
-        band_mask = np.asarray(
-            [bandobs in self.significant_bands for bandobs in flux_table["band"]],
-            dtype=bool,
-        )
+        band_mask = [
+            bandobs in self.significant_bands for bandobs in flux_table["band"]
+        ]
         sig_mask = np.abs((flux_table["flux"]) / flux_table["fluxerr"]) > self.sigma_det
 
-        det_table = flux_table[band_mask & sig_mask]
+        try:
+            det_table = flux_table[band_mask & sig_mask]
+        except TypeError:
+            # Can happen if no detections are found
+            o["success"] = False
+            o["cause"] = "Cannot create det table."
+            return o
+
         # Calculate fraction negative detection (we no longer cut only because of this)
         o["ndet"] = len(det_table)
 
@@ -638,6 +1015,9 @@ class BaseLightCurveFeatures(LogicalUnit):
         "Kurtosis": None,  # 4
         "StetsonK": None,  # 2
     }
+    # Minimally requires effective band passes as method parameters:
+    # {"band_wave_aa": {"ztgf": 4000, ...}
+    rainbow_fit: None | dict[str, Any] = None
 
     #: Bandpasses to use
     lightcurve_bands: dict[str, Any] = {
@@ -653,18 +1033,27 @@ class BaseLightCurveFeatures(LogicalUnit):
     }
 
     def init_lightcurve_extractor(self) -> None:
+        # Load single band feature extractors
         self.fluxextractor = light_curve.Extractor(
             *(
                 getattr(light_curve, k)(**(v or {}))
                 for k, v in self.lightcurve_features_flux.items()
             )
         )
+        # Some lightkurve (multiband? experimental?) features require special setup
+        if self.rainbow_fit:
+            self.rainbowextractor = RainbowFit.from_angstrom(
+                self.rainbow_fit["band_wave_aa"], with_baseline=False
+            )
+        else:
+            self.rainbowextractor = None
 
     def post_init(self) -> None:
         self.init_lightcurve_extractor()
 
     def extract_lightcurve_features(self, flux_table: Table) -> dict[str, float]:
         result = {}
+        # Derive single band features
         for band, fid in self.lightcurve_bands.items():
             if (in_band := flux_table[flux_table["band"] == fid]) is None:
                 continue
@@ -679,16 +1068,39 @@ class BaseLightCurveFeatures(LogicalUnit):
                     lcout = {
                         f"{k}_{band}_flux": v
                         for k, v in zip(
+                            #                            self.lightcurve_features_flux.keys(),
                             self.fluxextractor.names,
                             self.fluxextractor(
                                 in_band["time"], in_band["flux"], in_band["fluxerr"]
                             ),
                             strict=False,
                         )
+                        if check_lightkurve(k, v)
                     }
                     result.update(lcout)
             except ValueError:
-                self.logger.info("lightkurve extract fail")
+                self.logger.debug("lightkurve extract fail")
+                pass
+        # Multiband features (e.g. Rainbow)
+        if self.rainbowextractor and len(flux_table["flux"]) > 8:
+            try:
+                lcout = self.rainbowextractor(
+                    flux_table["time"],
+                    flux_table["flux"],
+                    sigma=flux_table["fluxerr"],
+                    band=flux_table["band"],
+                )
+                rainbowout = dict(
+                    zip(
+                        ["rainbow_" + s for s in self.rainbowextractor.names],
+                        lcout,
+                        strict=False,
+                    )
+                )
+                if check_rainbow(rainbowout):
+                    result.update(rainbowout)
+            except (OSError, RuntimeError):
+                self.logger.debug("lightkurve rainbow extract fail")
                 pass
 
         return result

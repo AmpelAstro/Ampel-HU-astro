@@ -99,7 +99,14 @@ def run_parsnip_zsample(
         use_lc.meta["redshift"] = redshift
         lcs.append(use_lc)
     lc_dataset = lcdata.from_light_curves(lcs)
-    lc_predictions = model.predict_dataset(lc_dataset)
+    try:
+        lc_predictions = model.predict_dataset(lc_dataset)
+    except ValueError:
+        # This is to catch a rare error when the phase guess of parsnip fails. As a starting point
+        # it looks for the most common 0.1 decimal. Sometimes all datapoints have the same decimal, causing an error ...
+        # Looks like a parsnip bug which should be solved there.
+        # Should be rare, when only few datapoints, where parsnip anyway does not work well
+        return {"Failed": "Parsnip phase guess fail."}
     lc_classifications = classifier.classify(lc_predictions)
 
     # Cast result for storage and look at relative probabilities

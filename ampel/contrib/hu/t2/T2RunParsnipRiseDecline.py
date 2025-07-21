@@ -48,7 +48,7 @@ def get_probability_evolution(
     evolution of probability fo be of one class.
 
     Obtain evolution of classified type {classtype} for classifier {classifier}
-    (with the optional subkey {lasslabel}) from list of classification outputs {classouts}
+    (with the optional subkey {classlabel}) from list of classification outputs {classouts}
     as a function of time.
 
     Sample usage:
@@ -162,6 +162,13 @@ class T2RunParsnipRiseDecline(
             features.update(self.extract_lightcurve_features(flux_table))
             # Create averaged values
             features.update(self.average_filtervalues(features))
+            # Check whether there is host information to include
+            if len(hostinfo := self.get_hostCol(t2_views)) > 0:
+                features.update(hostinfo)
+            ampelz = self.get_ampelZ(t2_views)
+            if ampelz is not None and (hdist := ampelz.get("ampel_dist", -1)) > 0:  # type: ignore[operator]
+                features["ampel_dist"] = hdist
+
             t2_body["risedeclinefeatures"] = features
 
             ## Run the classifiers
