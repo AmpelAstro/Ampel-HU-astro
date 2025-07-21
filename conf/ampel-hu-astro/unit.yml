@@ -11,6 +11,7 @@
 - ampel.contrib.hu.t0.StellarFilter
 - ampel.contrib.hu.t0.TransientInClusterFilter
 - ampel.contrib.hu.t0.XShooterFilter
+- ampel.contrib.hu.t0.TimeDistributionFilter
 - ampel.contrib.hu.t2.KafkaAdapter
 - ampel.contrib.hu.t2.T2BaseLightcurveFitter
 - ampel.contrib.hu.t2.T2BayesianBlocks
