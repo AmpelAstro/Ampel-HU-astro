@@ -17,7 +17,6 @@ from astropy.table import Table
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
 from ampel.contrib.hu.t2.T2RunSncosmo import T2RunSncosmo
-from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
 from ampel.view.T2DocView import T2DocView
 
@@ -239,26 +238,23 @@ class T2GetLensSNParameters(T2RunSncosmo):
         compound: T1Document,
         datapoints: Sequence[DataPoint],
         t2_views: Sequence[T2DocView],
-    ) -> UBson | UnitResult:
+    ) -> dict[str, UBson]:
         t2_output = super().process(compound, datapoints, t2_views)
         if (
-            "sncosmo_result" in t2_output
-            and "fit_metrics" in t2_output["sncosmo_result"]
+            isinstance(sncosmo_result := t2_output.get("sncosmo_result"), dict)
+            and "fit_metrics" in sncosmo_result
         ):
-            colour_pass = t2_output["sncosmo_result"]["fit_metrics"]["pass_colour_cuts"]
-            peak_pass = (
-                t2_output["sncosmo_result"]["fit_metrics"]["restpeak_model_absmag_B"]
-                < -19.5
-            )
+            colour_pass = sncosmo_result["fit_metrics"]["pass_colour_cuts"]
+            peak_pass = sncosmo_result["fit_metrics"]["restpeak_model_absmag_B"] < -19.5
         else:
             colour_pass = False
             peak_pass = False
 
         ampel_z_output = self.get_ampelZ(t2_views)
-        if "ampel_z" in ampel_z_output:
-            redshift = ampel_z_output["ampel_z"]
+        if isinstance(
+            redshift := ampel_z_output.get("ampel_z"), float | int
+        ) and isinstance(dist := ampel_z_output.get("ampel_dist"), float | int):
             redshift_pass = redshift > 0.1
-            dist = ampel_z_output["ampel_dist"]
             dist_pass = dist < 3.0
         else:
             redshift_pass = False
