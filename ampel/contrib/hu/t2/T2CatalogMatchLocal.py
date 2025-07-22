@@ -150,7 +150,7 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
         # initialize the catalog quer(ies). Use instance variable to aviod duplicates
         out_dict: dict[str, Any] = {}
         for catalog, cat_opts in self.catalogs.items():
-            src = None
+            src: None | Table = None
             self.logger.debug(f"Loading catalog {catalog} using options: {cat_opts!s}")
             # find out how ra/dec are called in the catalog
             catq_kwargs = cat_opts.catq_kwargs
@@ -168,17 +168,16 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
                 catq = self.init_extcats_query(catalog, **cat_opts.catq_kwargs)
 
                 if self.closest_match:
-                    src, dist = catq.findclosest(
+                    row, dist = catq.findclosest(
                         transient_ra,
                         transient_dec,
                         cat_opts.rs_arcsec,
                         pre_filter=cat_opts.pre_filter,
                         post_filter=cat_opts.post_filter,
                     )
-                    # Sinlge row, cannot just add column
-                    if src is not None:
-                        src = [dict(src)]
-                        src[0]["dist2transient"] = dist
+                    # Single row, cannot just add column
+                    src = Table(row)
+                    src.add_column(dist, name="dist2transient")
                 else:
                     src = catq.findwithin(
                         transient_ra,
@@ -218,17 +217,16 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
 
                     if self.closest_match:
                         # get the closest source and its distance (catsHTM stuff is in radians)
-                        src, dist = get_closest(
+                        row, dist = get_closest(
                             transient_coords.ra.degree,
                             transient_coords.dec.degree,
                             srcs_tab,
                             ra_key,
                             dec_key,
                         )
-                        # Sinlge row, cannot just add column
-                        if src is not None:
-                            src = [dict(src)]
-                            src[0]["dist2transient"] = dist
+                        # Single row, cannot just add column
+                        src = Table(row)
+                        src.add_column(dist, name="dist2transient")
 
                     else:
                         # get distances to all sources
