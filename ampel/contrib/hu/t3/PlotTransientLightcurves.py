@@ -408,7 +408,6 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
         self,
         tview: TransientView,
     ) -> list:
-        
         """
         Collect information from T2CatalogMatch and T2LSPhotoZ documents,
         return as list of str.
@@ -421,35 +420,39 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
             t2cat = tview.get_t2_body(unit="T2CatalogMatch")
             if isinstance(t2cat, dict):
                 if t2cat.get("GLADEv23") and "z" in t2cat["GLADEv23"]:
-                    photz_list.append(
-                        "GLADE: {:.2f}".format(t2cat["GLADEv23"]["z"])
-                    )
+                    photz_list.append("GLADE: {:.2f}".format(t2cat["GLADEv23"]["z"]))
                 if t2cat.get("SDSS_spec") and "z" in t2cat["SDSS_spec"]:
-                    photz_list.append(
-                        "SDSS: {:.2f}".format(t2cat["SDSS_spec"]["z"])
-                    )
+                    photz_list.append("SDSS: {:.2f}".format(t2cat["SDSS_spec"]["z"]))
                 if t2cat.get("NEDz") and "z" in t2cat["NEDz"]:
+                    photz_list.append("NED: {:.2f}".format(t2cat["NEDz"]["z"]))
+                if (
+                    t2cat.get("wiseScosPhotoz")
+                    and "zPhoto_Corr" in t2cat["wiseScosPhotoz"]
+                ):
                     photz_list.append(
-                        "NED: {:.2f}".format(t2cat["NEDz"]["z"])
-                    )
-                if t2cat.get("wiseScosPhotoz") and "zPhoto_Corr" in t2cat["wiseScosPhotoz"]:
-                    photz_list.append(
-                        "wiseScos: {:.2f}".format(t2cat["wiseScosPhotoz"]["zPhoto_Corr"])
+                        "wiseScos: {:.2f}".format(
+                            t2cat["wiseScosPhotoz"]["zPhoto_Corr"]
+                        )
                     )
                 if t2cat.get("PS1_photoz") and "z_phot" in t2cat["PS1_photoz"]:
-                    ps1_photz = float(t2cat["PS1_photoz"]["z_phot"])/1000
-                    ps1_photzerr = float(t2cat["PS1_photoz"]["z_photErr"])/10000
-                    photz_list.append(
-                        f"PS1: {ps1_photz:.2f} ± {ps1_photzerr:.2f}"
-                    )
+                    ps1_photz = float(t2cat["PS1_photoz"]["z_phot"]) / 1000
+                    ps1_photzerr = float(t2cat["PS1_photoz"]["z_photErr"]) / 10000
+                    photz_list.append(f"PS1: {ps1_photz:.2f} ± {ps1_photzerr:.2f}")
                 if t2cat.get("LSPhotoZZou") and "photoz" in t2cat["LSPhotoZZou"]:
                     photz_list.append(
                         "LSZou: {:.2f}".format(t2cat["LSPhotoZZou"]["photoz"])
                     )
             t2cat = tview.get_t2_body(unit="T2LSPhotoZTap")
-            if isinstance(t2cat, dict) and t2cat.get("T2LSPhotoZTap") and "z_phot_median" in t2cat["T2LSPhotoZTap"]:
+            if (
+                isinstance(t2cat, dict)
+                and t2cat.get("T2LSPhotoZTap")
+                and "z_phot_median" in t2cat["T2LSPhotoZTap"]
+            ):
                 photz_list.append(
-                    "LS: {:.2f} ± {:.2f}".format(t2cat["T2LSPhotoZTap"]["z_phot_median"], t2cat["T2LSPhotoZTap"]["z_phot_std"])
+                    "LS: {:.2f} ± {:.2f}".format(
+                        t2cat["T2LSPhotoZTap"]["z_phot_median"],
+                        t2cat["T2LSPhotoZTap"]["z_phot_std"],
+                    )
                 )
 
         return photz_list
@@ -473,16 +476,12 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
         # Nearby attribute
         t2res = tview.get_t2_body(unit="T2DigestRedshifts")
         if isinstance(t2res, dict) and t2res.get("ampel_z", -10) > 0:
-            attributes.append(
-                "Ampel z: {:.2f}".format(t2res["ampel_z"])
-            )
+            attributes.append("Ampel z: {:.2f}".format(t2res["ampel_z"]))
             z = t2res["ampel_z"]
             if t2res.get("ampel_z", 999) < nearby_z:
                 attributes.append("Nearby")
             dist2host = t2res["ampel_dist"]
-            attributes.append(
-                f"Dist2host: {dist2host:.1f} arcsec"
-            )
+            attributes.append(f"Dist2host: {dist2host:.1f} arcsec")
         # Infant attribute
         t2res = tview.get_t2_body(unit="T2InfantCatalogEval")
         if isinstance(t2res, dict) and t2res.get("action", False):
