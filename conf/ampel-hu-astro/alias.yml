@@ -130,100 +130,232 @@ t2:
           - z
   '%T2CatalogMatch_general':
     catalogs:
-      SDSS_spec:
-        use: extcats
-        rs_arcsec: 10
-        keys_to_append:
-          - z
-          - bptclass
-          - subclass
-      NEDz:
-        use: catsHTM
-        rs_arcsec: 10
-        keys_to_append:
-          - ObjType
-          - Velocity
-          - z
-      SDSSDR10:
-        use: catsHTM
-        rs_arcsec: 3
-        keys_to_append:
-          - type
-          - flags
-      brescia:
-        use: extcats
-        rs_arcsec: 3
-        keys_to_append:
-          - subclass
-          - z
-      milliquas:
-        use: extcats
-        rs_arcsec: 3
-        keys_to_append:
-          - broad_type
-          - name
-          - redshift
-          - qso_prob
-      GAIADR2:
-        use: catsHTM
-        rs_arcsec: 30
-        keys_to_append:
-          - Mag_G
-          - PMRA
-          - ErrPMRA
-          - PMDec
-          - ErrPMDec
-          - Plx
-          - ErrPlx
-          - ExcessNoise
-          - ExcessNoiseSig
-      CRTS_DR1:
-        use: extcats
-        rs_arcsec: 3
-        keys_to_append:
-          - VarType
       AAVSOVSX:
-        use: extcats
-        rs_arcsec: 3
         keys_to_append:
-          - TYPE
-      LAMOSTDR4:
-        use: extcats
+        - TYPE
         rs_arcsec: 3
+        use: extcats
+      DESIDR1:
         keys_to_append:
-          - objtype
-          - class
-          - subclass
-          - snrg
+        - z
+        - spectype
+        - subtype
+        - ra
+        - dec
+        - desi_target
+        - mag_g
+        - mag_r
+        - mag_z
+        post_filter: null
+        pre_filter: null
+        rs_arcsec: 10.0
+        use: extcats
+      DESIDR1_stars:
+        keys_to_append:
+        - z
+        - spectype
+        - subtype
+        - ra
+        - dec
+        - desi_target
+        - mag_g
+        - mag_r
+        - mag_z
+        post_filter: null
+        pre_filter: null
+        rs_arcsec: 3.0
+        use: extcats
+      GAIADR2:
+        keys_to_append:
+        - Mag_G
+        - PMRA
+        - ErrPMRA
+        - PMDec
+        - ErrPMDec
+        - Plx
+        - ErrPlx
+        - ExcessNoise
+        - ExcessNoiseSig
+        rs_arcsec: 3.0
+        use: catsHTM
       GLADEv23:
-        use: extcats
+        keys_to_append:
+        - z
+        - dist
+        - dist_err
+        - flag1
+        - flag2
+        - flag3
         rs_arcsec: 10
-        keys_to_append:
-          - z
-          - dist
-          - dist_err
-          - flag1
-          - flag2
-          - flag3
-      allWISE_skymotion:
         use: extcats
-        rs_arcsec: 30
+      LAMOSTDR4:
         keys_to_append:
-          - pmRA
-          - e_pmRA
-          - pmDE
-          - e_pmDE
+        - objtype
+        - class
+        - subclass
+        - snrg
+        rs_arcsec: 3
+        use: extcats
+      LSPhotoZZou:
+        all: false
+        keys_to_append:
+        - photoz
+        - ra
+        - dec
+        - e_photoz
+        - specz
+        - _6
+        - logMassBest
+        - logMassInf
+        - logMassSup
+        post_filter: null
+        pre_filter: null
+        rs_arcsec: 10.0
+        use: extcats
+      NEDLVS:
+        keys_to_append:
+        - objname
+        - objtype
+        - z
+        - z_unc
+        - z_tech
+        - z_qual
+        - z_qual_flag
+        - ebv
+        post_filter: null
+        pre_filter: null
+        rs_arcsec: 10.0
+        use: extcats
+      NEDz:
+        keys_to_append:
+        - ObjType
+        - Velocity
+        - z
+        rs_arcsec: 10.0
+        use: catsHTM
       NEDz_extcats:
-        use: extcats
-        rs_arcsec: 60
+        keys_to_append:
+        - ObjType
+        - Velocity
+        - z
         post_filter:
           z:
-            $lte: 0.03
             $gte: 0.002
+            $lte: 0.03
+        pre_filter: null
+        rs_arcsec: 60.0
+        use: extcats
+      PS1:
         keys_to_append:
-          - ObjType
-          - Velocity
-          - z
+        - gPSFMag
+        - gPSFMagErr
+        - rPSFMag
+        - rPSFMagErr
+        - iPSFMag
+        - iPSFMagErr
+        - zPSFMag
+        - zPSFMagErr
+        - yPSFMag
+        - yPSFMagErr
+        rs_arcsec: 10.0
+        use: catsHTM
+      PS1_photoz:
+        keys_to_append:
+        - raMean
+        - decMean
+        - z_phot
+        - z_photErr
+        - z_phot0
+        - _2
+        post_filter: null
+        pre_filter: null
+        rs_arcsec: 10.0
+        use: extcats
+      SDSSDR10:
+        keys_to_append:
+        - type
+        - flags
+        rs_arcsec: 10.0
+        use: catsHTM
+      SDSS_spec:
+        all: false
+        keys_to_append:
+        - z
+        - bptclass
+        - subclass
+        rs_arcsec: 10.0
+        use: extcats
+      TNS:
+        keys_to_append:
+        - objname
+        - name
+        - redshift
+        - sourceid
+        - type
+        - internal_name
+        - internal_names
+        - object_type
+        - objid
+        - source
+        post_filter: null
+        pre_filter: null
+        rs_arcsec: 3.0
+        use: extcats
+      WISE:
+        keys_to_append:
+        - Mag_W1
+        - MagErr_W1
+        - Mag_W2
+        - MagErr_W2
+        - Mag_W3
+        - MagErr_W3
+        rs_arcsec: 10.0
+        use: catsHTM
+      brescia:
+        keys_to_append:
+        - z
+        - subclass
+        rs_arcsec: 3
+        use: extcats
+      milliquas:
+        keys_to_append:
+        - broad_type
+        - name
+        - redshift
+        - qso_prob
+        rs_arcsec: 3
+        use: extcats
+      twoMPZ:
+        keys_to_append:
+        - zPhoto
+        - ra
+        - dec
+        - zSpec
+        post_filter: null
+        pre_filter: null
+        rs_arcsec: 10.0
+        use: extcats
+      wiseScosPhotoz:
+        keys_to_append:
+        - zPhoto_Corr
+        - ra
+        - dec
+        - wiseID
+        - w1mCorr
+        - w2mCorr
+        post_filter: null
+        pre_filter: null
+        rs_arcsec: 10.0
+        use: extcats
+      wise_color:
+        keys_to_append:
+        - W1mW2
+        - W2mW3
+        - W1mag
+        post_filter: null
+        pre_filter: null
+        rs_arcsec: 10.0
+        use: extcats
   '%T2CatalogMatch_okclens':
     catalogs:
       masterlens:

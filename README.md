@@ -38,6 +38,7 @@ requires an access token if data is to be retrieved.
 - [RedshiftCatalogFilter](ampel/contrib/hu/t0/RedshiftCatalogFilter.py): Filter derived from DecentFilter designed to only accept transients located close to a galaxy in a catalog, and within redshift bounds.
 - [SimpleDecentFilter](ampel/contrib/hu/t0/SimpleDecentFilter.py): General-purpose filter devloped alongside DecentFilter but without use of external catalogs.
 - [StellarFilter](ampel/contrib/hu/t0/StellarFilter.py): a.k.a. as the IndecentFilter, i.e. an inversion of the DecentFilter mainly used for finding extragalactic objects.
+- [TimeDistributionFilter](ampel/contrib/hu/t0/TimeDistributionFilter.py): Filter derived from the DecentFilter, in addition.
 - [TransientInClusterFilter](ampel/contrib/hu/t0/TransientInClusterFilter.py): Filter derived from the DecentFilter, in addition selecting candidates with position compatible with that of nearby galaxy clusters..
 - [XShooterFilter](ampel/contrib/hu/t0/XShooterFilter.py): Filter derived from the DecentFilter, in addition selecting very new transients which are visible from the South.
 

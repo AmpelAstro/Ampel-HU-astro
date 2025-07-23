@@ -229,7 +229,7 @@ class T2RunPossis(T2RunSncosmo):
         compound: T1Document,
         datapoints: Sequence[DataPoint],
         t2_views: Sequence[T2DocView],
-    ) -> UBson | UnitResult:
+    ) -> dict[str, UBson]:
         """
         Load model and fit the loaded model to the data provided as a LightCurve.
         If requested, retrieve redshift and explosion time from t2_views.
@@ -237,7 +237,7 @@ class T2RunPossis(T2RunSncosmo):
         Return dict of dicts from model fitting.
         """
 
-        result_dict = {}
+        result_dict: dict[str, UBson] = {}
 
         for model_ind in self.possis_models:
             # print("T2RUNPOSSIS evaluating::", model_ind)
@@ -258,7 +258,7 @@ class T2RunPossis(T2RunSncosmo):
                     t2_res = get_payload(t2_view)
                     if "trigger_time" not in t2_res:
                         self.logger.info("No explosion time", extra={"t2res": t2_res})
-                        return UnitResult(code=DocumentCode.T2_MISSING_INFO)
+                        return UnitResult(code=DocumentCode.T2_MISSING_INFO)  # type: ignore[return-value]
                     self.explosion_time_jd = float(t2_res["trigger_time"])
                     # Reset model
                     self.logger.debug(

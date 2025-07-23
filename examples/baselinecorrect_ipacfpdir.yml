@@ -1,6 +1,6 @@
 name: baselinecorrect_ipacfpdir
 mongo:
-  prefix: bts_bcorr
+  prefix: dr3bts_ipacfp_strictbaseline
   reset: true
 channel:
 - name: lcana
@@ -17,8 +17,10 @@ task:
       unit: ZTFIPACForcedPhotometryAlertSupplier
       config:
         alert_history: false
-        save_file_dir: /home/jnordin/tmp/baselinecorr
-        name_file: /home/jnordin/data/ztf_ipacfp/bts_explorer_241122.csv
+        save_file_dir: /Users/jnordin/tmp/baselinecorr
+        name_file: /Users/jnordin/data/ztf/bts/bts_explorer_241122.csv
+        baseline_min_det_pre: 25.0 # Min detections prior to transient region in a band/quad to include 
+        baseline_min_det_post: 25.0 # Min detections after transient region in a band/quad to include 
         file_keys: 
           id: "ZTFID"
           ra: "RA"
@@ -28,7 +30,7 @@ task:
         loader:
           unit: DirFileNamesLoader
           config:
-            folder: /home/jnordin/github/ampelMay24/Ampel-HU-astro/notebooks/dr3_bts
+            folder: /Users/jnordin/data/ztf/ipac_fp/dr3_ipac
             extension: "txt"
     shaper: ZiDataPointShaper
     compiler_opts: ZiCompilerOptions

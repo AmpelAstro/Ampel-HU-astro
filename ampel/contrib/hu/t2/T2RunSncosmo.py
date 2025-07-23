@@ -29,7 +29,6 @@ from ampel.contrib.hu.t2.T2BaseLightcurveFitter import T2BaseLightcurveFitter
 from ampel.model.PlotProperties import PlotProperties
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.plot.create import create_plot_record
-from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
 from ampel.view.T2DocView import T2DocView
 from ampel.ztf.util.ZTFNoisifiedIdMapper import ZTFNoisifiedIdMapper
@@ -302,7 +301,7 @@ class T2RunSncosmo(T2BaseLightcurveFitter):
         compound: T1Document,
         datapoints: Sequence[DataPoint],
         t2_views: Sequence[T2DocView],
-    ) -> UBson | UnitResult:
+    ) -> dict[str, UBson]:
         """
 
         Fit the parameters of the initiated snocmo_model to the light_curve

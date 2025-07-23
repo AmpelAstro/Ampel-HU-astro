@@ -9,11 +9,16 @@
 
 
 from bisect import bisect_left
+from collections.abc import Sequence
 
 import numpy as np
 from astropy.table import Table
 
+from ampel.content.DataPoint import DataPoint
+from ampel.content.T1Document import T1Document
 from ampel.contrib.hu.t2.T2RunSncosmo import T2RunSncosmo
+from ampel.types import UBson
+from ampel.view.T2DocView import T2DocView
 
 
 class T2GetLensSNParameters(T2RunSncosmo):
@@ -206,4 +211,58 @@ class T2GetLensSNParameters(T2RunSncosmo):
         lc_metrics["obsmag_ztfr_minus7"] = calculate_obsmag_peak("ztfr", "minus7")
         lc_metrics["obsmag_ztfi_minus7"] = calculate_obsmag_peak("ztfi", "minus7")
 
+        thresholds = {
+            "r_i_colour_peak": -0.28,
+            "r_i_colour_plus7": -0.23,
+            "r_i_colour_minus7": -0.34,
+            "g_r_colour_peak": 0.12,
+            "g_r_colour_plus7": 0.33,
+            "g_r_colour_minus7": -0.08,
+            "g_i_colour_peak": 0.06,
+            "g_i_colour_plus7": 0.33,
+            "g_i_colour_minus7": -0.08,
+        }
+
+        if any(
+            lc_metrics.get(key) is not None and lc_metrics[key] > value
+            for key, value in thresholds.items()
+        ):
+            lc_metrics["pass_colour_cuts"] = True
+        else:
+            lc_metrics["pass_colour_cuts"] = False
+
         return lc_metrics
+
+    def process(
+        self,
+        compound: T1Document,
+        datapoints: Sequence[DataPoint],
+        t2_views: Sequence[T2DocView],
+    ) -> dict[str, UBson]:
+        t2_output = super().process(compound, datapoints, t2_views)
+        if (
+            isinstance(sncosmo_result := t2_output.get("sncosmo_result"), dict)
+            and "fit_metrics" in sncosmo_result
+        ):
+            colour_pass = sncosmo_result["fit_metrics"]["pass_colour_cuts"]
+            peak_pass = sncosmo_result["fit_metrics"]["restpeak_model_absmag_B"] < -19.5
+        else:
+            colour_pass = False
+            peak_pass = False
+
+        ampel_z_output = self.get_ampelZ(t2_views)
+        if isinstance(
+            redshift := ampel_z_output.get("ampel_z"), float | int
+        ) and isinstance(dist := ampel_z_output.get("ampel_dist"), float | int):
+            redshift_pass = redshift > 0.1
+            dist_pass = dist < 3.0
+        else:
+            redshift_pass = False
+            dist_pass = False
+
+        if colour_pass and peak_pass and redshift_pass and dist_pass:
+            t2_output["pass_all_cuts"] = True
+        else:
+            t2_output["pass_all_cuts"] = False
+
+        return t2_output
