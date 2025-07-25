@@ -31,6 +31,7 @@ task:
             # https://portal.nersc.gov/cfs/lsst/DESC_TD_PUBLIC/ELASTICC/5000alerts.tar.gz
             folder: NITE60562/
             extension: "*avro.gz"
+            avro_schema: https://raw.githubusercontent.com/LSSTDESC/elasticc/c47fbd301b87f915c77ac0046d7845c68c306444/alert_schema/elasticc.v0_9.alert.avsc
           unit: ElasticcDirAlertLoader
 
     shaper: {unit: LSSTDataPointShaper}
