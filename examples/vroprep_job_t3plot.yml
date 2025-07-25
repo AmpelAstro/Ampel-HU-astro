@@ -1,0 +1,52 @@
+name: vroprept3
+
+mongo:
+  prefix: elasticctest
+  reset: false
+
+task:
+- title: React
+  unit: T3Processor
+  config:
+    raise_exc: true
+    supply:
+      unit: T3DefaultBufferSupplier
+      config:
+        select:
+          unit: T3FilteringStockSelector
+          config:
+            channel: elasticctest
+            t2_filter:
+              unit: T2RunParsnipRiseDecline
+              match:
+                fitdatainfo.z:
+                  "$gt": 0.0 
+        load:
+          unit: T3SimpleDataLoader
+          config:
+            directives:
+              - STOCK
+              - T1
+              - T2DOC
+              - DATAPOINT
+            channel: elasticctest
+#        complement: 
+#        - unit: ZTFCutoutImages
+#          config:
+#            eligible: last
+    stage:
+      unit: T3SimpleStager
+      config:
+        execute:
+          - unit: PlotTransientLightcurves
+            config:
+              pdf_path: /Users/jnordin/tmp/candidates_live.pdf
+              save_png: false
+              include_cutouts: true
+              slack_channel: "ampel-live"
+              slack_token: 
+                label: slack/ztfberlin/vro 
+              tabulator:
+              - unit: LSSTT2Tabulator
+                config:
+                  zp: 27.5

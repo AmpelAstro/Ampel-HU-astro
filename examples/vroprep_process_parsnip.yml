@@ -1,0 +1,10 @@
+unit: T2Worker
+config:
+  doc_limit: 10000
+  garbage_collect: false
+  max_try: 10
+  log_profile: prod
+  code_match: [-1, -6, -2000, -2001, -2004, -2006, -2008]
+  pending_codes: [-2000, -2001, -2006, -2004, -2008, -5, -1, -7]
+  unit_ids:
+    - T2RunParsnipRiseDecline
