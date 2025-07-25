@@ -27,6 +27,7 @@ from ampel.content.DataPoint import DataPoint
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
+from ampel.secret.NamedSecret import NamedSecret
 
 
 def convert(inp, outfmt="pandas", verbose=False, **kwargs):
@@ -157,9 +158,8 @@ class T2LSPhotoZTap(AbsPointT2Unit):
     """
 
     # Astro DataLab user id
-    datalab_user: str
-    datalab_pwd: str
-    ##datalab_str : Secret
+    datalab_user: NamedSecret[str]
+    datalab_str: NamedSecret[str]
 
     # Match parameters
     match_radius: float = 10  # in arcsec
