@@ -11,7 +11,6 @@ import gzip
 import io
 import os
 from collections.abc import Generator, Iterable
-from contextlib import nullcontext
 from typing import Any
 
 import matplotlib.pyplot as plt
@@ -25,7 +24,8 @@ from astropy.time import Time
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.colors import Normalize
 from matplotlib.ticker import MultipleLocator
-from slack_sdk.web import WebClient
+from slack_sdk import WebClient
+from slack_sdk.errors import SlackApiError
 from ztfquery.utils.stamps import get_ps_stamp
 
 from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
@@ -82,6 +82,12 @@ def fig_from_fluxtable(
         "ztfg": {"label": "ZTF g", "c": "green"},
         "ztfr": {"label": "ZTF R", "c": "red"},
         "ztfi": {"label": "ZTF i", "c": "orange"},
+        "lsstu": {"label": "LSST u", "c": "magenta"},
+        "lsstg": {"label": "LSST g", "c": "green"},
+        "lsstr": {"label": "LSST r", "c": "red"},
+        "lssti": {"label": "LSST i", "c": "green"},
+        "lssty": {"label": "LSST y", "c": "orange"},
+        "lsstz": {"label": "LSST z", "c": "red"},
     }
 
     fig = plt.figure(figsize=figsize)
@@ -526,6 +532,14 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                     self.logger.debug("No photopoints", extra={"stock": tran_view.id})
                     continue
                 sncosmo_table = self.get_flux_table(tran_view.get_photopoints())  # type: ignore
+                sncosmo_table = sncosmo_table[sncosmo_table["flux"] > 0]
+                # Plots made in mag space, so negative flux objects (microlenses) with neg fluxes cannot be inspected as is.
+                if sncosmo_table is None or len(sncosmo_table) == 0:
+                    self.logger.debug(
+                        "No pos flux",
+                        extra={"stock": tran_view.id},
+                    )
+                    continue
 
                 # Collect information
                 ampelid = tran_view.id
@@ -592,15 +606,39 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
 
         # Post to slack
         if self.slack_channel is not None and self.slack_token is not None:
-            buffer.seek(0)
-            with (
-                open(self.pdf_path, "rb") if self.pdf_path else nullcontext(buffer)  # type: ignore[attr-defined]
-            ) as file:
-                self.webclient.files_upload(
-                    file=file,
-                    filename=self.pdf_path or "candidates.pdf",
-                    channels=self.slack_channel,
-                    #                thread_ts=self.ts,
+            #            buffer.seek(0)
+            # Upload the file to Slack
+            #            with (
+            #                open(self.pdf_path, "rb") if self.pdf_path else nullcontext(buffer)  # type: ignore[attr-defined]
+            #            ) as file:
+            #                self.webclient.files_upload(
+            #                    file=file,
+            #                    filename=self.pdf_path or "candidates.pdf",
+            #                    channels=self.slack_channel,
+            #                    #                thread_ts=self.ts,
+            #                )
+            new_file = self.webclient.files_upload_v2(
+                title="My Test Text File", filename="test.pdf", file=self.pdf_path
+            )
+            fileresp: dict[str, Any] = new_file.get("file", {})
+            if len(file_url := fileresp.get("permalink", "")) > 0:
+                # file_url = fileresp.get("permalink",'')
+                # Send a message with the file URL
+                # Should save some trace to logs of response?
+                self.webclient.chat_postMessage(
+                    channel=self.slack_channel,
+                    text=f"Here is the file: {file_url}",
                 )
+
+            # Send a plain message to a channel
+            try:
+                self.webclient.chat_postMessage(
+                    channel=self.slack_channel, text="Hello from your app! :tada:"
+                )
+            except SlackApiError as e:
+                # You will get a SlackApiError if "ok" is False
+                assert e.response[
+                    "error"
+                ]  # str like 'invalid_auth', 'channel_not_found'
 
         return None

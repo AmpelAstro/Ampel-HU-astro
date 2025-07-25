@@ -25,9 +25,9 @@ from pandas import read_csv
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.content.DataPoint import DataPoint
 from ampel.enum.DocumentCode import DocumentCode
+from ampel.secret.NamedSecret import NamedSecret
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
-from ampel.secret.NamedSecret import NamedSecret
 
 
 def convert(inp, outfmt="pandas", verbose=False, **kwargs):
@@ -159,7 +159,7 @@ class T2LSPhotoZTap(AbsPointT2Unit):
 
     # Astro DataLab user id
     datalab_user: NamedSecret[str]
-    datalab_str: NamedSecret[str]
+    datalab_pwd: NamedSecret[str]
 
     # Match parameters
     match_radius: float = 10  # in arcsec
@@ -181,12 +181,12 @@ class T2LSPhotoZTap(AbsPointT2Unit):
         parts = urlparse(self.datalab_query_url)
         response = session.get(
             urlunparse((parts.scheme, parts.netloc, "/auth/login", "", "", "")),
-            params={
+            params={  # type: ignore
                 "username": self.datalab_user,
                 "profile": "default",
                 "debug": "False",
             },
-            headers={"X-DL-Password": self.datalab_pwd},
+            headers={"X-DL-Password": self.datalab_pwd},  # type: ignore
         )
         response.raise_for_status()
         session.headers.update({"X-DL-AuthToken": response.text})
