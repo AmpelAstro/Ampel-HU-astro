@@ -4,7 +4,7 @@
 repos:
 - repo: https://github.com/astral-sh/ruff-pre-commit
   # renovate: datasource=pypi depName=ruff versioning=pep440
-  rev: v0.9.7
+  rev: v0.13.0
   hooks:
     - id: ruff
       args: [--fix]
