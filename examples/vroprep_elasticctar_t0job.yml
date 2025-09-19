@@ -47,6 +47,8 @@ task:
           max_ndet: 10
           min_tspan: 0
           max_tspan: 100
+          min_ndet: 4
+          min_tspan: 3
 
       ingest:
           mux:
@@ -110,8 +112,13 @@ task:
                   classifier_version: '0.1'
 #                  fixed_z: 0.07
                   parsnip_zeropoint_offset: 0
-                  parsnipplot_dir: /Users/jnordin/tmp/parsnipPlot
-                  parsnipplot_suffix: png
+                  parsnipplot_properties:
+                    file_name:
+                      format_str: t2parsnip_%s_%s.svg
+                      arg_keys: [stock, model]
+                    disk_save: parsnipPlot
+                  # parsnipplot_dir: parsnipPlot
+                  # parsnipplot_suffix: png
                   paths_parsnip:
                     sn+2ulens+dwarfs:
                       # https://box.hu-berlin.de/f/78d7594841da4653a743/?dl=1
@@ -126,6 +133,7 @@ task:
                   paths_xgbmulti: {}
 #                  redshift_kind: null 
                   redshift_kind: T2DigestRedshifts
+                  max_redshift_category: 4
                   return_features: true
                   significant_bands:
                   - lsstg
@@ -143,6 +151,6 @@ task:
                   tabulator:
                     - unit: LSSTT2Tabulator
                       config:
-                        zp: 31.4
+                        zp: 27.5
 
 

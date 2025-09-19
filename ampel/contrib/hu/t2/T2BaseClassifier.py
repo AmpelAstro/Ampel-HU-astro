@@ -7,8 +7,6 @@
 # Last Modified Date:  18.09.2024
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
-import gc
-import os
 from typing import Any
 
 import joblib
@@ -21,7 +19,9 @@ import parsnip
 from scipy.stats import chi2
 from typing_extensions import TypedDict
 
+from ampel.model.PlotProperties import PlotProperties
 from ampel.model.UnitModel import UnitModel
+from ampel.plot.create import create_plot_record
 
 # All parsnip predictions that are not floats
 dcast_pred = {
@@ -73,16 +73,19 @@ class XgbMultiModelFiles(TypedDict):
 
 
 def run_parsnip_zsample(
-    sncosmo_table, zs, zweights, model, classifier, delta_zp=0, plot_path=None
-) -> dict:
+    sncosmo_table,
+    zs,
+    zweights,
+    model: parsnip.ParsnipModel,
+    classifier: parsnip.Classifier,
+    delta_zp: float = 0.0,
+) -> tuple[dict, parsnip.ParsnipModel, lcdata.Dataset]:
     """
     Fit a parsnip model for multiple redshifts provided in the `zs` list,
     providing a weighted average result combining `zweights` with the fit chi results.
 
     delta_zp: the parsnip model zp is set to what is found in the lc table
         with this offset added (for example to reflect different training zp)
-
-    Will attempt at storing a model at the best fit redshift if 'plot_path' is set.
     """
 
     # Adjust zeropoint - needed when training done with inconsitent zeropoints.
@@ -166,23 +169,7 @@ def run_parsnip_zsample(
         # Not enough data for a chi2 estimate or fits with negligable probability
         result_dict["Failed"] = "NoFit"
 
-    if plot_path and "Failed" not in result_dict:
-        fig = plt.figure()
-        ax = plt.gca()
-
-        # Set redshift to best value and plot this fit
-        lc_dataset.light_curves[0].meta["redshift"] = result_dict["z_at_minchi"]
-
-        parsnip.plot_light_curve(lc_dataset.light_curves[0], model, ax=ax)
-        plt.tight_layout()
-        plt.savefig(plot_path)
-
-        plt.close("fig")
-        plt.close("all")
-        del fig
-        gc.collect()
-
-    return result_dict
+    return result_dict, model, lc_dataset
 
 
 class BaseClassifier:
@@ -214,10 +201,10 @@ class BaseClassifier:
     # The parsnip model zeropoint will by default be set to that of
     # the input lightcurve. This can be adjusted by zp offset.
     # Offset can e.g. appear if training performed with wrong zeropoint...
-    parsnip_zeropoint_offset: float = 0
+    parsnip_zeropoint_offset: float = 0.0
     # Save / plot parameters
-    parsnipplot_suffix: None | str = None
-    parsnipplot_dir: None | str = None
+    parsnipplot_properties: PlotProperties | None = None
+
     add_parsnip_from: None | str = None
 
     # Include features and ML results in t2_record
@@ -308,24 +295,33 @@ class BaseClassifier:
 
         zw = [1.0 / len(zsample) for z in zsample] if zweights is None else zweights
 
-        ## plot setup, if requested
-        if self.parsnipplot_suffix and self.parsnipplot_dir:
-            fname = os.path.join(
-                self.parsnipplot_dir,
-                f"t2parsnip_{transient_name}_{model_label}.{self.parsnipplot_suffix}",
-            )
-        else:
-            fname = None
-
-        return run_parsnip_zsample(
+        result_dict, model, lc_dataset = run_parsnip_zsample(
             lctable,
             zsample,
             zw,
             self._class_parsnip[model_label]["model"],
             self._class_parsnip[model_label]["classifier"],
             self.parsnip_zeropoint_offset,
-            plot_path=fname,
         )
+
+        if self.parsnipplot_properties is not None and "Failed" not in result_dict:
+            fig, ax = plt.subplots()
+            try:
+                lc_dataset.light_curves[0].meta["redshift"] = result_dict["z_at_minchi"]
+
+                parsnip.plot_light_curve(lc_dataset.light_curves[0], model, ax=ax)
+                fig.tight_layout()
+                result_dict["plot"] = create_plot_record(
+                    fig,
+                    self.parsnipplot_properties,
+                    close=False,
+                    extra={"stock": transient_name, "model": model_label},
+                )
+            finally:
+                fig.clear()
+                plt.close(fig)
+
+        return result_dict
 
     def classify(
         self,
