@@ -16,9 +16,18 @@ import numpy as np
 
 # Parsnip models - avoid importing these if running in the light mode?
 import parsnip
-from scipy.stats import chi2
+from astropy.table import Table
 from typing_extensions import TypedDict
 
+from ampel.content.NewSVGRecord import NewSVGRecord
+from ampel.contrib.hu.model.ParsnipRiseDeclineResult import (
+    ClassificationEntry,
+    Classifications,
+    ParsnipFailure,
+    ParsnipPrediction,
+    ParsnipResult,
+    PredictionEntry,
+)
 from ampel.model.PlotProperties import PlotProperties
 from ampel.model.UnitModel import UnitModel
 from ampel.plot.create import create_plot_record
@@ -72,14 +81,46 @@ class XgbMultiModelFiles(TypedDict):
     classes: list[int | str]
 
 
+def create_parsnip_plot(
+    lc_dataset: lcdata.Dataset,
+    model: parsnip.ParsnipModel,
+    redshift: float,
+    properties: PlotProperties,
+    extra: dict[str, Any],
+) -> NewSVGRecord:
+    """
+    Create a parsnip fit plot for the provided lightcurve table and model.
+    """
+
+    fig, ax = plt.subplots()
+    try:
+        lc_dataset.light_curves[0].meta["redshift"] = redshift
+
+        parsnip.plot_light_curve(lc_dataset.light_curves[0], model, ax=ax)
+        fig.tight_layout()
+        return create_plot_record(
+            fig,
+            properties,
+            close=False,
+            extra=extra,
+        )
+    finally:
+        fig.clear()
+        plt.close(fig)
+
+
 def run_parsnip_zsample(
-    sncosmo_table,
-    zs,
-    zweights,
+    sncosmo_table: Table,
+    zs: list[float],
+    zweights: list[float] | None,
+    *,
+    label: str,
     model: parsnip.ParsnipModel,
     classifier: parsnip.Classifier,
     delta_zp: float = 0.0,
-) -> tuple[dict, parsnip.ParsnipModel, lcdata.Dataset]:
+    transient_name: str = "noname",
+    plot: PlotProperties | None = None,
+) -> ParsnipResult | ParsnipFailure:
     """
     Fit a parsnip model for multiple redshifts provided in the `zs` list,
     providing a weighted average result combining `zweights` with the fit chi results.
@@ -109,31 +150,23 @@ def run_parsnip_zsample(
         # it looks for the most common 0.1 decimal. Sometimes all datapoints have the same decimal, causing an error ...
         # Looks like a parsnip bug which should be solved there.
         # Should be rare, when only few datapoints, where parsnip anyway does not work well
-        return {"Failed": "Parsnip phase guess fail."}
+        return ParsnipFailure(model=label, failed="PhaseGuess")
     lc_classifications = classifier.classify(lc_predictions)
 
     # Cast result for storage and look at relative probabilities
-    predictions = {}
-    classifcations = {}
+    predictions: list[PredictionEntry] = []
+    classifications: list[ClassificationEntry] = []
     for i, redshift in enumerate(zs):
-        foo = dict(lc_predictions[i][lc_predictions.colnames[1:]])
-        predictions[str(redshift)] = {
-            k: dcast_pred[k](v) if k in dcast_pred and v is not None else float(v)
-            for k, v in foo.items()
-        }
-        # Not sure whether the dof could change? Normalizing now
-        if foo["model_dof"] > 0:
-            predictions[str(redshift)]["chi2pdf"] = chi2.pdf(
-                foo["model_chisq"], foo["model_dof"]
+        prediction = ParsnipPrediction(**lc_predictions[i][lc_predictions.colnames[1:]])
+        predictions.append(PredictionEntry(z=redshift, prediction=prediction))
+        classifications.append(
+            ClassificationEntry(
+                z=redshift,
+                classification=dict(
+                    lc_classifications[i][lc_classifications.colnames[1:]]
+                ),
             )
-        else:
-            # Not enough data - earlier check?
-            predictions[str(redshift)]["chi2pdf"] = 0.0
-        foo = dict(lc_classifications[i][lc_classifications.colnames[1:]])
-        classifcations[str(redshift)] = {
-            k: dcast_class[k](v) if k in dcast_class and v is not None else float(v)
-            for k, v in foo.items()
-        }
+        )
 
     # Marginalize over the redshift
     # p(c|y) = Integral[p(c|z,y) p(z|y) dz]
@@ -141,14 +174,7 @@ def run_parsnip_zsample(
     dtype = lc_classifications[types[0]].dtype
     probabilities = lc_classifications[types].as_array().view((dtype, len(types)))
     # Now we could normalize these z prob and normalize types over redshifts
-    z_probabilities = np.array(
-        [lcfit["chi2pdf"] for redshift, lcfit in predictions.items()]
-    )
-
-    result_dict: dict[str, Any] = {
-        "predictions": predictions,
-        "classifications": classifcations,
-    }
+    z_probabilities = np.array([pred.prediction.chi2pdf for pred in predictions])
 
     if np.sum(z_probabilities) > 0:
         # Take redshift probabilities into account, if available
@@ -156,20 +182,35 @@ def run_parsnip_zsample(
             z_probabilities *= zweights
         integrated_probabilities = z_probabilities.dot(probabilities)
         integrated_probabilities /= np.sum(integrated_probabilities)
-        result_dict["marginal_lc_classifications"] = dict(
-            zip(types, integrated_probabilities, strict=False)
-        )
-        # Find the best redshifts
-        result_dict["z_at_minchi"] = zs[np.argmax(z_probabilities)]
-        # Map these to singular value predictions/lc_classifications
-        # (wastes DB space, but possible to filter based on)
-        result_dict["prediction"] = predictions[str(result_dict["z_at_minchi"])]
-        result_dict["classification"] = classifcations[str(result_dict["z_at_minchi"])]
-    else:
-        # Not enough data for a chi2 estimate or fits with negligable probability
-        result_dict["Failed"] = "NoFit"
 
-    return result_dict, model, lc_dataset
+        # Find the best redshift
+        best = np.argmax(z_probabilities)
+
+        return ParsnipResult(
+            model=label,
+            predictions=predictions,
+            classifications=classifications,
+            marginal_lc_classifications=dict(
+                zip(types, integrated_probabilities, strict=False)
+            ),
+            z_at_minchi=zs[best],
+            # Map result at best redshift to singular value predictions/lc_classifications
+            # (wastes DB space, but possible to filter based on)
+            prediction=predictions[best].prediction,
+            classification=classifications[best].classification,
+            plot=create_parsnip_plot(
+                lc_dataset,
+                model,
+                zs[best],
+                plot,
+                extra={"stock": transient_name, "model": label},
+            )
+            if plot is not None
+            else None,
+        )
+
+    # Not enough data for a chi2 estimate or fits with negligable probability
+    return ParsnipFailure(model=label, failed="NoFit")
 
 
 class BaseClassifier:
@@ -281,8 +322,13 @@ class BaseClassifier:
         }
 
     def get_parsnip_class(
-        self, model_label, lctable, zsample, zweights=None, transient_name="noname"
-    ) -> dict[str, Any]:
+        self,
+        model_label: str,
+        lctable: Table,
+        zsample: list[float],
+        zweights: list[float] | None = None,
+        transient_name: str = "noname",
+    ) -> ParsnipResult | ParsnipFailure:
         """
         Return the classification for the labeled parsnip model
         at the redshift list provided by zsample.
@@ -295,33 +341,17 @@ class BaseClassifier:
 
         zw = [1.0 / len(zsample) for z in zsample] if zweights is None else zweights
 
-        result_dict, model, lc_dataset = run_parsnip_zsample(
+        return run_parsnip_zsample(
             lctable,
             zsample,
             zw,
-            self._class_parsnip[model_label]["model"],
-            self._class_parsnip[model_label]["classifier"],
-            self.parsnip_zeropoint_offset,
+            model=self._class_parsnip[model_label]["model"],
+            classifier=self._class_parsnip[model_label]["classifier"],
+            label=model_label,
+            plot=self.parsnipplot_properties,
+            transient_name=transient_name,
+            delta_zp=self.parsnip_zeropoint_offset,
         )
-
-        if self.parsnipplot_properties is not None and "Failed" not in result_dict:
-            fig, ax = plt.subplots()
-            try:
-                lc_dataset.light_curves[0].meta["redshift"] = result_dict["z_at_minchi"]
-
-                parsnip.plot_light_curve(lc_dataset.light_curves[0], model, ax=ax)
-                fig.tight_layout()
-                result_dict["plot"] = create_plot_record(
-                    fig,
-                    self.parsnipplot_properties,
-                    close=False,
-                    extra={"stock": transient_name, "model": model_label},
-                )
-            finally:
-                fig.clear()
-                plt.close(fig)
-
-        return result_dict
 
     def classify(
         self,
@@ -333,7 +363,7 @@ class BaseClassifier:
         xgb_multimodels: list | None = None,
         parsnip_models: list | None = None,
         redshift_weights=None,
-    ) -> list[dict]:
+    ) -> list[Classifications]:
         """
         Run the loaded classifiers on the input features / lightcurve.
         'xgb_binarymodels', 'xgb_multimodels', 'parsnip_models' all allow to select which models to use (selected by labels).
@@ -343,10 +373,8 @@ class BaseClassifier:
         """
 
         ### Parsnip
-        parsnip_class: dict[str, Any] = {}
-        if len(flux_table) < 4:
-            parsnip_class["Failed"] = "few det"
-        else:
+        parsnip_class: dict[str, ParsnipResult | ParsnipFailure] = {}
+        if len(flux_table) >= 4:
             models = parsnip_models if parsnip_models else self._class_parsnip.keys()
             if (
                 self.add_parsnip_from is not None
@@ -364,34 +392,34 @@ class BaseClassifier:
                 for model_name in models
             }
 
-        ### Update feature dictionary with parsnip output if requested.
-        if (
-            self.add_parsnip_from is not None
-            and "Failed" not in parsnip_class
-            and "Failed" not in parsnip_class[self.add_parsnip_from]
-        ):
-            # Previously we added parsnip_ as prefix to all features, but this was not done in training.
-            #            features.update( {'parsnip_'+featname : featval for featname, featval in  parsnip_class[self.add_parsnip_from]['prediction'].items() } )
-            #            features['parsnip_modelchidof'] = features['parsnip_model_chisq'] / features['parsnip_model_dof']
-            # Check for feature overlap
-            if (
-                len(
-                    duplicate := {
-                        key: features[key]
-                        for key in features
-                        if key in parsnip_class[self.add_parsnip_from]["prediction"]
-                    }
-                )
-                > 0
+            ### Update feature dictionary with parsnip output if requested.
+            if self.add_parsnip_from is not None and isinstance(
+                add_parsnip_from := parsnip_class[self.add_parsnip_from], ParsnipResult
             ):
-                raise ValueError(
-                    "Found duplicate keys, cannot safely merge feature dictionaries: ",
-                    duplicate,
+                # Previously we added parsnip_ as prefix to all features, but this was not done in training.
+                #            features.update( {'parsnip_'+featname : featval for featname, featval in  parsnip_class[self.add_parsnip_from]['prediction'].items() } )
+                #            features['parsnip_modelchidof'] = features['parsnip_model_chisq'] / features['parsnip_model_dof']
+                # Check for feature overlap
+                if (
+                    len(
+                        duplicate := {
+                            key: features[key]
+                            for key in features
+                            if key in add_parsnip_from.prediction.model_dump()
+                        }
+                    )
+                    > 0
+                ):
+                    raise ValueError(
+                        "Found duplicate keys, cannot safely merge feature dictionaries: ",
+                        duplicate,
+                    )
+                features.update(add_parsnip_from.prediction.model_dump())
+                features["parsnip_modelchidof"] = (
+                    features["model_chisq"] / features["model_dof"]
                 )
-            features.update(parsnip_class[self.add_parsnip_from]["prediction"])
-            features["parsnip_modelchidof"] = (
-                features["model_chisq"] / features["model_dof"]
-            )
+        else:
+            parsnip_class = {}
 
         ### Run binary XGB classifiers
         # Either run all loaded models or the specified list
@@ -410,14 +438,13 @@ class BaseClassifier:
         }
 
         ### Prepare output
-        class_records: dict = {
-            "name": self.classifier_name,
-            "version": self.classifier_version,
-            "parsnip": parsnip_class,
-            "xgbbinary": binary_class,
-            "xgbmulti": multi_class,
-        }
-        if self.return_features:
-            class_records["features"] = features
-
-        return [class_records]
+        return [
+            Classifications(
+                name=self.classifier_name,
+                version=self.classifier_version,
+                parsnip=list(parsnip_class.values()),
+                xgbbinary=binary_class,
+                xgbmulti=multi_class,
+                features=features if self.return_features else None,
+            )
+        ]

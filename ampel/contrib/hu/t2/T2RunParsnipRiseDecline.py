@@ -172,13 +172,16 @@ class T2RunParsnipRiseDecline(
             t2_body["risedeclinefeatures"] = features
 
             ## Run the classifiers
-            t2_body["classifications"] = self.classify(
-                features,
-                flux_table,
-                fitdatainfo["z"],
-                redshift_weights=fitdatainfo["z_weights"],
-                transient_name=str(compound.get("stock")),
-            )
+            t2_body["classifications"] = [
+                c.model_dump()
+                for c in self.classify(
+                    features,
+                    flux_table,
+                    fitdatainfo["z"],
+                    redshift_weights=fitdatainfo["z_weights"],
+                    transient_name=str(compound.get("stock")),
+                )
+            ]
 
         # Prepare t2 document
         return UnitResult(
