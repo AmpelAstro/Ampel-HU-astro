@@ -118,14 +118,14 @@ astropy = ">=5"
 
 [[package]]
 name = "ampel-plot"
-version = "0.9.0"
+version = "0.9.1"
 description = ""
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "ampel-plot-0.9.0.tar.gz", hash = "sha256:df094541617c9c1e0560f8f8c2ab1d497506e7801afdb81c1b76b92d6165cce9"},
-    {file = "ampel_plot-0.9.0-py3-none-any.whl", hash = "sha256:6ab216aea19d620dfd812104c6626bc189263b00d5ebe06401b75bbc2e02bc71"},
+    {file = "ampel-plot-0.9.1.tar.gz", hash = "sha256:a4d56d71fe146e6282a637a02de0e19f77edd042842d9e7050d7cde6c7515296"},
+    {file = "ampel_plot-0.9.1-py3-none-any.whl", hash = "sha256:3706fc94d107df0b634c7f55745bf0e78deb931d4599670e62d4f3d928fc65af"},
 ]
 
 [package.extras]
@@ -7384,4 +7384,4 @@ ztf = ["ampel-ztf", "ztfquery"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10"
-content-hash = "3fe03ecfbed8460a9c77e7ff12d14bed85140ef9472520b9fa6905a1f41a8026"
+content-hash = "bf906ada25400ec081803711d852b5d7897d918b64e59536eca04ae4c25816af"
