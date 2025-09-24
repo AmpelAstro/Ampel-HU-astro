@@ -1,10 +1,9 @@
+from collections.abc import Mapping
 from functools import cached_property
 from typing import Any
 
 from pydantic import BaseModel, computed_field
 from scipy.stats import chi2
-
-from ampel.content.NewSVGRecord import NewSVGRecord
 
 
 class FitDataInfo(BaseModel):
@@ -77,7 +76,7 @@ class ParsnipResult(BaseModel):
     z_at_minchi: float
     prediction: ParsnipPrediction
     classification: Classification
-    plot: NewSVGRecord | None = None
+    plot: Mapping[str, Any] | None = None
 
 
 class ParsnipFailure(BaseModel):
