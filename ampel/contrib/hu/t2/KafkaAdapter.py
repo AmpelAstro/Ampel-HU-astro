@@ -1,13 +1,11 @@
-from io import BytesIO
 from typing import Any
 
-from confluent_kafka import Producer
-from fastavro import schemaless_writer
+from confluent_kafka import SerializingProducer
 
 from ampel.abstract.AbsUnitResultAdapter import AbsUnitResultAdapter
 from ampel.base.AmpelUnit import AmpelUnit
-from ampel.lsst.alert.load.HttpSchemaRepository import parse_schema
-from ampel.lsst.alert.load.KafkaAlertLoader import SASLAuthentication
+from ampel.lsst.kafka.AvroSchema import AvroSchema
+from ampel.lsst.kafka.SASLAuthentication import SASLAuthentication
 from ampel.struct.UnitResult import UnitResult
 from ampel.util.mappings import get_by_path
 
@@ -15,7 +13,7 @@ from ampel.util.mappings import get_by_path
 class KafkaReporter(AmpelUnit):
     broker: str
     topic: str
-    avro_schema: dict | str
+    avro_schema: AvroSchema
 
     auth: None | SASLAuthentication = None
 
@@ -25,23 +23,18 @@ class KafkaReporter(AmpelUnit):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self._schema = parse_schema(self.avro_schema)
-        self._producer = Producer(
+        self._producer = SerializingProducer(
             **{
                 "bootstrap.servers": self.broker,
+                "value.serializer": self.avro_schema.serializer(),
             }
             | (self.auth.librdkafka_config() if self.auth else {})
             | self.producer_config
         )
 
-    def serialize(self, record: dict) -> bytes:
-        buf = BytesIO()
-        schemaless_writer(buf, self._schema, record)
-        return buf.getvalue()
-
     def send(self, record: dict) -> None:
         self._producer.poll(0)
-        self._producer.produce(self.topic, self.serialize(record))
+        self._producer.produce(self.topic, value=record)
 
     def flush(self):
         if (in_queue := self._producer.flush(self.delivery_timeout)) > 0:
