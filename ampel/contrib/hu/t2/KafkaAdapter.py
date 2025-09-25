@@ -5,7 +5,7 @@ from confluent_kafka import SerializingProducer
 from ampel.abstract.AbsUnitResultAdapter import AbsUnitResultAdapter
 from ampel.base.AmpelUnit import AmpelUnit
 from ampel.lsst.kafka.AvroSchema import AvroSchema
-from ampel.lsst.kafka.SASLAuthentication import SASLAuthentication
+from ampel.lsst.kafka.KafkaAuthentication import KafkaAuthentication
 from ampel.struct.UnitResult import UnitResult
 from ampel.util.mappings import get_by_path
 
@@ -15,7 +15,7 @@ class KafkaReporter(AmpelUnit):
     topic: str
     avro_schema: AvroSchema
 
-    auth: None | SASLAuthentication = None
+    auth: None | KafkaAuthentication = None
 
     producer_config: dict[str, Any] = {}
     delivery_timeout: float = 10.0
