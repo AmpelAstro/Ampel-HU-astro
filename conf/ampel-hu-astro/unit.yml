@@ -31,6 +31,7 @@
 - ampel.contrib.hu.t2.T2LCQuality
 - ampel.contrib.hu.t2.T2LoadRedshift
 - ampel.contrib.hu.t2.T2LSPhotoZTap
+- ampel.contrib.hu.t2.T2LSSTReport
 - ampel.contrib.hu.t2.T2MatchBTS
 - ampel.contrib.hu.t2.T2MatchGRB
 - ampel.contrib.hu.t2.T2MultiXgbClassifier
