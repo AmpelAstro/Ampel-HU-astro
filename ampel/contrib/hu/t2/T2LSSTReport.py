@@ -17,6 +17,7 @@ from ampel.contrib.hu.model.ParsnipRiseDeclineResult import (
 )
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.model.UnitModel import UnitModel
+from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.struct.UnitResult import UnitResult
 from ampel.view.T2DocView import T2DocView
 
@@ -25,6 +26,10 @@ class T2LSSTReport(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
     """
     Create an LSST report from T2RunParsnipRiseDecline output and additional information
     """
+
+    tabulator: Sequence[UnitModel] = [
+        UnitModel(unit="LSSTT2Tabulator", config={"zp": 27.5})
+    ]
 
     result_adapter: UnitModel | None = None
 
@@ -38,10 +43,16 @@ class T2LSSTReport(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             if view.unit == "T2RunParsnipRiseDecline" and (
                 payload := view.get_payload(code=DocumentCode.OK)
             ):
+                if len(payload) == 1:
+                    # got a result, but no classifications. nothing to do.
+                    return UnitResult(
+                        code=DocumentCode.OK,
+                        journal=JournalAttributes(extra={"skipped": True}),
+                    )
                 parsnip_result = ParsnipRiseDeclineResult(**payload)
                 break
         else:
-            raise ValueError("T2RunParsnipRiseDecline result not found in T2 views")
+            return UnitResult(code=DocumentCode.T2_MISSING_DEPENDENCY)
         stock = compound["stock"]
         if not isinstance(stock, int):
             raise TypeError(f"Stock ID should be an integer, got {stock}")
