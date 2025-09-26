@@ -72,6 +72,9 @@ ligo-gracedb = {version = "^2.12.0", optional = true}
 snpy = {version = "^2.7.0", optional = true}
 lightgbm = {version = "^4.6.0", optional = true}
 
+py-avro-schema = {version = "~3", optional = true}
+hop-client = {version = "^0.12.0", optional = true}
+
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.6.1"
 pytest = "^8.0.2"
@@ -95,6 +98,7 @@ snpy = ["snpy"]
 notebook = ["jupyter"]
 ztf = ["ampel-ztf", "ztfquery"]
 lsst = ["ampel-lsst"]
+hop = ["hop-client", "py-avro-schema"]
 
 [tool.conda-lock]
 channels = ["conda-forge"]
