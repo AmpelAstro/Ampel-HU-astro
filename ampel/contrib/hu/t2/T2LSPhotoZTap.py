@@ -182,11 +182,11 @@ class T2LSPhotoZTap(AbsPointT2Unit):
         response = session.get(
             urlunparse((parts.scheme, parts.netloc, "/auth/login", "", "", "")),
             params={  # type: ignore
-                "username": self.datalab_user,
+                "username": self.datalab_user.get(),
                 "profile": "default",
                 "debug": "False",
             },
-            headers={"X-DL-Password": self.datalab_pwd},  # type: ignore
+            headers={"X-DL-Password": self.datalab_pwd.get()},  # type: ignore
         )
         response.raise_for_status()
         session.headers.update({"X-DL-AuthToken": response.text})
@@ -218,7 +218,7 @@ class T2LSPhotoZTap(AbsPointT2Unit):
             timeout=300,
         )
         if not r.ok:
-            self.logger.debug(f"DL query failed at {ra} {dec}" % (ra, dec))
+            self.logger.debug(f"DL query failed at {ra} {dec}")
             return []
 
         # First convert to string and then to dict
