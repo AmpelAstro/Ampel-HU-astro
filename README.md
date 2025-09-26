@@ -58,6 +58,7 @@ requires an access token if data is to be retrieved.
 - [T2KilonovaStats](ampel/contrib/hu/t2/T2KilonovaStats.py): Evaluate kilonovaness stats for transient given map distance and number of detections..
 - [T2LCQuality](ampel/contrib/hu/t2/T2LCQuality.py): determine the 'quality' of the light curve by computing ratios between the number of detection and that of upper limits.
 - [T2LSPhotoZTap](ampel/contrib/hu/t2/T2LSPhotoZTap.py): Query the NOIR DataLab service for photometric redshifts from the Legacy Survey.
+- [T2LSSTReport](ampel/contrib/hu/t2/T2LSSTReport.py): Create an LSST report from T2RunParsnipRiseDecline output and additional information.
 - [T2LoadRedshift](ampel/contrib/hu/t2/T2LoadRedshift.py): Add redshifts from external .csv.
 - [T2MatchBTS](ampel/contrib/hu/t2/T2MatchBTS.py): Add information from the BTS explorer page.
 - [T2MultiXgbClassifier](ampel/contrib/hu/t2/T2MultiXgbClassifier.py): For a range of xgboost classifier models, find a classification.
