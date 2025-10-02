@@ -79,9 +79,9 @@ class T2InfantReport(T2LSSTReport):
                 }
             )
 
-        # Add selection features. Todo: add a selection of other interesting ones.
-        unitresults.append(
-            Feature(name="RiseDeclineFeatures", version="1", features=features)
-        )
+            # Add selection features. Todo: add a selection of other interesting ones.
+            unitresults.append(
+                Feature(name="RiseDeclineFeatures", version="1", features=features)
+            )
 
         return unitresults
