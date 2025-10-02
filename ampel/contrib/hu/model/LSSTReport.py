@@ -34,6 +34,7 @@ class Classification(AmpelBaseModel):
     info: str | None = None
     models: list[ModelClassification]
 
+
 class Host(AmpelBaseModel):
     name: str
     source: str
@@ -42,11 +43,13 @@ class Host(AmpelBaseModel):
     distance: float
     info: str | None = None
 
+
 class Feature(AmpelBaseModel):
     name: str
     version: str
     info: str | None = None
     features: dict[str, float]
+
 
 class LSSTReport(AmpelBaseModel):
     object: Object
