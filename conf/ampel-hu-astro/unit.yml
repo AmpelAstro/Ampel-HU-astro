@@ -12,6 +12,7 @@
 - ampel.contrib.hu.t0.TransientInClusterFilter
 - ampel.contrib.hu.t0.XShooterFilter
 - ampel.contrib.hu.t0.TimeDistributionFilter
+- ampel.contrib.hu.t0.DecentVroFilter
 - ampel.contrib.hu.t2.KafkaAdapter
 - ampel.contrib.hu.t2.T2BaseLightcurveFitter
 - ampel.contrib.hu.t2.T2BayesianBlocks
@@ -32,6 +33,8 @@
 - ampel.contrib.hu.t2.T2LoadRedshift
 - ampel.contrib.hu.t2.T2LSPhotoZTap
 - ampel.contrib.hu.t2.T2LSSTReport
+- ampel.contrib.hu.t2.T2InfantReport
+- ampel.contrib.hu.t2.T2ClassificationReport
 - ampel.contrib.hu.t2.T2MatchBTS
 - ampel.contrib.hu.t2.T2MatchGRB
 - ampel.contrib.hu.t2.T2MultiXgbClassifier

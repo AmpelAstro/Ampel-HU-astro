@@ -1,4 +1,5 @@
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
 from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
@@ -6,14 +7,11 @@ from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
 from ampel.contrib.hu.model.LSSTReport import (
     Classification,
+    Feature,
+    Host,
     LSSTReport,
-    ModelClassification,
     Object,
     PhotometricPoint,
-)
-from ampel.contrib.hu.model.ParsnipRiseDeclineResult import (
-    ParsnipResult,
-    ParsnipRiseDeclineResult,
 )
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.model.UnitModel import UnitModel
@@ -24,14 +22,37 @@ from ampel.view.T2DocView import T2DocView
 
 class T2LSSTReport(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
     """
-    Create an LSST report from T2RunParsnipRiseDecline output and additional information
+    Create an LSST report for subsequent distribution. Base class connects current photometric information.
+
+    Subclasses can allow filter and information from T2s to be added.
+
     """
 
     tabulator: Sequence[UnitModel] = [
         UnitModel(unit="LSSTT2Tabulator", config={"zp": 27.5})
     ]
+    # Or should this simply be the t2_dependency units? 
+    report_t2s: Sequence[str] = []
 
     result_adapter: UnitModel | None = None
+
+    def process_t2s(
+        self, report_views: dict[str, Mapping[str, Any]]
+    ) -> Sequence[Classification | Host | Feature] | bool:
+        """
+        Process T2 views to extract information to be propagated.
+        This is a placeholder for any processing needed on the T2 views.
+
+        Return False if submission criteria not met, in which case no report is propagated.
+
+        Can generate one of three kinds of information:
+        - classification (Model name and probabilities, info)
+        - host (name, redshift, source, info)
+        - features (name, dict)
+
+        """
+        # Placeholder implementation
+        return []
 
     def process(
         self,
@@ -39,20 +60,29 @@ class T2LSSTReport(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         datapoints: Sequence[DataPoint],
         t2_views: Sequence[T2DocView],
     ) -> UnitResult:
-        for view in t2_views:
-            if view.unit == "T2RunParsnipRiseDecline" and (
-                payload := view.get_payload(code=DocumentCode.OK)
-            ):
-                if len(payload) == 1:
-                    # got a result, but no classifications. nothing to do.
-                    return UnitResult(
-                        code=DocumentCode.OK,
-                        journal=JournalAttributes(extra={"skipped": True}),
-                    )
-                parsnip_result = ParsnipRiseDeclineResult(**payload)
-                break
-        else:
-            return UnitResult(code=DocumentCode.T2_MISSING_DEPENDENCY)
+        # Inspect and collect T2 data if requested
+        ampel_unit_reports: Sequence[Classification | Host | Feature] | bool = []
+        if len(self.report_t2s) > 0:
+            report_views: dict[str, Mapping[str, Any]] = {}
+            for view in t2_views:
+                if view.unit in self.report_t2s and (
+                    payload := view.get_payload(code=DocumentCode.OK)
+                ):
+                    report_views[str(view.unit)] = payload
+                    if len(report_views) == len(self.report_t2s):
+                        break
+            if len(report_views) < len(self.report_t2s):
+                return UnitResult(code=DocumentCode.T2_MISSING_DEPENDENCY)
+            # Inspect results
+            if not (ampel_unit_reports := self.process_t2s(report_views)):
+                return UnitResult(
+                    code=DocumentCode.OK,
+                    journal=JournalAttributes(extra={"skipped": True}),
+                )
+        # Should never happen, but mypy.
+        if isinstance(ampel_unit_reports, bool):
+            ampel_unit_reports = []
+
         stock = compound["stock"]
         if not isinstance(stock, int):
             raise TypeError(f"Stock ID should be an integer, got {stock}")
@@ -87,20 +117,24 @@ class T2LSSTReport(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                 break
         else:
             raise ValueError("No LSST_OBJ found in datapoints")
-        classifications = [
-            Classification(
-                name="ParsnipRiseDecline",
-                version="1",
-                models=[
-                    ModelClassification(
-                        model=model.model, probabilities=model.classification
-                    )
-                    for model in parsnip_result.classifications[0].parsnip
-                    if isinstance(model, ParsnipResult)
-                ],
-            )
-        ]
+
         report = LSSTReport(
-            object=obj, photometry=photometry, classification=classifications
+            object=obj,
+            photometry=photometry,
+            classification=[
+                unitreport
+                for unitreport in ampel_unit_reports
+                if isinstance(unitreport, Classification)
+            ],
+            host=[
+                unitreport
+                for unitreport in ampel_unit_reports
+                if isinstance(unitreport, Host)
+            ],
+            features=[
+                unitreport
+                for unitreport in ampel_unit_reports
+                if isinstance(unitreport, Feature)
+            ],
         )
         return UnitResult(body=report.model_dump(), adapter=self.result_adapter)
