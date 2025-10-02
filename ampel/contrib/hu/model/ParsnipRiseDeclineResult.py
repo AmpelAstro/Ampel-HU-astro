@@ -50,7 +50,7 @@ class ParsnipPrediction(BaseModel):
     luminosity: float
     luminosity_error: float
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def chi2pdf(self) -> float:
         return float(
