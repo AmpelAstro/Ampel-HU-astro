@@ -38,8 +38,6 @@ class T2ClassificationReport(T2LSSTReport):
     Require and propagate classification information from ParsnipRiseDecline.
     """
 
-    report_t2s: Sequence[str] = ["T2RunParsnipRiseDecline"]
-
     # Only transients with features within these limits will be reported
     risedecline_select_map: dict[str, Sequence[float]] = {
         "t_lc": [5, 400],
@@ -51,7 +49,7 @@ class T2ClassificationReport(T2LSSTReport):
 
     def process_t2s(
         self, report_views: dict[str, Mapping[str, Any]]
-    ) -> Sequence[Classification | Host | Feature] | bool:
+    ) -> Sequence[Classification | Host | Feature] | None:
         """
         Process T2 views to extract information to be propagated.
         Will parse results from T2ParsnipRiseDecline and:
@@ -63,8 +61,7 @@ class T2ClassificationReport(T2LSSTReport):
         body = report_views["T2RunParsnipRiseDecline"]
         # Check whether lightcurve quality limits are met
         if "risedeclinefeatures" not in body:
-            return False
-        skip = False
+            return None
         features = {}
         for field, limits in self.risedecline_select_map.items():
             if (
@@ -73,9 +70,7 @@ class T2ClassificationReport(T2LSSTReport):
             ):
                 features[field] = body["risedeclinefeatures"][field]
                 continue
-            skip = True
-        if skip:
-            return False
+            return None
 
         # To be propagated, collect information.
         unitresults: list[Classification | Host | Feature] = []

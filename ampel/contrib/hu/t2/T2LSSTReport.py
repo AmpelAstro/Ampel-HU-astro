@@ -20,6 +20,10 @@ from ampel.struct.UnitResult import UnitResult
 from ampel.view.T2DocView import T2DocView
 
 
+class T2MissingDependency(RuntimeError):
+    pass
+
+
 class T2LSSTReport(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
     """
     Create an LSST report for subsequent distribution. Base class connects current photometric information.
@@ -31,19 +35,17 @@ class T2LSSTReport(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
     tabulator: Sequence[UnitModel] = [
         UnitModel(unit="LSSTT2Tabulator", config={"zp": 27.5})
     ]
-    # Or should this simply be the t2_dependency units?
-    report_t2s: Sequence[str] = []
 
     result_adapter: UnitModel | None = None
 
     def process_t2s(
         self, report_views: dict[str, Mapping[str, Any]]
-    ) -> Sequence[Classification | Host | Feature] | bool:
+    ) -> Sequence[Classification | Host | Feature] | None:
         """
         Process T2 views to extract information to be propagated.
         This is a placeholder for any processing needed on the T2 views.
 
-        Return False if submission criteria not met, in which case no report is propagated.
+        Return None if submission criteria not met, in which case no report is propagated.
 
         Can generate one of three kinds of information:
         - classification (Model name and probabilities, info)
@@ -52,7 +54,24 @@ class T2LSSTReport(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
 
         """
         # Placeholder implementation
-        return []
+        return None
+
+    def _get_payloads(
+        self, t2_views: Sequence[T2DocView]
+    ) -> dict[str, Mapping[str, Any]]:
+        units = {dep.unit for dep in self.t2_dependency}
+        payloads = {}
+        for view in t2_views:
+            if view.unit in units and (
+                payload := view.get_payload(code=DocumentCode.OK)
+            ):
+                units.remove(view.unit)
+                payloads[view.unit] = payload
+            if not units:
+                break
+        if self.t2_dependency and units:
+            raise T2MissingDependency(f"Missing T2 dependencies: {units}")
+        return payloads
 
     def process(
         self,
@@ -61,27 +80,15 @@ class T2LSSTReport(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         t2_views: Sequence[T2DocView],
     ) -> UnitResult:
         # Inspect and collect T2 data if requested
-        ampel_unit_reports: Sequence[Classification | Host | Feature] | bool = []
-        if len(self.report_t2s) > 0:
-            report_views: dict[str, Mapping[str, Any]] = {}
-            for view in t2_views:
-                if view.unit in self.report_t2s and (
-                    payload := view.get_payload(code=DocumentCode.OK)
-                ):
-                    report_views[str(view.unit)] = payload
-                    if len(report_views) == len(self.report_t2s):
-                        break
-            if len(report_views) < len(self.report_t2s):
-                return UnitResult(code=DocumentCode.T2_MISSING_DEPENDENCY)
-            # Inspect results
-            if not (ampel_unit_reports := self.process_t2s(report_views)):
-                return UnitResult(
-                    code=DocumentCode.OK,
-                    journal=JournalAttributes(extra={"skipped": True}),
-                )
-        # Should never happen, but mypy.
-        if isinstance(ampel_unit_reports, bool):
-            ampel_unit_reports = []
+        try:
+            unit_reports = self.process_t2s(self._get_payloads(t2_views)) or []
+        except T2MissingDependency:
+            return UnitResult(code=DocumentCode.T2_MISSING_DEPENDENCY)
+        if self.t2_dependency and not unit_reports:
+            return UnitResult(
+                code=DocumentCode.OK,
+                journal=JournalAttributes(extra={"skipped": True}),
+            )
 
         stock = compound["stock"]
         if not isinstance(stock, int):
@@ -121,20 +128,8 @@ class T2LSSTReport(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         report = LSSTReport(
             object=obj,
             photometry=photometry,
-            classification=[
-                unitreport
-                for unitreport in ampel_unit_reports
-                if isinstance(unitreport, Classification)
-            ],
-            host=[
-                unitreport
-                for unitreport in ampel_unit_reports
-                if isinstance(unitreport, Host)
-            ],
-            features=[
-                unitreport
-                for unitreport in ampel_unit_reports
-                if isinstance(unitreport, Feature)
-            ],
+            classification=[v for v in unit_reports if isinstance(v, Classification)],
+            host=[v for v in unit_reports if isinstance(v, Host)],
+            features=[v for v in unit_reports if isinstance(v, Feature)],
         )
         return UnitResult(body=report.model_dump(), adapter=self.result_adapter)
