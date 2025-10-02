@@ -128,6 +128,7 @@ class T2LSSTReport(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
 
         report = LSSTReport(
             object=obj,
+            state=compound["link"],
             photometry=photometry,
             classification=[v for v in unit_reports if isinstance(v, Classification)],
             host=[v for v in unit_reports if isinstance(v, Host)],

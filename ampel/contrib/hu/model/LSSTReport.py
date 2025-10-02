@@ -42,7 +42,9 @@ class ModelClassification(AmpelBaseModel):
 class Classification(AmpelBaseModel):
     name: Annotated[str, Field(description="classifier name")]
     version: Annotated[str, Field(description="classifier version")]
-    info: Annotated[str | None, Field(description="additional information about the classifier")]
+    info: Annotated[
+        str | None, Field(description="additional information about the classifier")
+    ]
     models: Annotated[
         list[ModelClassification], Field(description="list of model classifications")
     ]
@@ -70,6 +72,10 @@ class LSSTReport(AmpelBaseModel):
     """
 
     object: Object
+    state: Annotated[
+        int,
+        Field(description="unique identifier for underlying collection of data points"),
+    ]
     photometry: Sequence[PhotometricPoint]
     classification: list[Classification] = []
     host: list[Host] = []
