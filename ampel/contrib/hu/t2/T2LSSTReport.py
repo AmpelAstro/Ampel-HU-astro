@@ -62,6 +62,7 @@ class T2LSSTReport(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         units = {dep.unit for dep in self.t2_dependency}
         payloads = {}
         for view in t2_views:
+            assert isinstance(view.unit, str)
             if view.unit in units and (
                 payload := view.get_payload(code=DocumentCode.OK)
             ):
