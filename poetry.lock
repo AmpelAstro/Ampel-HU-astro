@@ -720,22 +720,6 @@ doc = ["furo", "ipykernel", "myst-parser", "nbsphinx", "numba", "numpydoc", "pyd
 test = ["psutil ; platform_machine != \"wasm32\"", "pytest", "torch ; platform_machine != \"wasm32\""]
 
 [[package]]
-name = "bson"
-version = "0.5.10"
-description = "BSON codec for Python"
-optional = true
-python-versions = "*"
-groups = ["main"]
-markers = "extra == \"hop\""
-files = [
-    {file = "bson-0.5.10.tar.gz", hash = "sha256:d6511b2ab051139a9123c184de1a04227262173ad593429d21e443d6462d6590"},
-]
-
-[package.dependencies]
-python-dateutil = ">=2.4.0"
-six = ">=1.9.0"
-
-[[package]]
 name = "cachetools"
 version = "6.2.0"
 description = "Extensible memoizing collections and decorators"
@@ -2154,22 +2138,22 @@ test = ["matplotlib", "pytest", "pytest-astropy-header", "pytest-cython", "pytes
 
 [[package]]
 name = "hop-client"
-version = "0.12.0"
+version = "0.12.1"
 description = "A pub-sub client library for Multi-messenger Astrophysics"
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
 markers = "extra == \"hop\""
 files = [
-    {file = "hop_client-0.12.0-py3-none-any.whl", hash = "sha256:a5e0004828face97e44120cdee230ef44166234ed2df25e86b713b46342c03ec"},
-    {file = "hop_client-0.12.0.tar.gz", hash = "sha256:e6b65d3dd59e0cdf1a3985db726741d8a896993d871eac11db9b09df297d8afb"},
+    {file = "hop_client-0.12.1-py3-none-any.whl", hash = "sha256:43c3bdb5de6e493ce464e2ec1d6715ab813226586b8f446469d858f8f1dbfaa2"},
+    {file = "hop_client-0.12.1.tar.gz", hash = "sha256:75c8d3c1d5c3bd38b66a938758c0017e32eb8b18b09b42b51a60e9ad3b0b8819"},
 ]
 
 [package.dependencies]
 adc-streaming = ">=2.6.0"
-bson = "*"
 fastavro = ">=1.4.0"
 pluggy = ">=0.11"
+python-dateutil = ">=2.4.0"
 requests = "*"
 scramp = "*"
 toml = ">=0.9.4"
@@ -7901,4 +7885,4 @@ ztf = ["ampel-ztf", "ztfquery"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10"
-content-hash = "dbd8101c2baecfdd7caeae9a128072a000a18eb2aabddc4688a745f89688d27a"
+content-hash = "7747e8b1dc4b37e3ad202bc94e2728ee46e69c23ba0de2ae6e3503631af771cf"
