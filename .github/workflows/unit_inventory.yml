@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
     # Check out the PR head on pull_request, otherwise default
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       with:
         ref: ${{ github.event.pull_request.head.ref }}
         token: ${{ secrets.GH_TOKEN }}
@@ -20,7 +20,7 @@ jobs:
         # renovate: datasource=python-version depName=python versioning=python
         python-version: "3.13"
         # renovate: datasource=pypi depName=poetry versioning=pep440
-        poetry-version: "1.8.5"
+        poetry-version: "2.2.1"
         install-args: --all-extras
     - name: Install root
       run: poetry run pip install -e . --no-deps

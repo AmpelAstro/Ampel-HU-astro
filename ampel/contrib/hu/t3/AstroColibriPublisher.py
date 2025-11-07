@@ -9,6 +9,7 @@
 
 # FIXME: restore mypy when this is actually ready
 # type: ignore
+# ruff: noqa
 
 # from itertools import islice
 import os

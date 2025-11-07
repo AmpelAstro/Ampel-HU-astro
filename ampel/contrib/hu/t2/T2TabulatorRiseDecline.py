@@ -8,7 +8,9 @@
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 import os
+import random
 import re
+import string
 import sys
 
 # Exponential fit frequently returns overflow warnings
@@ -132,7 +134,7 @@ def fit_supernova_villar(t, f, f_err, peak_uncertainty, debugplot=False):
 
     if debugplot:
         # Plot debug figure ...
-        import matplotlib.pyplot as plt
+        import matplotlib.pyplot as plt  # noqa: PLC0415
 
         plt.figure()
         plt.scatter(t, f, label="Data", color="blue")
@@ -143,9 +145,6 @@ def fit_supernova_villar(t, f, f_err, peak_uncertainty, debugplot=False):
         plt.xlabel("Time")
         plt.ylabel("Brightness (z)")
         plt.legend()
-
-        import random
-        import string
 
         def make_unique(filename):
             return f"{filename.rsplit('.', 1)[0]}_{''.join(random.choices(string.ascii_lowercase + string.digits, k=4))}.{filename.rsplit('.', 1)[1]}"
@@ -160,7 +159,7 @@ def fit_supernova_villar(t, f, f_err, peak_uncertainty, debugplot=False):
 # Function to fit exponential curve to data
 def fit_exponential_rise(x, z):
     # Perform curve fitting
-    popt, pcov = curve_fit(exponential_model, x, z)
+    popt, _ = curve_fit(exponential_model, x, z)
 
     # popt contains the optimized parameters a and b
     a, b = popt
@@ -273,7 +272,7 @@ def spline_analysis(
     finterp = spl(tphase)
 
     if do_plot:
-        import matplotlib.pyplot as plt
+        import matplotlib.pyplot as plt  # noqa: PLC0415
 
         plt.plot(tphase, finterp, "-.")
 
@@ -642,13 +641,13 @@ class T2TabulatorRiseDeclineBase:
                 # Fit exponetial rise/fall a la Villar
                 try:
                     (
-                        A,
-                        t_0,
+                        _,
+                        _,
                         tau_rise,
                         tau_fall,
-                        f_fi,
+                        _,
                         chi_dof,
-                        pcov,
+                        _,
                     ) = fit_supernova_villar(
                         bt["time"] - max_flux_time,
                         bt["flux"],
@@ -682,7 +681,7 @@ class T2TabulatorRiseDeclineBase:
             elif len(bt) > self.min_expfit_det / 2:
                 # Fit exponetial, if less data
                 try:
-                    A, tau, f_fit = fit_exponential_rise(
+                    _, tau, _ = fit_exponential_rise(
                         bt["time"] - max_flux_time, bt["flux"]
                     )
                     # Stor parameters (not A nor t_0)
@@ -1139,11 +1138,11 @@ class T2TabulatorRiseDecline(
 
         """
 
-        import matplotlib.pyplot as plt
+        import matplotlib.pyplot as plt  # noqa: PLC0415
 
         bands = set(table["band"])
 
-        fig, axs = plt.subplots(2, 3)
+        _, axs = plt.subplots(2, 3)
 
         for k, band in enumerate(bands):
             bt = table[table["band"] == band]

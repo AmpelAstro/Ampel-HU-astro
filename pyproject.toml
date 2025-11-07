@@ -78,7 +78,7 @@ hop-client = {version = "^0.12.1", optional = true}
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.6.1"
 pytest = "^8.0.2"
-pytest-cov = "^6.0.0"
+pytest-cov = "^7.0.0"
 pytest-mock = "^3.12.0"
 types-requests = "^2.25.9"
 types-pytz = "^2022.1.2"
@@ -207,3 +207,6 @@ ignore = [
     "RUF012", # fine for AmpelUnit, actually (ruff has a special case for pydantic)
     "RUF023", # unsorted __slots__ are fine
 ]
+
+[tool.ruff.lint.isort]
+known-first-party = ["ampel"]
