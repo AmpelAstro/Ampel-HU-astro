@@ -22,7 +22,7 @@ jobs:
     with:
       mongo: true
       # renovate: datasource=python-version depName=python versioning=python
-      python-version: "3.13"
+      python-version: "3.14"
       # renovate: datasource=pypi depName=poetry versioning=pep440
       poetry-version: "2.2.1"
       # renovate: datasource=pypi depName=ruff versioning=pep440
