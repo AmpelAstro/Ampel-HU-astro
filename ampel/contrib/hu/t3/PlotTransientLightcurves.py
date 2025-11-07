@@ -567,7 +567,7 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                     cutouts = None
 
                 # Create plot
-                fig, axes = fig_from_fluxtable(
+                fig_from_fluxtable(
                     name,
                     str(ampelid),
                     ra,

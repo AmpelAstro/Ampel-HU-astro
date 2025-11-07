@@ -160,7 +160,7 @@ def fit_supernova_villar(t, f, f_err, peak_uncertainty, debugplot=False):
 # Function to fit exponential curve to data
 def fit_exponential_rise(x, z):
     # Perform curve fitting
-    popt, pcov = curve_fit(exponential_model, x, z)
+    popt, _ = curve_fit(exponential_model, x, z)
 
     # popt contains the optimized parameters a and b
     a, b = popt
@@ -642,13 +642,13 @@ class T2TabulatorRiseDeclineBase:
                 # Fit exponetial rise/fall a la Villar
                 try:
                     (
-                        A,
-                        t_0,
+                        _,
+                        _,
                         tau_rise,
                         tau_fall,
-                        f_fi,
+                        _,
                         chi_dof,
-                        pcov,
+                        _,
                     ) = fit_supernova_villar(
                         bt["time"] - max_flux_time,
                         bt["flux"],
@@ -682,7 +682,7 @@ class T2TabulatorRiseDeclineBase:
             elif len(bt) > self.min_expfit_det / 2:
                 # Fit exponetial, if less data
                 try:
-                    A, tau, f_fit = fit_exponential_rise(
+                    _, tau, _ = fit_exponential_rise(
                         bt["time"] - max_flux_time, bt["flux"]
                     )
                     # Stor parameters (not A nor t_0)
@@ -1143,7 +1143,7 @@ class T2TabulatorRiseDecline(
 
         bands = set(table["band"])
 
-        fig, axs = plt.subplots(2, 3)
+        _, axs = plt.subplots(2, 3)
 
         for k, band in enumerate(bands):
             bt = table[table["band"] == band]

@@ -79,10 +79,10 @@ class RapidBase(AbsPhotoT3Unit):
 
             # Ok, so we have a transient to react to
             if self.do_react:
-                success, jcontent = self.react(tv, transientinfo)
+                _, jcontent = self.react(tv, transientinfo)
             # Otherwise, test
             elif self.do_testreact:
-                test_success, jcontent = self.test_react(tv, transientinfo)
+                _, jcontent = self.test_react(tv, transientinfo)
 
             if jcontent:
                 gen.send(JournalAttributes(extra=jcontent))

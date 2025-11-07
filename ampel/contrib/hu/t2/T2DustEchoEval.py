@@ -480,7 +480,7 @@ class T2DustEchoEval(AbsTiedLightCurveT2Unit):
 
         #################### Plotting part #######################
         if t2_output["status"] != "No further investigation":
-            fig, ax = plt.subplots(2, figsize=(18, 15))
+            _, ax = plt.subplots(2, figsize=(18, 15))
 
             has_data = {}
             for fid, key in enumerate(self.filters_lc, 1):
