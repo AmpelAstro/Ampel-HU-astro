@@ -350,7 +350,7 @@ class T2RiseDeclineStat(AbsLightCurveT2Unit, T2RiseDeclineBase):
         but useful for debugging
         """
 
-        import matplotlib.pyplot as plt
+        import matplotlib.pyplot as plt  # noqa: PLC0415
 
         # Lightcurve
         for name, filtid in self.filters.items():

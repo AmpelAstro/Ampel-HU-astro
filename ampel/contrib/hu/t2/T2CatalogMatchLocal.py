@@ -200,7 +200,7 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
             elif cat_opts.use == "catsHTM":
                 # catshtm needs coordinates in radians
                 transient_coords = SkyCoord(transient_ra, transient_dec, unit="deg")
-                srcs, colnames, colunits = self.catshtm.cone_search(
+                srcs, colnames, _ = self.catshtm.cone_search(
                     catalog,
                     transient_coords.ra.rad,
                     transient_coords.dec.rad,

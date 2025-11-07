@@ -203,3 +203,6 @@ ignore = [
     "RUF012", # fine for AmpelUnit, actually (ruff has a special case for pydantic)
     "RUF023", # unsorted __slots__ are fine
 ]
+
+[tool.ruff.lint.isort]
+known-first-party = ["ampel"]

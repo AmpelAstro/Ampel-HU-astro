@@ -119,8 +119,8 @@ class T2LCQuality(AbsLightCurveT2Unit):
         but useful for debugging
         """
 
-        import matplotlib.pyplot as plt
-        import numpy as np
+        import matplotlib.pyplot as plt  # noqa: PLC0415
+        import numpy as np  # noqa: PLC0415
 
         interp_lc = interp1d(
             dets["jd"], dets["magpsf"], kind="zero", fill_value="extrapolate"
@@ -250,7 +250,7 @@ class T2LCQuality(AbsLightCurveT2Unit):
             )
 
             # compute LC metrics and append to output
-            n_strong_ulims, strength, purity = self.compute_strength_purity(dets, ulims)
+            _, strength, purity = self.compute_strength_purity(dets, ulims)
             out_dict[self.filter_names[fid]] = {
                 "strength": strength,
                 "purity": purity,

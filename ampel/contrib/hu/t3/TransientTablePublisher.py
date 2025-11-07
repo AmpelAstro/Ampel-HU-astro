@@ -169,7 +169,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
                 assert self.convert_stock_to in ["ztf"]
 
                 if self.convert_stock_to == "ztf":
-                    from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper
+                    from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper  # noqa: PLC0415
 
                     stock_id = tran_view.id
                     ztf_id = ZTFIdMapper.to_ext_id(stock_id)

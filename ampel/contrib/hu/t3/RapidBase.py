@@ -79,10 +79,10 @@ class RapidBase(AbsPhotoT3Unit):
 
             # Ok, so we have a transient to react to
             if self.do_react:
-                success, jcontent = self.react(tv, transientinfo)
+                _, jcontent = self.react(tv, transientinfo)
             # Otherwise, test
             elif self.do_testreact:
-                test_success, jcontent = self.test_react(tv, transientinfo)
+                _, jcontent = self.test_react(tv, transientinfo)
 
             if jcontent:
                 gen.send(JournalAttributes(extra=jcontent))
@@ -109,9 +109,9 @@ class RapidBase(AbsPhotoT3Unit):
         if not self.slack_token:
             return False, None
 
-        from slack_sdk import WebClient
-        from slack_sdk.errors import SlackClientError
-        from slack_sdk.web import SlackResponse
+        from slack_sdk import WebClient  # noqa: PLC0415
+        from slack_sdk.errors import SlackClientError  # noqa: PLC0415
+        from slack_sdk.web import SlackResponse  # noqa: PLC0415
 
         sc = WebClient(self.slack_token.get())
         assert isinstance(tran_view.id, int)

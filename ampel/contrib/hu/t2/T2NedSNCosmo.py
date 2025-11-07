@@ -8,6 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from collections.abc import Mapping, Sequence
+from traceback import format_exc
 from typing import Any, Literal
 
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
@@ -122,8 +123,6 @@ class T2NedSNCosmo(AbsTiedLightCurveT2Unit, T2SNCosmo):
             try:
                 r = T2SNCosmo.process(self, light_curve)  # type: ignore[func-returns-value]
             except Exception as e:
-                from traceback import format_exc
-
                 if "No bands in data overlap the model" in format_exc():
                     ret.append(
                         {

@@ -10,6 +10,7 @@
 import gzip
 import io
 import os
+import tempfile
 from collections.abc import Generator, Iterable
 from contextlib import nullcontext
 from typing import Any
@@ -114,7 +115,7 @@ def fig_from_fluxtable(
                 img = get_ps_stamp(ra, dec, size=240, color=["y", "g", "i"])
                 img.save(img_cache)
             else:
-                from PIL import Image
+                from PIL import Image  # noqa: PLC0415
 
                 img = Image.open(img_cache)
         else:
@@ -396,8 +397,6 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
             os.makedirs(self.image_cache_dir, exist_ok=True)
         # Create temporary path if not set
         if not self.pdf_path:
-            import tempfile
-
             self.pdf_path = tempfile.mkstemp(".pdf", "candidates", self.save_dir)[1]
 
         # Possibly create a slack client
@@ -567,7 +566,7 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                     cutouts = None
 
                 # Create plot
-                fig, axes = fig_from_fluxtable(
+                fig_from_fluxtable(
                     name,
                     str(ampelid),
                     ra,
