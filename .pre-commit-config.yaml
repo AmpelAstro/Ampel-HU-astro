@@ -11,7 +11,7 @@ repos:
     - id: ruff-format
 - repo: https://github.com/python-poetry/poetry
   # renovate: datasource=pypi depName=poetry versioning=pep440
-  rev: "1.8.5"
+  rev: "2.2.1"
   hooks: 
     - id: poetry-check
 fail_fast: false
