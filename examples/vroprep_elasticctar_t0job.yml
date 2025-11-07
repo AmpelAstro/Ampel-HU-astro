@@ -1,0 +1,156 @@
+name: elasticctest
+
+mongo:
+  prefix: elasticctest
+  reset: true
+
+channel:
+- name: elasticctest
+  access: []
+  policy: []
+
+
+task:
+
+- title: ingest
+  template:
+    live:
+      - resolve_run_time_aliases
+      - hash_t2_config
+  unit: AlertConsumer
+  config:
+    iter_max: 1000
+    compiler_opts: LSSTCompilerOptions
+
+    supplier:
+      unit: LSSTAlertSupplier
+      config:
+        deserialize: null
+        loader:
+          config:
+            # https://portal.nersc.gov/cfs/lsst/DESC_TD_PUBLIC/ELASTICC/5000alerts.tar.gz
+            folder: NITE60562/
+            extension: "*avro.gz"
+            avro_schema: https://raw.githubusercontent.com/LSSTDESC/elasticc/c47fbd301b87f915c77ac0046d7845c68c306444/alert_schema/elasticc.v0_9.alert.avsc
+          unit: ElasticcDirAlertLoader
+
+    shaper: {unit: LSSTDataPointShaper}
+
+    directives:
+    - channel: elasticctest
+
+      filter:
+        unit: ReallySimpleLSSTFilter
+        on_stock_match: bypass
+        config:
+          min_ndet: 5
+          max_ndet: 10
+          min_tspan: 0
+          max_tspan: 100
+          min_ndet: 4
+          min_tspan: 3
+
+      ingest:
+          mux:
+            unit: LSSTMongoMuxer
+            insert:
+              point_t2:
+              - unit: T2GetDiaObject
+                config:
+                  params:
+                  - diaObjectId
+                  - simVersion
+                ingest:
+                  filter: LSSTObjFilter
+                  select: last
+                  sort: diaObjectId
+#              - config: &dl_config
+#                  datalab_user:
+#                    label: datalab/user
+#                  datalab_pwd: 
+#                    label: datalab/password
+#                ingest:
+#                  filter: LSSTObjFilter
+#                  select: last
+#                  sort: diaObjectId
+#                unit: T2LSPhotoZTap
+              - config: '%T2CatalogMatch_general'
+                ingest:
+                  filter: LSSTObjFilter
+                  select: last
+                  sort: diaObjectId
+                unit: T2CatalogMatch
+            combine:
+            - unit: LSSTT1Combiner
+              state_t2:
+              - config:
+                  tabulator:
+                  - unit: LSSTT2Tabulator
+                    config:
+                      zp: 27.5
+                unit: T2TabulatorRiseDecline
+#              - unit: T2DigestRedshifts
+#                config: &digest_config
+#                  max_redshift_category: 7
+#                  t2_dependency:
+#                  - config: '%T2CatalogMatch_general'
+#                    link_override:
+#                      filter: LSSTObjFilter
+#                      select: last
+#                      sort: diaObjectId
+#                    unit: T2CatalogMatch
+#                  - config: *dl_config
+#                    link_override:
+#                      filter: LSSTObjFilter
+#                      select: last
+#                      sort: diaObjectId
+#                    unit: T2LSPhotoZTap
+              - unit: T2RunParsnipRiseDecline
+                config:
+                  add_parsnip_from: sn+2ulens+dwarfs
+                  classifier_name: elasticcv2
+                  classifier_version: '0.1'
+#                  fixed_z: 0.07
+                  parsnip_zeropoint_offset: 0
+                  parsnipplot_properties:
+                    file_name:
+                      format_str: t2parsnip_%s_%s.svg
+                      arg_keys: [stock, model]
+                    disk_save: parsnipPlot
+                  # parsnipplot_dir: parsnipPlot
+                  # parsnipplot_suffix: png
+                  paths_parsnip:
+                    sn+2ulens+dwarfs:
+                      # https://box.hu-berlin.de/f/78d7594841da4653a743/?dl=1
+                      # box name: parsnipModelAug10Pct30.h5
+                      # old name: model1-30pct-sn+2ulens+dwarfs-mw.h5
+                      model: /Users/jnordin/github/ampelFeb25/Ampel-HU-astro/examples/parsnipModelAug10Pct30.h5
+                      # https://box.hu-berlin.de/f/d1cec88c0bec4123b208/?dl=1
+                      # box name: parsnipClassifierAug10Pct30.pkl 
+                      # old name: model1-30pct-sn+2ulens+dwarfs-mw-aug10.pkl
+                      classifier: /Users/jnordin/github/ampelFeb25/Ampel-HU-astro/examples/parsnipClassifierAug10Pct30.pkl
+                  paths_xgbbinary: {}
+                  paths_xgbmulti: {}
+#                  redshift_kind: null 
+                  redshift_kind: T2DigestRedshifts
+                  max_redshift_category: 4
+                  return_features: true
+                  significant_bands:
+                  - lsstg
+                  - lsstr
+                  - lssti
+                  - lsstz
+                  t2_dependency:
+                  - config: '%T2CatalogMatch_general'
+                    link_override:
+                      filter: LSSTObjFilter
+                      select: last
+                      sort: diaObjectId
+                    unit: T2CatalogMatch
+                  t_cadence: 6.0
+                  tabulator:
+                    - unit: LSSTT2Tabulator
+                      config:
+                        zp: 27.5
+
+

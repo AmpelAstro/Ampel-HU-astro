@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ampel-hu-astro"
-version = "0.10.0a12"
+version = "0.10.0a13"
 license = "BSD-3-Clause"
 readme = "README.md"
 description = "Astronomy units for the Ampel system from HU-Berlin"
@@ -57,8 +57,8 @@ extcats = {version = "^2.4.2", optional = true}
 slack-sdk = {version = "^3", optional = true}
 xgboost = {version = "^2.0.0", optional = true}
 astro-parsnip = {version = "^1.4.1", optional = true}
-# torch 2.5 required for py313 support
-torch = {version = ">=2.5", python = ">=3.13", optional = true}
+# torch 2.5 required for py313 support, torch 2.6 breaks stored parsnip models
+torch = {version = ">=2.5,<2.6", optional = true}
 timeout-decorator = {version = "^0.5", optional = true}
 jupyter = {version = "^1.0.0", optional = true}
 more-itertools = "^10.0.0"
@@ -71,6 +71,9 @@ ztfquery = {version = "^1.26.1", optional = true}
 ligo-gracedb = {version = "^2.12.0", optional = true}
 snpy = {version = "^2.7.0", optional = true}
 lightgbm = {version = "^4.6.0", optional = true}
+
+py-avro-schema = {version = "~3", optional = true}
+hop-client = {version = "^0.12.1", optional = true}
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.6.1"
@@ -95,6 +98,7 @@ snpy = ["snpy"]
 notebook = ["jupyter"]
 ztf = ["ampel-ztf", "ztfquery"]
 lsst = ["ampel-lsst"]
+hop = ["hop-client", "py-avro-schema"]
 
 [tool.conda-lock]
 channels = ["conda-forge"]
