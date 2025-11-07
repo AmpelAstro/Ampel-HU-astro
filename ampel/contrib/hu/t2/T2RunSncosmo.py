@@ -124,7 +124,7 @@ class T2RunSncosmo(T2BaseLightcurveFitter):
         # If possible, use T2RunParnsip as the parsnip
         # sncosmo model is very slow.
         if self.sncosmo_model_name == "parsnip_plasticc":
-            import parsnip  # type: ignore[import]
+            import parsnip  # type: ignore[import]  # noqa: PLC0415
 
             source = parsnip.ParsnipSncosmoSource("plasticc")
         else:

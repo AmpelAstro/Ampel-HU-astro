@@ -183,7 +183,7 @@ class DCachePublisher(AbsT3Unit):
         session = requests.Session()
         session.headers["Authorization"] = f"BEARER {self.authz.get()}"
         # verify should be a bool or a path to a CA cert dir
-        session.verify = os.environ.get("X509_CERT_DIR", True)
+        session.verify = os.environ.get("X509_CERT_DIR") or True
         # robustify AsyncClient.request() against transitory failures
         session.request = backoff.on_exception(  # type: ignore[method-assign]
             backoff.expo,
@@ -309,7 +309,7 @@ def get_macaroon(
 
     session = requests.Session()
     # verify should be a bool or a path to a CA cert dir
-    session.verify = os.environ.get("X509_CERT_DIR", True)
+    session.verify = os.environ.get("X509_CERT_DIR") or True
     resp = session.post(
         f"https://{host}:{port}{path}",
         headers={"Content-Type": "application/macaroon-request"},

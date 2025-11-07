@@ -119,8 +119,8 @@ class T2LCQuality(AbsLightCurveT2Unit):
         but useful for debugging
         """
 
-        import matplotlib.pyplot as plt
-        import numpy as np
+        import matplotlib.pyplot as plt  # noqa: PLC0415
+        import numpy as np  # noqa: PLC0415
 
         interp_lc = interp1d(
             dets["jd"], dets["magpsf"], kind="zero", fill_value="extrapolate"

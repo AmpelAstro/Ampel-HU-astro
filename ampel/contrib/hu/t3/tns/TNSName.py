@@ -47,7 +47,7 @@ class TNSName:
         if self.number <= 0:
             return name
         # find number of digits to emit
-        digits = int(math.ceil(math.log(self.number) / math.log(self.BASE)))
+        digits = math.ceil(math.log(self.number) / math.log(self.BASE))
         for i in range(digits - 1, -1, -1):
             unit = self.BASE**i
             name += chr(ord("a") + (self.number % (unit * self.BASE)) // unit - 1)
