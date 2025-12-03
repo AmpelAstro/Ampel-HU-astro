@@ -19,6 +19,7 @@ from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.struct.UnitResult import UnitResult
 from ampel.view.T2DocView import T2DocView
 
+from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper
 
 class T2MissingDependency(RuntimeError):
     pass
@@ -115,6 +116,7 @@ class T2LSSTReport(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             if "LSST_OBJ" in dp.get("tag", {}):
                 obj = Object(
                     id=stock,
+                    source="LSST",
                     ra=float(dp["body"]["ra"]),
                     ra_err=float(dp["body"]["raErr"]),
                     dec=float(dp["body"]["dec"]),
@@ -122,9 +124,17 @@ class T2LSSTReport(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                     ra_dec_cov=float(dp["body"]["ra_dec_Cov"]),
                     # FIXME: add redshift if available
                 )
+            elif "ZTF" in dp.get("tag", {}) and "ra" in dp["body"]:
+                obj = Object(
+                    id=stock,
+                    external_id= ZTFIdMapper.to_ext_id(stock),
+                    source="ZTF",
+                    ra=float(dp["body"]["ra"]),
+                    dec=float(dp["body"]["dec"]),
+                )
                 break
         else:
-            raise ValueError("No LSST_OBJ found in datapoints")
+            raise ValueError("No Object found in datapoints")
 
         report = LSSTReport(
             object=obj,

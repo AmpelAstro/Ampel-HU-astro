@@ -1,5 +1,5 @@
 from collections.abc import Mapping, Sequence
-from typing import Any
+from typing import Any, Literal
 
 from ampel.contrib.hu.model.LSSTReport import (
     Classification,
@@ -10,25 +10,30 @@ from ampel.contrib.hu.model.LSSTReport import (
 from ampel.contrib.hu.t2.T2LSSTReport import T2LSSTReport
 
 
-def get_parsnip_summary(full_classification: dict) -> dict:
+def get_parsnip_summary(full_classification: dict, summary_mode: str) -> dict:
     """
     Collapse a full ELAsTiCC classification matrix until a subset
     of (possibly combined) probabilities.
     """
 
     outclass = {}
-    # Simple ones
-    for singleclass in ["KN", "SLSN-I", "TDE"]:
-        outclass["P(" + singleclass + ")"] = full_classification[singleclass]
-    # Combined SNIa prop
-    outclass["P(SNIa)"] = sum(
-        [full_classification[s] for s in ["SNIa", "SNIa91bg", "SNIax"]]
-    )
-    # Combined SN prop
-    outclass["P(SN)"] = sum(
-        [full_classification[s] for s in ["SLSN-I", "PISN", "SNII", "SNibc"]]
-    )
-    outclass["P(SN)"] += outclass["P(SNIa)"]
+    if summary_mode == "elasticc_simple":
+        # Simple ones
+        for singleclass in ["KN", "SLSN-I", "TDE"]:
+            outclass["P(" + singleclass + ")"] = full_classification[singleclass]
+        # Combined SNIa prop
+        outclass["P(SNIa)"] = sum(
+            [full_classification[s] for s in ["SNIa", "SNIa91bg", "SNIax"]]
+        )
+        # Combined SN prop
+        outclass["P(SN)"] = sum(
+            [full_classification[s] for s in ["SLSN-I", "PISN", "SNII", "SNibc"]]
+        )
+        outclass["P(SN)"] += outclass["P(SNIa)"]
+    elif summary_mode == "full":
+        outclass = {
+            'P('+class_name+')': prob for class_name, prob in full_classification.items()
+        }
 
     return outclass
 
@@ -37,6 +42,9 @@ class T2ClassificationReport(T2LSSTReport):
     """
     Require and propagate classification information from ParsnipRiseDecline.
     """
+
+    report_t2s: Sequence[str] = ["T2RunParsnipRiseDecline"]
+    summary_mode: Literal["elasticc_simple", "full"] = "full"
 
     # Only transients with features within these limits will be reported
     risedecline_select_map: dict[str, Sequence[float]] = {
@@ -90,7 +98,7 @@ class T2ClassificationReport(T2LSSTReport):
                         ModelClassification(
                             model=modelname,
                             probabilities=get_parsnip_summary(
-                                classdoc["classification"]
+                                classdoc["classification"], summary_mode=self.summary_mode, 
                             ),
                         )
                         for modelname, classdoc in body["classifications"][0][

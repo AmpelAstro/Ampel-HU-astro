@@ -392,7 +392,7 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
 
     # Add Fritz link to plot
     fritzlink: bool = True
-
+    
     # Will post result to Slack channel if a slack channel and a NamedSecret containig the corresponding token is given
     slack_channel: str | None = None
     slack_token: NamedSecret[str] | None = None
@@ -424,7 +424,7 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
         if isinstance(t2res, dict) and t2res.get("ampel_z", -10) > 0:
             t2cat = tview.get_t2_body(unit="T2CatalogMatch")
             if isinstance(t2cat, dict):
-                if t2cat.get("GLADEv23") and "z" in t2cat["GLADEv23"]:
+                if t2cat.get("GLADEv23") and t2cat["GLADEv23"].get('z',None) is not None:
                     photz_list.append("GLADE: {:.2f}".format(t2cat["GLADEv23"]["z"]))
                 if t2cat.get("SDSS_spec") and "z" in t2cat["SDSS_spec"]:
                     photz_list.append("SDSS: {:.2f}".format(t2cat["SDSS_spec"]["z"]))
