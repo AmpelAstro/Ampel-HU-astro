@@ -2,7 +2,7 @@ name: lensingFromToken
 
 mongo:
   prefix: LensJob_live
-  reset: false
+  reset: true
 
 channel:
 - name: Lens_z
@@ -23,7 +23,7 @@ task:
           execute: 
             - unit: T4ZTFArchiveTokenGenerator
               config:
-                days_ago: 1.
+                days_ago: 27.
                 resource_name: "%%ztf_stream_token"
                 candidate:
                   ndethist:
@@ -92,8 +92,10 @@ task:
           insert:
             point_t2:
             - config: &dl_config
-                datalab_user: atownsend
-                datalab_pwd: hutbaz-diJsar-2gicgi
+                datalab_user: 
+                  label: datalab/user
+                datalab_pwd: 
+                  label: datalab/password
               ingest:
                 filter: PPSFilter
                 select: first
@@ -279,20 +281,3 @@ task:
               slack_token: null 
               tabulator:
               - unit: ZTFT2Tabulator
-          - unit: SkyPortalPublisher 
-            config:
-              groups:
-              - ZTF
-              filters:
-              - g 
-              annotate: false
-              include_photometry: true 
-#              cutouts:
-#              - unit: ZTFCutoutImages
-#                config:
-#                  eligible: last
-#              process_names:
-#              - TNSNames
-              base_url: https://fritz.science
-              token: 
-                label: icare/jno 
