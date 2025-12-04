@@ -28,6 +28,7 @@ class Object(AmpelBaseModel):
     ra_dec_cov: Annotated[
         float, Field(description="right ascension/declination covariance")
     ]
+    source: Annotated[str, Field(description="data source")]
     # redshift: float
     # redshift_err: float
 
