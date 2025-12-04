@@ -98,6 +98,9 @@ def create_parsnip_plot(
 
         parsnip.plot_light_curve(lc_dataset.light_curves[0], model, ax=ax)
         fig.tight_layout()
+        if self.plot_suffix:
+                fpath = os.path.join(self.plot_dir, tname + self.plot_suffix)
+                fig.savefig(fpath)
         return create_plot_record(
             fig,
             properties,
@@ -213,7 +216,7 @@ def run_parsnip_zsample(
     return ParsnipFailure(model=label, failed="NoFit")
 
 
-class BaseClassifier:
+class T2BaseClassifier:
     """
 
     Base class for carrying out parsnip and/or xgb classifications.
@@ -245,6 +248,8 @@ class BaseClassifier:
     parsnip_zeropoint_offset: float = 0.0
     # Save / plot parameters
     parsnipplot_properties: PlotProperties | None = None
+    parsnipplot_dir: None | str = None
+    parsnipplot_suffix: None | str = None
 
     add_parsnip_from: None | str = None
 
@@ -271,6 +276,11 @@ class BaseClassifier:
 
     def post_init(self) -> None:
         self.read_class_models()
+
+        self.parsnipplot_properties = {}
+        self.parsnipplot_properties['parsnipplot_dir'] = self.parsnipplot_dir
+        self.parsnipplot_properties['parsnipplot_suffix'] = self.parsnipplot_suffix
+        
 
     def get_xgb_class(self, classlabel, features):
         """

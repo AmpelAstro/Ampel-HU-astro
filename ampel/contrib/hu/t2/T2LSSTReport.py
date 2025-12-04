@@ -110,6 +110,8 @@ class T2LSSTReport(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             ).iterrows("time", "flux", "fluxerr", "band", "zp", "zpsys")
         ]
         # Fill object record from latest LSST_OBJ datapoint (diaObject)
+        print('Looking for Object in datapoints')
+        print(datapoints)
         for dp in sorted(
             datapoints, key=lambda x: x["meta"][-1].get("ts", 0), reverse=True
         ):
@@ -124,6 +126,7 @@ class T2LSSTReport(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                     ra_dec_cov=float(dp["body"]["ra_dec_Cov"]),
                     # FIXME: add redshift if available
                 )
+                break
             elif "ZTF" in dp.get("tag", {}) and "ra" in dp["body"]:
                 obj = Object(
                     id=stock,

@@ -14,9 +14,11 @@ class T2InfantReport(T2LSSTReport):
     Report potential infant transients.
     Todo: should we really require RiseDecline? Same information included in photometry extract for table.
     Keep for now, but look into performance.
-    Should be possible to run without T2TabulatorRiseDecline - then just remove from t2_dependency and set select map to {}.
+    Should be possible to run without T2TabulatorRiseDecline - then just remove from report_t2s and set select map to {}.
     In principle, it might be assumed that the T0 filter should be used to only select infant transients.
     """
+
+    report_t2s: Sequence[str] = ["T2DigestRedshifts", "T2TabulatorRiseDecline"]
 
     # Only transients with features within these limits will be reported
     risedecline_select_map: dict[str, Sequence[float]] = {
@@ -30,7 +32,7 @@ class T2InfantReport(T2LSSTReport):
 
     def process_t2s(
         self, report_views: dict[str, Mapping[str, Any]]
-    ) -> Sequence[Classification | Host | Feature] | None:
+    ) -> Sequence[Classification | Host | Feature] | bool:
         """
         Process T2 views to extract information to be propagated.
         Will parse results from T2ParsnipRiseDecline and:
@@ -44,10 +46,13 @@ class T2InfantReport(T2LSSTReport):
 
         # Check host info
         body = report_views["T2DigestRedshifts"]
+        skip = False
         for field, limits in self.redshift_select_map.items():
             if field in body and limits[0] < body[field] < limits[1]:
                 continue
-            return None
+            skip = True
+        if skip:
+            return False
 
         # Add host information if available
         unitresults.append(
@@ -62,14 +67,17 @@ class T2InfantReport(T2LSSTReport):
         )
 
         # Check RiseDecline info if requested
-        if "T2TabulatorRiseDecline" in report_views:
+        if "T2TabulatorRiseDecline" in self.report_t2s:
             body = report_views["T2TabulatorRiseDecline"]
+            skip = False
             features = {}
             for field, limits in self.risedecline_select_map.items():
                 if field in body and limits[0] < body[field] < limits[1]:
                     features[field] = body[field]
-                else:
-                    return None
+                    continue
+                skip = True
+            if skip:
+                return False
             # Base list of features to add
             features.update(
                 {
@@ -79,9 +87,9 @@ class T2InfantReport(T2LSSTReport):
                 }
             )
 
-            # Add selection features. Todo: add a selection of other interesting ones.
-            unitresults.append(
-                Feature(name="RiseDeclineFeatures", version="1", features=features)
-            )
+        # Add selection features. Todo: add a selection of other interesting ones.
+        unitresults.append(
+            Feature(name="RiseDeclineFeatures", version="1", features=features)
+        )
 
         return unitresults

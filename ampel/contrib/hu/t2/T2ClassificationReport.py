@@ -94,16 +94,17 @@ class T2ClassificationReport(T2LSSTReport):
                 Classification(
                     name="ParsnipRiseDecline",
                     version="1",
+                    info="Trained on ELAsTiCC",
                     models=[
                         ModelClassification(
-                            model=modelname,
+                            model=parsnipclassification['model'],
                             probabilities=get_parsnip_summary(
-                                classdoc["classification"], summary_mode=self.summary_mode, 
+                                parsnipclassification["classification"], summary_mode=self.summary_mode, 
                             ),
                         )
-                        for modelname, classdoc in body["classifications"][0][
+                        for parsnipclassification in body["classifications"][0][
                             "parsnip"
-                        ].items()
+                        ]
                     ],
                 )
             )

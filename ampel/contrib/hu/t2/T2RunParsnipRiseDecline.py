@@ -13,7 +13,7 @@ from typing import Any
 from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
-from ampel.contrib.hu.t2.T2BaseClassifier import BaseClassifier
+from ampel.contrib.hu.t2.T2BaseClassifier import T2BaseClassifier
 from ampel.contrib.hu.t2.T2BaseLightcurveFitter import T2BaseLightcurveFitter
 from ampel.contrib.hu.t2.T2TabulatorRiseDecline import (
     BaseLightCurveFeatures,
@@ -103,7 +103,7 @@ class T2RunParsnipRiseDecline(
     AbsTabulatedT2Unit,
     T2TabulatorRiseDeclineBase,
     BaseLightCurveFeatures,
-    BaseClassifier,
+    T2BaseClassifier,
 ):
     def post_init(self) -> None:
         """
