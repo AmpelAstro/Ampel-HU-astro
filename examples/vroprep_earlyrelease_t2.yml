@@ -1,0 +1,73 @@
+name: earlyprep
+
+mongo:
+  prefix: earlyrelease
+  reset: false
+
+channel:
+- name: earlyrelease
+  access: []
+  policy: []
+
+
+task:
+
+
+
+
+- title: Run T2s
+  unit: T2Worker
+  multiplier: 1
+  config:
+    send_beacon: false
+    raise_exc: true
+    unit_ids:
+    - T2GetDiaObject
+    - T2CatalogMatch
+    - T2TabulatorRiseDecline
+    - T2LSPhotoZTap
+
+- title: Run T2s
+  unit: T2Worker
+  multiplier: 1
+  config:
+    send_beacon: false
+    raise_exc: true
+    unit_ids:
+    - T2DigestRedshifts
+
+- title: Run T2s
+  unit: T2Worker
+  multiplier: 1
+  config:
+    send_beacon: false
+    raise_exc: true
+    unit_ids:
+    - T2RunParsnipRiseDecline
+
+- title: Run T2s
+  unit: T2Worker
+  multiplier: 1
+  config:
+    send_beacon: false
+    raise_exc: true
+    unit_ids:
+    - T2LSSTReport
+
+- title: Run T2s
+  unit: T2Worker
+  multiplier: 1
+  config:
+    send_beacon: false
+    raise_exc: true
+    unit_ids:
+    - T2ClassificationReport
+
+- title: Run T2s
+  unit: T2Worker
+  multiplier: 1
+  config:
+    send_beacon: false
+    raise_exc: true
+    unit_ids:
+    - T2InfantReport
