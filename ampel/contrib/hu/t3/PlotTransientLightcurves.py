@@ -271,7 +271,10 @@ def fig_from_fluxtable(
     jd_max = max(np.max(fluxtable["time"]), t_0_jd)
     length = jd_max - jd_min
 
-    lc_ax1.set_xlim((jd_min - (length / 20), jd_max + (length / 20)))
+    if length>0:
+        lc_ax1.set_xlim((jd_min - (length / 20), jd_max + (length / 20)))
+    else:
+        lc_ax1.set_xlim((jd_min - 3, jd_max + 3))
 
     lc_ax2 = lc_ax1.twiny()
 
@@ -540,6 +543,7 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                     )
                     continue
 
+
                 # Collect information
                 ampelid = tran_view.id
                 (ra, dec) = self.get_pos(tran_view.get_photopoints())  # type: ignore
@@ -604,7 +608,7 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                 plt.close()
 
         # Post to slack
-        if self.slack_channel is not None and self.slack_token is not None:
+        if self.slack_channel is not None and self.slack_token is not None and os.path.isfile(self.pdf_path):
             #            buffer.seek(0)
             # Upload the file to Slack
             #            with (
