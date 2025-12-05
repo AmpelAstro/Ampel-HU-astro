@@ -116,8 +116,6 @@ task:
                   classifier_version: '0.1'
 #                  fixed_z: 0.07
                   parsnip_zeropoint_offset: 0
-                  parsnipplot_dir: /Users/jnordin/tmp/parsnipPlot/digest
-                  parsnipplot_suffix: png
                   paths_parsnip:
                     sn+2ulens+dwarfs:
                       # https://box.hu-berlin.de/f/78d7594841da4653a743/?dl=1
