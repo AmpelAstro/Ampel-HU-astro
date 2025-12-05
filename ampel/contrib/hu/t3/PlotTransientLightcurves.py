@@ -121,7 +121,7 @@ def fig_from_fluxtable(
                 img = get_ps_stamp(ra, dec, size=240, color=["y", "g", "i"])
                 img.save(img_cache)
             else:
-                from PIL import Image  # noqa: PLC0415
+                from PIL import Image
 
                 img = Image.open(img_cache)
         else:
@@ -271,7 +271,7 @@ def fig_from_fluxtable(
     jd_max = max(np.max(fluxtable["time"]), t_0_jd)
     length = jd_max - jd_min
 
-    if length>0:
+    if length > 0:
         lc_ax1.set_xlim((jd_min - (length / 20), jd_max + (length / 20)))
     else:
         lc_ax1.set_xlim((jd_min - 3, jd_max + 3))
@@ -395,7 +395,7 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
 
     # Add Fritz link to plot
     fritzlink: bool = True
-    
+
     # Will post result to Slack channel if a slack channel and a NamedSecret containig the corresponding token is given
     slack_channel: str | None = None
     slack_token: NamedSecret[str] | None = None
@@ -427,7 +427,10 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
         if isinstance(t2res, dict) and t2res.get("ampel_z", -10) > 0:
             t2cat = tview.get_t2_body(unit="T2CatalogMatch")
             if isinstance(t2cat, dict):
-                if t2cat.get("GLADEv23") and t2cat["GLADEv23"].get('z',None) is not None:
+                if (
+                    t2cat.get("GLADEv23")
+                    and t2cat["GLADEv23"].get("z", None) is not None
+                ):
                     photz_list.append("GLADE: {:.2f}".format(t2cat["GLADEv23"]["z"]))
                 if t2cat.get("SDSS_spec") and "z" in t2cat["SDSS_spec"]:
                     photz_list.append("SDSS: {:.2f}".format(t2cat["SDSS_spec"]["z"]))
@@ -543,7 +546,6 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                     )
                     continue
 
-
                 # Collect information
                 ampelid = tran_view.id
                 (ra, dec) = self.get_pos(tran_view.get_photopoints())  # type: ignore
@@ -608,7 +610,12 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                 plt.close()
 
         # Post to slack
-        if self.slack_channel is not None and self.slack_token is not None and os.path.isfile(self.pdf_path):
+        if (
+            self.slack_channel is not None
+            and self.slack_token is not None
+            and self.pdf_path is not None
+            and os.path.isfile(self.pdf_path)
+        ):
             #            buffer.seek(0)
             # Upload the file to Slack
             #            with (

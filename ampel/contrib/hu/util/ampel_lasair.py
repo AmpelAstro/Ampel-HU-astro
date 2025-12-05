@@ -6,62 +6,65 @@
 # Last Modified Date:  9.10.2025
 # Last Modified By:    jno
 
-from ampel.base.AmpelBaseModel import AmpelBaseModel
-
 from typing import Literal
-import json, sys, settings
-import lasair
+
+import lasair  # type: ignore[import]
+
+from ampel.secret.NamedSecret import NamedSecret
 
 
-class LasairAnnotator():
+class LasairAnnotator:
     """
     Send an annotation to the Lasair system.
     """
 
-    # Lasair annotator name, used for searching their. 
-    # It is assumed that each topic configures rules for explanation, url, report formating and classifiaction selection. 
-    lasair_topic: Literal[ "AMPEL" ]
+    # Lasair annotator name, used for searching their.
+    # It is assumed that each topic configures rules for explanation, url, report formating and classifiaction selection.
+    lasair_topic: Literal["AMPEL"]
     # Which lasair version to use
-    lasair_version: Literal["ztf","lsst"]
-    # API authentication for group owner 
+    lasair_version: Literal["ztf", "lsst"]
+    # API authentication for group owner
     lasair_api_token: NamedSecret[str]
-    # Check existence 
+    # Check existence
     check_existence: bool = True
-    
 
     def post_init(self) -> None:
-        self.endpoint = "https://lasair-{}.lsst.ac.uk/api".format(self.lasair_version)
-        self.lasairclient = lasair.lasair_client(self.lasair_api_token, endpoint=self.endpoint)
+        self.endpoint = f"https://lasair-{self.lasair_version}.lsst.ac.uk/api"
+        self.lasairclient = lasair.lasair_client(
+            self.lasair_api_token, endpoint=self.endpoint
+        )
 
-    def annotate(self, objectId: str, transientdict: dict) -> bool:    
-
+    def annotate(self, objectId: str, transientdict: dict) -> bool:
         # Shape info for Lasair, according to topic
         if self.lasair_topic == "AMPEL":
-            (classification, version, explanation, classdict, url) = self.get_dummy_annotation_info(transientdict)
+            (classification, version, explanation, classdict, url) = (
+                self.get_dummy_annotation_info(transientdict)
+            )
         else:
-            raise ValueError("Unknown Lasair topic %s" % self.lasair_topic)
+            raise ValueError(f"Unknown Lasair topic {self.lasair_topic}")
 
         if self.check_existence:
             try:
-                objectInfo = self.lasairclient.object( objectId, lite=True )
-            except Exception as e:
+                self.lasairclient.object(objectId, lite=True)
+            except Exception:
                 # Object not find in Lasair, return.
-                print("Object %s not found in Lasair, not annotating." % objectId) 
-                return 0
+                return False
 
         self.lasairclient.annotate(
-            self.lasair_topic, 
-            objectId, 
+            self.lasair_topic,
+            objectId,
             classification,
-            version=version, 
-            explanation=explanation, 
+            version=version,
+            explanation=explanation,
             classdict=classdict,
-            url=url
+            url=url,
         )
 
-        return 1
+        return True
 
-    def get_dummy_annotation_info(self, transientdict: dict) -> tuple[str, float, str, dict, str]:
+    def get_dummy_annotation_info(
+        self, transientdict: dict
+    ) -> tuple[str, float, str, dict, str]:
         """
         Dummy example of how to extract annotation info from a transient dict.
         """

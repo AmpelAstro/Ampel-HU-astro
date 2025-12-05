@@ -32,7 +32,8 @@ def get_parsnip_summary(full_classification: dict, summary_mode: str) -> dict:
         outclass["P(SN)"] += outclass["P(SNIa)"]
     elif summary_mode == "full":
         outclass = {
-            'P('+class_name+')': prob for class_name, prob in full_classification.items()
+            "P(" + class_name + ")": prob
+            for class_name, prob in full_classification.items()
         }
 
     return outclass
@@ -97,9 +98,10 @@ class T2ClassificationReport(T2LSSTReport):
                     info="Trained on ELAsTiCC",
                     models=[
                         ModelClassification(
-                            model=parsnipclassification['model'],
+                            model=parsnipclassification["model"],
                             probabilities=get_parsnip_summary(
-                                parsnipclassification["classification"], summary_mode=self.summary_mode, 
+                                parsnipclassification["classification"],
+                                summary_mode=self.summary_mode,
                             ),
                         )
                         for parsnipclassification in body["classifications"][0][

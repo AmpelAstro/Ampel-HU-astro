@@ -7,6 +7,7 @@
 # Last Modified Date:  18.09.2024
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
+import os
 from typing import Any
 
 import joblib
@@ -98,9 +99,11 @@ def create_parsnip_plot(
 
         parsnip.plot_light_curve(lc_dataset.light_curves[0], model, ax=ax)
         fig.tight_layout()
-        if self.plot_suffix:
-                fpath = os.path.join(self.plot_dir, tname + self.plot_suffix)
-                fig.savefig(fpath)
+        if properties.disk_save is not None:
+            fpath = os.path.join(
+                properties.disk_save, extra["stock"] + "_" + extra["model"] + ".png"
+            )
+            fig.savefig(fpath)
         return create_plot_record(
             fig,
             properties,
@@ -248,8 +251,6 @@ class T2BaseClassifier:
     parsnip_zeropoint_offset: float = 0.0
     # Save / plot parameters
     parsnipplot_properties: PlotProperties | None = None
-    parsnipplot_dir: None | str = None
-    parsnipplot_suffix: None | str = None
 
     add_parsnip_from: None | str = None
 
@@ -276,11 +277,6 @@ class T2BaseClassifier:
 
     def post_init(self) -> None:
         self.read_class_models()
-
-        self.parsnipplot_properties = {}
-        self.parsnipplot_properties['parsnipplot_dir'] = self.parsnipplot_dir
-        self.parsnipplot_properties['parsnipplot_suffix'] = self.parsnipplot_suffix
-        
 
     def get_xgb_class(self, classlabel, features):
         """

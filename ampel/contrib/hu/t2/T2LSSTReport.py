@@ -18,8 +18,8 @@ from ampel.model.UnitModel import UnitModel
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.struct.UnitResult import UnitResult
 from ampel.view.T2DocView import T2DocView
-
 from ampel.ztf.util.ZTFIdMapper import ZTFIdMapper
+
 
 class T2MissingDependency(RuntimeError):
     pass
@@ -110,8 +110,6 @@ class T2LSSTReport(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
             ).iterrows("time", "flux", "fluxerr", "band", "zp", "zpsys")
         ]
         # Fill object record from latest LSST_OBJ datapoint (diaObject)
-        print('Looking for Object in datapoints')
-        print(datapoints)
         for dp in sorted(
             datapoints, key=lambda x: x["meta"][-1].get("ts", 0), reverse=True
         ):
@@ -127,10 +125,10 @@ class T2LSSTReport(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
                     # FIXME: add redshift if available
                 )
                 break
-            elif "ZTF" in dp.get("tag", {}) and "ra" in dp["body"]:
+            if "ZTF" in dp.get("tag", {}) and "ra" in dp["body"]:
                 obj = Object(
                     id=stock,
-                    external_id= ZTFIdMapper.to_ext_id(stock),
+                    external_id=ZTFIdMapper.to_ext_id(stock),
                     source="ZTF",
                     ra=float(dp["body"]["ra"]),
                     dec=float(dp["body"]["dec"]),
