@@ -121,7 +121,7 @@ def fig_from_fluxtable(
                 img = get_ps_stamp(ra, dec, size=240, color=["y", "g", "i"])
                 img.save(img_cache)
             else:
-                from PIL import Image
+                from PIL import Image  # noqa: PLC0415
 
                 img = Image.open(img_cache)
         else:
