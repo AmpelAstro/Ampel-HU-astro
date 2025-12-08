@@ -10,7 +10,6 @@
 from collections.abc import Iterable, Sequence
 from typing import Any
 
-from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
 from ampel.contrib.hu.t2.T2BaseClassifier import T2BaseClassifier
@@ -100,7 +99,6 @@ def get_probability_evolution(
 
 class T2RunParsnipRiseDecline(
     T2BaseLightcurveFitter,
-    AbsTabulatedT2Unit,
     T2TabulatorRiseDeclineBase,
     BaseLightCurveFeatures,
     T2BaseClassifier,
