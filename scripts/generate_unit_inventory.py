@@ -62,7 +62,7 @@ cb = DistConfigBuilder(
 TARGET_DISTS = set(args.distribution)
 
 cb.load_distributions()
-config = AmpelConfig(cb.build_config(get_unit_env=False, config_validator=None))
+config = AmpelConfig(cb.build_config(get_unit_env=False, config_validator=None, stop_on_errors=1))
 
 loader = UnitLoader(config, db=None, provenance=False)
 
