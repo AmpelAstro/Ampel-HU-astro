@@ -1,0 +1,266 @@
+name: classificationFromToken
+
+mongo:
+  prefix: live_class
+  reset: true
+
+channel:
+- name: ztfrealtimeclass
+  access: [ZTF, ZTF_PUB, ZTF_PRIV]
+  policy: []
+
+
+task:
+
+
+- title: token
+  unit: T4Processor
+  config:
+    raise_exc: true
+    execute:
+      - unit: T4RunTimeContextUpdater
+        config:
+          execute: 
+            - unit: T4ZTFArchiveTokenGenerator
+              config:
+                days_ago: 0.5
+                resource_name: "%%ztf_stream_token"
+                candidate:
+                  ndethist:
+                    $gte: 4.
+                    $lte: 30.
+                  magpsf:
+                    $gt: 18.
+                  isdiffpos: 
+                    $in:
+                    - "t"
+                    - "1"
+
+
+- title: filter
+  template:
+    live:
+      - resolve_run_time_aliases
+      - hash_t2_config
+  unit: AlertConsumer
+  config:
+    iter_max: 100000000
+    supplier:
+      unit: ZiAlertSupplier
+      config:
+        deserialize: null
+        loader:
+          unit: ZTFArchiveAlertLoader
+          config:
+            stream: "%%ztf_stream_token"
+    shaper: ZiDataPointShaper
+    compiler_opts: ZiCompilerOptions
+    directives:
+    - channel: ztfrealtimeclass
+      filter:
+        config:
+          gaia_excessnoise_sig_max: 999
+          gaia_plx_signif: 3
+          gaia_pm_signif: 3
+          gaia_rs: 20
+          gaia_veto_gmag_max: 20
+          gaia_veto_gmag_min: 9
+          min_ndet: 3
+          min_tspan: 0
+          max_tspan: 50
+          min_archive_tspan: 6
+          max_archive_tspan: 50
+          min_gal_lat: 14
+          min_rb: 0.3
+          min_sso_dist: 20
+          ps1_confusion_rad: 3
+          ps1_confusion_sg_tol: 0.1
+          ps1_sgveto_rad: 1
+          ps1_sgveto_th: 0.8
+          max_fwhm: 5.5
+          max_elong: 1.4
+          max_magdiff: 0.4
+          max_nbad: 0
+        on_stock_match: bypass
+        unit: DecentFilter
+      ingest:
+        mux:
+          unit: ZiArchiveMuxer
+          config:
+            history_days: 999
+            future_days: 999
+          insert:
+            point_t2:
+            - config: &dl_config
+                datalab_user: 
+                  label: datalab/user
+                datalab_pwd: 
+                  label: datalab/password
+              ingest:
+                filter: PPSFilter
+                select: first
+                sort: jd
+              unit: T2LSPhotoZTap
+            - config: '%T2CatalogMatch_general'
+              ingest:
+                filter: PPSFilter
+                select: first
+                sort: jd
+              unit: T2CatalogMatch
+          combine:
+          - state_t2:
+            - unit: T2LightCurveSummary
+            - unit: T2DigestRedshifts
+              config: &digest_config
+                max_redshift_category: 7
+                t2_dependency:
+                - config: '%T2CatalogMatch_general'
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2CatalogMatch
+                - config: *dl_config
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2LSPhotoZTap
+            - unit: T2RunParsnipRiseDecline
+              config: &parsnip_config
+                add_parsnip_from: snlong
+                classifier_name: rdp
+                classifier_version: '0.1'
+#                fixed_z: 0.07
+                parsnip_zeropoint_offset: 0
+                paths_parsnip:
+                  snlong:
+                    # https://box.hu-berlin.de/f/2efe4e74e30e4b8eb834/?dl=1 
+                    model: /Users/jnordin/data/models/parsnip/v3_Jul2025/randomZTF+noise_seed0/noiztf_random_model_seed0_Townsend+2025.pt
+                    # https://box.hu-berlin.de/f/4326aeb3f6b04ba7bae9/?dl=1 
+                    classifier: /Users/jnordin/data/models/parsnip/v3_Jul2025/randomZTF+noise_seed0/noiztf_random_classifier_multiclass_seed0_Townsend+2025.pkl
+                paths_xgbbinary: 
+                  iabinary: /Users/jnordin/data/models/xgb/v2_2025/models_binary_full_nolong/ia_vs_cc/model_ia_vs_cc 
+                paths_xgbmulti: {}
+                redshift_kind: T2DigestRedshifts
+                max_redshift_category: 6
+                return_features: true
+                significant_bands:
+                - ztfg
+                - ztfr
+                - ztfi
+                t2_dependency:
+                - config: '%T2CatalogMatch_general'
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2CatalogMatch
+                - config: *dl_config
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2LSPhotoZTap
+                t_cadence: 3.0
+                tabulator:
+                - unit: ZTFT2Tabulator
+            - unit: T2ClassificationReport
+              config: 
+                report_t2s:
+                - T2RunParsnipRiseDecline
+                tabulator:
+                - unit: ZTFT2Tabulator
+                t2_dependency:
+                - config: *parsnip_config
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2RunParsnipRiseDecline
+            - unit: T2LasairReport
+              config: 
+                lasair_topic: AMPEL
+                lasair_version: ztf
+                lasair_api_token: 
+                  label: lasair/jno/ztf
+                report_t2s:
+                - T2RunParsnipRiseDecline
+                tabulator:
+                - unit: ZTFT2Tabulator
+                t2_dependency:
+                - config: *parsnip_config
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2RunParsnipRiseDecline
+            unit: ZiT1Combiner
+
+
+- title: Run T2s
+  unit: T2Worker
+  config:
+    send_beacon: false
+    raise_exc: true
+
+
+- title: React
+  unit: T3Processor
+  config:
+    raise_exc: true
+    supply:
+      unit: T3DefaultBufferSupplier
+      config:
+        select:
+          #unit: T3StockSelector
+          #config:
+          #  channel: Lens_z
+          unit: T3FilteringStockSelector
+          config:
+            channel: ztfrealtimeclass
+            t2_filter:
+                all_of:
+                  - unit: T2ClassificationReport
+                    match:
+                      classification.models.probabilities.P(SNIa):
+                        "$gt": 0.05 
+                  - unit: T2ClassificationReport
+                    match:
+                      host.redshift:
+                        "$lt": 0.5 
+                  - unit: T2ClassificationReport
+                    match:
+                      host.distance:
+                        "$gt": 0.8 
+                  - unit: T2ClassificationReport
+                    match:
+                      features.features.t_lc:
+                        "$gt": 5. 
+        load:
+          unit: T3SimpleDataLoader
+          config:
+            directives:
+              - STOCK
+              - T1
+              - T2DOC
+              - DATAPOINT
+            channel: ztfrealtimeclass
+        complement: 
+        - unit: ZTFCutoutImages
+          config:
+            eligible: last
+        - unit: TNSNames
+          config:
+            include_report: true
+    stage:
+      unit: T3SimpleStager
+      config:
+        execute:
+          - unit: PlotTransientLightcurves
+            config:
+              pdf_path: /Users/jnordin/tmp/candidates_parsnip.pdf
+              save_png: false
+              include_cutouts: true
+              tabulator:
+              - unit: ZTFT2Tabulator

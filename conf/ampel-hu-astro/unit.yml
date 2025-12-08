@@ -54,6 +54,7 @@
 - ampel.contrib.hu.t2.T2TabulatorRiseDecline
 - ampel.contrib.hu.t2.T2TNSEval
 - ampel.contrib.hu.t2.T2XgbClassifier
+- ampel.contrib.hu.t2.T2LasairReport
 - ampel.contrib.hu.t3.AbsScoreCalculator
 - ampel.contrib.hu.t3.AstroColibriPublisher
 - ampel.contrib.hu.t3.ChannelSummaryPublisher
