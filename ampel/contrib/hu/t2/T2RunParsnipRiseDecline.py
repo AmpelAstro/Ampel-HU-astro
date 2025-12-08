@@ -169,6 +169,11 @@ class T2RunParsnipRiseDecline(
             if ampelz is not None and (hdist := ampelz.get("ampel_dist", -1)) > 0:  # type: ignore[operator]
                 features["ampel_dist"] = hdist
 
+            # Ensure that all features are single values (no arrays)
+            for key, val in features.items():
+                if isinstance(val, list | tuple) and len(val) == 1:
+                    features[key] = val[0]
+
             t2_body["risedeclinefeatures"] = features
 
             ## Run the classifiers

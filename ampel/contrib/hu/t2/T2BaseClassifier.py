@@ -283,7 +283,6 @@ class T2BaseClassifier:
         Return the classification for the labeled xgb model
         Classify based on features ordered according to columns
         """
-
         return self._class_xgbbinary[classlabel]["model"].predict_proba(
             np.array(
                 [
@@ -431,7 +430,8 @@ class T2BaseClassifier:
         # Either run all loaded models or the specified list
         models = xgb_binarymodels if xgb_binarymodels else self._class_xgbbinary.keys()
         binary_class: dict[str, Any] = {
-            model_name: self.get_xgb_class(model_name, features)
+            # For trial model, return only the last (positive) class probability
+            model_name: float(self.get_xgb_class(model_name, features)[0][1])
             for model_name in models
         }
 
