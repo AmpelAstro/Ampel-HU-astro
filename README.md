@@ -62,17 +62,22 @@ requires an access token if data is to be retrieved.
 - [T2LCQuality](ampel/contrib/hu/t2/T2LCQuality.py): determine the 'quality' of the light curve by computing ratios between the number of detection and that of upper limits.
 - [T2LSPhotoZTap](ampel/contrib/hu/t2/T2LSPhotoZTap.py): Query the NOIR DataLab service for photometric redshifts from the Legacy Survey.
 - [T2LSSTReport](ampel/contrib/hu/t2/T2LSSTReport.py): Create an LSST report for subsequent distribution.
+- [T2LasairReport](ampel/contrib/hu/t2/T2LasairReport.py): Propagate classification results to Lasair..
 - [T2LoadRedshift](ampel/contrib/hu/t2/T2LoadRedshift.py): Add redshifts from external .csv.
 - [T2MatchBTS](ampel/contrib/hu/t2/T2MatchBTS.py): Add information from the BTS explorer page.
+- [T2MinorPlanetCenter](ampel/contrib/hu/t2/T2MinorPlanetCenter.py): Check if the *latest* detection of a transient corresponds matches something known by the MinorPlanetCenter..
 - [T2MultiXgbClassifier](ampel/contrib/hu/t2/T2MultiXgbClassifier.py): For a range of xgboost classifier models, find a classification.
 - [T2NedSNCosmo](ampel/contrib/hu/t2/T2NedSNCosmo.py): Fits lightcurves using SNCOSMO (using SALT2 defaultwise) with redshift constrained by catalog matching results.
 - [T2NedTap](ampel/contrib/hu/t2/T2NedTap.py): See also: https://ned.ipac.caltech.edu/tap/sync?QUERY=SELECT+*+FROM+TAP_SCHEMA.tables&REQUEST=doQuery&LANG=ADQL&FORMAT=text Export all NED: https://ned.ipac.caltech.edu/tap/sync?QUERY=SELECT+*+FROM+NEDTAP.objdir&REQUEST=doQuery&LANG=ADQL&FORMAT=text.
+- [T2Observability](ampel/contrib/hu/t2/T2Observability.py): cross match the position of a transient to those of sources in a set of catalogs and attach the required information to the transient..
+- [T2RiseDeclineStat](ampel/contrib/hu/t2/T2RiseDeclineStat.py)
 - [T2RunParsnip](ampel/contrib/hu/t2/T2RunParsnip.py): Gathers information and runs the parsnip model and classifier.
 - [T2RunParsnipRiseDecline](ampel/contrib/hu/t2/T2RunParsnipRiseDecline.py)
 - [T2RunPossis](ampel/contrib/hu/t2/T2RunPossis.py): Load a POSSIS kilnova model and fit to a LightCurve object as process is called.
 - [T2RunSncosmo](ampel/contrib/hu/t2/T2RunSncosmo.py): Gathers information and runs Sncosmo.
 - [T2RunSnoopy](ampel/contrib/hu/t2/T2RunSnoopy.py): Gathers information and runs snoopy.
 - [T2RunTDE](ampel/contrib/hu/t2/T2RunTDE.py): Create a TDE model and fit to a LightCurve object as process is called.
+- [T2SNCosmo](ampel/contrib/hu/t2/T2SNCosmo.py)
 - [T2TNSEval](ampel/contrib/hu/t2/T2TNSEval.py): Evalute whether a transient fulfills criteria for submission to TNS.
 - [T2XgbClassifier](ampel/contrib/hu/t2/T2XgbClassifier.py): Load a series of xgboost classifier models (distinguished by number of detections) and return a classification.
 
@@ -80,6 +85,7 @@ requires an access token if data is to be retrieved.
 - [AstroColibriPublisher](ampel/contrib/hu/t3/AstroColibriPublisher.py): Publish results to AstroColibri.
 - [ChannelSummaryPublisher](ampel/contrib/hu/t3/ChannelSummaryPublisher.py): Create a json file with summary statistics for the channel.
 - [CostCounter](ampel/contrib/hu/t3/CostCounter.py): Derive metrics for the total cost, as parsed by the provided documents.
+- [DCachePublisher](ampel/contrib/hu/t3/DCachePublisher.py): Publish TransientViews to DCache in gzipped JSON format.
 - [ElasticcClassPublisher](ampel/contrib/hu/t3/ElasticcClassPublisher.py): This unit is intended to submit classifications to the DESC TOM db during the ELAsTICC LSST alert simulation.
 - [ElasticcClassTablePrinter](ampel/contrib/hu/t3/ElasticcClassTablePrinter.py): Unit which will print Elasticc unit classifications to STDOUT and/or an output csv file.
 - [HealpixCorrPlotter](ampel/contrib/hu/t3/HealpixCorrPlotter.py): Compare healpix coordinate P-value with output from T2RunSncosmo..
