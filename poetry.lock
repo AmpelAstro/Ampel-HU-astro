@@ -101,15 +101,15 @@ xxhash = ">=3.0.0,<4.0.0"
 
 [[package]]
 name = "ampel-lsst"
-version = "0.10.1a4"
+version = "0.10.1a6"
 description = "Legacy Survey of Space and Time support for the Ampel system"
 optional = true
 python-versions = "<4.0,>=3.11"
 groups = ["main"]
 markers = "extra == \"elasticc\" or extra == \"lsst\""
 files = [
-    {file = "ampel_lsst-0.10.1a4-py3-none-any.whl", hash = "sha256:9b79f4cbbd09264f049619a86fae4acc820465e76ef747a2fcbc84979c76873a"},
-    {file = "ampel_lsst-0.10.1a4.tar.gz", hash = "sha256:abf9d27ffa67d7d68f441e71b23f380879b98ae889b36dbb10c4384c0b50d346"},
+    {file = "ampel_lsst-0.10.1a6-py3-none-any.whl", hash = "sha256:871c0936db06d2c641fa1ad09cfd2f2fcf1b66c92ac446c7fb50b6b13ce33a0e"},
+    {file = "ampel_lsst-0.10.1a6.tar.gz", hash = "sha256:61e942d4743457718a7d57e3978a4df4028067b50c0e514be071fd850f7ffec1"},
 ]
 
 [package.dependencies]
@@ -7512,4 +7512,4 @@ ztf = ["ampel-ztf", "ztfquery"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "159c357970eb451f656490582e36428712c76d0f2cf70bc8dd74105e9b7bbd25"
+content-hash = "538b7c78ac42cf74b1a6c4b9f2fa1cfeb1efb216d9227bba9e48d206b055c323"

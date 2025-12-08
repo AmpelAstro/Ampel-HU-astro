@@ -60,6 +60,8 @@ def executeJobfile(job_call, execute_directory, should_retry=True, max_retries=5
             rlist = select([process.stdout], [], [], timeout)[0]
 
             for f in rlist:
+                if f is None:
+                    continue
                 line = f.readline().decode("utf-8")
                 print(line, end="")
                 if line.find(stream_not_found_err) != -1:

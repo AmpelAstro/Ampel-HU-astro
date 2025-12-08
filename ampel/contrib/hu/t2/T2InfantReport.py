@@ -32,7 +32,7 @@ class T2InfantReport(T2LSSTReport):
 
     def process_t2s(
         self, report_views: dict[str, Mapping[str, Any]]
-    ) -> Sequence[Classification | Host | Feature] | bool:
+    ) -> Sequence[Classification | Host | Feature] | None:
         """
         Process T2 views to extract information to be propagated.
         Will parse results from T2ParsnipRiseDecline and:
@@ -52,7 +52,7 @@ class T2InfantReport(T2LSSTReport):
                 continue
             skip = True
         if skip:
-            return False
+            return None
 
         # Add host information if available
         unitresults.append(
@@ -77,7 +77,7 @@ class T2InfantReport(T2LSSTReport):
                     continue
                 skip = True
             if skip:
-                return False
+                return None
             # Base list of features to add
             features.update(
                 {
