@@ -156,15 +156,15 @@ mpl = ["matplotlib"]
 
 [[package]]
 name = "ampel-ztf"
-version = "0.10.3a5"
+version = "0.10.3a6"
 description = "Zwicky Transient Facility support for the Ampel system"
 optional = true
 python-versions = "<4.0,>=3.10"
 groups = ["main"]
 markers = "extra == \"ligo\" or extra == \"ztf\" or extra == \"elasticc\" or extra == \"lsst\""
 files = [
-    {file = "ampel_ztf-0.10.3a5-py3-none-any.whl", hash = "sha256:6a573695936ac0a47461d2483dff435b41a804e9638be28242631266a9f6c72a"},
-    {file = "ampel_ztf-0.10.3a5.tar.gz", hash = "sha256:45423cfb4a03bd40805641a648c4f0788bafc0c7d98fd94bf026dbbe9bfc3b61"},
+    {file = "ampel_ztf-0.10.3a6-py3-none-any.whl", hash = "sha256:17e2db77ab6769e8311baa890a9441ff59a38a2fc76da634177c6e31e7d1cede"},
+    {file = "ampel_ztf-0.10.3a6.tar.gz", hash = "sha256:3a8ca4291c63ccacde45f831150a0732bdc6586d80a0ed94b0a7e7091a181fd0"},
 ]
 
 [package.dependencies]
@@ -184,12 +184,12 @@ scipy = ">=1.9.3,<2.0.0"
 
 [package.extras]
 archive = ["ampel-ztf-archive (>=0.8.0-alpha.0,<0.9.0)"]
-bayes = ["ampel-plot (>=0.9.0a2,<0.10.0)", "pandas (>=1.5)", "planobs (>=0.7.0,<0.8.0)"]
+bayes = ["ampel-plot (>=0.9.1,<0.10.0)", "pandas (>=1.5)", "planobs (>=0.7.0,<0.8.0)"]
 fp = ["pandas (>=1.5)", "planobs (>=0.7.0,<0.8.0)"]
 healpix = ["healpy (>=1.15,<2.0)"]
 kafka = ["confluent-kafka (>=2.0.0,<3.0.0)"]
 light-curve = ["light-curve (>=0.10,<0.11)"]
-plot = ["ampel-plot (>=0.9.0a2,<0.10.0)"]
+plot = ["ampel-plot (>=0.9.1,<0.10.0)"]
 
 [[package]]
 name = "annotated-types"
@@ -7512,4 +7512,4 @@ ztf = ["ampel-ztf", "ztfquery"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "cc46952b913b9fab439d6cc78f43972722ac3bc0177a5f818ded0b6771962c01"
+content-hash = "159c357970eb451f656490582e36428712c76d0f2cf70bc8dd74105e9b7bbd25"

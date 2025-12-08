@@ -37,7 +37,7 @@ include = [
 [tool.poetry.dependencies]
 python = "^3.11"
 ampel-plot = {version = "^0.9.1"}
-ampel-ztf = {version = ">=0.10.3a3,<0.11", extras = ["kafka", "fp"], optional = true}
+ampel-ztf = {version = ">=0.10.3a6,<0.11", extras = ["kafka", "fp"], optional = true}
 ampel-photometry = {version = ">=0.10.1,<0.11"}
 ampel-alerts = {version = ">=0.10.1,<0.11"}
 ampel-interface = {version = ">=0.10.4.post2,<0.11"}
