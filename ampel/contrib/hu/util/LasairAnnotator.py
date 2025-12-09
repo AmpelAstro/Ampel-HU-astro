@@ -6,6 +6,7 @@
 # Last Modified Date:  7.12.2025
 # Last Modified By:    jno
 
+from functools import cached_property
 from typing import Literal
 
 import lasair  # type: ignore[import]
@@ -28,10 +29,11 @@ class LasairAnnotator:
     # Check existence
     check_existence: bool = True
 
-    def post_init(self) -> None:
-        self.endpoint = f"https://lasair-{self.lasair_version}.lsst.ac.uk/api"
-        self.lasairclient = lasair.lasair_client(
-            self.lasair_api_token.value, endpoint=self.endpoint
+    @cached_property
+    def lasair_client(self) -> lasair.lasair_client:
+        return lasair.lasair_client(
+            self.lasair_api_token.get(),
+            endpoint=f"https://lasair-{self.lasair_version}.lsst.ac.uk/api",
         )
 
     def annotate(
@@ -52,12 +54,12 @@ class LasairAnnotator:
 
         if self.check_existence:
             try:
-                self.lasairclient.object(objectId, lite=True)
+                self.lasair_client.object(objectId, lite=True)
             except Exception:
                 # Object not find in Lasair, return.
                 return False
 
-        lasairout = self.lasairclient.annotate(
+        lasairout = self.lasair_client.annotate(
             self.lasair_topic,
             objectId,
             classification,
