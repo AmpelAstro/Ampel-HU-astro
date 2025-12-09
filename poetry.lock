@@ -55,14 +55,14 @@ ampel-core = ">=0.10.6a12,<0.11"
 
 [[package]]
 name = "ampel-core"
-version = "0.10.6a17"
+version = "0.10.6a18"
 description = "Alice in Modular Provenance-Enabled Land"
 optional = false
 python-versions = "<4.0,>=3.10"
 groups = ["main"]
 files = [
-    {file = "ampel_core-0.10.6a17-py3-none-any.whl", hash = "sha256:db2607d3f9e212acf8f634d3c8075cc94ccd56065a17ef0e551d3e9d6d1cf06d"},
-    {file = "ampel_core-0.10.6a17.tar.gz", hash = "sha256:78906c7fa30833f579fd583867a9b5336dfffe70e17ba94c2a8dea97326f5d30"},
+    {file = "ampel_core-0.10.6a18-py3-none-any.whl", hash = "sha256:ce59e2368a5e7a9ad9f6a0e7c506481549f593134b5c879b3c5cddfef442fd1a"},
+    {file = "ampel_core-0.10.6a18.tar.gz", hash = "sha256:2ee1026e67b4d369154b818e2432ace548b4e631273f506a96b05e04051315eb"},
 ]
 
 [package.dependencies]
@@ -75,7 +75,6 @@ schedule = ">=1.0.0,<2.0.0"
 xxhash = ">=3.0.0,<4.0.0"
 
 [package.extras]
-encrypted-secrets = ["sjcl (>=0.2.1,<0.3.0)"]
 queue = ["mongomock (>=4.3,<5.0)"]
 
 [[package]]
