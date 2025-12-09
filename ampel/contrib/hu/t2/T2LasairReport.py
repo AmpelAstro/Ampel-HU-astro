@@ -35,9 +35,6 @@ class T2LasairReport(T2ClassificationReport, LasairAnnotator):
     # Info propagated to lasair
     explanation: str = "AMPEL classification"
 
-    def post_init(self) -> None:
-        LasairAnnotator.post_init(self)
-
     def process(
         self,
         compound: T1Document,
