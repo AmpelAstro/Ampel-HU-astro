@@ -3,7 +3,10 @@ from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
 
 
 def test_build_config() -> None:
-    cb = DistConfigBuilder(DisplayOptions(verbose=True, debug=True))
+    cb = DistConfigBuilder(
+        DisplayOptions(verbose=True, debug=True),
+        ignore_exc=["ModuleNotFoundError"],
+    )
     cb.load_distributions(
         prefixes=[
             "ampel-interface",

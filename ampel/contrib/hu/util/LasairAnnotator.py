@@ -68,24 +68,3 @@ class LasairAnnotator:
         )
 
         return lasairout.get("status") == "success"
-
-    def get_dummy_annotation_info(
-        self, transientdict: dict
-    ) -> tuple[str, float, str, dict, str]:
-        """
-        Dummy example of how to extract annotation info from a transient dict.
-        """
-
-        classification = "unknown"
-        version = 1
-        explanation = "No explanation available"
-        classdict = {}
-        url = "http://example.com"
-
-        if "class" in transientdict:
-            classification = transientdict["class"]
-            explanation = f"Classified as {classification}"
-            classdict = {classification: 0.9}
-            url = f"http://example.com/{transientdict['id']}"
-
-        return (classification, version, explanation, classdict, url)
