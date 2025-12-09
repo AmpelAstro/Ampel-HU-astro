@@ -1,0 +1,7 @@
+# Changes here will be overwritten by Copier
+_commit: v0.0.1
+_src_path: gh:AmpelAstro/copier-ampel
+plugin_name: HU-astro
+plugin_org: AmpelAstro
+plugin_version: 0.10.0a0
+version_cap: <0.11
