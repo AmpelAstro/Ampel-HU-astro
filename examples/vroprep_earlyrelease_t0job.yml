@@ -1,0 +1,204 @@
+name: earlyreleasetest
+
+mongo:
+  prefix: earlyrelease
+  reset: true
+
+channel:
+- name:  earlyrelease
+  access: []
+  policy: []
+
+
+task:
+
+- title: ingest
+  template:
+    live:
+      - resolve_run_time_aliases
+      - hash_t2_config
+
+  unit: AlertConsumer
+  config:
+    iter_max: 2000000
+    compiler_opts: LSSTCompilerOptions
+    supplier:
+      unit: LSSTAlertSupplier
+      config:
+        deserialize: null
+        loader:
+          unit: ElasticcDirAlertLoader
+          config:
+            # https://syncandshare.desy.de/public.php/dav/files/PKaDsw5xPYR6mx8
+            folder: /Users/jnordin/data/lsst/earlyRelease/without-cutouts/2025-09-21/
+            extension: "*avro"
+            avro_schema: https://raw.githubusercontent.com/lsst/alert_packet/b1ecb9c006d211d8117f4672d4044ff8fca22d7e/python/lsst/alert/packet/schema/9/0/lsst.v9_0.alert.avsc
+    shaper: {unit: LSSTDataPointShaper}
+
+    directives:
+    - channel: earlyrelease
+
+      filter:
+        unit: DecentVroFilter
+        on_stock_match: bypass
+        config:
+          min_ndet: 3
+          max_ndet: 99
+          min_tspan: 0.1
+          max_tspan: 100
+          min_abs_gal_lat: 7
+          gaia_excessnoise_sig_max: 999
+          gaia_plx_signif: 3
+          gaia_pm_signif: 3
+          gaia_rs: 20
+          gaia_veto_gmag_max: 20
+          gaia_veto_gmag_min: 9
+
+      ingest:
+          mux:
+            unit: LSSTMongoMuxer
+            insert:
+              point_t2:
+              - unit: T2GetDiaObject
+                config:
+                  params:
+                  - diaObjectId
+                  - simVersion
+                ingest:
+                  filter: LSSTObjFilter
+                  select: last
+                  sort: diaObjectId
+              - config: &dl_config
+                  datalab_user:
+                    label: datalab/user
+                  datalab_pwd: 
+                    label: datalab/password
+                ingest:
+                  filter: LSSTObjFilter
+                  select: last
+                  sort: diaObjectId
+                unit: T2LSPhotoZTap
+              - config: '%T2CatalogMatch_general'
+                ingest:
+                  filter: LSSTObjFilter
+                  select: last
+                  sort: diaObjectId
+                unit: T2CatalogMatch
+            combine:
+            - unit: LSSTT1Combiner
+              state_t2:
+              - config: &risedec_config
+                  tabulator:
+                  - unit: LSSTT2Tabulator
+                    config:
+                      zp: 27.5
+                unit: T2TabulatorRiseDecline
+              - unit: T2DigestRedshifts
+                config: &digest_config
+                  max_redshift_category: 7
+                  t2_dependency:
+                  - config: '%T2CatalogMatch_general'
+                    link_override:
+                      filter: LSSTObjFilter
+                      select: last
+                      sort: diaObjectId
+                    unit: T2CatalogMatch
+                  - config: *dl_config
+                    link_override:
+                      filter: LSSTObjFilter
+                      select: last
+                      sort: diaObjectId
+                    unit: T2LSPhotoZTap
+              - unit: T2RunParsnipRiseDecline
+                config: &parsnip_config
+                  add_parsnip_from: sn+2ulens+dwarfs
+                  classifier_name: elasticcv2
+                  classifier_version: '0.1'
+#                  fixed_z: 0.07
+                  parsnip_zeropoint_offset: 0
+                  paths_parsnip:
+                    sn+2ulens+dwarfs:
+                      # https://box.hu-berlin.de/f/78d7594841da4653a743/?dl=1
+                      # box name: parsnipModelAug10Pct30.h5
+                      # old name: model1-30pct-sn+2ulens+dwarfs-mw.h5
+                      model: /Users/jnordin/github/ampelFeb25/Ampel-HU-astro/examples/parsnipModelAug10Pct30.h5
+                      # https://box.hu-berlin.de/f/d1cec88c0bec4123b208/?dl=1
+                      # box name: parsnipClassifierAug10Pct30.pkl 
+                      # old name: model1-30pct-sn+2ulens+dwarfs-mw-aug10.pkl
+                      classifier: /Users/jnordin/github/ampelFeb25/Ampel-HU-astro/examples/parsnipClassifierAug10Pct30.pkl
+                  paths_xgbbinary: {}
+                  paths_xgbmulti: {}
+#                  redshift_kind: null 
+                  redshift_kind: T2DigestRedshifts
+                  max_redshift_category: 6
+                  return_features: true
+                  significant_bands:
+                  - lsstg
+                  - lsstr
+                  - lssti
+                  - lsstz
+                  t2_dependency:
+                  - config: '%T2CatalogMatch_general'
+                    link_override:
+                      filter: LSSTObjFilter
+                      select: last
+                      sort: diaObjectId
+                    unit: T2CatalogMatch
+                  t_cadence: 6.0
+                  tabulator:
+                    - unit: LSSTT2Tabulator
+                      config:
+                        zp: 31.4
+              - unit: T2LSSTReport
+                config: 
+                  tabulator:
+                  - unit: LSSTT2Tabulator
+                    config:
+                      zp: 27.5
+                  t2_dependency:
+                  - config: *digest_config
+                    link_override:
+                      filter: LSSTObjFilter
+                      select: last
+                      sort: diaObjectId
+                    unit: T2DigestRedshifts
+              - unit: T2ClassificationReport
+                config: 
+                  report_t2s:
+                  - T2RunParsnipRiseDecline
+                  summary_mode: elasticc_simple
+                  tabulator:
+                  - unit: LSSTT2Tabulator
+                    config:
+                      zp: 27.5
+                  t2_dependency:
+                  - config: *parsnip_config
+                    link_override:
+                      filter: LSSTObjFilter
+                      select: last
+                      sort: diaObjectId
+                    unit: T2RunParsnipRiseDecline
+              - unit: T2InfantReport
+                config: 
+                  report_t2s:
+                  - T2DigestRedshifts
+                  - T2TabulatorRiseDecline
+                  tabulator:
+                  - unit: LSSTT2Tabulator
+                    config:
+                      zp: 27.5
+                  t2_dependency:
+                  - config: *digest_config
+                    link_override:
+                      filter: LSSTObjFilter
+                      select: last
+                      sort: diaObjectId
+                    unit: T2DigestRedshifts
+                  - config: *risedec_config
+                    link_override:
+                      filter: LSSTObjFilter
+                      select: last
+                      sort: diaObjectId
+                    unit: T2TabulatorRiseDecline
+
+

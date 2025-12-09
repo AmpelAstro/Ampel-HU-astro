@@ -10,10 +10,9 @@
 from collections.abc import Iterable, Sequence
 from typing import Any
 
-from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
-from ampel.contrib.hu.t2.T2BaseClassifier import BaseClassifier
+from ampel.contrib.hu.t2.T2BaseClassifier import T2BaseClassifier
 from ampel.contrib.hu.t2.T2BaseLightcurveFitter import T2BaseLightcurveFitter
 from ampel.contrib.hu.t2.T2TabulatorRiseDecline import (
     BaseLightCurveFeatures,
@@ -100,10 +99,9 @@ def get_probability_evolution(
 
 class T2RunParsnipRiseDecline(
     T2BaseLightcurveFitter,
-    AbsTabulatedT2Unit,
     T2TabulatorRiseDeclineBase,
     BaseLightCurveFeatures,
-    BaseClassifier,
+    T2BaseClassifier,
 ):
     def post_init(self) -> None:
         """
@@ -169,16 +167,24 @@ class T2RunParsnipRiseDecline(
             if ampelz is not None and (hdist := ampelz.get("ampel_dist", -1)) > 0:  # type: ignore[operator]
                 features["ampel_dist"] = hdist
 
+            # Ensure that all features are single values (no arrays)
+            for key, val in features.items():
+                if isinstance(val, list | tuple) and len(val) == 1:
+                    features[key] = val[0]
+
             t2_body["risedeclinefeatures"] = features
 
             ## Run the classifiers
-            t2_body["classifications"] = self.classify(
-                features,
-                flux_table,
-                fitdatainfo["z"],
-                redshift_weights=fitdatainfo["z_weights"],
-                transient_name=str(compound.get("stock")),
-            )
+            t2_body["classifications"] = [
+                c.model_dump()
+                for c in self.classify(
+                    features,
+                    flux_table,
+                    fitdatainfo["z"],
+                    redshift_weights=fitdatainfo["z_weights"],
+                    transient_name=str(compound.get("stock")),
+                )
+            ]
 
         # Prepare t2 document
         return UnitResult(

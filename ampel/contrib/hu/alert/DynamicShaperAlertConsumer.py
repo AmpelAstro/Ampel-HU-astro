@@ -8,13 +8,13 @@
 # Last Modified By  : jno
 
 
+from ampel.abstract.AbsIngester import AbsIngester
 from ampel.alert.AlertConsumer import AlertConsumer
 from ampel.core.EventHandler import EventHandler
 from ampel.ingest.ChainedIngestionHandler import ChainedIngestionHandler
 from ampel.log import AmpelLogger
 from ampel.model.ingest.CompilerOptions import CompilerOptions
 from ampel.model.UnitModel import UnitModel
-from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
 
 
 class DynamicShaperAlertConsumer(AlertConsumer):
@@ -49,7 +49,7 @@ class DynamicShaperAlertConsumer(AlertConsumer):
     def get_ingestion_handler(
         self,
         event_hdlr: EventHandler,
-        updates_buffer: DBUpdatesBuffer,
+        ingester: AbsIngester,
         logger: AmpelLogger,
     ) -> ChainedIngestionHandler:
         # Update shaper
@@ -74,11 +74,10 @@ class DynamicShaperAlertConsumer(AlertConsumer):
             self.context,
             shaper,
             self.directives,
-            updates_buffer,
+            ingester,
             event_hdlr.get_run_id(),
             tier=0,
             logger=logger,
-            database=self.database,
             trace_id={"alertconsumer": self._trace_id},
             compiler_opts=self.compiler_opts or CompilerOptions(),
         )

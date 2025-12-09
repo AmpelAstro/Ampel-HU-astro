@@ -1,11 +1,11 @@
-name: lensingFromToken
+name: classificationFromToken
 
 mongo:
-  prefix: LensJob_live
+  prefix: live_class
   reset: true
 
 channel:
-- name: Lens_z
+- name: ztfrealtimeclass
   access: [ZTF, ZTF_PUB, ZTF_PRIV]
   policy: []
 
@@ -23,7 +23,7 @@ task:
           execute: 
             - unit: T4ZTFArchiveTokenGenerator
               config:
-                days_ago: 27.
+                days_ago: 0.5
                 resource_name: "%%ztf_stream_token"
                 candidate:
                   ndethist:
@@ -37,7 +37,7 @@ task:
                     - "1"
 
 
-- title: LensFilter
+- title: filter
   template:
     live:
       - resolve_run_time_aliases
@@ -56,7 +56,7 @@ task:
     shaper: ZiDataPointShaper
     compiler_opts: ZiCompilerOptions
     directives:
-    - channel: Lens_z
+    - channel: ztfrealtimeclass
       filter:
         config:
           gaia_excessnoise_sig_max: 999
@@ -101,83 +101,7 @@ task:
                 select: first
                 sort: jd
               unit: T2LSPhotoZTap
-            - config: &catalog_match_config
-                catalogs:
-                  GLADEv23:
-                    keys_to_append:
-                    - z
-                    - dist
-                    - dist_err
-                    - flag1
-                    - flag2
-                    - flag3
-                    rs_arcsec: 10.
-                    use: extcats
-                  NEDz:
-                    keys_to_append:
-                    - ObjType
-                    - Velocity
-                    - z
-                    rs_arcsec: 10.
-                    use: catsHTM
-                  SDSS_spec:
-                    keys_to_append:
-                    - z
-                    - bptclass
-                    - subclass
-                    rs_arcsec: 10.
-                    use: extcats
-                    all: False
-                  LSPhotoZZou:
-                    keys_to_append:
-                    - photoz
-                    - ra
-                    - dec
-                    - e_photoz
-                    - specz
-                    - _6
-                    - logMassBest
-                    - logMassInf
-                    - logMassSup
-                    rs_arcsec: 10.
-                    use: extcats
-                    pre_filter: null
-                    post_filter: null
-                    all: False
-                  wiseScosPhotoz:
-                    keys_to_append:
-                    - zPhoto_Corr
-                    - ra
-                    - dec
-                    - wiseID
-                    - w1mCorr
-                    - w2mCorr
-                    rs_arcsec: 10.
-                    use: extcats
-                    pre_filter: null
-                    post_filter: null
-                  twoMPZ:
-                    keys_to_append:
-                    - zPhoto
-                    - ra
-                    - dec
-                    - zSpec
-                    rs_arcsec: 10.
-                    use: extcats
-                    pre_filter: null
-                    post_filter: null
-                  PS1_photoz:
-                    keys_to_append:
-                    - raMean
-                    - decMean
-                    - z_phot
-                    - z_photErr
-                    - z_phot0
-                    - _2
-                    rs_arcsec: 10.
-                    use: extcats
-                    pre_filter: null
-                    post_filter: null
+            - config: '%T2CatalogMatch_general'
               ingest:
                 filter: PPSFilter
                 select: first
@@ -185,11 +109,12 @@ task:
               unit: T2CatalogMatch
           combine:
           - state_t2:
+            - unit: T2LightCurveSummary
             - unit: T2DigestRedshifts
               config: &digest_config
                 max_redshift_category: 7
                 t2_dependency:
-                - config: *catalog_match_config
+                - config: '%T2CatalogMatch_general'
                   link_override:
                     filter: PPSFilter
                     select: first
@@ -201,28 +126,75 @@ task:
                     select: first
                     sort: jd
                   unit: T2LSPhotoZTap
-            - unit: T2LightCurveSummary
-            - unit: T2GetLensSNParameters
-              config:
-                sncosmo_model_name: salt2
+            - unit: T2RunParsnipRiseDecline
+              config: &parsnip_config
+                add_parsnip_from: snlong
+                classifier_name: rdp
+                classifier_version: '0.1'
+#                fixed_z: 0.07
+                parsnip_zeropoint_offset: 0
+                paths_parsnip:
+                  snlong:
+                    # https://box.hu-berlin.de/f/2efe4e74e30e4b8eb834/?dl=1 
+                    model: /Users/jnordin/data/models/parsnip/v3_Jul2025/randomZTF+noise_seed0/noiztf_random_model_seed0_Townsend+2025.pt
+                    # https://box.hu-berlin.de/f/4326aeb3f6b04ba7bae9/?dl=1 
+                    classifier: /Users/jnordin/data/models/parsnip/v3_Jul2025/randomZTF+noise_seed0/noiztf_random_classifier_multiclass_seed0_Townsend+2025.pkl
+                paths_xgbbinary: 
+                  iabinary: /Users/jnordin/data/models/xgb/v2_2025/models_binary_full_nolong/ia_vs_cc/model_ia_vs_cc 
+                paths_xgbmulti: {}
                 redshift_kind: T2DigestRedshifts
-                max_redshift_category: 7
-                unc: 3.
+                max_redshift_category: 6
+                return_features: true
+                significant_bands:
+                - ztfg
+                - ztfr
+                - ztfi
+                t2_dependency:
+                - config: '%T2CatalogMatch_general'
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2CatalogMatch
+                - config: *dl_config
+                  link_override:
+                    filter: PPSFilter
+                    select: first
+                    sort: jd
+                  unit: T2LSPhotoZTap
+                t_cadence: 3.0
+                tabulator:
+                - unit: ZTFT2Tabulator
+            - unit: T2ClassificationReport
+              config: 
+                report_t2s:
+                - T2RunParsnipRiseDecline
                 tabulator:
                 - unit: ZTFT2Tabulator
                 t2_dependency:
-                - config: *catalog_match_config
+                - config: *parsnip_config
                   link_override:
                     filter: PPSFilter
                     select: first
                     sort: jd
-                  unit: T2CatalogMatch
-                - config: *dl_config
+                  unit: T2RunParsnipRiseDecline
+            - unit: T2LasairReport
+              config: 
+                lasair_topic: AMPEL
+                lasair_version: ztf
+                lasair_api_token: 
+                  label: lasair/jno/ztf
+                report_t2s:
+                - T2RunParsnipRiseDecline
+                tabulator:
+                - unit: ZTFT2Tabulator
+                t2_dependency:
+                - config: *parsnip_config
                   link_override:
                     filter: PPSFilter
                     select: first
                     sort: jd
-                  unit: T2LSPhotoZTap
+                  unit: T2RunParsnipRiseDecline
             unit: ZiT1Combiner
 
 
@@ -232,6 +204,7 @@ task:
     send_beacon: false
     raise_exc: true
 
+
 - title: React
   unit: T3Processor
   config:
@@ -240,18 +213,30 @@ task:
       unit: T3DefaultBufferSupplier
       config:
         select:
+          #unit: T3StockSelector
+          #config:
+          #  channel: Lens_z
           unit: T3FilteringStockSelector
           config:
-            channel: Lens_z
+            channel: ztfrealtimeclass
             t2_filter:
-              unit: T2GetLensSNParameters
-              match:
-                pass_all_cuts: true
-                #z:
-                #  "$gt": 0.1 
-                #sncosmo_result.lc_metrics.restpeak_model_absmag_B:
-                #  "$lt": -10.
-                #sncosmo_result.lc_metrics.pass_colour_cuts: true
+                all_of:
+                  - unit: T2ClassificationReport
+                    match:
+                      classification.models.probabilities.P(SNIa):
+                        "$gt": 0.05 
+                  - unit: T2ClassificationReport
+                    match:
+                      host.redshift:
+                        "$lt": 0.5 
+                  - unit: T2ClassificationReport
+                    match:
+                      host.distance:
+                        "$gt": 0.8 
+                  - unit: T2ClassificationReport
+                    match:
+                      features.features.t_lc:
+                        "$gt": 5. 
         load:
           unit: T3SimpleDataLoader
           config:
@@ -260,7 +245,7 @@ task:
               - T1
               - T2DOC
               - DATAPOINT
-            channel: Lens_z
+            channel: ztfrealtimeclass
         complement: 
         - unit: ZTFCutoutImages
           config:
@@ -274,10 +259,8 @@ task:
         execute:
           - unit: PlotTransientLightcurves
             config:
-              pdf_path: /Users/jnordin/tmp/candidates_live.pdf
+              pdf_path: /Users/jnordin/tmp/candidates_parsnip.pdf
               save_png: false
               include_cutouts: true
-              slack_channel: null
-              slack_token: null 
               tabulator:
               - unit: ZTFT2Tabulator

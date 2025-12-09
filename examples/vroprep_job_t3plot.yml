@@ -1,0 +1,120 @@
+name: vroprept3
+
+mongo:
+  prefix: earlyrelease
+  reset: false
+
+task:
+- title: FindIaCand
+  unit: T3Processor
+  config:
+    raise_exc: true
+    supply:
+      unit: T3DefaultBufferSupplier
+      config:
+        select:
+          unit: T3FilteringStockSelector
+          config:
+            channel: earlyrelease
+            t2_filter:
+                all_of:
+                  - unit: T2ClassificationReport
+                    match:
+                      classification.models.probabilities.P(SNIa):
+                        "$gt": 0.05 
+                  - unit: T2ClassificationReport
+                    match:
+                      host.redshift:
+                        "$gt": 0.1 
+                  - unit: T2ClassificationReport
+                    match:
+                      host.distance:
+                        "$gt": 0.8 
+                  - unit: T2ClassificationReport
+                    match:
+                      features.features.t_lc:
+                        "$gt": 5. 
+        load:
+          unit: T3SimpleDataLoader
+          config:
+            directives:
+              - STOCK
+              - T1
+              - T2DOC
+              - DATAPOINT
+            channel: earlyrelease
+#        complement: 
+#        - unit: ZTFCutoutImages
+#          config:
+#            eligible: last
+    stage:
+      unit: T3SimpleStager
+      config:
+        execute:
+          - unit: PlotTransientLightcurves
+            config:
+              pdf_path: /Users/jnordin/tmp/candidates_sneia.pdf
+              save_png: false
+              include_cutouts: true
+              slack_channel: "ampel-live"
+              slack_token: 
+                label: slack/ztfberlin/vro 
+              tabulator:
+              - unit: LSSTT2Tabulator
+                config:
+                  zp: 27.5
+
+- title: FindInfantSN
+  unit: T3Processor
+  config:
+    raise_exc: true
+    supply:
+      unit: T3DefaultBufferSupplier
+      config:
+        select:
+          unit: T3FilteringStockSelector
+          config:
+            channel: earlyrelease
+            t2_filter:
+              all_of:
+              - unit: T2InfantReport
+                match:
+                  host.redshift:
+                    "$lt": 0.05 
+              - unit: T2InfantReport
+                match:
+                  host.distance:
+                    "$lt": 10. 
+              - unit: T2InfantReport
+                match:
+                  features.features.t_lc:
+                    "$lt": 5. 
+        load:
+          unit: T3SimpleDataLoader
+          config:
+            directives:
+              - STOCK
+              - T1
+              - T2DOC
+              - DATAPOINT
+            channel: earlyrelease
+#        complement: 
+#        - unit: ZTFCutoutImages
+#          config:
+#            eligible: last
+    stage:
+      unit: T3SimpleStager
+      config:
+        execute:
+          - unit: PlotTransientLightcurves
+            config:
+              pdf_path: /Users/jnordin/tmp/candidates_infant.pdf
+              save_png: false
+              include_cutouts: true
+              slack_channel: "ampel-live"
+              slack_token: 
+                label: slack/ztfberlin/vro 
+              tabulator:
+              - unit: LSSTT2Tabulator
+                config:
+                  zp: 27.5
