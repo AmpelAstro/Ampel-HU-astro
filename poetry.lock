@@ -2912,9 +2912,10 @@ regex = ["regex"]
 name = "lasair"
 version = "0.1.2"
 description = "A client for the Lasair database"
-optional = false
+optional = true
 python-versions = ">=3.6"
 groups = ["main"]
+markers = "extra == \"lasair\""
 files = [
     {file = "lasair-0.1.2.tar.gz", hash = "sha256:6d52588e81df8665bb3229a7f92df1364c7ec5c3ae79a15245f3005a18a69ef6"},
 ]
@@ -7450,6 +7451,7 @@ tests = ["coverage", "pytest"]
 elasticc = ["ampel-lsst", "astro-parsnip", "light-curve", "lightgbm", "timeout-decorator", "xgboost"]
 extcats = ["extcats"]
 hop = ["hop-client", "py-avro-schema"]
+lasair = ["lasair"]
 ligo = ["ampel-ztf", "healpy", "iminuit", "ligo-gracedb", "sfdmap2", "sncosmo"]
 lsst = ["ampel-lsst"]
 notebook = ["jupyter"]
@@ -7461,4 +7463,4 @@ ztf = ["ampel-ztf", "ztfquery"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "f5a9da0c02f16697b31a7c9776bfcc024fdf472ac662e4f1d8e5f4ae9743bb32"
+content-hash = "fafe7f7680cf45ae8c2f0584cb644e869ee3e7380b20c8a2cd16d5411fb6c2ae"

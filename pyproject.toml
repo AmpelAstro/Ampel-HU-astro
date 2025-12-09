@@ -73,7 +73,7 @@ lightgbm = {version = "^4.6.0", optional = true}
 
 py-avro-schema = {version = "~3", optional = true}
 hop-client = {version = "^0.12.1", optional = true}
-lasair = "^0.1.2"
+lasair = {version = "^0.1.2", optional = true}
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.6.1"
@@ -99,6 +99,7 @@ notebook = ["jupyter"]
 ztf = ["ampel-ztf", "ztfquery"]
 lsst = ["ampel-lsst"]
 hop = ["hop-client", "py-avro-schema"]
+lasair = ["lasair"]
 
 [tool.conda-lock]
 channels = ["conda-forge"]
