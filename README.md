@@ -17,8 +17,8 @@ Contributed Ampel units from HU/DESY group
    Virtualenv
    Python:         3.12.x
    ```
-   If not, point poetry at an installation of Python 3.12 with `poetry env use python3.12` (assuming that python3.12 is in your `PATH`)
-4. `poetry install -E "ztf sncosmo extcats notebook"`
+   If not, point poetry at an installation of Python >=3.12 with e.g. `poetry env use python3.12` (assuming that python3.12 is in your `PATH`)
+4. `poetry install -E "ztf sncosmo extcats" --with notebook`
 5. `cd notebooks`
 6. `poetry run jupyter notebook`
 
