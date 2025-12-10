@@ -40,14 +40,14 @@ scipy = "*"
 
 [[package]]
 name = "ampel-alerts"
-version = "0.10.3a6"
+version = "0.10.3"
 description = "Alert support for the Ampel system"
 optional = false
 python-versions = "<4.0,>=3.10"
 groups = ["main"]
 files = [
-    {file = "ampel_alerts-0.10.3a6-py3-none-any.whl", hash = "sha256:193af767616bea4f0cbcc1d9991cd2c2dfc06a906fccdc13efd5a31570dcf9f2"},
-    {file = "ampel_alerts-0.10.3a6.tar.gz", hash = "sha256:b509b775c4171bcdfb2d06bad1ca034d24c8bda0583a3525e32b457e533ee2cf"},
+    {file = "ampel_alerts-0.10.3-py3-none-any.whl", hash = "sha256:17334fb9f2f4ecf8ae6c24e71494c61b300e82420a56af1f0b64a0ff6e324552"},
+    {file = "ampel_alerts-0.10.3.tar.gz", hash = "sha256:1bff97713ec353e0e524032843e7f6624cd95180b9c61c05f31b1519ece73c54"},
 ]
 
 [package.dependencies]
@@ -7463,4 +7463,4 @@ ztf = ["ampel-ztf", "ztfquery"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "fafe7f7680cf45ae8c2f0584cb644e869ee3e7380b20c8a2cd16d5411fb6c2ae"
+content-hash = "57442ae9e02c54e425ad73a7646de247928ad193f4bcad57fc1b4c64a51e7d88"
