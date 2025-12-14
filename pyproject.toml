@@ -54,7 +54,7 @@ seaborn = "^0.13.0"
 adjustText = "^1.0.0"
 extcats = {version = "^2.4.2", optional = true}
 slack-sdk = {version = "^3", optional = true}
-xgboost = {version = "^2.0.0", optional = true}
+xgboost = {version = "^3.0.0", optional = true}
 # torch 2.5 required for py313 support, torch 2.6 breaks stored parsnip models
 torch = {version = ">=2.5,<2.6", optional = true}
 timeout-decorator = {version = "^0.5", optional = true}
