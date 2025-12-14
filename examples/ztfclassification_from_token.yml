@@ -23,7 +23,7 @@ task:
           execute: 
             - unit: T4ZTFArchiveTokenGenerator
               config:
-                days_ago: 0.5
+                days_ago: 3.5
                 resource_name: "%%ztf_stream_token"
                 candidate:
                   ndethist:
@@ -54,7 +54,7 @@ task:
           config:
             stream: "%%ztf_stream_token"
     shaper: ZiDataPointShaper
-    compiler_opts: ZiCompilerOptions
+    compiler_opts: '%ZiCompilerOptionsAlias'
     directives:
     - channel: ztfrealtimeclass
       filter:

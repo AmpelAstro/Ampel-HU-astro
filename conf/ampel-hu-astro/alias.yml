@@ -1,4 +1,18 @@
 t0:
+  '%ZiCompilerOptionsAlias':
+      stock: 
+        id_mapper: ZTFIdMapper
+        tag: ZTF
+      t0:
+        tag: ZTF
+      t1:
+        tag: ZTF
+      state_t2:
+        tag: ZTF
+      point_t2:
+        tag: ZTF
+      stock_t2: 
+        tag: ZTF
   HU_RAPID:
     max_dec: 999
     det_within: 0.25
