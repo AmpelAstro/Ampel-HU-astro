@@ -71,7 +71,7 @@ class T2LasairReport(T2ClassificationReport, LasairAnnotator):
                     ):
                         classification = most_likely_class
                     else:
-                        classification = 'Unclear'
+                        classification = "Unclear"
 
                     # Classifications in format P(class), so remove the P( and )
                     if (
