@@ -15,8 +15,8 @@ from urllib.parse import urljoin
 from urllib.request import urlopen
 
 import numpy as np
-import sncosmo  # type: ignore[import]
-from sfdmap2.sfdmap import SFDMap  # type: ignore[import]
+import sncosmo
+from sfdmap2.sfdmap import SFDMap  # type: ignore[import-untyped]
 
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document

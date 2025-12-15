@@ -9,7 +9,7 @@
 from functools import cached_property
 from typing import Literal
 
-import lasair  # type: ignore[import]
+import lasair  # type: ignore[import-untyped]
 
 from ampel.secret.NamedSecret import NamedSecret
 

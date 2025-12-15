@@ -13,8 +13,8 @@ from collections.abc import Sequence
 from typing import Literal
 
 import numpy as np
-import snpy  # type: ignore[import]
-from sfdmap2.sfdmap import SFDMap  # type: ignore[import]
+import snpy  # type: ignore[import-untyped]
+from sfdmap2.sfdmap import SFDMap  # type: ignore[import-untyped]
 
 from ampel.abstract.AbsTiedLightCurveT2Unit import AbsTiedLightCurveT2Unit
 from ampel.contrib.hu.t2.util import get_payload

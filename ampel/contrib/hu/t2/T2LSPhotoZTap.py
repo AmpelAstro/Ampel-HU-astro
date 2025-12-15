@@ -181,12 +181,12 @@ class T2LSPhotoZTap(AbsPointT2Unit):
         parts = urlparse(self.datalab_query_url)
         response = session.get(
             urlunparse((parts.scheme, parts.netloc, "/auth/login", "", "", "")),
-            params={  # type: ignore
+            params={
                 "username": self.datalab_user.get(),
                 "profile": "default",
                 "debug": "False",
             },
-            headers={"X-DL-Password": self.datalab_pwd.get()},  # type: ignore
+            headers={"X-DL-Password": self.datalab_pwd.get()},
         )
         response.raise_for_status()
         session.headers.update({"X-DL-AuthToken": response.text})

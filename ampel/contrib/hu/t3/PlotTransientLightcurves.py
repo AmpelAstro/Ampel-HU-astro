@@ -278,7 +278,7 @@ def fig_from_fluxtable(
 
     lc_ax2 = lc_ax1.twiny()
 
-    lc_ax2.scatter(  # type: ignore
+    lc_ax2.scatter(
         [Time(x, format="jd").datetime for x in [jd_min, jd_max]], [20, 20], alpha=0
     )
     lc_ax2.tick_params(axis="both", which="major", labelsize=6, rotation=45)
