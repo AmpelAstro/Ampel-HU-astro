@@ -14,3 +14,7 @@ __pycache__
 *.csv
 *.pt
 *.pkl
+.venv/
+.vscode
+examples/artifacts
+examples/parsnipPlot
