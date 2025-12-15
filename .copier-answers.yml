@@ -6,5 +6,5 @@ author_name: Jakob van Santen
 plugin_description: Astronomy units for the Ampel system from HU-Berlin
 plugin_name: HU-astro
 plugin_org: AmpelAstro
-plugin_version: 0.10.0a13
+plugin_version: 0.10.0a14
 version_cap: <0.11
