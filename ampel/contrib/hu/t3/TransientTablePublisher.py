@@ -11,7 +11,7 @@ import io
 import os
 import re
 from collections.abc import Generator
-from typing import Any
+from typing import Any, Literal
 
 import backoff
 import pandas as pd
@@ -92,7 +92,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
     save_base_info: bool = False
 
     fmt: str = "csv"
-    write_mode: str = "a"
+    write_mode: Literal["a", "w"] = "a"
     rename_files: bool = False
 
     dir_name: str = "TransientTable"
