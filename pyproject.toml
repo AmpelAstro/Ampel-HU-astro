@@ -92,6 +92,9 @@ dev = [
     "types-pytz (>=2025.2.0.20251108,<2026.0.0.0)",
     "types-pillow (>=10.2.0.20240822,<11.0.0.0)",
     "types-pyyaml (>=6.0.12.20250915,<7.0.0.0)",
+    "pandas-stubs (>=2.3.3.251201,<3.0.0.0)",
+    "scipy-stubs (>=1.16.3.3,<2.0.0.0)",
+    "types-seaborn (>=0.13.2.20251214,<0.14.0.0)",
 ]
 
 [tool.poetry]
@@ -133,32 +136,21 @@ check_untyped_defs = true
 
 [[tool.mypy.overrides]]
 module = [
-  "numpy.*",
-  "scipy.*",
-#   "pymongo.*",
-  "bson.*",
-#   "matplotlib.*",
-  "pandas.*",
-  "seaborn.*",
-  "astropy.*",
-  "ampel.model.PlotProperties",
-  "ampel.plot.utils",
-  "lcdata.*",
-  "timeout_decorator.*",
-  "parsnip.*",
-  "sncosmo.*",
-  "requests_toolbelt.*",
   "adjustText.*",
-  "extcats.*",
-  "voeventparse.*",
-  "healpy.*",
-  "light_curve.*",
-  "xgboost.*",
-  "ligo.*",
-  "ztfquery.*",
-  "joblib.*",
+  "astropy.*",
   "confluent_kafka.*",
+  "extcats.*",
+  "healpy.*",
   "hop.*",
+  "joblib.*",
+  "lcdata.*",
+  "light_curve.*",
+  "ligo.*",
+  "parsnip.*",
+  "requests_toolbelt.*",
+  "sncosmo.*",
+  "timeout_decorator.*",
+  "ztfquery.*",
 ]
 ignore_missing_imports = true
 
