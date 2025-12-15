@@ -57,15 +57,18 @@ class T2LoadRedshift(AbsLightCurveT2Unit):
         if self.z_df is None:
             return UnitResult(code=DocumentCode.T2_MISSING_INFO)
 
-        match = self.z_df[self.z_df["T2LoadRedshift_ztfid"] == ztf_name].to_dict(
-            orient="index"
+        match = next(
+            iter(
+                self.z_df[self.z_df["T2LoadRedshift_ztfid"] == ztf_name]
+                .to_dict(orient="index")
+                .values()
+            ),
+            None,
         )
-
-        if len(match) == 0:
+        if match is None:
             # In case of no match, only returned timestamp when check was made
             return {
                 "T2LoadRedshift_synced_at": self.z_df["T2LoadRedshift_synced_at"][0]
             }
-
         # Otherwise, return full match dictionary. Assuming unique BTS match, otherwise first entry is retrieved
-        return next(iter(match.values()))
+        return {str(k): v for k, v in match.items()}

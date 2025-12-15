@@ -101,13 +101,15 @@ class T2MatchBTS(AbsLightCurveT2Unit):
         if self.bts_df is None:
             return UnitResult(code=DocumentCode.T2_MISSING_INFO)
 
-        match = self.bts_df[self.bts_df["bts_ZTFID"] == ztf_name].to_dict(
-            orient="index"
+        match = next(
+            iter(
+                self.bts_df[self.bts_df["bts_ZTFID"] == ztf_name]
+                .to_dict(orient="index")
+                .values()
+            ),
+            None,
         )
-
-        if len(match) == 0:
+        if match is None:
             # In case of now match, only returned timestamp when check was made
             return {"bts_synced_at": self.bts_df["bts_synced_at"][0]}
-
-        # Otherwise, return full match dictionary. Assuming unique BTS match, otherwise first entry is retrieved
-        return next(iter(match.values()))
+        return {str(k): v for k, v in match.items()}
