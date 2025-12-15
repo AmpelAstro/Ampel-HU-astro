@@ -2,6 +2,7 @@ import pytest
 
 from ampel.content.DataPoint import DataPoint
 from ampel.content.StockDocument import StockDocument
+from ampel.content.T1Document import T1Document
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.view.T2DocView import TYPE_STATE_T2, T2DocView
 from ampel.view.TransientView import TransientView
@@ -17,8 +18,27 @@ def t3_transient_views() -> list[TransientView]:
                 {"stock": stock_id, "channel": ["CHANNYCHAN"]},
             ),
             t0=[
-                DataPoint(id=i, stock=stock_id, body={}, channel=[], meta=[])
+                DataPoint(
+                    id=i,
+                    stock=stock_id,
+                    body={"ra": 298.8424232, "dec": 44.4},
+                    channel=[],
+                    meta=[],
+                )
                 for i in range(10)
+            ],
+            t1=[
+                T1Document(
+                    unit="T1LightCurveBuilder",
+                    config=0,
+                    stock=stock_id,
+                    link=0,
+                    dps=list(range(10)),
+                    channel=["CHANNYCHAN"],
+                    tag=[],
+                    code=DocumentCode.OK,
+                    meta=[{"code": DocumentCode.OK, "tier": 1}],
+                )
             ],
             t2=[
                 T2DocView(
