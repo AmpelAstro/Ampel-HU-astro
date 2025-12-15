@@ -11,7 +11,7 @@ import io
 import os
 import re
 from collections.abc import Generator
-from typing import Any
+from typing import Any, Literal
 
 import backoff
 import pandas as pd
@@ -92,7 +92,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
     save_base_info: bool = False
 
     fmt: str = "csv"
-    write_mode: str = "a"
+    write_mode: Literal["a", "w"] = "a"
     rename_files: bool = False
 
     dir_name: str = "TransientTable"
@@ -206,7 +206,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
 
         # Export assembled information
         # Convert
-        df = pd.DataFrame.from_dict(table_rows)
+        df = pd.DataFrame.from_records(table_rows)
 
         if "map_seed" in df or self.rename_files:
             tmp_seed_name = df["map_seed"].iloc[0]
@@ -216,7 +216,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
                 self.file_name += "_" + str(int(tmp_seed_name))
 
         # sort dataframe by key
-        if self.sort_by_key in df.keys():  # noqa: SIM118
+        if self.sort_by_key is not None and self.sort_by_key in df.keys():  # noqa: SIM118
             df = df.sort_values(by=self.sort_by_key, ascending=self.sort_ascending)
         else:
             self.logger.warn(

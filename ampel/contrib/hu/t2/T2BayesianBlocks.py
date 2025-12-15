@@ -7,21 +7,23 @@
 # Last Modified Date: 10.01.2023
 # Last Modified By  : Eleni
 
+# mypy: ignore-errors
+
 import itertools
 import math
 import os
 from collections.abc import Sequence
 from typing import Any
 
-import matplotlib.pyplot as plt  # type: ignore
+import matplotlib.pyplot as plt
 import more_itertools as mit
 import numpy as np
-import pandas as pd  # type: ignore
-from astropy.stats import bayesian_blocks  # type: ignore
+import pandas as pd
+from astropy.stats import bayesian_blocks
 from numpy.typing import ArrayLike
-from scipy.signal import find_peaks  # type: ignore
-from sklearn.metrics import mean_squared_error  # type: ignore
-from uncertainties import unumpy  # type: ignore
+from scipy.signal import find_peaks
+from sklearn.metrics import mean_squared_error  # type: ignore[import-untyped]
+from uncertainties import unumpy  # type: ignore[import-untyped]
 
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 from ampel.contrib.hu.utils import flatten
@@ -1297,7 +1299,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
                         create_plot_record(
                             fig,
                             self.plot_props,
-                            extra={"band": "All", "stock": light_curve.stock_id},  # type: ignore
+                            extra={"band": "All", "stock": light_curve.stock_id},
                         )
                     ]
 

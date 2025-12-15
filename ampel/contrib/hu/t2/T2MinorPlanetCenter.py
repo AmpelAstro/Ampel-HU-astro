@@ -15,7 +15,7 @@ import numpy as np
 import requests
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
-from bs4 import BeautifulSoup  # type: ignore[import]
+from bs4 import BeautifulSoup
 
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.content.DataPoint import DataPoint

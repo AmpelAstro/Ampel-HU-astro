@@ -10,11 +10,11 @@
 from collections.abc import Sequence
 
 # The following three only used if correcting for MW dust
-import extinction  # type: ignore[import]
+import extinction  # type: ignore[import-not-found]
 import numpy as np
-import sncosmo  # type: ignore[import]
+import sncosmo
 from astropy.table import Table
-from sfdmap2.sfdmap import SFDMap  # type: ignore[import]
+from sfdmap2.sfdmap import SFDMap  # type: ignore[import-untyped]
 
 from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
 from ampel.base.decorator import abstractmethod

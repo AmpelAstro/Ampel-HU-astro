@@ -230,6 +230,6 @@ class ElasticcClassTablePrinter(AbsT3Unit):
 
         # Save dataframe
         if self.output_file is not None:
-            df = pd.DataFrame.from_dict(reports)
+            df = pd.DataFrame.from_records(reports)
             full_path = os.path.join(self.output_dir, self.output_file)
             df.to_csv(full_path)

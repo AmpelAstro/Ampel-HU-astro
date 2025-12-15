@@ -63,7 +63,7 @@ def assert_equivalent(left, right):
 
 
 def test_t2brightsnprob(lightcurve):
-    monitor = T2BrightSNProb(logger=AmpelLogger.get_logger())  # type: ignore[call-arg]
+    monitor = T2BrightSNProb(logger=AmpelLogger.get_logger())
     monitor.post_init()
     assert_equivalent(
         monitor.process(lightcurve),

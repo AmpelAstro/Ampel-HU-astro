@@ -38,13 +38,13 @@ if packaging.version.parse(scipy.__version__) < packaging.version.parse("1.11"):
         "ignore", category=FutureWarning, module="parsnip.light_curve", lineno=31
     )
 
-import extinction  # type: ignore[import]
+import extinction  # type: ignore[import-not-found]
 import lcdata
 import parsnip
-import sncosmo  # type: ignore[import]
+import sncosmo
 
 # The following three only used if correcting for MW dust
-from sfdmap2.sfdmap import SFDMap  # type: ignore[import]
+from sfdmap2.sfdmap import SFDMap  # type: ignore[import-untyped]
 
 # All parsnip predictions that are not floats
 dcast_pred = {

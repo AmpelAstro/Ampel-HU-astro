@@ -58,7 +58,7 @@ class SlackSummaryPublisher(AbsT3Unit):
         if len(frames) == 0 and self.quiet:
             return
 
-        date = str(datetime.datetime.now(tz=datetime.timezone.utc).date())
+        date = str(datetime.datetime.now(tz=datetime.UTC).date())
 
         sc = WebClient(self.slack_token.get())
 
@@ -189,10 +189,10 @@ class SlackSummaryPublisher(AbsT3Unit):
         self,
         transients: Iterable[TransientView],
         channels: set[str],
-    ) -> tuple[list[pd.DataFrame], list[pd.DataFrame]]:
+    ) -> tuple[list[dict[str, Any]], list[pd.DataFrame]]:
         """"""
 
-        frames = []
+        frames: list[dict[str, Any]] = []
         photometry = []
 
         for transient in transients:
@@ -204,7 +204,7 @@ class SlackSummaryPublisher(AbsT3Unit):
             }
 
             if summary := transient.get_t2_body(unit="T2LightCurveSummary"):
-                frame.update(summary)  # type: ignore[arg-type]
+                frame.update(summary)
 
             # include other T2 results, flattened
             for t2record in transient.t2 or []:
@@ -223,7 +223,7 @@ class SlackSummaryPublisher(AbsT3Unit):
                 for key, value in res_flat.items():
                     try:
                         frame[key] = str(value)
-                    except ValueError as ve:  # noqa: PERF203
+                    except ValueError as ve:
                         log_exception(self.logger, ve)
 
             assert transient.stock

@@ -17,7 +17,7 @@ from typing import Literal
 import backoff
 import matplotlib.pyplot as plt
 import numpy as np
-import sncosmo  # type: ignore[import]
+import sncosmo
 from astropy.table import Table
 from sncosmo.fitting import DataQualityError
 
@@ -124,7 +124,7 @@ class T2RunSncosmo(T2BaseLightcurveFitter):
         # If possible, use T2RunParnsip as the parsnip
         # sncosmo model is very slow.
         if self.sncosmo_model_name == "parsnip_plasticc":
-            import parsnip  # type: ignore[import]  # noqa: PLC0415
+            import parsnip  # noqa: PLC0415
 
             source = parsnip.ParsnipSncosmoSource("plasticc")
         else:
@@ -140,7 +140,7 @@ class T2RunSncosmo(T2BaseLightcurveFitter):
         self.default_param_vals = self.sncosmo_model.parameters
 
         # retry on with exponential backoff on "too many open files"
-        self.process = backoff.on_exception(  # type: ignore[assignment]
+        self.process = backoff.on_exception(  # type: ignore[method-assign]
             backoff.expo,
             OSError,
             giveup=lambda exc: not isinstance(exc, OSError)

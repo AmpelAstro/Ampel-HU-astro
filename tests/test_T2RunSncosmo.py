@@ -15,7 +15,7 @@ from ampel.ztf.view.ZTFT2Tabulator import ZTFT2Tabulator
 
 @pytest.fixture
 def mock_t2runsncosmo():
-    AuxUnitRegister._dyn["ZTFT2Tabulator"] = ZTFT2Tabulator  # noqa: SLF001
+    AuxUnitRegister._dyn["ZTFT2Tabulator"] = ZTFT2Tabulator
 
     t2 = T2RunSncosmo(
         sncosmo_model_name="salt2",
@@ -42,11 +42,13 @@ def inputs():
     compound = MagicMock(spec=T1Document)
     base = {"tag": ["ZTF"]}
     datapoints = [
-        base | {"body": d}
-        for d in (
-            {"jd": 2450000, "mag": 20, "magerr": 0.1},
-            {"jd": 2450001, "mag": 21, "magerr": 0.1},
-            {"jd": 2450002, "mag": 22, "magerr": 0.1},
+        base | {"id": i, "body": d}
+        for i, d in enumerate(
+            (
+                {"jd": 2450000, "magpsf": 20, "sigmapsf": 0.1, "rcid": 1, "fid": 1},
+                {"jd": 2450001, "magpsf": 21, "sigmapsf": 0.1, "rcid": 1, "fid": 1},
+                {"jd": 2450002, "magpsf": 22, "sigmapsf": 0.1, "rcid": 1, "fid": 1},
+            )
         )
     ]
     t2_views = [MagicMock(spec=T2DocView)]

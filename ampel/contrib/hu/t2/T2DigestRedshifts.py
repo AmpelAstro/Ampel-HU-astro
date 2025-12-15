@@ -500,9 +500,9 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
                 isinstance(t2_res, dict)
                 and "ampel_z" in t2_res
                 and t2_res["ampel_z"] is not None
-                and t2_res["group_z_nbr"] <= self.max_redshift_category  # type: ignore[operator]
+                and t2_res["group_z_nbr"] <= self.max_redshift_category
             ):
-                z = [float(t2_res["ampel_z"])]  # type: ignore[arg-type]
+                z = [float(t2_res["ampel_z"])]
                 z_source = "AMPELz_group" + str(t2_res["group_z_nbr"])
         elif self.redshift_kind in [
             "T2MatchBTS",

@@ -10,7 +10,7 @@
 import random
 import time
 
-from astropy.time import Time  # type: ignore
+from astropy.time import Time
 from requests_toolbelt.sessions import BaseUrlSession
 
 from ampel.abstract.AbsT4Unit import AbsT4Unit

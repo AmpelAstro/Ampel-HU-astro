@@ -1,12 +1,14 @@
-/ampel_contrib_hu.egg-info/
-/ampel_hu_astro.egg-info/
+.venv/
+*.egg-info
+__pycache__
 /build/
 /dist/
-__pycache__
+.pytest_cache
+.mypy_cache
+.vscode
 *.swp
 *.swo
 .DS_Store
-.mypy_cache
 *.gz
 *.png
 *.pdf
@@ -14,3 +16,5 @@ __pycache__
 *.csv
 *.pt
 *.pkl
+examples/artifacts
+examples/parsnipPlot

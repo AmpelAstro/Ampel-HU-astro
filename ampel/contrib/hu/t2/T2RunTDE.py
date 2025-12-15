@@ -14,11 +14,11 @@ import errno
 # from astropy.time import Time
 import backoff
 import numpy as np
-import sncosmo  # type: ignore[import]
+import sncosmo
 from astropy import constants as c
 from astropy import units as u
 from astropy.units import Quantity
-from sfdmap2.sfdmap import SFDMap  # type: ignore[import]
+from sfdmap2.sfdmap import SFDMap  # type: ignore[import-untyped]
 
 from ampel.contrib.hu.t2.T2RunSncosmo import T2RunSncosmo
 
@@ -178,7 +178,7 @@ class T2RunTDE(T2RunSncosmo):
         self.default_param_vals = self.sncosmo_model.parameters
 
         # retry on with exponential backoff on "too many open files"
-        self.process = backoff.on_exception(  # type: ignore[assignment]
+        self.process = backoff.on_exception(  # type: ignore[method-assign]
             backoff.expo,
             OSError,
             giveup=lambda exc: not isinstance(exc, OSError)
