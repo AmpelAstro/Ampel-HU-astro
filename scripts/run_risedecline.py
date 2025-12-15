@@ -172,7 +172,7 @@ for k in range(len(bts_lc.meta)):
 
 
 # Collect and export
-df = pd.DataFrame.from_dict(results)
+df = pd.DataFrame.from_records(results)
 df.to_csv('risedecline_{}_batch{}.csv'.format(bname,batch))
 
 

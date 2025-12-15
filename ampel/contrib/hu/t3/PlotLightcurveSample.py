@@ -265,7 +265,7 @@ class PlotLightcurveSample(AbsPhotoT3Unit):
             table_rows.append(sninfo)
 
         # Convert
-        df = pd.DataFrame.from_dict(table_rows)
+        df = pd.DataFrame.from_records(table_rows)
 
         # Cut down based on parameter bounds
         if self.param_bounds:

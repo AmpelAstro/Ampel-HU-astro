@@ -118,7 +118,7 @@ class HealpixCorrPlotter(AbsPhotoT3Unit):
         self.logger.info("=" * 80)
         self.logger.info(f"Printed info for {count} transients")
 
-        df = pd.DataFrame.from_dict(table_rows)
+        df = pd.DataFrame.from_records(table_rows)
 
         # figure
         if self.target_property == "Abs fit peak mag":

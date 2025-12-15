@@ -206,7 +206,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
 
         # Export assembled information
         # Convert
-        df = pd.DataFrame.from_dict(table_rows)
+        df = pd.DataFrame.from_records(table_rows)
 
         if "map_seed" in df or self.rename_files:
             tmp_seed_name = df["map_seed"].iloc[0]
