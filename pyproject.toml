@@ -39,11 +39,6 @@ dependencies = [
     "more-itertools (>=10.8.0,<11.0.0)",
     "uncertainties (>=3.2.3,<4.0.0)",
     "scikit-learn (>=1.8.0,<2.0.0)",
-    "optional (>=0.0.1,<0.0.2)",
-    "snpy (>=2.7.0,<3.0.0)",
-    "snpy (>=2.7.0,<3.0.0)",
-    "ampel-ztf (>=0.10.3a7,<0.11.0)",
-    "ztfquery (>=1.28.0,<2.0.0)",
 ]
 
 [project.optional-dependencies]
@@ -73,6 +68,7 @@ sncosmo = [
     "iminuit (>=2.32.0,<3.0.0)",
     "sfdmap2 (>=0.2.2.post3,<0.3.0)",
 ]
+snpy = ["snpy (>=2.7.0,<3.0.0)"]
 ztf = [
     "ampel-ztf (>=0.10.3a7,<0.11.0)",
     "ztfquery (>=1.28.0,<2.0.0)",
