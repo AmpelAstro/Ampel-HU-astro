@@ -216,7 +216,7 @@ class TransientTablePublisher(AbsPhotoT3Unit):
                 self.file_name += "_" + str(int(tmp_seed_name))
 
         # sort dataframe by key
-        if self.sort_by_key in df.keys():  # noqa: SIM118
+        if self.sort_by_key is not None and self.sort_by_key in df.keys():  # noqa: SIM118
             df = df.sort_values(by=self.sort_by_key, ascending=self.sort_ascending)
         else:
             self.logger.warn(
