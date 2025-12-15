@@ -189,10 +189,10 @@ class SlackSummaryPublisher(AbsT3Unit):
         self,
         transients: Iterable[TransientView],
         channels: set[str],
-    ) -> tuple[list[pd.DataFrame], list[pd.DataFrame]]:
+    ) -> tuple[list[dict[str, Any]], list[pd.DataFrame]]:
         """"""
 
-        frames = []
+        frames: list[dict[str, Any]] = []
         photometry = []
 
         for transient in transients:
