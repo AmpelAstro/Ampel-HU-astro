@@ -7,6 +7,8 @@
 # Last Modified Date: 10.01.2023
 # Last Modified By  : Eleni
 
+# mypy: ignore-errors
+
 import itertools
 import math
 import os
