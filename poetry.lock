@@ -40,27 +40,54 @@ scipy = "*"
 
 [[package]]
 name = "ampel-alerts"
-version = "0.10.3"
-description = "Alert support for the Ampel system"
-optional = false
-python-versions = "<4.0,>=3.10"
-groups = ["main"]
-files = [
-    {file = "ampel_alerts-0.10.3-py3-none-any.whl", hash = "sha256:17334fb9f2f4ecf8ae6c24e71494c61b300e82420a56af1f0b64a0ff6e324552"},
-    {file = "ampel_alerts-0.10.3.tar.gz", hash = "sha256:1bff97713ec353e0e524032843e7f6624cd95180b9c61c05f31b1519ece73c54"},
-]
-
-[package.dependencies]
-ampel-core = ">=0.10.6a12,<0.11"
-
-[[package]]
-name = "ampel-alerts"
 version = "0.10.4a0"
 description = "Alert support for the Ampel system"
 optional = false
 python-versions = "<4.0,>=3.10"
 groups = ["main"]
 files = [
+    {file = "ampel_alerts-0.10.4a0-py3-none-any.whl", hash = "sha256:c0911bc08ad7b856dcb3a5be16121979ef0317557cb821121ccf2a0dbdcdc9fe"},
+    {file = "ampel_alerts-0.10.4a0.tar.gz", hash = "sha256:05603c26a9833b913fca18c158d4609b6645ed46f54364526ef6f1c5ebee3171"},
+]
+
+[package.dependencies]
+ampel-core = ">=0.10.6a12,<0.11"
+
+[[package]]
+<<<<<<< HEAD
+name = "ampel-alerts"
+version = "0.10.4a0"
+description = "Alert support for the Ampel system"
+=======
+name = "ampel-catalogmatch"
+version = "0.10.0a3"
+description = "Astronomical catalog matching for Ampel"
+optional = false
+python-versions = "<4,>=3.11"
+groups = ["main"]
+markers = "extra == \"elasticc\" or extra == \"lsst\" or extra == \"ligo\" or extra == \"ztf\""
+files = [
+    {file = "ampel_catalogmatch-0.10.0a3-py3-none-any.whl", hash = "sha256:23cc988f078fe0ac9387a1c01517a4a84a3dcd9187957d56321feca9e1c9f592"},
+    {file = "ampel_catalogmatch-0.10.0a3.tar.gz", hash = "sha256:5c447626fc946228188f172e5d8a2f7d7766bd2710a5c5395f4862bdef77b840"},
+]
+
+[package.dependencies]
+ampel-alerts = ">=0.10.3,<0.11.0"
+ampel-interface = ">=0.10.4.post2,<0.11"
+requests = ">=2.32.5,<3.0.0"
+requests-toolbelt = ">=1.0.0,<2.0.0"
+tenacity = ">=9.1.2,<10.0.0"
+
+[[package]]
+name = "ampel-core"
+version = "0.10.6a21"
+description = "Alice in Modular Provenance-Enabled Land"
+>>>>>>> 2d81c74 (Sample VRO jobs.)
+optional = false
+python-versions = "<4.0,>=3.10"
+groups = ["main"]
+files = [
+<<<<<<< HEAD
     {file = "ampel_alerts-0.10.4a0-py3-none-any.whl", hash = "sha256:c0911bc08ad7b856dcb3a5be16121979ef0317557cb821121ccf2a0dbdcdc9fe"},
     {file = "ampel_alerts-0.10.4a0.tar.gz", hash = "sha256:05603c26a9833b913fca18c158d4609b6645ed46f54364526ef6f1c5ebee3171"},
 ]
@@ -96,6 +123,8 @@ optional = false
 python-versions = "<4.0,>=3.10"
 groups = ["main", "dev"]
 files = [
+=======
+>>>>>>> 2d81c74 (Sample VRO jobs.)
     {file = "ampel_core-0.10.6a21-py3-none-any.whl", hash = "sha256:aca13160770e8e77dccd4bc8b142dce8da46ff84993766ffb145bd3e7172f4d7"},
     {file = "ampel_core-0.10.6a21.tar.gz", hash = "sha256:9999d709f03afda2f99f7aa7bb7c100636146c6512f14241bc5c066ffb0f2369"},
 ]
@@ -190,7 +219,11 @@ mpl = ["matplotlib"]
 name = "ampel-ztf"
 version = "0.10.3a7"
 description = "Zwicky Transient Facility support for the Ampel system"
+<<<<<<< HEAD
 optional = true
+=======
+optional = false
+>>>>>>> 2d81c74 (Sample VRO jobs.)
 python-versions = "<4,>=3.11"
 groups = ["main"]
 markers = "extra == \"ligo\" or extra == \"ztf\""
@@ -383,7 +416,17 @@ torch = "*"
 tqdm = "*"
 
 [package.extras]
+<<<<<<< HEAD
 docs = ["numpy", "numpydoc", "pillow", "sphinx", "sphinx-rtd-theme"]
+=======
+docs = ["numpy", "numpydoc", "pillow", "sphinx", "sphinx_rtd_theme"]
+
+[package.source]
+type = "git"
+url = "https://github.com/wombaugh/parsnip.git"
+reference = "HEAD"
+resolved_reference = "4f3c69bf6a6080a083c2ced5143df712908265ff"
+>>>>>>> 2d81c74 (Sample VRO jobs.)
 
 [[package]]
 name = "astropy"
@@ -474,7 +517,12 @@ version = "25.4.0"
 description = "Classes Without Boilerplate"
 optional = true
 python-versions = ">=3.9"
+<<<<<<< HEAD
 groups = ["main", "notebook"]
+=======
+groups = ["main"]
+markers = "extra == \"notebook\" or extra == \"elasticc\" or extra == \"lsst\" or extra == \"ztf\""
+>>>>>>> 2d81c74 (Sample VRO jobs.)
 files = [
     {file = "attrs-25.4.0-py3-none-any.whl", hash = "sha256:adcf7e2a1fb3b36ac48d97835bb6d8ade15b8dcce26aba8bf1d14847b57a3373"},
     {file = "attrs-25.4.0.tar.gz", hash = "sha256:16d5969b87f0859ef33a48b35d55ac1be6e42ae49d5e853b597db70c35c57e11"},
@@ -671,7 +719,12 @@ version = "2.0.0"
 description = "Foreign Function Interface for Python calling C code."
 optional = true
 python-versions = ">=3.9"
+<<<<<<< HEAD
 groups = ["main", "notebook"]
+=======
+groups = ["main"]
+markers = "(platform_python_implementation != \"PyPy\" or extra == \"notebook\") and (extra == \"notebook\" or extra == \"elasticc\" or extra == \"lsst\" or extra == \"ztf\" or extra == \"ligo\")"
+>>>>>>> 2d81c74 (Sample VRO jobs.)
 files = [
     {file = "cffi-2.0.0-cp310-cp310-macosx_10_13_x86_64.whl", hash = "sha256:0cf2d91ecc3fcc0625c2c530fe004f82c110405f101548512cce44322fa8ac44"},
     {file = "cffi-2.0.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:f73b96c41e3b2adedc34a7356e64c8eb96e03a3782b535e043a986276ce12a49"},
@@ -903,6 +956,47 @@ files = [
 colorama = {version = "*", markers = "platform_system == \"Windows\""}
 
 [[package]]
+<<<<<<< HEAD
+=======
+name = "click-plugins"
+version = "1.1.1.2"
+description = "An extension module for click to enable registering CLI commands via setuptools entry-points."
+optional = true
+python-versions = "*"
+groups = ["main"]
+markers = "extra == \"ztf\""
+files = [
+    {file = "click_plugins-1.1.1.2-py2.py3-none-any.whl", hash = "sha256:008d65743833ffc1f5417bf0e78e8d2c23aab04d9745ba817bd3e71b0feb6aa6"},
+    {file = "click_plugins-1.1.1.2.tar.gz", hash = "sha256:d7af3984a99d243c131aa1a828331e7630f4a88a9741fd05c927b204bcf92261"},
+]
+
+[package.dependencies]
+click = ">=4.0"
+
+[package.extras]
+dev = ["coveralls", "pytest (>=3.6)", "pytest-cov", "wheel"]
+
+[[package]]
+name = "cligj"
+version = "0.7.2"
+description = "Click params for commmand line interfaces to GeoJSON"
+optional = true
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, <4"
+groups = ["main"]
+markers = "extra == \"ztf\""
+files = [
+    {file = "cligj-0.7.2-py3-none-any.whl", hash = "sha256:c1ca117dbce1fe20a5809dc96f01e1c2840f6dcc939b3ddbb1111bf330ba82df"},
+    {file = "cligj-0.7.2.tar.gz", hash = "sha256:a4bc13d623356b373c2c27c53dbd9c68cae5d526270bfa71f6c6fa69669c6b27"},
+]
+
+[package.dependencies]
+click = ">=4.0"
+
+[package.extras]
+test = ["pytest-cov"]
+
+[[package]]
+>>>>>>> 2d81c74 (Sample VRO jobs.)
 name = "cloudpickle"
 version = "3.1.2"
 description = "Pickler class to extend the standard pickle.Pickler functionality"
@@ -926,7 +1020,11 @@ files = [
     {file = "colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"},
     {file = "colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44"},
 ]
+<<<<<<< HEAD
 markers = {main = "(platform_system == \"Windows\" or extra == \"snpy\") and (platform_system == \"Windows\" or sys_platform == \"win32\") and (extra == \"elasticc\" or extra == \"hop\" or extra == \"ztf\" or extra == \"snpy\") and (sys_platform == \"win32\" or extra == \"elasticc\" or extra == \"hop\" or extra == \"ztf\")", dev = "sys_platform == \"win32\"", notebook = "sys_platform == \"win32\""}
+=======
+markers = {main = "(extra == \"notebook\" or extra == \"snpy\" or platform_system == \"Windows\") and (extra == \"ztf\" or extra == \"elasticc\" or extra == \"hop\" or extra == \"notebook\" or extra == \"snpy\") and (sys_platform == \"win32\" or platform_system == \"Windows\") and (sys_platform == \"win32\" or extra == \"ztf\" or extra == \"elasticc\" or extra == \"hop\")", dev = "sys_platform == \"win32\""}
+>>>>>>> 2d81c74 (Sample VRO jobs.)
 
 [[package]]
 name = "coloredlogs"
@@ -1133,7 +1231,11 @@ description = "cryptography is a package which provides cryptographic recipes an
 optional = true
 python-versions = "!=3.9.0,!=3.9.1,>=3.8"
 groups = ["main"]
+<<<<<<< HEAD
 markers = "extra == \"elasticc\" or extra == \"lsst\" or extra == \"ligo\" or extra == \"ztf\""
+=======
+markers = "extra == \"elasticc\" or extra == \"lsst\" or extra == \"ztf\" or extra == \"ligo\""
+>>>>>>> 2d81c74 (Sample VRO jobs.)
 files = [
     {file = "cryptography-46.0.3-cp311-abi3-macosx_10_9_universal2.whl", hash = "sha256:109d4ddfadf17e8e7779c39f9b18111a09efb969a301a31e987416a0191ed93a"},
     {file = "cryptography-46.0.3-cp311-abi3-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:09859af8466b69bc3c27bdf4f5d84a665e0f7ab5088412e9e2ec49758eca5cbc"},
@@ -1452,10 +1554,14 @@ numpy = ">=1.13.3"
 name = "fastavro"
 version = "1.12.1"
 description = "Fast read/write of AVRO files"
-optional = true
+optional = false
 python-versions = ">=3.9"
 groups = ["main"]
+<<<<<<< HEAD
 markers = "extra == \"elasticc\" or extra == \"lsst\" or extra == \"ligo\" or extra == \"ztf\" or extra == \"hop\""
+=======
+markers = "extra == \"elasticc\" or extra == \"lsst\" or extra == \"hop\" or extra == \"ligo\" or extra == \"ztf\""
+>>>>>>> 2d81c74 (Sample VRO jobs.)
 files = [
     {file = "fastavro-1.12.1-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:00650ca533907361edda22e6ffe8cf87ab2091c5d8aee5c8000b0f2dcdda7ed3"},
     {file = "fastavro-1.12.1-cp310-cp310-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:ac76d6d95f909c72ee70d314b460b7e711d928845771531d823eb96a10952d26"},
@@ -1540,6 +1646,58 @@ files = [
 ]
 
 [[package]]
+<<<<<<< HEAD
+=======
+name = "fiona"
+version = "1.10.1"
+description = "Fiona reads and writes spatial data files"
+optional = true
+python-versions = ">=3.8"
+groups = ["main"]
+markers = "extra == \"ztf\""
+files = [
+    {file = "fiona-1.10.1-cp310-cp310-macosx_10_15_x86_64.whl", hash = "sha256:6e2a94beebda24e5db8c3573fe36110d474d4a12fac0264a3e083c75e9d63829"},
+    {file = "fiona-1.10.1-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:fc7366f99bdc18ec99441b9e50246fdf5e72923dc9cbb00267b2bf28edd142ba"},
+    {file = "fiona-1.10.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:8c32f424b0641c79f4036b96c2e80322fb181b4e415c8cd02d182baef55e6730"},
+    {file = "fiona-1.10.1-cp310-cp310-win_amd64.whl", hash = "sha256:9a67bd88918e87d64168bc9c00d9816d8bb07353594b5ce6c57252979d5dc86e"},
+    {file = "fiona-1.10.1-cp311-cp311-macosx_10_15_x86_64.whl", hash = "sha256:98fe556058b370da07a84f6537c286f87eb4af2343d155fbd3fba5d38ac17ed7"},
+    {file = "fiona-1.10.1-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:be29044d4aeebae92944b738160dc5f9afc4cdf04f551d59e803c5b910e17520"},
+    {file = "fiona-1.10.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:94bd3d448f09f85439e4b77c38b9de1aebe3eef24acc72bd631f75171cdfde51"},
+    {file = "fiona-1.10.1-cp311-cp311-win_amd64.whl", hash = "sha256:30594c0cd8682c43fd01e7cdbe000f94540f8fa3b7cb5901e805c88c4ff2058b"},
+    {file = "fiona-1.10.1-cp312-cp312-macosx_10_15_x86_64.whl", hash = "sha256:7338b8c68beb7934bde4ec9f49eb5044e5e484b92d940bc3ec27defdb2b06c67"},
+    {file = "fiona-1.10.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:8c77fcfd3cdb0d3c97237965f8c60d1696a64923deeeb2d0b9810286cbe25911"},
+    {file = "fiona-1.10.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:537872cbc9bda7fcdf73851c91bc5338fca2b502c4c17049ccecaa13cde1f18f"},
+    {file = "fiona-1.10.1-cp312-cp312-win_amd64.whl", hash = "sha256:41cde2c52c614457e9094ea44b0d30483540789e62fe0fa758c2a2963e980817"},
+    {file = "fiona-1.10.1-cp313-cp313-macosx_10_15_x86_64.whl", hash = "sha256:a00b05935c9900678b2ca660026b39efc4e4b916983915d595964eb381763ae7"},
+    {file = "fiona-1.10.1-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:f78b781d5bcbbeeddf1d52712f33458775dbb9fd1b2a39882c83618348dd730f"},
+    {file = "fiona-1.10.1-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:29ceeb38e3cd30d91d68858d0817a1bb0c4f96340d334db4b16a99edb0902d35"},
+    {file = "fiona-1.10.1-cp313-cp313-win_amd64.whl", hash = "sha256:15751c90e29cee1e01fcfedf42ab85987e32f0b593cf98d88ed52199ef5ca623"},
+    {file = "fiona-1.10.1-cp38-cp38-macosx_10_15_x86_64.whl", hash = "sha256:6f1242f872dc33d3b4269dcaebf1838a359f9097e1cc848b0e11367bce010e4d"},
+    {file = "fiona-1.10.1-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:65308b7a7e57fcc533de8a5855b0fce798faabc736d1340192dd8673ff61bc4e"},
+    {file = "fiona-1.10.1-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:632bc146355af5ff0d77e34ebd1be5072d623b4aedb754b94a3d8c356c4545ac"},
+    {file = "fiona-1.10.1-cp38-cp38-win_amd64.whl", hash = "sha256:b7b4c3c97b1d64a1b3321577e9edaebbd36b64006e278f225f300c497cc87c35"},
+    {file = "fiona-1.10.1-cp39-cp39-macosx_10_15_x86_64.whl", hash = "sha256:b62aa8d5a0981bd33d81c247219b1eaa1e655e0a0682b3a4759fccc40954bb30"},
+    {file = "fiona-1.10.1-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:f4b19cb5bd22443ef439b39239272349023556994242a8f953a0147684e1c47f"},
+    {file = "fiona-1.10.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:fa7e7e5ad252ef29905384bf92e7d14dd5374584b525632652c2ab8925304670"},
+    {file = "fiona-1.10.1-cp39-cp39-win_amd64.whl", hash = "sha256:4e82d18acbe55230e9cf8ede2a836d99ea96b7c0cc7d2b8b993e6c9f0ac14dc2"},
+    {file = "fiona-1.10.1.tar.gz", hash = "sha256:b00ae357669460c6491caba29c2022ff0acfcbde86a95361ea8ff5cd14a86b68"},
+]
+
+[package.dependencies]
+attrs = ">=19.2.0"
+certifi = "*"
+click = ">=8.0,<9.0"
+click-plugins = ">=1.0"
+cligj = ">=0.5"
+
+[package.extras]
+all = ["fiona[calc,s3,test]"]
+calc = ["pyparsing", "shapely"]
+s3 = ["boto3 (>=1.3.1)"]
+test = ["aiohttp", "fiona[s3]", "fsspec", "pytest (>=7)", "pytest-cov", "pytz"]
+
+[[package]]
+>>>>>>> 2d81c74 (Sample VRO jobs.)
 name = "flatbuffers"
 version = "25.9.23"
 description = "The FlatBuffers serialization format for Python"
@@ -2328,7 +2486,12 @@ version = "8.7.0"
 description = "Jupyter protocol implementation and client libraries"
 optional = true
 python-versions = ">=3.10"
+<<<<<<< HEAD
 groups = ["notebook"]
+=======
+groups = ["main"]
+markers = "extra == \"notebook\""
+>>>>>>> 2d81c74 (Sample VRO jobs.)
 files = [
     {file = "jupyter_client-8.7.0-py3-none-any.whl", hash = "sha256:3671a94fd25e62f5f2f554f5e95389c2294d89822378a5f2dd24353e1494a9e0"},
     {file = "jupyter_client-8.7.0.tar.gz", hash = "sha256:3357212d9cbe01209e59190f67a3a7e1f387a4f4e88d1e0433ad84d7b262531d"},
@@ -4738,7 +4901,12 @@ version = "2.23"
 description = "C parser in Python"
 optional = true
 python-versions = ">=3.8"
+<<<<<<< HEAD
 groups = ["main", "notebook"]
+=======
+groups = ["main"]
+markers = "(platform_python_implementation != \"PyPy\" or extra == \"notebook\") and implementation_name != \"PyPy\" and (extra == \"notebook\" or extra == \"elasticc\" or extra == \"lsst\" or extra == \"ztf\" or extra == \"ligo\")"
+>>>>>>> 2d81c74 (Sample VRO jobs.)
 files = [
     {file = "pycparser-2.23-py3-none-any.whl", hash = "sha256:e5c6e8d3fbad53479cab09ac03729e0a9faf2bee3db8208a550daf5af81a5934"},
     {file = "pycparser-2.23.tar.gz", hash = "sha256:78816d4f24add8f10a06d6f05b4d424ad9e96cfebf68a4ddc99c65c0720d00c2"},
@@ -5244,7 +5412,11 @@ name = "pytest"
 version = "9.0.2"
 description = "pytest: simple powerful testing with Python"
 optional = false
+<<<<<<< HEAD
 python-versions = ">=3.10"
+=======
+python-versions = ">=3.9"
+>>>>>>> 2d81c74 (Sample VRO jobs.)
 groups = ["dev"]
 files = [
     {file = "pytest-9.0.2-py3-none-any.whl", hash = "sha256:711ffd45bf766d5264d487b917733b453d917afd2b0ad65223959f59089f875b"},
@@ -5589,7 +5761,7 @@ use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 name = "requests-toolbelt"
 version = "1.0.0"
 description = "A utility belt for advanced users of python-requests"
-optional = true
+optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 groups = ["main"]
 markers = "extra == \"elasticc\" or extra == \"lsst\" or extra == \"ligo\" or extra == \"ztf\""
@@ -6370,7 +6542,11 @@ typing-extensions = ">=4.4.0"
 name = "tenacity"
 version = "9.1.2"
 description = "Retry code until it succeeds"
+<<<<<<< HEAD
 optional = true
+=======
+optional = false
+>>>>>>> 2d81c74 (Sample VRO jobs.)
 python-versions = ">=3.9"
 groups = ["main"]
 markers = "extra == \"elasticc\" or extra == \"lsst\" or extra == \"ligo\" or extra == \"ztf\""
@@ -7209,5 +7385,10 @@ ztf = ["ampel-ztf", "ztfquery"]
 
 [metadata]
 lock-version = "2.1"
+<<<<<<< HEAD
 python-versions = ">=3.12, <4"
 content-hash = "d830e34abd57c529c2101d8340d4cac0b130d2633a5fb1aca0e8f6b5075aad4a"
+=======
+python-versions = "^3.12"
+content-hash = "f7e8c7228b8daeb96486c1ec56f0d96f22a71bc75485f1092b15ddc88872616d"
+>>>>>>> 2d81c74 (Sample VRO jobs.)
