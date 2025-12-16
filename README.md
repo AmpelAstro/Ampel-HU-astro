@@ -11,6 +11,7 @@ Contributed Ampel units from HU/DESY group
 ## Installing
 
 1. [Install poetry](https://python-poetry.org/docs/#installation).
+1. Configure poetry to create virtualenvs in the project: `poetry config virtualenvs.in-project true`. This makes it easier to work with IDEs like VSCode.
 2. `git clone https://github.com/AmpelProject/Ampel-HU-astro.git; cd Ampel-HU-astro`
 3. Check your virtualenv setup with `poetry env info`. The output should include:
    ```
@@ -24,6 +25,10 @@ Contributed Ampel units from HU/DESY group
 
 This will allow a number of Demo / access / development notebooks to be run. Note that most of them
 requires an access token if data is to be retrieved.
+
+### Pitfalls
+
+- lightgbm expects to find libomp on your system. Install with e.g. `brew install libomp` (macOS) or `apt-get install libgomp1` (Ubuntu).
 
 ## Provided units
 
