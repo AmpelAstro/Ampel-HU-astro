@@ -34,23 +34,24 @@ dependencies = [
     "requests (>=2.32.5,<3.0.0)",
     "astropy (>=7.2.0,<8.0.0)",
     "pandas (>=2.3.3,<3.0.0)",
-    "seaborn (>=0.13.2,<0.14.0)",
+    "seaborn (>=0.13.2)",
     "adjusttext (>=1.3.0,<2.0.0)",
     "more-itertools (>=10.8.0,<11.0.0)",
     "uncertainties (>=3.2.3,<4.0.0)",
     "scikit-learn (>=1.8.0,<2.0.0)",
 ]
 
+[tool.poetry.group.parsnip.dependencies]
+astro-parsnip = {git="https://github.com/wombaugh/parsnip.git", develop=true}
+
 [project.optional-dependencies]
 elasticc = [
     "xgboost (>=3.1.2,<4.0.0)",
-    "astro-parsnip (>=1.4.2,<2.0.0)",
     # pytorch 2.6 breaks model deserialization
     "torch (>=2.5,<2.6)",
     "timeout-decorator (>=0.5.0,<0.6.0)",
     "ampel-lsst (>=0.10.1a7,<0.11)",
     "light-curve (>=0.10.5,<0.11.0)",
-    "lightgbm (<3)",
     "extinction (>=0.4.8,<0.5.0)"
 ]
 extcats = ["extcats (>=2.5.0,<3.0.0)"]
