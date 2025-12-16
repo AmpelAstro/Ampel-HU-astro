@@ -7140,4 +7140,4 @@ ztf = ["ampel-ztf", "ztfquery"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12, <4"
-content-hash = "8c62db353b59643c44c4d9d64f9cc10cbcf0f16447990e1c4c252c231385558f"
+content-hash = "2f763b17247c40367184bbf34e1974ab25af7f1880efb12cdad8fa16e81df160"
