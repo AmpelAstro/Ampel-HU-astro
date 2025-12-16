@@ -29,6 +29,7 @@ dependencies = [
     "ampel-plot (>=0.9.1,<0.10.0)",
     "ampel-photometry (>=0.10.1,<0.11.0)",
     "ampel-alerts (>=0.10.3,<0.11.0)",
+    "ampel-catalogmatch (>=0.10.0a3,<0.11.0)",
     "scipy (>=1.16.3,<2.0.0)",
     "beautifulsoup4 (>=4.14.3,<5.0.0)",
     "requests (>=2.32.5,<3.0.0)",
@@ -47,12 +48,15 @@ astro-parsnip = {git="https://github.com/wombaugh/parsnip.git", develop=true}
 [project.optional-dependencies]
 elasticc = [
     "xgboost (>=3.1.2,<4.0.0)",
+    "astro-parsnip (>=1.4.2,<2.0.0)",
+    # parsnip still uses pkg_resources
+    "setuptools (>=80.9.0,<81.0.0) ; python_version >= \"3.12\"",
     # pytorch 2.6 breaks model deserialization
     "torch (>=2.5,<2.6)",
     "timeout-decorator (>=0.5.0,<0.6.0)",
     "ampel-lsst (>=0.10.1a7,<0.11)",
     "light-curve (>=0.10.5,<0.11.0)",
-    "extinction (>=0.4.8,<0.5.0)"
+    "extinction (>=0.4.8,<0.5.0)",
 ]
 extcats = ["extcats (>=2.5.0,<3.0.0)"]
 ligo = [
