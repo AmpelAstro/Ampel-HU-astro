@@ -26,6 +26,10 @@ Contributed Ampel units from HU/DESY group
 This will allow a number of Demo / access / development notebooks to be run. Note that most of them
 requires an access token if data is to be retrieved.
 
+### Pitfalls
+
+- lightgbm expects to find libomp on your system. Install with e.g. `brew install libomp` (macOS) or `apt-get install libgomp1` (Ubuntu).
+
 ## Provided units
 
 <!-- The following are extracted from the docstrings; do not edit by hand -->
