@@ -11,6 +11,7 @@ Contributed Ampel units from HU/DESY group
 ## Installing
 
 1. [Install poetry](https://python-poetry.org/docs/#installation).
+1. Configure poetry to create virtualenvs in the project: `poetry config virtualenvs.in-project true`. This makes it easier to work with IDEs like VSCode.
 2. `git clone https://github.com/AmpelProject/Ampel-HU-astro.git; cd Ampel-HU-astro`
 3. Check your virtualenv setup with `poetry env info`. The output should include:
    ```
