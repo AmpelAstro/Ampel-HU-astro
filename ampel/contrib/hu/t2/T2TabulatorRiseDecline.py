@@ -852,8 +852,10 @@ class T2TabulatorRiseDeclineBase:
 
         o["frac_pos"] = np.sum(det_table["flux"] > 0) / o["ndet"]
 
-        o["jd_det"] = det_table["time"].min()
-        o["jd_last"] = det_table["time"].max()
+        i_det = np.argmin(det_table["time"])
+        i_last = np.argmax(det_table["time"])
+        o["jd_det"] = det_table["time"][i_det]
+        o["jd_last"] = det_table["time"][i_last]
         o["t_lc"] = o["jd_last"] - o["jd_det"]
 
         # Get the max time of obs in signifant bands prior to jd_det
@@ -868,32 +870,26 @@ class T2TabulatorRiseDeclineBase:
             o["t_predetect"] = None
 
         # Magnitude and color calculations below assume detections are positive
-        if (
-            flux_table[flux_table["time"] == o["jd_det"]]["flux"] < 0
-            or flux_table[flux_table["time"] == o["jd_last"]]["flux"] < 0
-        ):
+        if flux_table["flux"][i_det] < 0 or flux_table["flux"][i_last] < 0:
             # Did we succeed with feature calculation or not?
             o["success"] = True
             return o
 
-        o["mag_det"] = float(getMag(flux_table[flux_table["time"] == o["jd_det"]]))
-        o["band_det_id"] = getBandBits(
-            [flux_table[flux_table["time"] == o["jd_det"]]["band"][0]]
-        )
+        mag = -2.5 * np.log10(det_table["flux"]) + det_table["zp"]
 
-        o["mag_last"] = float(getMag(flux_table[flux_table["time"] == o["jd_last"]]))
-        o["band_last_id"] = getBandBits(
-            [flux_table[flux_table["time"] == o["jd_last"]]["band"][0]]
-        )
+        o["mag_det"] = mag[i_det]
+        o["band_det_id"] = getBandBits([flux_table["band"][i_det]])
+
+        o["mag_last"] = mag[i_last]
+        o["band_last_id"] = getBandBits([flux_table["band"][i_last]])
 
         # Check fails irregularly
         with suppress(TypeError):
-            o["mag_min"] = float(
-                getMag(flux_table[flux_table["flux"] == max(flux_table["flux"])])
-            )
+            i_max = np.argmax(det_table["flux"])
+            o["mag_min"] = mag[i_max]
 
         with suppress(TypeError):
-            o["jd_min"] = float(flux_table["time"][np.argmax(flux_table["flux"])])
+            o["jd_min"] = float(flux_table["time"][i_max])
 
         # Check for non-signficant obs between det and last
         ultab = flux_table[band_mask & ~sig_mask]
