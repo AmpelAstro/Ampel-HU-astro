@@ -126,6 +126,7 @@ filterwarnings = [
     "ignore:Python 3.14 will, by default, filter extracted tar archives and reject files or modify their metadata.:DeprecationWarning:sncosmo",
     # Trying to unpickle estimator LabelEncoder from version 1.0.2 when using version 1.8.0. This might lead to breaking code or invalid results.
     "default::sklearn.exceptions.InconsistentVersionWarning",
+    "default:Creating a tensor from a list of numpy.ndarrays is extremely slow:UserWarning",
 ]
 
 [tool.mypy]
