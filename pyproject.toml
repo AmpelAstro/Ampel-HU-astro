@@ -86,7 +86,7 @@ hop = [
 lasair = ["lasair (>=0.1.2,<0.2.0)"]
 [dependency-groups]
 dev = [
-    "pytest-ampel-core (>=0.10.0a4,<0.11)",
+    "pytest-ampel-core (>=0.10.0a7,<0.11)",
     "mypy (>=1.13,<2.0)",
     "pytest-mock (>=3.15.1,<4.0.0)",
     "types-requests (>=2.32.4.20250913,<3.0.0.0)",
@@ -96,6 +96,7 @@ dev = [
     "pandas-stubs (>=2.3.3.251201,<3.0.0.0)",
     "scipy-stubs (>=1.16.3.3,<2.0.0.0)",
     "types-seaborn (>=0.13.2.20251214,<0.14.0.0)",
+    "syrupy (>=5.0.0,<6.0.0)",
 ]
 
 [tool.poetry]
@@ -111,6 +112,7 @@ repository = "https://github.com/AmpelAstro/Ampel-HU-astro"
 [build-system]
 requires = ["poetry-core>=1.0.0", "setuptools>=40.8.0"]
 build-backend = "poetry.core.masonry.api"
+
 
 [tool.poetry.group.notebook.dependencies]
 jupyter = {version = "^1.0.0", optional = true}
