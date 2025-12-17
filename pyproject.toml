@@ -124,6 +124,8 @@ filterwarnings = [
     "ignore:pkg_resources is deprecated:DeprecationWarning",
     "ignore:(?s).*Pyarrow will become a required dependency of pandas:DeprecationWarning",
     "ignore:Python 3.14 will, by default, filter extracted tar archives and reject files or modify their metadata.:DeprecationWarning:sncosmo",
+    # Trying to unpickle estimator LabelEncoder from version 1.0.2 when using version 1.8.0. This might lead to breaking code or invalid results.
+    "default::sklearn.exceptions.InconsistentVersionWarning",
 ]
 
 [tool.mypy]
