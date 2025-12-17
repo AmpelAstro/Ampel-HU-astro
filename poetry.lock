@@ -7270,7 +7270,7 @@ docs = ["nbsphinx"]
 tests = ["coverage", "pytest"]
 
 [extras]
-elasticc = ["ampel-lsst", "astro-parsnip", "extinction", "light-curve", "setuptools", "timeout-decorator", "xgboost"]
+elasticc = ["ampel-lsst", "astro-parsnip", "extinction", "light-curve", "timeout-decorator", "xgboost"]
 extcats = ["extcats"]
 hop = ["hop-client", "py-avro-schema"]
 lasair = ["lasair"]
@@ -7283,4 +7283,4 @@ ztf = ["ampel-ztf", "ztfquery"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12, <4"
-content-hash = "b629e2a10fa70d81d98ca536b35c3a35bf205910563f1e11f9b6fa5369b6b034"
+content-hash = "b0463a6efd39e83a2ee2af2bba9fc0d059d1420a11cc666866abda449c253870"
