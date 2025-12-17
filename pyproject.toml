@@ -43,7 +43,7 @@ dependencies = [
 ]
 
 [tool.poetry.group.parsnip.dependencies]
-astro-parsnip = {git="https://github.com/wombaugh/parsnip.git", develop=true}
+astro-parsnip = {git="https://github.com/jvansanten/parsnip.git", branch="modernize-dependencies", develop=true}
 
 [project.optional-dependencies]
 elasticc = [

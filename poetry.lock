@@ -368,9 +368,9 @@ docs = ["numpy", "numpydoc", "pillow", "sphinx", "sphinx_rtd_theme"]
 
 [package.source]
 type = "git"
-url = "https://github.com/wombaugh/parsnip.git"
-reference = "HEAD"
-resolved_reference = "4f3c69bf6a6080a083c2ced5143df712908265ff"
+url = "https://github.com/jvansanten/parsnip.git"
+reference = "modernize-dependencies"
+resolved_reference = "acc706a30673345df7d71e49fe13ddebfa438a07"
 
 [[package]]
 name = "astropy"
@@ -7283,4 +7283,4 @@ ztf = ["ampel-ztf", "ztfquery"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12, <4"
-content-hash = "4c115da7fc3f6f12ef725847477aaf98f7188d8f787a08bcb67f0512cc319a37"
+content-hash = "b629e2a10fa70d81d98ca536b35c3a35bf205910563f1e11f9b6fa5369b6b034"
