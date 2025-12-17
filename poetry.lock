@@ -370,7 +370,7 @@ docs = ["numpy", "numpydoc", "pillow", "sphinx", "sphinx_rtd_theme"]
 type = "git"
 url = "https://github.com/jvansanten/parsnip.git"
 reference = "modernize-dependencies"
-resolved_reference = "acc706a30673345df7d71e49fe13ddebfa438a07"
+resolved_reference = "690cc5a77f7ba03714e5a64acd480b5833f9b96c"
 
 [[package]]
 name = "astropy"
