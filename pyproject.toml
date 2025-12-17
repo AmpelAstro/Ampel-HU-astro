@@ -127,6 +127,7 @@ filterwarnings = [
     # Trying to unpickle estimator LabelEncoder from version 1.0.2 when using version 1.8.0. This might lead to breaking code or invalid results.
     "default::sklearn.exceptions.InconsistentVersionWarning",
     "default:Creating a tensor from a list of numpy.ndarrays is extremely slow:UserWarning",
+    "default:X does not have valid feature names, but LGBMClassifier was fitted with feature names:UserWarning",
 ]
 
 [tool.mypy]
