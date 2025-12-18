@@ -1,0 +1,110 @@
+name: elasticctest
+
+mongo:
+  prefix: elasticctest
+
+channel:
+  - name: elasticctest
+    access: []
+    policy: []
+
+task:
+  - title: ingest
+    template:
+      live:
+        - resolve_run_time_aliases
+        - hash_t2_config
+    unit: AlertConsumer
+    config:
+      iter_max: 1000
+      compiler_opts: LSSTCompilerOptions
+
+      supplier:
+        unit: LSSTAlertSupplier
+        config:
+          deserialize: null
+          loader:
+            unit: LSSTArchiveAlertLoader
+            config:
+              archive_url: "https://ampel-dev.ia.zeuthen.desy.de/api/lsst/archive/v1/"
+              condition: "diaSourceId=169641461369274412"
+              order_by: "diaSource.visit"
+              insecure: true
+
+      shaper: { unit: LSSTDataPointShaper }
+
+      ingester:
+        unit: MongoIngester
+        config:
+          updates_buffer:
+            max_size: 0
+
+      directives:
+        - channel: elasticctest
+
+          ingest:
+            mux:
+              unit: LSSTMongoMuxer
+              insert:
+                point_t2:
+                  - config: &catalogmatch_config "%T2CatalogMatch_general"
+                    ingest: &catalogmatch_ingest
+                      filter: LSSTObjFilter
+                      select: last
+                      sort: diaObjectId
+                    unit: &catalogmatch_unit T2CatalogMatch
+              combine:
+                - unit: LSSTT1Combiner
+                  state_t2:
+                    - config:
+                        tabulator:
+                          - unit: LSSTT2Tabulator
+                            config:
+                              zp: 27.5
+                      unit: T2TabulatorRiseDecline
+                    - &t2runparsnip
+                      unit: T2RunParsnipRiseDecline
+                      config:
+                        add_parsnip_from: sn+2ulens+dwarfs
+                        classifier_name: elasticcv2
+                        classifier_version: "0.1"
+                        parsnip_zeropoint_offset: 0
+                        paths_parsnip:
+                          sn+2ulens+dwarfs:
+                            # https://box.hu-berlin.de/f/78d7594841da4653a743/?dl=1
+                            model: parsnipModelAug10Pct30.h5
+                            # https://box.hu-berlin.de/f/d1cec88c0bec4123b208/?dl=1
+                            classifier: parsnipClassifierAug10Pct30.pkl
+                        paths_xgbbinary: {}
+                        paths_xgbmulti: {}
+                        redshift_kind: T2DigestRedshifts
+                        max_redshift_category: 4
+                        return_features: true
+                        significant_bands:
+                          - lsstg
+                          - lsstr
+                          - lssti
+                          - lsstz
+                        t2_dependency:
+                          - config: "%T2CatalogMatch_general"
+                            link_override:
+                              filter: LSSTObjFilter
+                              select: last
+                              sort: diaObjectId
+                            unit: T2CatalogMatch
+                        t_cadence: 6.0
+                        tabulator:
+                          - unit: LSSTT2Tabulator
+                            config:
+                              zp: 27.5
+
+  - title: t2
+    unit: T2Worker
+    config:
+      doc_limit: 10
+      garbage_collect: false
+      max_try: 0
+      log_profile: prod
+      raise_exc: true
+      code_match: [-1, -6, -2000, -2001, -2004, -2006, -2008]
+      pending_codes: [-2000, -2001, -2006, -2004, -2008, -5, -1, -7]

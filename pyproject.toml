@@ -35,7 +35,7 @@ dependencies = [
     "requests (>=2.32.5,<3.0.0)",
     "astropy (>=7.2.0,<8.0.0)",
     "pandas (>=2.3.3,<3.0.0)",
-    "seaborn (>=0.13.2,<0.14.0)",
+    "seaborn (>=0.13.2)",
     "adjusttext (>=1.3.0,<2.0.0)",
     "more-itertools (>=10.8.0,<11.0.0)",
     "uncertainties (>=3.2.3,<4.0.0)",
@@ -45,15 +45,10 @@ dependencies = [
 [project.optional-dependencies]
 elasticc = [
     "xgboost (>=3.1.2,<4.0.0)",
-    "astro-parsnip (>=1.4.2,<2.0.0)",
-    # parsnip still uses pkg_resources
-    "setuptools (>=80.9.0,<81.0.0) ; python_version >= \"3.12\"",
-    # pytorch 2.6 breaks model deserialization
-    "torch (>=2.5,<2.6)",
+    "astro-parsnip (>=1.4.3,<2.0.0)",
     "timeout-decorator (>=0.5.0,<0.6.0)",
     "ampel-lsst (>=0.10.1a7,<0.11)",
     "light-curve (>=0.10.5,<0.11.0)",
-    "lightgbm (<3)",
     "extinction (>=0.4.8,<0.5.0)",
 ]
 extcats = ["extcats (>=2.5.0,<3.0.0)"]
@@ -84,7 +79,7 @@ hop = [
 lasair = ["lasair (>=0.1.2,<0.2.0)"]
 [dependency-groups]
 dev = [
-    "pytest-ampel-core (>=0.10.0a4,<0.11)",
+    "pytest-ampel-core (>=0.10.0a7,<0.11)",
     "mypy (>=1.13,<2.0)",
     "pytest-mock (>=3.15.1,<4.0.0)",
     "types-requests (>=2.32.4.20250913,<3.0.0.0)",
@@ -94,6 +89,7 @@ dev = [
     "pandas-stubs (>=2.3.3.251201,<3.0.0.0)",
     "scipy-stubs (>=1.16.3.3,<2.0.0.0)",
     "types-seaborn (>=0.13.2.20251214,<0.14.0.0)",
+    "syrupy (>=5.0.0,<6.0.0)",
 ]
 
 [tool.poetry]
@@ -109,6 +105,19 @@ repository = "https://github.com/AmpelAstro/Ampel-HU-astro"
 [build-system]
 requires = ["poetry-core>=1.0.0", "setuptools>=40.8.0"]
 build-backend = "poetry.core.masonry.api"
+
+[[tool.poetry.source]]
+name = "torch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "explicit"
+
+# tailor torch installation to platform
+[tool.poetry.group.torch-cpu.dependencies]
+torch = [
+   {version = "*", markers = 'sys_platform == "linux"', source="torch-cpu", optional = true},
+   {version = "*", markers = 'sys_platform == "darwin" and platform_machine != "x86_64"', optional = true},
+   {version = "<2.2", markers = 'sys_platform == "darwin" and platform_machine == "x86_64"', optional = true}
+]
 
 [tool.poetry.group.notebook.dependencies]
 jupyter = {version = "^1.0.0", optional = true}
@@ -127,6 +136,10 @@ filterwarnings = [
     "ignore:pkg_resources is deprecated:DeprecationWarning",
     "ignore:(?s).*Pyarrow will become a required dependency of pandas:DeprecationWarning",
     "ignore:Python 3.14 will, by default, filter extracted tar archives and reject files or modify their metadata.:DeprecationWarning:sncosmo",
+    # Trying to unpickle estimator LabelEncoder from version 1.0.2 when using version 1.8.0. This might lead to breaking code or invalid results.
+    "default::sklearn.exceptions.InconsistentVersionWarning",
+    "default:Creating a tensor from a list of numpy.ndarrays is extremely slow:UserWarning",
+    "default:X does not have valid feature names, but LGBMClassifier was fitted with feature names:UserWarning",
 ]
 
 [tool.mypy]

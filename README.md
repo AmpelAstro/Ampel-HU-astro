@@ -29,6 +29,7 @@ requires an access token if data is to be retrieved.
 ### Pitfalls
 
 - lightgbm expects to find libomp on your system. Install with e.g. `brew install libomp` (macOS) or `apt-get install libgomp1` (Ubuntu).
+- to install with elasticc support, `poetry install -E "elasticc" --with notebook --with parsnip`. The second `--with` is temporarily necessary to use a fork of parsnip.
 
 ## Provided units
 
