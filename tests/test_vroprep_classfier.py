@@ -10,10 +10,10 @@ from ampel.cli.JobCommand import JobCommand
 from ampel.model.job.JobModel import JobModel
 
 
-def round_float(value: float, path, rel=1e-3):
-    """Round float to avoid snapshot mismatches due to small numerical differences."""
+def scale_float(value: float, path, rel=1e-4):
+    """Scale floats to avoid snapshot mismatches due to small numerical differences."""
     if np.isfinite(value):
-        return round(value / rel) * rel
+        return round(value / rel)
     return value
 
 
@@ -107,6 +107,6 @@ def test_vroprep_classifier(
     del classification["features"]
 
     assert (
-        snapshot(matcher=path_type(types=(float,), replacer=round_float))
+        snapshot(matcher=path_type(types=(float,), replacer=scale_float))
         == classification
     )
