@@ -28,8 +28,8 @@ requires an access token if data is to be retrieved.
 
 ### Pitfalls
 
-- lightgbm expects to find libomp on your system. Install with e.g. `brew install libomp` (macOS) or `apt-get install libgomp1` (Ubuntu).
-- to install with elasticc support, `poetry install -E "elasticc" --with notebook --with parsnip`. The second `--with` is temporarily necessary to use a fork of parsnip.
+- lightgbm expects to find OpenMP on your system. If you see an error message like `OSError: libgomp.so.1: cannot open shared object file: No such file or directory`, you will need to install OpenMP with e.g. `brew install libomp` (macOS) or `apt-get install libgomp1` (Ubuntu).
+- to install with parsnip support, `poetry install -E "elasticc" --with notebook
 
 ## Provided units
 
