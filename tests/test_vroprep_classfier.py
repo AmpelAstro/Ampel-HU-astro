@@ -1,11 +1,20 @@
 from pathlib import Path
 
+import numpy as np
 import pytest
 import requests
 import yaml
+from syrupy.matchers import path_type
 
 from ampel.cli.JobCommand import JobCommand
 from ampel.model.job.JobModel import JobModel
+
+
+def round_float(value: float, path, rel=1e-6):
+    """Round float to avoid snapshot mismatches due to small numerical differences."""
+    if np.isfinite(value):
+        return round(value / rel) * rel
+    return value
 
 
 @pytest.fixture
@@ -93,4 +102,7 @@ def test_vroprep_classifier(
     doc = t2.find_one({"unit": "T2RunParsnipRiseDecline"})
     assert doc["code"] == 0
 
-    assert snapshot == doc["body"][0]
+    assert (
+        snapshot(matcher=path_type(types=(float,), replacer=round_float))
+        == doc["body"][0]
+    )
