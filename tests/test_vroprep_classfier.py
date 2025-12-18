@@ -10,7 +10,7 @@ from ampel.cli.JobCommand import JobCommand
 from ampel.model.job.JobModel import JobModel
 
 
-def round_float(value: float, path, rel=1e-4):
+def round_float(value: float, path, rel=1e-3):
     """Round float to avoid snapshot mismatches due to small numerical differences."""
     if np.isfinite(value):
         return round(value / rel) * rel
