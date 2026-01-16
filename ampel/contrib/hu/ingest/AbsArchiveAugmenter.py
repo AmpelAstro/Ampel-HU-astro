@@ -51,7 +51,7 @@ class AbsArchiveAugmenter(AbsT0Muxer):
     @abstractmethod
     def get_alerts(
         self, dps: list[DataPoint], jd_center: float, time_pre: float, time_post: float
-    ) -> AmpelAlert: ...
+    ) -> AmpelAlert | None: ...
 
     def process(
         self, dps: list[DataPoint], stock_id: None | StockId = None
@@ -76,10 +76,10 @@ class AbsArchiveAugmenter(AbsT0Muxer):
         archive_alert = self.get_alerts(
             dps, alert_jd, self.history_days, self.future_days
         )
-        archive_dps = self._shaper.process(archive_alert.datapoints, stock_id)
-        if len(archive_dps) == 0:
+        if not archive_alert:
             # nothing found in archive
             return dps, dps
+        archive_dps = self._shaper.process(archive_alert.datapoints, stock_id)
 
         # Create combined state of alert and archive
         # Add all dps because the archive has data from a different instrument
