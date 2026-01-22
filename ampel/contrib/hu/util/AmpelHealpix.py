@@ -18,7 +18,13 @@ from hashlib import blake2b
 import healpy as hp
 import numpy as np
 import requests
+from astropy import units as u
 from astropy.time import Time
+
+#From cris
+from astropy.table import QTable
+from mhealpy import HealpixMap
+
 
 # ruff: noqa: T201
 
@@ -67,50 +73,82 @@ class AmpelHealpix:
             fh.write(map_data.content)
 
         return 0
+    
+
 
     def process_map(self) -> str:
         """
         Load map and determine prob values.
         """
 
-        # print(os.path.join(self.save_dir, self.map_name))
+        # Healpy method for reading map
+        # hpx, headers = hp.read_map(
+        #     os.path.join(self.save_dir, self.map_name), h=True, nest=True
+        # )
 
-        # Process map
-        hpx, headers = hp.read_map(
-            os.path.join(self.save_dir, self.map_name), h=True, nest=True
-        )
-        # print("HEADERS")
-        # print(headers)
-        # print(type(headers))
-        # print("END HEADERS")
+        skymap = QTable.read( os.path.join(self.save_dir, self.map_name) )
+        headers = skymap.meta
+        prob_density = skymap['PROBDENSITY'].to_value(u.deg**-2)
+        m = HealpixMap(data=prob_density, uniq=skymap['UNIQ'], density=True)
+        pixel_areas = m.pixarea().to_value(u.deg**2) #* (180/np.pi)**2  # Convert steradians to deg^2
 
-        trigger_time = next(
-            datetime.fromisoformat(header[1])
-            for header in headers
-            if header[0] == "DATE-OBS"
-        )
 
-        nside = int(hp.npix2nside(len(hpx)))
+        # Determine trigger time
+        # New icecube / mhealpy format
+        if isinstance(headers, dict) and "DATE-OBS" in headers:
+            trigger_time = headers["DATE-OBS"]
+            trigger_time = datetime.fromisoformat(trigger_time)
+        else:
+            # Old ligo format (?)
+            trigger_time = next(
+                datetime.fromisoformat(header[1])
+                for header in headers
+                if header[0] == "DATE-OBS"
+            )
 
-        # Downgrade resolution
-        if self.nside and self.nside < nside:
-            hpx = hp.ud_grade(
-                hpx,
+        # Check resolution and possible change 
+        if self.nside and self.nside < m.nside:
+            print("Downgrading map from nside ", m.nside, " to ", self.nside)
+            m = m.ud_grade(
                 nside_out=self.nside,
-                order_in="NESTED",
-                order_out="NESTED",
-                power=-2,
+                power=-1,   # weigted average, conserves total probability
             )
         else:
-            self.nside = nside
+            self.nside = m.nside
+
+ 
+        # Downgrade resolution
+#        if self.nside and self.nside < nside:
+#            hpx = hp.ud_grade(
+#                hpx,
+#                nside_out=self.nside,
+#                order_in="NESTED",
+#                order_out="NESTED",
+#                power=-2,
+#            )
+#        else:
+#            self.nside = nside
 
         # print(headers)
-        self.dist = next(header[1] for header in headers if header[0] == "DISTMEAN")
+#       nside = int(hp.npix2nside(len(hpx)))
+
+        #Info only for GW detections. If IC map, we don't need this:
+        try:
+            # Will likely fail for new mhealpy format
+            self.dist = next(header[1] for header in headers if header[0] == "DISTMEAN")
+        except StopIteration:
+            self.dist = None
+
+        
         # for header in headers:
         # print(header[1], header[0])
 
         # print(self.dist)
-        self.dist_unc = next(header[1] for header in headers if header[0] == "DISTSTD")
+        try:
+            # Will similarly fail for new mhealpy format
+            self.dist_unc = next(header[1] for header in headers if header[0] == "DISTSTD")
+        except StopIteration:
+            self.dist_unc = None
 
         seed_list = [header[1] for header in headers if header[0] == "SEED"]
         if len(seed_list) > 0:
@@ -119,11 +157,21 @@ class AmpelHealpix:
             self.seed = self.map_name.replace(".fits.gz", "").replace(",", "_")
 
         # Find credible levels
-        idx = np.flipud(np.argsort(hpx))
+        # todo: is this not too simplistic for multi-order maps? 
+        # it might be that adding pixels of different sizes and probabilities disturbs this:
+        # - a large pixel with a low prob density might be chosen first, while several smaller pixels with higher prob density
+        #   might together have a higher total probability.
+        #.  Should we weigh by pixel area or first downgrade to single order map?
+        # healpy
+        #idx = np.flipud(np.argsort(hpx))
+        #sorted_credible_levels = np.cumsum(hpx[idx].astype(float))
+        # mhealpy, trying to take pixel area into account
+        idx = np.flipud( np.argsort(m.data) )
+        sorted_credible_levels = np.cumsum( m.data[idx]* pixel_areas[idx] )
 
-        sorted_credible_levels = np.cumsum(hpx[idx].astype(float))
         credible_levels = np.empty_like(sorted_credible_levels)
         credible_levels[idx] = sorted_credible_levels
+
 
         self.credible_levels = credible_levels
         self.trigger_time = Time(trigger_time).jd

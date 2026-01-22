@@ -446,6 +446,31 @@ def getMag(tab: Table, err=False, time=False):
     return m
 
 
+def floaty(value) -> float:
+    """
+    Make sure that we get a single float that can 
+    be stored in a database.
+    Reduction rule for non-scalars: mean of all values.
+    """
+
+    # Scalar numbers
+    if isinstance(value, (int, float, np.number)):
+        return float(value)
+
+    # Pandas DataFrame or Series - not used here
+    #if isinstance(value, (pd.DataFrame, pd.Series)):
+    #    return float(value.to_numpy().mean())
+
+    # NumPy array or array-like
+    if isinstance(value, np.ndarray):
+        return float(value.mean())
+
+    raise TypeError(
+        f"Unsupported type {type(value)}. "
+        "Expected float, numpy array, pandas DataFrame or Series."
+    )
+
+
 def getMeanflux(tab: Table, jdstart, jdend):
     """
     Return dict with the mean flux for all bands
@@ -876,24 +901,25 @@ class T2TabulatorRiseDeclineBase:
             o["success"] = True
             return o
 
-        o["mag_det"] = float(getMag(flux_table[flux_table["time"] == o["jd_det"]]))
+        o["mag_det"] = floaty(getMag(flux_table[flux_table["time"] == o["jd_det"]]))
         o["band_det_id"] = getBandBits(
             [flux_table[flux_table["time"] == o["jd_det"]]["band"][0]]
         )
 
-        o["mag_last"] = float(getMag(flux_table[flux_table["time"] == o["jd_last"]]))
+        o["mag_last"] = floaty(getMag(flux_table[flux_table["time"] == o["jd_last"]]))
         o["band_last_id"] = getBandBits(
             [flux_table[flux_table["time"] == o["jd_last"]]["band"][0]]
         )
 
-        # Check fails irregularly
-        with suppress(TypeError):
-            o["mag_min"] = float(
-                getMag(flux_table[flux_table["flux"] == max(flux_table["flux"])])
-            )
+        # Check fails irregularly - this was due to getMag sometimes returning arrays.
+        # Try w floaty
+        #with suppress(TypeError):
+        o["mag_min"] = floaty(
+            getMag(flux_table[flux_table["flux"] == max(flux_table["flux"])])
+        )
 
-        with suppress(TypeError):
-            o["jd_min"] = float(flux_table["time"][np.argmax(flux_table["flux"])])
+        #with suppress(TypeError):
+        o["jd_min"] = floaty(flux_table["time"][np.argmax(flux_table["flux"])])
 
         # Check for non-signficant obs between det and last
         ultab = flux_table[band_mask & ~sig_mask]
