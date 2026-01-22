@@ -19,12 +19,11 @@ import healpy as hp
 import numpy as np
 import requests
 from astropy import units as u
-from astropy.time import Time
 
-#From cris
+# From cris
 from astropy.table import QTable
+from astropy.time import Time
 from mhealpy import HealpixMap
-
 
 # ruff: noqa: T201
 
@@ -49,7 +48,6 @@ class AmpelHealpix:
     ):
         self.map_name = map_name
         self.map_url = map_url
-        # print(self.map_url)
         if save_dir:
             self.save_dir = save_dir
         self.nside = nside
@@ -61,9 +59,7 @@ class AmpelHealpix:
 
     def _get_map(self, clobber=False) -> int:
         path = os.path.join(self.save_dir, self.map_name)
-        # print(path)
         if os.path.exists(path) and not clobber:
-            # print("Map exists and found: ", path)
             return 1
 
         # Retrieve mapfile.
@@ -73,8 +69,6 @@ class AmpelHealpix:
             fh.write(map_data.content)
 
         return 0
-    
-
 
     def process_map(self) -> str:
         """
@@ -86,12 +80,13 @@ class AmpelHealpix:
         #     os.path.join(self.save_dir, self.map_name), h=True, nest=True
         # )
 
-        skymap = QTable.read( os.path.join(self.save_dir, self.map_name) )
+        skymap = QTable.read(os.path.join(self.save_dir, self.map_name))
         headers = skymap.meta
-        prob_density = skymap['PROBDENSITY'].to_value(u.deg**-2)
-        m = HealpixMap(data=prob_density, uniq=skymap['UNIQ'], density=True)
-        pixel_areas = m.pixarea().to_value(u.deg**2) #* (180/np.pi)**2  # Convert steradians to deg^2
-
+        prob_density = skymap["PROBDENSITY"].to_value(u.deg**-2)
+        m = HealpixMap(data=prob_density, uniq=skymap["UNIQ"], density=True)
+        pixel_areas = m.pixarea().to_value(
+            u.deg**2
+        )  # * (180/np.pi)**2  # Convert steradians to deg^2
 
         # Determine trigger time
         # New icecube / mhealpy format
@@ -106,47 +101,42 @@ class AmpelHealpix:
                 if header[0] == "DATE-OBS"
             )
 
-        # Check resolution and possible change 
+        # Check resolution and possible change
         if self.nside and self.nside < m.nside:
-            print("Downgrading map from nside ", m.nside, " to ", self.nside)
+            #            print("Downgrading map from nside ", m.nside, " to ", self.nside)
             m = m.ud_grade(
                 nside_out=self.nside,
-                power=-1,   # weigted average, conserves total probability
+                power=-1,  # weigted average, conserves total probability
             )
         else:
             self.nside = m.nside
 
- 
         # Downgrade resolution
-#        if self.nside and self.nside < nside:
-#            hpx = hp.ud_grade(
-#                hpx,
-#                nside_out=self.nside,
-#                order_in="NESTED",
-#                order_out="NESTED",
-#                power=-2,
-#            )
-#        else:
-#            self.nside = nside
+        #        if self.nside and self.nside < nside:
+        #            hpx = hp.ud_grade(
+        #                hpx,
+        #                nside_out=self.nside,
+        #                order_in="NESTED",
+        #                order_out="NESTED",
+        #                power=-2,
+        #            )
+        #        else:
+        #            self.nside = nside
 
-        # print(headers)
-#       nside = int(hp.npix2nside(len(hpx)))
+        #       nside = int(hp.npix2nside(len(hpx)))
 
-        #Info only for GW detections. If IC map, we don't need this:
+        # Info only for GW detections. If IC map, we don't need this:
         try:
             # Will likely fail for new mhealpy format
             self.dist = next(header[1] for header in headers if header[0] == "DISTMEAN")
         except StopIteration:
             self.dist = None
 
-        
-        # for header in headers:
-        # print(header[1], header[0])
-
-        # print(self.dist)
         try:
             # Will similarly fail for new mhealpy format
-            self.dist_unc = next(header[1] for header in headers if header[0] == "DISTSTD")
+            self.dist_unc = next(
+                header[1] for header in headers if header[0] == "DISTSTD"
+            )
         except StopIteration:
             self.dist_unc = None
 
@@ -157,21 +147,20 @@ class AmpelHealpix:
             self.seed = self.map_name.replace(".fits.gz", "").replace(",", "_")
 
         # Find credible levels
-        # todo: is this not too simplistic for multi-order maps? 
+        # todo: is this not too simplistic for multi-order maps?
         # it might be that adding pixels of different sizes and probabilities disturbs this:
         # - a large pixel with a low prob density might be chosen first, while several smaller pixels with higher prob density
         #   might together have a higher total probability.
-        #.  Should we weigh by pixel area or first downgrade to single order map?
+        # .  Should we weigh by pixel area or first downgrade to single order map?
         # healpy
-        #idx = np.flipud(np.argsort(hpx))
-        #sorted_credible_levels = np.cumsum(hpx[idx].astype(float))
+        # idx = np.flipud(np.argsort(hpx))
+        # sorted_credible_levels = np.cumsum(hpx[idx].astype(float))
         # mhealpy, trying to take pixel area into account
-        idx = np.flipud( np.argsort(m.data) )
-        sorted_credible_levels = np.cumsum( m.data[idx]* pixel_areas[idx] )
+        idx = np.flipud(np.argsort(m.data))
+        sorted_credible_levels = np.cumsum(m.data[idx] * pixel_areas[idx])
 
         credible_levels = np.empty_like(sorted_credible_levels)
         credible_levels[idx] = sorted_credible_levels
-
 
         self.credible_levels = credible_levels
         self.trigger_time = Time(trigger_time).jd
@@ -288,16 +277,18 @@ def main():
         # map_url="https://gracedb.ligo.org/api/superevents/S191222n/files/LALInference.fits.gz",
     )
     hashit = ah.process_map()
-    print(hashit)
-    pixels = ah.get_pixelmask(0.9)  # noqa: F841
-    print(ah.get_maparea(0.9))
-    print(ah.get_mapdist())
+    pixels = ah.get_pixelmask(0.9)
+    return hashit, pixels
 
-    print(ah.trigger_time)
 
-    print(ah.get_cumprob(13, 48))
-    print(ah.get_cumprob(200, -14.88))
-    print(ah.get_cumprob(68.58494, 33.89))
+#    print(ah.get_maparea(0.9))
+#    print(ah.get_mapdist())
+
+#    print(ah.trigger_time)
+
+#    print(ah.get_cumprob(13, 48))
+#    print(ah.get_cumprob(200, -14.88))
+#    print(ah.get_cumprob(68.58494, 33.89))
 
 
 if __name__ == "__main__":

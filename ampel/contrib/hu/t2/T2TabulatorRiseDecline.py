@@ -16,7 +16,6 @@ import sys
 # Exponential fit frequently returns overflow warnings
 import warnings
 from collections.abc import Iterable, Sequence
-from contextlib import suppress
 from typing import Any
 
 import light_curve
@@ -134,7 +133,7 @@ def fit_supernova_villar(t, f, f_err, peak_uncertainty, debugplot=False):
 
     if debugplot:
         # Plot debug figure ...
-        import matplotlib.pyplot as plt  # noqa: PLC0415
+        import matplotlib.pyplot as plt
 
         plt.figure()
         plt.scatter(t, f, label="Data", color="blue")
@@ -272,7 +271,7 @@ def spline_analysis(
     finterp = spl(tphase)
 
     if do_plot:
-        import matplotlib.pyplot as plt  # noqa: PLC0415
+        import matplotlib.pyplot as plt
 
         plt.plot(tphase, finterp, "-.")
 
@@ -448,17 +447,17 @@ def getMag(tab: Table, err=False, time=False):
 
 def floaty(value) -> float:
     """
-    Make sure that we get a single float that can 
+    Make sure that we get a single float that can
     be stored in a database.
     Reduction rule for non-scalars: mean of all values.
     """
 
     # Scalar numbers
-    if isinstance(value, (int, float, np.number)):
+    if isinstance(value, int | float | np.number):
         return float(value)
 
     # Pandas DataFrame or Series - not used here
-    #if isinstance(value, (pd.DataFrame, pd.Series)):
+    # if isinstance(value, (pd.DataFrame, pd.Series)):
     #    return float(value.to_numpy().mean())
 
     # NumPy array or array-like
@@ -913,12 +912,12 @@ class T2TabulatorRiseDeclineBase:
 
         # Check fails irregularly - this was due to getMag sometimes returning arrays.
         # Try w floaty
-        #with suppress(TypeError):
+        # with suppress(TypeError):
         o["mag_min"] = floaty(
             getMag(flux_table[flux_table["flux"] == max(flux_table["flux"])])
         )
 
-        #with suppress(TypeError):
+        # with suppress(TypeError):
         o["jd_min"] = floaty(flux_table["time"][np.argmax(flux_table["flux"])])
 
         # Check for non-signficant obs between det and last
@@ -1164,7 +1163,7 @@ class T2TabulatorRiseDecline(
 
         """
 
-        import matplotlib.pyplot as plt  # noqa: PLC0415
+        import matplotlib.pyplot as plt
 
         bands = set(table["band"])
 
