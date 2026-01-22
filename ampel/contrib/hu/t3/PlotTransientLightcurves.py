@@ -86,12 +86,6 @@ def fig_from_fluxtable(
     has_cutouts = bool(cutouts)
     has_classprobs = bool(cls_items)
 
-    # If no cutouts but class probabilities exist, append as an attribute so it remains visible
-    if not has_cutouts and has_classprobs:
-        cls_attr = classprobs_to_attribute(cls_items, max_items=8, prefix="Cls:")
-        if cls_attr:
-            attributes = list(attributes)  # ensure local mutable copy
-            attributes.append(cls_attr)
 
 
 
@@ -128,7 +122,20 @@ def fig_from_fluxtable(
         "lssty": {"label": "LSST y", "c": "darkred"},
     }
 
-    fig = plt.figure(figsize=figsize)
+    # General info box
+    info: list[str] = [
+        name,
+        f"RA: {ra:.4f}",
+        f"Dec: {dec:.4f}",
+        "------------------------",
+    ]
+    if attributes:
+        info.extend(attributes)
+    if photz_list:
+        info.append("------------------------")
+        info.append("Photo-z:")
+        info.extend(photz_list)
+    
 
     lc_ax3 = None
     if has_cutouts and has_classprobs:
@@ -138,6 +145,8 @@ def fig_from_fluxtable(
         # Row 2: [Radar | Classifications | General info]
 
         assert cutouts is not None 
+
+        fig = plt.figure(figsize=(8.2, 7.6))
 
         gs = GridSpec(
             nrows=3,
@@ -194,24 +203,12 @@ def fig_from_fluxtable(
         # Radar chart for class probabilities
         create_classprob_radar(classprobs, radar_ax, threshold=cls_threshold)
 
-        # General info box
-        info_lines: list[str] = [
-            name,
-            f"RA: {ra:.4f}",
-            f"Dec: {dec:.4f}",
-            "------------------------",
-        ]
-        if attributes:
-            info_lines.extend(attributes)
-        if photz_list:
-            info_lines.append("------------------------")
-            info_lines.append("Photo-z:")
-            info_lines.extend(photz_list)
+
 
         info_ax.text(
             0.0,
             1.0,
-            "\n".join(info_lines),
+            "\n".join(info),
             va="top",
             ha="left",
             fontsize=9,
@@ -238,6 +235,8 @@ def fig_from_fluxtable(
     elif has_cutouts and not has_classprobs:
         # Legacy layout (as in older version): cutouts + finder in a 5x4 grid,
         # lightcurve below, and a simple right-side info text block.
+
+        fig = plt.figure(figsize=(8, 5))
 
         assert cutouts is not None
 
@@ -266,23 +265,21 @@ def fig_from_fluxtable(
             fov_arcsec=180.0,
         )
 
-        info: list[str] = [
-            name,
-            f"RA: {ra:.8f}",
-            f"Dec: {dec:.8f}",
-            f"AmpelID: {ampelid}",
-            "------------------------",
-        ]
-        if photz_list:
-            info.append("Photo-z:")
-            info.extend(photz_list)
-
-        fig.text(0.77, 0.55, "\n".join(info), va="top", fontsize="medium", alpha=0.6)
+        fig.text(0.79, 0.55, "\n".join(info), va="top", fontsize="medium", alpha=0.6)
 
     else:
-        lc_ax1 = fig.add_subplot(1, 1, 1)
+        fig = plt.figure(figsize=(8, 5))
+        lc_ax1 = fig.add_subplot(1, 8, (1,6))
         fig.subplots_adjust(top=0.8, bottom=0.15)
         plt.subplots_adjust(wspace=0.4, hspace=1.8)
+
+        if has_classprobs:
+            info.append("------------------------")
+            info.append("Class Probabilities:")
+            for k, v in cls_items:
+                info.append(f"{k}: {v:.3f}")
+
+        fig.text(0.795, 0.75, "\n".join(info), va="top", fontsize="medium", alpha=0.6)
 
 
     # If redshift is given, calculate absolute magnitude via luminosity distance
@@ -701,20 +698,6 @@ def filtered_classprobs(
     return items
 
 
-def classprobs_to_attribute(
-    items: list[tuple[str, float]],
-    *,
-    max_items: int = 8,
-    prefix: str = "Cls:",
-) -> str | None:
-    """
-    Convert filtered class probabilities into a compact, single-line attribute.
-    Example: "Cls: SNIa 0.92, SNII 0.06"
-    """
-    if not items:
-        return None
-    parts = [f"{k} {v:.2f}" for k, v in items[:max_items]]
-    return f"{prefix} " + ", ".join(parts)
 
 
 def create_classprob_radar(classprobs: dict[str, float], ax, threshold: float = 0.01) -> None:
