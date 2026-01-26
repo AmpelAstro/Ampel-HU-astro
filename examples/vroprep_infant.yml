@@ -1,0 +1,187 @@
+name: earlyreleasetest
+
+mongo:
+  prefix: vro_infant
+  reset: true
+
+channel:
+- name:  earlyrelease
+  access: []
+  policy: []
+
+
+task:
+
+- title: ingest
+  template:
+    live:
+      - resolve_run_time_aliases
+      - hash_t2_config
+
+  unit: AlertConsumer
+  config:
+    iter_max: 2000000
+    compiler_opts: LSSTCompilerOptions
+    supplier:
+      unit: LSSTAlertSupplier
+      config:
+        deserialize: null
+        loader:
+          unit: LSSTArchiveAlertLoader
+          config:
+            archive_url: "https://ampel-dev.ia.zeuthen.desy.de/api/lsst/archive/v1/"
+            # Oct 1 - 60949
+            # Nov 1 - 60980 
+            # Dec 1 - 61010 
+            # Jan 10 - 61050 
+            # Last run Jan 16 
+            condition: "diaSource.reliability>0.99 AND diaSource.midpointMjdTai<=61160 AND diaSource.midpointMjdTai>61055  AND diaObject.nDiaSources<3"
+#            condition: "diaSource.diaObjectId=169562325793636358  AND diaSource.reliability>0.95 AND diaSource.midpointMjdTai>60000 AND diaObject.nDiaSources>4"
+#            condition: "diaSource.reliability>0.9"
+            order_by: "diaSource.visit"
+            insecure: true
+            # https://syncandshare.desy.de/public.php/dav/files/PKaDsw5xPYR6mx8
+#            folder: /Users/jnordin/data/lsst/earlyRelease/without-cutouts/2025-09-21/
+#            extension: "*avro"
+#            avro_schema: https://raw.githubusercontent.com/lsst/alert_packet/b1ecb9c006d211d8117f4672d4044ff8fca22d7e/python/lsst/alert/packet/schema/9/0/lsst.v9_0.alert.avsc
+    shaper: {unit: LSSTDataPointShaper}
+
+    directives:
+    - channel: earlyrelease
+
+      filter:
+        unit: DecentVroFilter
+        on_stock_match: bypass
+        config:
+          min_reliability: 0.99
+          min_ndet: 1
+          max_ndet: 3
+          min_tspan: 0.
+          max_tspan: 100
+          min_abs_gal_lat: 7
+          gaia_excessnoise_sig_max: 999
+          gaia_plx_signif: 3
+          gaia_pm_signif: 3
+          gaia_rs: 20
+          gaia_veto_gmag_max: 20
+          gaia_veto_gmag_min: 9
+
+      ingest:
+          mux:
+            unit: LSSTMongoMuxer
+            insert:
+              point_t2:
+              - unit: T2GetDiaObject
+                config:
+                  params:
+                  - diaObjectId
+                  - simVersion
+                ingest:
+                  filter: LSSTObjFilter
+                  select: last
+                  sort: diaObjectId
+#              - config: &dl_config
+#                  datalab_user:
+#                    label: datalab/user
+#                  datalab_pwd: 
+#                    label: datalab/password
+#                ingest:
+#                  filter: LSSTObjFilter
+#                  select: last
+#                  sort: diaObjectId
+#                unit: T2LSPhotoZTap
+              - config: '%T2CatalogMatch_general'
+                ingest:
+                  filter: LSSTObjFilter
+                  select: last
+                  sort: diaObjectId
+                unit: T2CatalogMatch
+            combine:
+            - unit: LSSTT1Combiner
+              state_t2:
+              - config: &risedec_config
+                  tabulator:
+                  - unit: LSSTT2Tabulator
+                    config:
+                      zp: 31.4
+                unit: T2TabulatorRiseDecline
+              - unit: T2DigestRedshifts
+                config: &digest_config
+                  max_redshift_category: 7
+                  t2_dependency:
+                  - config: '%T2CatalogMatch_general'
+                    link_override:
+                      filter: LSSTObjFilter
+                      select: last
+                      sort: diaObjectId
+                    unit: T2CatalogMatch
+#                  - config: *dl_config
+#                    link_override:
+#                      filter: LSSTObjFilter
+#                      select: last
+#                      sort: diaObjectId
+#                    unit: T2LSPhotoZTap
+              - unit: T2InfantReport
+                config: 
+                  report_t2s:
+                  - T2DigestRedshifts
+                  - T2TabulatorRiseDecline
+                  tabulator:
+                  - unit: LSSTT2Tabulator
+                    config:
+                      zp: 31.4
+                  t2_dependency:
+                  - config: *digest_config
+                    link_override:
+                      filter: LSSTObjFilter
+                      select: last
+                      sort: diaObjectId
+                    unit: T2DigestRedshifts
+                  - config: *risedec_config
+                    link_override:
+                      filter: LSSTObjFilter
+                      select: last
+                      sort: diaObjectId
+                    unit: T2TabulatorRiseDecline
+                  result_adapter:
+                    unit: HopskotchAdapter
+                    config:
+                      broker: kafka.scimma.org
+                      auth:
+                        username:
+                          label: scimma/jno/user
+                        password:
+                          label: scimma/jno/password
+                      topic: ampel.lsst.extragalactic-infants
+                      model: ampel.contrib.hu.model.LSSTReport.LSSTReport        
+
+
+- title: Run T2s
+  unit: T2Worker
+  multiplier: 1
+  config:
+    send_beacon: false
+    raise_exc: true
+    unit_ids:
+    - T2GetDiaObject
+    - T2CatalogMatch
+    - T2TabulatorRiseDecline
+    - T2LSPhotoZTap
+
+- title: Run T2s
+  unit: T2Worker
+  multiplier: 1
+  config:
+    send_beacon: false
+    raise_exc: true
+    unit_ids:
+    - T2DigestRedshifts
+
+- title: Run T2s
+  unit: T2Worker
+  multiplier: 1
+  config:
+    send_beacon: false
+    raise_exc: true
+    unit_ids:
+    - T2InfantReport
