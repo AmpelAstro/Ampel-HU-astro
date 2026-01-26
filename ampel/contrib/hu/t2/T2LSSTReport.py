@@ -3,6 +3,7 @@ from typing import Any
 
 from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
 from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
+from ampel.base.decorator import abstractmethod
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
 from ampel.contrib.hu.model.LSSTReport import (
@@ -25,7 +26,7 @@ class T2MissingDependency(RuntimeError):
     pass
 
 
-class T2LSSTReport(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
+class T2LSSTReport(AbsTiedStateT2Unit, AbsTabulatedT2Unit, abstract=True):
     """
     Create an LSST report for subsequent distribution. Base class connects current photometric information.
 
@@ -39,6 +40,7 @@ class T2LSSTReport(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
 
     result_adapter: UnitModel | None = None
 
+    @abstractmethod
     def process_t2s(
         self, report_views: dict[str, Mapping[str, Any]]
     ) -> Sequence[Classification | Host | Feature] | None:
@@ -54,8 +56,7 @@ class T2LSSTReport(AbsTiedStateT2Unit, AbsTabulatedT2Unit):
         - features (name, dict)
 
         """
-        # Placeholder implementation
-        return None
+        ...
 
     def _get_payloads(
         self, t2_views: Sequence[T2DocView]
