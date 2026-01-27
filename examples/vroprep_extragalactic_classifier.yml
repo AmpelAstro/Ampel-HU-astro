@@ -63,25 +63,6 @@ task:
         gaia_veto_gmag_min: 9
 
     t2_compute:
-    - unit: T2GetDiaObject
-      config:
-        params:
-          - diaObjectId
-          - simVersion
-      ingest: &last_diaobject
-        filter: LSSTObjFilter
-        select: last
-        sort: diaObjectId
-    - unit: T2LSPhotoZTap
-      config: &dl_config
-        datalab_user:
-          label: datalab/user
-        datalab_pwd:
-          label: datalab/password
-      ingest: *last_diaobject
-    - unit: T2CatalogMatch
-      config: '%T2CatalogMatch_general'
-      ingest: *last_diaobject
     - &T2RunParsnipRiseDecline
       unit: T2RunParsnipRiseDecline
       config:
@@ -118,10 +99,17 @@ task:
         t2_dependency:
           - unit: T2CatalogMatch
             config: '%T2CatalogMatch_general'
-            link_override: *last_diaobject
+            link_override: &latest
+              filter: LSSTObjFilter
+              select: last
+              sort: nDiaSources
           - unit: T2LSPhotoZTap
-            config: *dl_config
-            link_override: *last_diaobject
+            config:
+              datalab_user:
+                label: datalab/user
+              datalab_pwd:
+                label: datalab/password
+            link_override: *latest
     - unit: T2ClassificationReport
       config:
         summary_mode: full

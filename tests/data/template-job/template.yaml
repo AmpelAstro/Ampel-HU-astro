@@ -36,7 +36,7 @@ t2_compute:
     params:
       - diaObjectId
       - simVersion
-  ingest: &last_diaobject
+  ingest:
     filter: LSSTObjFilter
     select: last
     sort: diaObjectId
@@ -46,10 +46,10 @@ t2_compute:
       label: datalab/user
     datalab_pwd:
       label: datalab/password
-  ingest: *last_diaobject
-- unit: T2CatalogMatch
-  config: '%T2CatalogMatch_general'
-  ingest: *last_diaobject
+  ingest:
+    filter: LSSTObjFilter
+    select: last
+    sort: diaObjectId
 - &T2RunParsnipRiseDecline
   unit: T2RunParsnipRiseDecline
   config:
@@ -80,9 +80,16 @@ t2_compute:
     t2_dependency:
       - unit: T2CatalogMatch
         config: '%T2CatalogMatch_general'
-        link_override: *last_diaobject
+        link_override: &last_diaobject
+          filter: LSSTObjFilter
+          select: last
+          sort: diaObjectId
       - unit: T2LSPhotoZTap
-        config: *dl_config
+        config:
+          datalab_user:
+            label: datalab/user
+          datalab_pwd:
+            label: datalab/password
         link_override: *last_diaobject
 - unit: T2ClassificationReport
   config:
