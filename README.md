@@ -50,7 +50,6 @@ requires an access token if data is to be retrieved.
 - [XShooterFilter](ampel/contrib/hu/t0/XShooterFilter.py): Filter derived from the DecentFilter, in addition selecting very new transients which are visible from the South.
 
 ### T2 units (augment):
-- [T2BayesianBlocks](ampel/contrib/hu/t2/T2BayesianBlocks.py): T2 unit for running a bayesian block search algorithm to highlight excess regions.
 - [T2BrightSNProb](ampel/contrib/hu/t2/T2BrightSNProb.py): Derive a number of simple metrics describing the rise, peak and decline of a lc.
 - [T2CatalogMatchLocal](ampel/contrib/hu/t2/T2CatalogMatchLocal.py): Cross matches the position of a transient to those of sources in a set of catalogs.
 - [T2ClassificationReport](ampel/contrib/hu/t2/T2ClassificationReport.py): Require and propagate classification information from ParsnipRiseDecline..
