@@ -1,6 +1,6 @@
 [project]
 name = "ampel-hu-astro"
-version = "0.10.0a15"
+version = "0.10.0a16"
 description = "Astronomy units for the Ampel system from HU-Berlin"
 requires-python = ">=3.12, <4"
 authors = [
