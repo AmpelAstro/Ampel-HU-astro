@@ -11,8 +11,8 @@
 import copy
 import errno
 import os
-from collections.abc import Sequence
-from typing import Literal
+from collections.abc import Mapping, Sequence
+from typing import Any, Literal
 
 import backoff
 import matplotlib.pyplot as plt
@@ -26,9 +26,8 @@ from sncosmo.fitting import DataQualityError
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
 from ampel.contrib.hu.t2.T2BaseLightcurveFitter import T2BaseLightcurveFitter
-from ampel.model.PlotProperties import PlotProperties
+from ampel.model.PlotSpec import PlotSpec
 from ampel.model.StateT2Dependency import StateT2Dependency
-from ampel.plot.create import create_plot_record
 from ampel.types import UBson
 from ampel.view.T2DocView import T2DocView
 from ampel.ztf.util.ZTFNoisifiedIdMapper import ZTFNoisifiedIdMapper
@@ -95,7 +94,7 @@ class T2RunSncosmo(T2BaseLightcurveFitter):
 
     # Plot parameters
     plot_db: bool = False
-    plot_props: None | PlotProperties = None  # Plot properties for SvgRecord creation
+    plot_props: None | PlotSpec = None  # Plot properties for SvgRecord creation
     plot_suffix: None | str = (
         None  # Suffix if stored (locally) through matplotlib (e.g. _crayzmodel.png). Will add transient name
     )
@@ -392,7 +391,7 @@ class T2RunSncosmo(T2BaseLightcurveFitter):
 
             # Add some info
             plot_fig_text = f"{tname} {self.sncosmo_model_name} {self.redshift_kind} \nchisq {chisq:.2f}\nndof {ndof}"
-            plot_extra = {
+            plot_extra: Mapping[str, Any] = {
                 "model": self.sncosmo_model_name,
                 "redshift_kind": self.redshift_kind,
                 "chisq": chisq,
@@ -415,9 +414,7 @@ class T2RunSncosmo(T2BaseLightcurveFitter):
 
             if self.plot_props:
                 plots = [
-                    create_plot_record(
-                        fig, self.plot_props, plot_extra, logger=self.logger
-                    )
+                    self.plot_props.create_record(fig, logger=self.logger, **plot_extra)
                 ]
                 # Also store to DB if requested
                 if self.plot_db:
