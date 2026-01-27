@@ -29,9 +29,8 @@ from ampel.contrib.hu.model.ParsnipRiseDeclineResult import (
     ParsnipResult,
     PredictionEntry,
 )
-from ampel.model.PlotProperties import PlotProperties
+from ampel.model.PlotSpec import PlotSpec
 from ampel.model.UnitModel import UnitModel
-from ampel.plot.create import create_plot_record
 
 # All parsnip predictions that are not floats
 dcast_pred = {
@@ -86,7 +85,7 @@ def create_parsnip_plot(
     lc_dataset: lcdata.Dataset,
     model: parsnip.ParsnipModel,
     redshift: float,
-    properties: PlotProperties,
+    properties: PlotSpec,
     extra: dict[str, Any],
 ) -> NewSVGRecord:
     """
@@ -104,11 +103,10 @@ def create_parsnip_plot(
                 properties.disk_save, extra["stock"] + "_" + extra["model"] + ".png"
             )
             fig.savefig(fpath)
-        return create_plot_record(
+        return properties.create_record(
             fig,
-            properties,
-            close=False,
-            extra=extra,
+            logger=None,
+            **extra,
         )
     finally:
         fig.clear()
@@ -125,7 +123,7 @@ def run_parsnip_zsample(
     classifier: parsnip.Classifier,
     delta_zp: float = 0.0,
     transient_name: str = "noname",
-    plot: PlotProperties | None = None,
+    plot: PlotSpec | None = None,
 ) -> ParsnipResult | ParsnipFailure:
     """
     Fit a parsnip model for multiple redshifts provided in the `zs` list,
@@ -250,7 +248,7 @@ class T2BaseClassifier:
     # Offset can e.g. appear if training performed with wrong zeropoint...
     parsnip_zeropoint_offset: float = 0.0
     # Save / plot parameters
-    parsnipplot_properties: PlotProperties | None = None
+    parsnipplot_properties: PlotSpec | None = None
 
     add_parsnip_from: None | str = None
 

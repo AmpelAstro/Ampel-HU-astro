@@ -119,28 +119,6 @@ xxhash = ">=3.0.0,<4.0.0"
 
 [[package]]
 name = "ampel-lsst"
-version = "0.10.1a12"
-description = "Legacy Survey of Space and Time support for the Ampel system"
-optional = true
-python-versions = "<4,>=3.11"
-groups = ["main"]
-markers = "extra == \"elasticc\""
-files = [
-    {file = "ampel_lsst-0.10.1a12-py3-none-any.whl", hash = "sha256:4853449447a0b517e4fa65bf260a01d3fbb5489a4166549af889589b683bce13"},
-    {file = "ampel_lsst-0.10.1a12.tar.gz", hash = "sha256:29bb7e657706acf88bb6104d2eb134387ae981a314ee4003712492757797748d"},
-]
-
-[package.dependencies]
-ampel-alerts = ">=0.10.3,<0.11.0"
-ampel-catalogmatch = ">=0.10.0a2,<0.11.0"
-ampel-interface = ">=0.10.4.post2,<0.11"
-ampel-photometry = ">=0.10.1,<0.11.0"
-confluent-kafka = {version = ">=2.12.2,<3.0.0", extras = ["schemaregistry"]}
-fastavro = ">=1.12.1,<2.0.0"
-requests = ">=2.32.5,<3.0.0"
-
-[[package]]
-name = "ampel-lsst"
 version = "0.10.1a13"
 description = "Legacy Survey of Space and Time support for the Ampel system"
 optional = true
@@ -179,14 +157,13 @@ astropy = ">=5"
 
 [[package]]
 name = "ampel-plot"
-version = "0.9.1"
+version = "0.9.2a0"
 description = ""
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "ampel-plot-0.9.1.tar.gz", hash = "sha256:a4d56d71fe146e6282a637a02de0e19f77edd042842d9e7050d7cde6c7515296"},
-    {file = "ampel_plot-0.9.1-py3-none-any.whl", hash = "sha256:3706fc94d107df0b634c7f55745bf0e78deb931d4599670e62d4f3d928fc65af"},
+    {file = "ampel_plot-0.9.2a0-py3-none-any.whl", hash = "sha256:c1ea9099fed5d31767ca10124e668ff71da4c6648d1bd9d12cdc2fa9731e19f4"},
 ]
 
 [package.extras]
@@ -7729,4 +7706,4 @@ ztf = ["ampel-ztf", "ztfquery"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12, <4"
-content-hash = "5bf20138321685c46e170d8e68eaa9b76f3eb4cff407200ab34fbff6b5dd74b0"
+content-hash = "1662e59dd9d166d9841ceda90088fe7657976ff3622182e8b44609a6b0dc3ed1"
