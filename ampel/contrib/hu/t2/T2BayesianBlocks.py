@@ -27,8 +27,7 @@ from uncertainties import unumpy  # type: ignore[import-untyped]
 
 from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 from ampel.contrib.hu.utils import flatten
-from ampel.model.PlotProperties import PlotProperties
-from ampel.plot.create import create_plot_record
+from ampel.model.PlotSpec import PlotSpec
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import StockId, UBson
 from ampel.view.LightCurve import LightCurve
@@ -68,7 +67,7 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
 
     # Work with fluxes instead of magnitude
     flux: bool = False
-    plot_props: None | PlotProperties
+    plot_props: None | PlotSpec
     # Color of filters for the plots
 
     PlotColor: Sequence[str] = ["red", "blue"]
@@ -1294,12 +1293,12 @@ class T2BayesianBlocks(AbsLightCurveT2Unit):
             fig.supxlabel("MJD", fontsize=30)
 
             if self.plot or self.debug:
-                if isinstance(self.plot_props, PlotProperties):
+                if isinstance(self.plot_props, PlotSpec):
                     output_per_filter["Plots"] = [
-                        create_plot_record(
+                        self.plot_props.create_record(
                             fig,
-                            self.plot_props,
-                            extra={"band": "All", "stock": light_curve.stock_id},
+                            band="All",
+                            stock=light_curve.stock_id,
                         )
                     ]
 
