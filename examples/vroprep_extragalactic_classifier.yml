@@ -150,8 +150,6 @@ task:
                         zp: 31.4
               - unit: T2ClassificationReport
                 config: 
-                  report_t2s:
-                  - T2RunParsnipRiseDecline
                   summary_mode: full
                   tabulator:
                   - unit: LSSTT2Tabulator
