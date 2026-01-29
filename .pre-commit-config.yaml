@@ -4,14 +4,14 @@
 repos:
 - repo: https://github.com/astral-sh/ruff-pre-commit
   # renovate: datasource=pypi depName=ruff versioning=pep440
-  rev: v0.14.10
+  rev: v0.14.14
   hooks:
     - id: ruff
       args: [--fix]
     - id: ruff-format
 - repo: https://github.com/python-poetry/poetry
   # renovate: datasource=pypi depName=poetry versioning=pep440
-  rev: "2.2.1"
+  rev: "2.3.1"
   hooks: 
     - id: poetry-check
 - repo: https://github.com/pre-commit/pre-commit-hooks
