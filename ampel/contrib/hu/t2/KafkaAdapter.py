@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from typing import Any
 
 from confluent_kafka import SerializingProducer
@@ -23,14 +24,16 @@ class KafkaReporter(AmpelUnit):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self._producer = SerializingProducer(
-            **{
+        config: Mapping[str, Any] = (
+            {
                 "bootstrap.servers": self.broker,
                 "value.serializer": self.avro_schema.serializer(),
             }
             | (self.auth.librdkafka_config() if self.auth else {})
             | self.producer_config
         )
+
+        self._producer = SerializingProducer(**config)
 
     def send(self, record: dict) -> None:
         self._producer.poll(0)

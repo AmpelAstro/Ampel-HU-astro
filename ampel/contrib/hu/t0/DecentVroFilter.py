@@ -41,7 +41,7 @@ class DecentVroFilter(CatalogMatchUnit, AbsAlertFilter):
     # )  # maximum duration of alert detection history [days]
 
     # Image quality, including Real-Bogus equivalents
-    # min_drb: float = 0.0  # deep learning real bogus score
+    min_reliability: float = 0.0  # deep learning real bogus score
     # min_rb: float  # real bogus score
     # max_fwhm: float  # sexctrator FWHM (assume Gaussian) [pix]
     # max_elong: float  # Axis ratio of image: aimage / bimage
@@ -204,13 +204,24 @@ class DecentVroFilter(CatalogMatchUnit, AbsAlertFilter):
             return None
 
         #########
-        ### Base cuts on lightcurve length
+        ### Base cuts on lightcurve length / quality
         #########
+
+        if self.min_reliability > 0 and (
+            "reliability" not in latest
+            or latest["reliability"] is None
+            or latest["reliability"] < self.min_reliability
+        ):
+            self.logger.debug(
+                None, extra={"reliability": latest.get("reliability", None)}
+            )
+            return None
+
         if len(pps) < self.min_ndet:
-            self.logger.info(None, extra={"nDet": len(pps)})
+            self.logger.debug(None, extra={"nDet": len(pps)})
             return None
         if self.max_ndet and len(pps) > self.max_ndet:
-            self.logger.info(None, extra={"nDet": len(pps)})
+            self.logger.debug(None, extra={"nDet": len(pps)})
             return None
 
         # cut on length of detection history
@@ -218,7 +229,7 @@ class DecentVroFilter(CatalogMatchUnit, AbsAlertFilter):
         last_det = max(detections_jds)
         det_tspan = last_det - min(detections_jds)
         if not (self.min_tspan <= det_tspan <= self.max_tspan):
-            self.logger.info(None, extra={"tSpan": det_tspan})
+            self.logger.debug(None, extra={"tSpan": det_tspan})
             return None
 
         ## Solar System / Minor Planet

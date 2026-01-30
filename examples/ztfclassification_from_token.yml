@@ -167,8 +167,6 @@ task:
                 - unit: ZTFT2Tabulator
             - unit: T2ClassificationReport
               config: 
-                report_t2s:
-                - T2RunParsnipRiseDecline
                 tabulator:
                 - unit: ZTFT2Tabulator
                 t2_dependency:
@@ -184,8 +182,6 @@ task:
                 lasair_version: ztf
                 lasair_api_token: 
                   label: lasair/jno/ztf
-                report_t2s:
-                - T2RunParsnipRiseDecline
                 tabulator:
                 - unit: ZTFT2Tabulator
                 t2_dependency:

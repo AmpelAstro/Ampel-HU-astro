@@ -14,11 +14,9 @@ class T2InfantReport(T2LSSTReport):
     Report potential infant transients.
     Todo: should we really require RiseDecline? Same information included in photometry extract for table.
     Keep for now, but look into performance.
-    Should be possible to run without T2TabulatorRiseDecline - then just remove from report_t2s and set select map to {}.
+    Should be possible to run without T2TabulatorRiseDecline - then just remove from t2_dependency and set select map to {}.
     In principle, it might be assumed that the T0 filter should be used to only select infant transients.
     """
-
-    report_t2s: Sequence[str] = ["T2DigestRedshifts", "T2TabulatorRiseDecline"]
 
     # Only transients with features within these limits will be reported
     risedecline_select_map: dict[str, Sequence[float]] = {
@@ -67,7 +65,7 @@ class T2InfantReport(T2LSSTReport):
         )
 
         # Check RiseDecline info if requested
-        if "T2TabulatorRiseDecline" in self.report_t2s:
+        if "T2TabulatorRiseDecline" in report_views:
             body = report_views["T2TabulatorRiseDecline"]
             skip = False
             features = {}

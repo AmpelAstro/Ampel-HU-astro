@@ -1,0 +1,136 @@
+unit: AlertConsumer
+config:
+  iter_max: 2000000
+  compiler_opts:
+    point_t2:
+      tag: LSST
+    state_t2:
+      tag: LSST
+    stock:
+      tag: LSST
+    stock_t2:
+      tag: LSST
+    t0:
+      tag: LSST
+    t1:
+      tag: LSST
+  supplier:
+    unit: LSSTAlertSupplier
+    config:
+      deserialize: null
+      loader:
+        unit: LSSTArchiveAlertLoader
+        config:
+          archive_url: "https://ampel-dev.ia.zeuthen.desy.de/api/lsst/archive/v1/"
+          condition: "diaSource.reliability>0.90 AND diaSource.midpointMjdTai<=61040 AND diaSource.midpointMjdTai>61030  AND diaObject.nDiaSources>1"
+          order_by: "diaSource.visit"
+          insecure: true
+  shaper: {unit: LSSTDataPointShaper}
+  directives:
+    - channel: earlyrelease
+      filter:
+        unit: DecentVroFilter
+        on_stock_match: bypass
+        config:
+          min_reliability: 0.95
+          min_ndet: 2
+          max_ndet: 99
+          min_tspan: 0.1
+          max_tspan: 100
+          min_abs_gal_lat: 7
+          gaia_excessnoise_sig_max: 999
+          gaia_plx_signif: 3
+          gaia_pm_signif: 3
+          gaia_rs: 20
+          gaia_veto_gmag_max: 20
+          gaia_veto_gmag_min: 9
+      ingest:
+        mux:
+          unit: LSSTMongoMuxer
+          insert:
+            point_t2:
+              - unit: T2GetDiaObject
+                config:
+                  params:
+                    - diaObjectId
+                    - simVersion
+                ingest:
+                  filter: LSSTObjFilter
+                  select: last
+                  sort: diaObjectId
+              - config: &dl_config
+                  datalab_user:
+                    label: datalab/user
+                  datalab_pwd:
+                    label: datalab/password
+                ingest:
+                  filter: LSSTObjFilter
+                  select: last
+                  sort: diaObjectId
+                unit: T2LSPhotoZTap
+              - config: '%T2CatalogMatch_general'
+                ingest:
+                  filter: LSSTObjFilter
+                  select: last
+                  sort: diaObjectId
+                unit: T2CatalogMatch
+          combine:
+            - unit: LSSTT1Combiner
+              state_t2:
+                - unit: T2RunParsnipRiseDecline
+                  config: &parsnip_config
+                    add_parsnip_from: sn+2ulens+dwarfs
+                    classifier_name: elasticcv2
+                    classifier_version: '0.1'
+                    parsnip_zeropoint_offset: -3.9
+                    paths_parsnip:
+                      sn+2ulens+dwarfs:
+                        model: /Users/jnordin/github/ampelFeb25/Ampel-HU-astro/examples/parsnipModelAug10Pct30.h5
+                        classifier: /Users/jnordin/github/ampelFeb25/Ampel-HU-astro/examples/parsnipClassifierAug10Pct30.pkl
+                    redshift_kind: T2DigestRedshifts
+                    max_redshift_category: 7
+                    return_features: true
+                    significant_bands:
+                      - lsstg
+                      - lsstr
+                      - lssti
+                      - lsstz
+                    t2_dependency:
+                      - config: '%T2CatalogMatch_general'
+                        link_override:
+                          filter: LSSTObjFilter
+                          select: last
+                          sort: diaObjectId
+                        unit: T2CatalogMatch
+                      - config: *dl_config
+                        link_override:
+                          filter: LSSTObjFilter
+                          select: last
+                          sort: diaObjectId
+                        unit: T2LSPhotoZTap
+                    t_cadence: 6.0
+                    tabulator:
+                      - unit: LSSTT2Tabulator
+                        config:
+                          zp: 31.4
+                - unit: T2ClassificationReport
+                  config:
+                    summary_mode: full
+                    tabulator:
+                      - unit: LSSTT2Tabulator
+                        config:
+                          zp: 31.4
+                    t2_dependency:
+                      - config: *parsnip_config
+                        unit: T2RunParsnipRiseDecline
+                    result_adapter:
+                      unit: HopskotchAdapter
+                      config:
+                        broker: kafka.scimma.org
+                        auth:
+                          username:
+                            label: scimma/jno/user
+                          password:
+                            label: scimma/jno/password
+                        topic: ampel.lsst.extragalactic-transients
+                        model: ampel.contrib.hu.model.LSSTReport.LSSTReport

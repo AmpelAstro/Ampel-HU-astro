@@ -1,0 +1,172 @@
+name: earlyreleasetest
+
+mongo:
+  prefix: vro_classififer
+  reset: true
+
+channel:
+- name:  earlyrelease
+  access: []
+  policy: []
+
+
+task:
+
+- title: ingest
+  template:
+    pre:
+      - ingest_lsst_alerts
+    live:
+      - resolve_run_time_aliases
+      - hash_t2_config
+
+  unit: AlertConsumer
+  extra:
+    iter_max: 2000000
+  supplier:
+    unit: LSSTAlertSupplier
+    config:
+      deserialize: null
+      loader:
+        unit: LSSTArchiveAlertLoader
+        config:
+          archive_url: "https://ampel-dev.ia.zeuthen.desy.de/api/lsst/archive/v1/"
+          # Oct 1 - 60949
+          # Nov 1 - 60980
+          # Dec 1 - 61010
+          # Jan 10 - 61050
+          # Last run Jan 16
+#            condition: "diaSource.reliability>0.90 AND diaSource.midpointMjdTai<=61160 AND diaSource.midpointMjdTai>61050  AND diaObject.nDiaSources>1"
+          condition: "diaSource.reliability>0.90 AND diaSource.midpointMjdTai<=61040 AND diaSource.midpointMjdTai>61030  AND diaObject.nDiaSources>1"
+          order_by: "diaSource.visit"
+          insecure: true
+  shaper: {unit: LSSTDataPointShaper}
+
+  directives:
+  - channel: earlyrelease
+
+    filter:
+      unit: DecentVroFilter
+      on_stock_match: bypass
+      config:
+        min_reliability: 0.95
+        min_ndet: 2
+        max_ndet: 99
+        min_tspan: 0.1
+        max_tspan: 100
+        min_abs_gal_lat: 7
+        gaia_excessnoise_sig_max: 999
+        gaia_plx_signif: 3
+        gaia_pm_signif: 3
+        gaia_rs: 20
+        gaia_veto_gmag_max: 20
+        gaia_veto_gmag_min: 9
+
+    t2_compute:
+    - &T2RunParsnipRiseDecline
+      unit: T2RunParsnipRiseDecline
+      config:
+        # T2BaseClassifier
+        add_parsnip_from: sn+2ulens+dwarfs
+        classifier_name: elasticcv2
+        classifier_version: '0.1'
+        parsnip_zeropoint_offset: -3.9
+        paths_parsnip:
+          sn+2ulens+dwarfs:
+            # https://box.hu-berlin.de/f/78d7594841da4653a743/?dl=1
+            # box name: parsnipModelAug10Pct30.h5
+            # old name: model1-30pct-sn+2ulens+dwarfs-mw.h5
+            model: /Users/jnordin/github/ampelFeb25/Ampel-HU-astro/examples/parsnipModelAug10Pct30.h5
+            # https://box.hu-berlin.de/f/d1cec88c0bec4123b208/?dl=1
+            # box name: parsnipClassifierAug10Pct30.pkl 
+            # old name: model1-30pct-sn+2ulens+dwarfs-mw-aug10.pkl
+            classifier: /Users/jnordin/github/ampelFeb25/Ampel-HU-astro/examples/parsnipClassifierAug10Pct30.pkl
+        return_features: true
+        # T2TabulatorRiseDecline
+        significant_bands:
+          - lsstg
+          - lsstr
+          - lssti
+          - lsstz
+        t_cadence: 6.0
+        tabulator: &tabulator
+          - unit: LSSTT2Tabulator
+            config:
+              zp: 31.4
+        # T2DigestRedshifts
+        redshift_kind: T2DigestRedshifts
+        max_redshift_category: 7
+        t2_dependency:
+          - unit: T2CatalogMatch
+            config: '%T2CatalogMatch_general'
+            link_override: &latest
+              filter: LSSTObjFilter
+              select: last
+              sort: nDiaSources
+          - unit: T2LSPhotoZTap
+            config:
+              datalab_user:
+                label: datalab/user
+              datalab_pwd:
+                label: datalab/password
+            link_override: *latest
+    - unit: T2ClassificationReport
+      config:
+        summary_mode: full
+        tabulator: *tabulator
+        t2_dependency:
+          - *T2RunParsnipRiseDecline
+        result_adapter:
+          unit: HopskotchAdapter
+          config:
+            broker: kafka.scimma.org
+            auth:
+              username:
+                label: scimma/jno/user
+              password:
+                label: scimma/jno/password
+            topic: ampel.lsst.extragalactic-transients
+            model: ampel.contrib.hu.model.LSSTReport.LSSTReport
+
+
+- title: Run T2s
+  unit: T2Worker
+  multiplier: 1
+  config:
+    send_beacon: false
+    raise_exc: true
+    unit_ids:
+    - T2GetDiaObject
+    - T2CatalogMatch
+    - T2LSPhotoZTap
+
+- title: Run T2s
+  unit: T2Worker
+  multiplier: 1
+  config:
+    send_beacon: false
+    raise_exc: true
+    unit_ids:
+    - T2DigestRedshifts
+
+- title: Run T2s
+  unit: T2Worker
+  multiplier: 1
+  config:
+    send_beacon: false
+    raise_exc: true
+    unit_ids:
+    - T2RunParsnipRiseDecline
+
+
+- title: Run T2s
+  unit: T2Worker
+  multiplier: 1
+  config:
+    send_beacon: false
+    raise_exc: true
+    unit_ids:
+    - T2ClassificationReport
+
+
+

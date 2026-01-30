@@ -168,8 +168,6 @@ task:
                     unit: T2DigestRedshifts
               - unit: T2ClassificationReport
                 config: 
-                  report_t2s:
-                  - T2RunParsnipRiseDecline
                   summary_mode: elasticc_simple
                   tabulator:
                   - unit: LSSTT2Tabulator
@@ -184,9 +182,6 @@ task:
                     unit: T2RunParsnipRiseDecline
               - unit: T2InfantReport
                 config: 
-                  report_t2s:
-                  - T2DigestRedshifts
-                  - T2TabulatorRiseDecline
                   tabulator:
                   - unit: LSSTT2Tabulator
                     config:

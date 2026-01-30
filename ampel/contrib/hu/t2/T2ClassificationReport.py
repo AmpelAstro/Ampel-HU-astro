@@ -44,7 +44,6 @@ class T2ClassificationReport(T2LSSTReport):
     Require and propagate classification information from ParsnipRiseDecline.
     """
 
-    report_t2s: Sequence[str] = ["T2RunParsnipRiseDecline"]
     summary_mode: Literal["elasticc_simple", "full"] = "full"
 
     # Only transients with features within these limits will be reported
