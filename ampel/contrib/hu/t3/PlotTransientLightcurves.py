@@ -11,7 +11,7 @@ import gzip
 import io
 import os
 import tempfile
-from collections.abc import Generator, Iterable, Mapping
+from collections.abc import Generator, Iterable, Mapping, Sequence
 from gzip import BadGzipFile
 from typing import Any
 
@@ -24,10 +24,13 @@ from astropy.cosmology import FlatLambdaCDM
 from astropy.io import fits
 from astropy.table import Table
 from astropy.time import Time
+from astropy.wcs import WCS
+from astropy.wcs.utils import proj_plane_pixel_scales
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.colors import Normalize
 from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import MultipleLocator
+from scipy import ndimage
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from ztfquery.utils.stamps import get_ps_stamp
@@ -49,7 +52,6 @@ def fig_from_fluxtable(
     dec: float,
     fluxtable: Table,
     ztfulims: Table | None = None,
-    figsize: tuple = (8.2, 7.6),
     title: None | str = None,
     tnsname: str | None = None,
     fritzlink: bool = True,
@@ -81,19 +83,10 @@ def fig_from_fluxtable(
     photz_list = photz_list or []
     classprobs = dict(classprobs or {})
 
-    cls_threshold = 0.01 # minimum class probability to be shown
+    cls_threshold = 0.01  # minimum class probability to be shown
     cls_items = filtered_classprobs(classprobs, threshold=cls_threshold)
     has_cutouts = bool(cutouts)
     has_classprobs = bool(cls_items)
-
-    # If no cutouts but class probabilities exist, append as an attribute so it remains visible
-    if not has_cutouts and has_classprobs:
-        cls_attr = classprobs_to_attribute(cls_items, max_items=8, prefix="Cls:")
-        if cls_attr:
-            attributes = list(attributes)  # ensure local mutable copy
-            attributes.append(cls_attr)
-
-
 
     cosmo = FlatLambdaCDM(H0=70, Om0=0.3)
 
@@ -102,7 +95,6 @@ def fig_from_fluxtable(
         zps = np.asarray(fluxtable["zp"], dtype=float)
     else:
         zps = np.full(len(fluxtable), float(zp), dtype=float)
-
 
     # Transform to mags (AB)
     fluxtable["mag"] = -2.5 * np.log10(fluxtable["flux"]) + zps
@@ -128,162 +120,188 @@ def fig_from_fluxtable(
         "lssty": {"label": "LSST y", "c": "darkred"},
     }
 
-    fig = plt.figure(figsize=figsize)
+    # General info box
+    info: list[str] = [f"ID: {name}", f"RA: {ra:.4f}", f"Dec: {dec:.4f}"]
 
+    if str(ampelid) != str(name):
+        info.append("AmpelID:")
+        info.append(f"{ampelid}")
+
+    info.append("------------------------")
+    if attributes:
+        info.extend(attributes)
+    if photz_list:
+        info.append("------------------------")
+        info.append("Photo-z:")
+        info.extend(photz_list)
+
+    fig = plt.figure(figsize=(8, 5))
     lc_ax3 = None
-    if has_cutouts and has_classprobs:
-        # Layout:
-        # Row 0: [Science | Template | Difference | Finder]
-        # Row 1: [Lightcurve full width]
-        # Row 2: [Radar | Classifications | General info]
 
-        assert cutouts is not None 
+    # Helper functions for layout
+    def _plot_cutouts_and_get_fov(*, cutouts, axes) -> float | None:
+        """
+        Render Science/Template/Difference cutouts into the provided axes and
+        return an FOV in arcseconds to use as the finder FOV.
+        """
+        cutout_fov = None
+        for ax_, typ in zip(axes, ["Science", "Template", "Difference"], strict=False):
+            fov = create_stamp_plot(cutouts=cutouts, ax=ax_, cutout_type=typ)
+            if cutout_fov is None and fov is not None and np.isfinite(fov):
+                cutout_fov = float(fov)
+        return cutout_fov
 
+    def _finder_fov_arcsec(cutout_fov: float | None, factor: float) -> float:
+        """
+        Compute the finder stamp field-of-view in arcseconds from a cutout FOV.
+        Uses a multiplicative factor and clips to a conservative range to avoid extreme values.
+        """
+        if cutout_fov is None:
+            return 45.0
+        return float(np.clip(factor * cutout_fov, 10, 1200))
+
+    def _make_cls_lines(cls_items, max_items: int = 8) -> list[str]:
+        """
+        Format a compact text table of class probabilities for the attributes box.
+        Only the top entries are shown.
+        """
+        lines = ["Class Probabilities (p>0.01):"]
+        for k, v in cls_items[:max_items]:
+            lines.append(f"{k}: {v:.3f}")
+        return lines
+
+    def _setup_gs_2x32(fig):
+        """
+        Create and space the common 2x32 GridSpec used for layouts with cutous.
+        """
         gs = GridSpec(
-            nrows=3,
-            ncols=16,
+            nrows=2,
+            ncols=32,
             figure=fig,
-            height_ratios=[1.15, 2.3, 1.05],
-            width_ratios=[1] * 16,
+            height_ratios=[1.0, 1.35],
+            width_ratios=[1] * 32,
         )
-
-        # Top row (cutouts + finder)
-        cutoutsci = fig.add_subplot(gs[0, 0:4])
-        cutouttemp = fig.add_subplot(gs[0, 4:8])
-        cutoutdiff = fig.add_subplot(gs[0, 8:12])
-        cutoutps1 = fig.add_subplot(gs[0, 12:16])
-
-        # Middle row (lightcurve)
-        lc_ax1 = fig.add_subplot(gs[1, 0:16])
-
-        # Bottom row
-        radar_ax = fig.add_subplot(gs[2, 0:4], projection="polar")
-        class_ax = fig.add_subplot(gs[2, 5:8])
-        class_ax.axis("off")
-        info_ax = fig.add_subplot(gs[2, 9:16])
-        info_ax.axis("off")
-
         fig.subplots_adjust(
-            left=0.10,
-            right=0.85,
+            left=0.09,
+            right=0.98,
             top=0.93,
-            bottom=0.07,
+            bottom=0.10,
             wspace=0.35,
-            hspace=0.55,
+            hspace=0.45,
         )
+        return gs
 
-        # Cutouts (science/template/diff)
-        for ax_, type_ in zip(
-            [cutoutsci, cutouttemp, cutoutdiff],
-            ["Science", "Template", "Difference"],
-            strict=False,
-        ):
-            create_stamp_plot(cutouts=cutouts, ax=ax_, cutout_type=type_)
-
-        # Finder stamp (PS1 preferred; HiPS fallback) + cache
-        render_finder_stamp(
-            cutoutps1,
-            ra,
-            dec,
-            cache_dir=cutout_cache_dir,
-            cache_key=name,
-            size=240,
-            fov_arcsec=180.0,
-        )
-
-        # Radar chart for class probabilities
-        create_classprob_radar(classprobs, radar_ax, threshold=cls_threshold)
-
-        # General info box
-        info_lines: list[str] = [
-            name,
-            f"RA: {ra:.4f}",
-            f"Dec: {dec:.4f}",
-            "------------------------",
-        ]
-        if attributes:
-            info_lines.extend(attributes)
-        if photz_list:
-            info_lines.append("------------------------")
-            info_lines.append("Photo-z:")
-            info_lines.extend(photz_list)
-
-        info_ax.text(
-            0.0,
-            1.0,
-            "\n".join(info_lines),
-            va="top",
-            ha="left",
-            fontsize=9,
-            alpha=0.8,
-            wrap=True,
-        )
-
-        # Classifications text box (mirrors radar; keeps short list)
-        cls_lines: list[str] = ["Class Probabilities:"]
-        for k, v in cls_items[:12]:
-            cls_lines.append(f"{k}: {v:.3f}")
-
-        class_ax.text(
-            0.0,
-            1.0,
-            "\n".join(cls_lines),
-            va="top",
-            ha="left",
-            fontsize=9,
-            alpha=0.8,
-            wrap=True,
-        )
-
-    elif has_cutouts and not has_classprobs:
-        # Legacy layout (as in older version): cutouts + finder in a 5x4 grid,
-        # lightcurve below, and a simple right-side info text block.
-
+    # Layout A: Cutouts + finder stamp + classification radar.
+    if has_cutouts and has_classprobs:
         assert cutouts is not None
 
-        lc_ax1 = fig.add_subplot(5, 4, (9, 19))
-        cutoutsci = fig.add_subplot(5, 4, (1, 5))
-        cutouttemp = fig.add_subplot(5, 4, (2, 6))
-        cutoutdiff = fig.add_subplot(5, 4, (3, 7))
-        cutoutps1 = fig.add_subplot(5, 4, (4, 8))
+        gs = _setup_gs_2x32(fig)
 
-        plt.subplots_adjust(wspace=0.4, hspace=1.8)
+        # Top row: 3 cutouts + finder + radar
+        cutoutsci = fig.add_subplot(gs[0, 0:5])
+        cutouttemp = fig.add_subplot(gs[0, 5:10])
+        cutoutdiff = fig.add_subplot(gs[0, 10:15])
+        cutoutfinder = fig.add_subplot(gs[0, 15:20])
+        radar_ax = fig.add_subplot(gs[0, 25:29], projection="polar")
 
-        for ax_, type_ in zip(
-            [cutoutsci, cutouttemp, cutoutdiff],
-            ["Science", "Template", "Difference"],
-            strict=False,
-        ):
-            create_stamp_plot(cutouts=cutouts, ax=ax_, cutout_type=type_)
+        # Bottom row: lightcurve + attributes text box
+        lc_ax1 = fig.add_subplot(gs[1, 0:20])
+        attr_ax = fig.add_subplot(gs[1, 24:32])
+        attr_ax.axis("off")
 
+        cutout_fov = _plot_cutouts_and_get_fov(
+            cutouts=cutouts,
+            axes=[cutoutsci, cutouttemp, cutoutdiff],
+        )
+
+        finder_fov_arcsec = _finder_fov_arcsec(cutout_fov, factor=6.0)
         render_finder_stamp(
-            cutoutps1,
+            cutoutfinder,
             ra,
             dec,
             cache_dir=cutout_cache_dir,
             cache_key=name,
             size=240,
-            fov_arcsec=180.0,
+            fov_arcsec=finder_fov_arcsec,
         )
 
-        info: list[str] = [
-            name,
-            f"RA: {ra:.8f}",
-            f"Dec: {dec:.8f}",
-            f"AmpelID: {ampelid}",
-            "------------------------",
-        ]
-        if photz_list:
-            info.append("Photo-z:")
-            info.extend(photz_list)
+        create_classprob_radar(dict(cls_items), radar_ax, threshold=cls_threshold)
 
-        fig.text(0.77, 0.55, "\n".join(info), va="top", fontsize="medium", alpha=0.6)
+        attr_lines = _make_cls_lines(cls_items, max_items=12)
+        attr_lines.append("------------------------")
+        attr_lines.extend(info)
 
+        attr_ax.text(
+            0.0,
+            1.35,
+            "\n".join(attr_lines),
+            va="top",
+            ha="left",
+            fontsize=8.5,
+            alpha=0.6,
+            wrap=True,
+        )
+
+    # Layout B: Cutouts + finder stamp only (no classification radar).
+    elif has_cutouts and not has_classprobs:
+        assert cutouts is not None
+        gs = _setup_gs_2x32(fig)
+
+        # Top row: cutouts + finder (wider allocation than Layout A)
+        cutoutsci = fig.add_subplot(gs[0, 0:6])
+        cutouttemp = fig.add_subplot(gs[0, 6:12])
+        cutoutdiff = fig.add_subplot(gs[0, 12:18])
+        cutoutfinder = fig.add_subplot(gs[0, 18:24])
+
+        # Bottom row: lightcurve
+        lc_ax1 = fig.add_subplot(gs[1, 0:20])
+
+        cutout_fov = _plot_cutouts_and_get_fov(
+            cutouts=cutouts,
+            axes=[cutoutsci, cutouttemp, cutoutdiff],
+        )
+
+        finder_fov_arcsec = _finder_fov_arcsec(cutout_fov, factor=6.0)
+        render_finder_stamp(
+            cutoutfinder,
+            ra,
+            dec,
+            cache_dir=cutout_cache_dir,
+            cache_key=name,
+            size=240,
+            fov_arcsec=finder_fov_arcsec,
+        )
+
+        fig.text(
+            0.79,
+            0.55,
+            "\n".join(info),
+            va="top",
+            fontsize=8.5,
+            alpha=0.6,
+        )
+
+    # Layout C: Lightcurve only (no cutouts).
     else:
-        lc_ax1 = fig.add_subplot(1, 1, 1)
+        lc_ax1 = fig.add_subplot(1, 8, (1, 6))
         fig.subplots_adjust(top=0.8, bottom=0.15)
         plt.subplots_adjust(wspace=0.4, hspace=1.8)
 
+        if has_classprobs:
+            info = list(info)
+            info.append("------------------------")
+            info.append("Class Probabilities:")
+            for k, v in cls_items:
+                info.append(f"{k}: {v:.3f}")
+
+        fig.text(
+            0.795,
+            0.75,
+            "\n".join(info),
+            va="top",
+            fontsize=8.5,
+            alpha=0.6,
+        )
 
     # If redshift is given, calculate absolute magnitude via luminosity distance
     if z is not None:
@@ -295,7 +313,9 @@ def fig_from_fluxtable(
         def absmag_to_mag(absmag):
             return absmag + 5 * (np.log10(dist_l) - 1)
 
-        lc_ax3 = lc_ax1.secondary_yaxis("right", functions=(mag_to_absmag, absmag_to_mag))
+        lc_ax3 = lc_ax1.secondary_yaxis(
+            "right", functions=(mag_to_absmag, absmag_to_mag)
+        )
         lc_ax3.set_ylabel("Absolute Magnitude [AB]")
 
     # Give the figure a title (only in simple layout)
@@ -352,7 +372,7 @@ def fig_from_fluxtable(
             lc_ax1.legend(handles, labels, loc="best", fontsize="small")
 
     # Add annotations
-    if fritzlink and not any("lsst" in b for b in fluxtable["band"]):
+    if fritzlink and not any("lsst" in str(b).lower() for b in fluxtable["band"]):
         lc_ax1.annotate(
             "See On Fritz",
             xy=(0.5, 1),
@@ -419,7 +439,9 @@ def fig_from_fluxtable(
         lc_ax1.set_xlim((jd_min - 3, jd_max + 3))
 
     lc_ax2 = lc_ax1.twiny()
-    lc_ax2.scatter([Time(x, format="jd").datetime for x in [jd_min, jd_max]], [20, 20], alpha=0)
+    lc_ax2.scatter(
+        [Time(x, format="jd").datetime for x in [jd_min, jd_max]], [20, 20], alpha=0
+    )
 
     lc_ax2.tick_params(axis="both", which="major", labelsize=8, rotation=30)
     lc_ax1.tick_params(axis="x", which="major", labelsize=8, rotation=30)
@@ -433,40 +455,115 @@ def fig_from_fluxtable(
     return fig, axes
 
 
-def create_stamp_plot(cutouts: Mapping[str, Mapping[str, bytes]], ax, cutout_type: str) -> None:
+def load_cutout_image(
+    data_bytes: bytes,
+    *,
+    return_header: bool = False,
+) -> np.ndarray | tuple[np.ndarray, fits.Header]:
     """
-    Helper function to create cutout subplot.
+    Decode a cutout FITS image from bytes and return a 2D float array.
 
-    Cutouts are expected to be a dict of the type returned from ZTFCutoutImages / LSSTCutoutImages:
-      {'candid': {'cutoutScience': b'..', 'cutoutTemplate': ...} }
+    Supports both:
+      - ZTF cutouts: gzip-compressed FITS payload
+      - LSST cutouts: plain FITS payload
 
-    cutout_type must be one of: Science, Template, Difference.
+    If return_header=True, also return the FITS header of the chosen 2D HDU.
     """
-    data_bytes = next(iter(cutouts.values()))[f"cutout{cutout_type}"]
-
-    # ZTF: gzip-compressed FITS; LSST: often plain FITS (starts with "SIMPLE")
+    # 1) Decompress if needed (ZTF), otherwise treat as plain FITS (LSST)
     try:
         with gzip.open(io.BytesIO(data_bytes), "rb") as f:
             payload = f.read()
-        hdu = fits.open(io.BytesIO(payload), ignore_missing_simple=True)
     except BadGzipFile:
-        hdu = fits.open(io.BytesIO(data_bytes), ignore_missing_simple=True)
+        payload = data_bytes
 
-    data = hdu[0].data
-    hdu.close()
+    with fits.open(io.BytesIO(payload), ignore_missing_simple=True) as hdul:
+        # 2) Find first 2D image HDU
+        data2d: np.ndarray | None = None
+        hdr: fits.Header | None = None
 
-    vmin, vmax = np.percentile(data[data == data], [50, 99.5])  # noqa: PLR0124
-    data_ = visualization.AsinhStretch()((data - vmin) / (vmax - vmin))
+        for hdu in hdul:
+            if getattr(hdu, "data", None) is None:
+                continue
+            arr = np.squeeze(hdu.data)
+            if isinstance(arr, np.ndarray) and arr.ndim == 2:
+                data2d = arr.astype(float, copy=False)
+                hdr = hdu.header
+                break
 
+        if data2d is None or hdr is None:
+            raise ValueError("No 2D image HDU found in cutout FITS payload")
+
+        if return_header:
+            return data2d, hdr
+        return data2d
+
+
+def cutout_fov_arcsec(data2d: np.ndarray, hdr: fits.Header) -> float | None:
+    ny, nx = data2d.shape[-2], data2d.shape[-1]
+
+    try:
+        w = WCS(hdr)
+        # pixel scales in deg/pix (for each axis)
+        scales_deg = proj_plane_pixel_scales(w)  # ndarray, len>=2
+        pixscale_arcsec = float(np.mean(scales_deg[:2]) * 3600.0)
+        return pixscale_arcsec * float(max(nx, ny))
+    except Exception:
+        return None
+
+
+def create_stamp_plot(
+    cutouts: Mapping[str, Mapping[str, bytes]], ax, cutout_type: str
+) -> float | None:
+    data_bytes = next(iter(cutouts.values()))[f"cutout{cutout_type}"]
+
+    data, hdr = load_cutout_image(
+        data_bytes,
+        return_header=True,
+    )
+
+    cutout_fov = cutout_fov_arcsec(data, hdr)
+
+    rotpa = hdr.get("ROTPA", None)
+    if rotpa is not None:
+        try:
+            angle = -float(rotpa)  # close-enough convention: rotate image by -ROTPA
+            data = ndimage.rotate(
+                data,
+                angle=angle,
+                reshape=False,  # keep cutout size
+                order=1,  # bilinear
+                mode="constant",
+                cval=np.nan,
+                prefilter=False,
+            )
+        except Exception:
+            pass
+
+    finite = np.isfinite(data)
+    if not np.any(finite):
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_title(cutout_type, fontdict={"fontsize": "small"})
+        return None
+
+    vmin, vmax = np.percentile(data[finite], [50, 99.5])
+    denom = vmax - vmin
+    if not np.isfinite(denom) or denom <= 0:
+        denom = 1.0
+    data_ = visualization.AsinhStretch()((data - vmin) / denom)
+
+    finite2 = np.isfinite(data_)
     ax.imshow(
         data_,
-        norm=Normalize(*np.percentile(data_[data_ == data_], [0.5, 99.5])),  # noqa: PLR0124
-        aspect="auto",
+        norm=Normalize(*np.percentile(data_[finite2], [0.5, 99.5])),
+        aspect="equal",
         cmap="viridis",
+        origin="lower",
     )
     ax.set_xticks([])
     ax.set_yticks([])
     ax.set_title(cutout_type, fontdict={"fontsize": "small"})
+    return cutout_fov
 
 
 def render_finder_stamp(
@@ -477,7 +574,7 @@ def render_finder_stamp(
     cache_dir: str | None,
     cache_key: str,
     size: int = 240,
-    fov_arcsec: float = 180.0,
+    fov_arcsec: float = 45,
 ) -> None:
     """
     Render a best-effort finder stamp with optional on-disk caching.
@@ -486,7 +583,6 @@ def render_finder_stamp(
     """
     stamp: np.ndarray | None = None
     label: str | None = None
-
     try:
         if cache_dir is not None:
             cache_path = os.path.join(cache_dir, f"{cache_key}_FINDER.npz")
@@ -495,7 +591,9 @@ def render_finder_stamp(
                 stamp = cached["data"]
                 label = str(cached["label"])
             else:
-                stamp, label = get_finder_stamp(ra, dec, size=size, fov_arcsec=fov_arcsec)
+                stamp, label = get_finder_stamp(
+                    ra, dec, size=size, fov_arcsec=fov_arcsec
+                )
                 if stamp is not None and label is not None:
                     stamp2d = normalize_image_for_imshow(stamp)
                     np.savez(cache_path, data=stamp2d, label=label)
@@ -508,10 +606,13 @@ def render_finder_stamp(
         stamp, label = None, None
 
     if stamp is not None:
-        ax.imshow(stamp, aspect="auto", cmap="gray")
+        ax.imshow(stamp, aspect="equal", cmap="gray")
+        add_gap_crosshair(ax, gap_frac=0.2, lw=1.0, alpha=0.9)
         ax.set_title(label or "Finder", fontdict={"fontsize": "small"})
     else:
-        ax.text(0.5, 0.5, "Finder unavailable", ha="center", va="center", fontsize="small")
+        ax.text(
+            0.5, 0.5, "Finder unavailable", ha="center", va="center", fontsize="small"
+        )
         ax.set_title("Finder", fontdict={"fontsize": "small"})
 
     ax.set_xticks([])
@@ -524,35 +625,42 @@ def get_finder_stamp(
     size: int = 240,
     surveys: list[str] | None = None,
     timeout: float = 8.0,
-    fov_arcsec: float = 8.0,
+    fov_arcsec: float = 45.0,
 ) -> tuple[np.ndarray | None, str | None]:
     """
     Best-effort finder stamp:
-      1) PS1 via get_ps_stamp (PIL image) -> converted to grayscale float array
-      2) CDS hips2fits PNG fallback (SkyMapper / DECaLS / DSS2)
+      1) PS1 via get_ps_stamp (PIL image) -> grayscale float array
+      2) CDS hips2fits JPEG fallback (DECaLS preferred; SkyMapper/DSS2 later)
 
     Returns (image_array, label). image_array is 2D float array or None.
     """
     # 1) PS1
     try:
-        img = get_ps_stamp(ra, dec, size=size, color=["y", "g", "i"])
+        img = get_ps_stamp(
+            ra, dec, size=fov_arcsec / 0.25, color=["y", "g", "i"]
+        )  # 0.25 arcsec/px (regarding ztfquery docstring)
         if img is not None:
             arr = np.asarray(img).astype(float)
             if arr.ndim == 3 and arr.shape[2] >= 3:
                 arr = 0.2126 * arr[..., 0] + 0.7152 * arr[..., 1] + 0.0722 * arr[..., 2]
             return arr, "PS1"
+
     except Exception:
         pass
 
     if surveys is None:
         surveys = [
-            "CDS/P/Skymapper-color-IRG",
+            "CDS/P/DESI-Legacy-Surveys/DR10/color",
             "CDS/P/DECaLS/DR5/color",
+            "CDS/P/DES-DR2/ColorIRG",
+            "CDS/P/Skymapper/DR4/color",
             "CDS/P/DSS2/color",
         ]
 
     labels = {
-        "CDS/P/Skymapper-color-IRG": "SkyMapper",
+        "CDS/P/DESI-Legacy-Surveys/DR10/color": "DESI DR10",
+        "CDS/P/DES-DR2/ColorIRG": "DES",
+        "CDS/P/Skymapper/DR4/color": "SkyMapper",
         "CDS/P/DECaLS/DR5/color": "DECaLS",
         "CDS/P/DSS2/color": "DSS2",
     }
@@ -560,7 +668,7 @@ def get_finder_stamp(
     fov_deg = float(fov_arcsec) / 3600.0
 
     try:
-        from PIL import Image  # noqa: PLC0415
+        from PIL import Image, ImageOps  # noqa: PLC0415
     except Exception:
         return None, None
 
@@ -573,7 +681,7 @@ def get_finder_stamp(
                 "fov": fov_deg,
                 "width": size,
                 "height": size,
-                "format": "png",
+                "format": "jpg",
             }
             r = requests.get(
                 "https://alasky.cds.unistra.fr/hips-image-services/hips2fits",
@@ -584,7 +692,8 @@ def get_finder_stamp(
             if r.status_code != 200 or not r.content:
                 continue
 
-            img = Image.open(io.BytesIO(r.content)).convert("RGB")
+            img = Image.open(io.BytesIO(r.content))
+            img = ImageOps.exif_transpose(img).convert("RGB")
             arr = np.asarray(img).astype(float)
 
             # RGB -> grayscale [0,1]
@@ -596,6 +705,36 @@ def get_finder_stamp(
             continue
 
     return None, None
+
+
+def add_gap_crosshair(
+    ax, *, gap_frac: float = 0.2, lw: float = 1.0, alpha: float = 0.8
+) -> None:
+    """
+    Draw a crosshair in axes coordinates that leaves a central gap.
+    gap_frac=0.2 leaves the central 20% of the axis free in both directions.
+    """
+    if not (0.0 < gap_frac < 1.0):
+        return
+
+    g0 = 0.5 - gap_frac / 2.0
+    g1 = 0.5 + gap_frac / 2.0
+
+    # Vertical segments (x=0.5), leaving a gap [g0, g1]
+    ax.plot(
+        [0.5, 0.5], [0.0, g0], transform=ax.transAxes, lw=lw, alpha=alpha, color="white"
+    )
+    ax.plot(
+        [0.5, 0.5], [g1, 1.0], transform=ax.transAxes, lw=lw, alpha=alpha, color="white"
+    )
+
+    # Horizontal segments (y=0.5)
+    ax.plot(
+        [0.0, g0], [0.5, 0.5], transform=ax.transAxes, lw=lw, alpha=alpha, color="white"
+    )
+    ax.plot(
+        [g1, 1.0], [0.5, 0.5], transform=ax.transAxes, lw=lw, alpha=alpha, color="white"
+    )
 
 
 def normalize_image_for_imshow(arr: np.ndarray) -> np.ndarray:
@@ -637,7 +776,7 @@ def get_upperlimit_table(dps: Iterable[DataPoint] | None) -> Table | None:
         return [
             dp["body"]
             for dp in dps_
-            if dp["id"] < 0 and "ZTF" in dp["tag"] and "diffmaglim" in dp["body"]
+            if "ZTF" in dp["tag"] and "diffmaglim" in dp["body"]
         ]
 
     ZTF_BANDPASSES = {
@@ -701,23 +840,9 @@ def filtered_classprobs(
     return items
 
 
-def classprobs_to_attribute(
-    items: list[tuple[str, float]],
-    *,
-    max_items: int = 8,
-    prefix: str = "Cls:",
-) -> str | None:
-    """
-    Convert filtered class probabilities into a compact, single-line attribute.
-    Example: "Cls: SNIa 0.92, SNII 0.06"
-    """
-    if not items:
-        return None
-    parts = [f"{k} {v:.2f}" for k, v in items[:max_items]]
-    return f"{prefix} " + ", ".join(parts)
-
-
-def create_classprob_radar(classprobs: dict[str, float], ax, threshold: float = 0.01) -> None:
+def create_classprob_radar(
+    classprobs: dict[str, float], ax, threshold: float = 0.01
+) -> None:
     """
     Radar chart for class probabilities.
     Shows all classes with p >= threshold.
@@ -737,7 +862,6 @@ def create_classprob_radar(classprobs: dict[str, float], ax, threshold: float = 
             fontsize="small",
         )
         return
-
 
     labels = [clean_classprob_label(k) for k, _ in items]
 
@@ -819,22 +943,32 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
         if isinstance(t2res, dict) and t2res.get("ampel_z", -10) > 0:
             t2cat = tview.get_t2_body(unit="T2CatalogMatch")
             if isinstance(t2cat, dict):
-                if t2cat.get("GLADEv23") and t2cat["GLADEv23"].get("z", None) is not None:
+                if (
+                    t2cat.get("GLADEv23")
+                    and t2cat["GLADEv23"].get("z", None) is not None
+                ):
                     photz_list.append("GLADE: {:.2f}".format(t2cat["GLADEv23"]["z"]))
                 if t2cat.get("SDSS_spec") and "z" in t2cat["SDSS_spec"]:
                     photz_list.append("SDSS: {:.2f}".format(t2cat["SDSS_spec"]["z"]))
                 if t2cat.get("NEDz") and "z" in t2cat["NEDz"]:
                     photz_list.append("NED: {:.2f}".format(t2cat["NEDz"]["z"]))
-                if t2cat.get("wiseScosPhotoz") and "zPhoto_Corr" in t2cat["wiseScosPhotoz"]:
+                if (
+                    t2cat.get("wiseScosPhotoz")
+                    and "zPhoto_Corr" in t2cat["wiseScosPhotoz"]
+                ):
                     photz_list.append(
-                        "wiseScos: {:.2f}".format(t2cat["wiseScosPhotoz"]["zPhoto_Corr"])
+                        "wiseScos: {:.2f}".format(
+                            t2cat["wiseScosPhotoz"]["zPhoto_Corr"]
+                        )
                     )
                 if t2cat.get("PS1_photoz") and "z_phot" in t2cat["PS1_photoz"]:
                     ps1_photz = float(t2cat["PS1_photoz"]["z_phot"]) / 1000
                     ps1_photzerr = float(t2cat["PS1_photoz"]["z_photErr"]) / 10000
                     photz_list.append(f"PS1: {ps1_photz:.2f} ± {ps1_photzerr:.2f}")
                 if t2cat.get("LSPhotoZZou") and "photoz" in t2cat["LSPhotoZZou"]:
-                    photz_list.append("LSZou: {:.2f}".format(t2cat["LSPhotoZZou"]["photoz"]))
+                    photz_list.append(
+                        "LSZou: {:.2f}".format(t2cat["LSPhotoZZou"]["photoz"])
+                    )
 
             t2cat = tview.get_t2_body(unit="T2LSPhotoZTap")
             if (
@@ -885,7 +1019,10 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
             attributes.append("ProbSNIa")
 
         t2res = tview.get_t2_body(unit="T2KilonovaEval")
-        if isinstance(t2res, dict) and t2res.get("kilonovaness", -99) > min_kilonovaness:
+        if (
+            isinstance(t2res, dict)
+            and t2res.get("kilonovaness", -99) > min_kilonovaness
+        ):
             attributes.append("Kilonovaness{}".format(t2res["kilonovaness"]))
             attributes.append("LVKmap{}".format(t2res["map_name"]))
 
@@ -939,27 +1076,49 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                     continue
         return out
 
+    # Because TransientView does not guarantee any id convention, we introduce these helpers
+    # to treat all datapoints as possible photopoints/upperlimits.
+    # Eventually, we need to fix that with a proper tabulator-like unit!
+
+    def _iter_t0(self, tview: TransientView) -> Sequence[DataPoint]:
+        return tview.t0 or []
+
+    def _is_upperlimit_dp(self, dp: DataPoint) -> bool:
+        body = dp.get("body") or {}
+        return isinstance(body, dict) and "diffmaglim" in body
+
+    def _get_photopoints_any_id(self, tview: TransientView) -> list[DataPoint]:
+        dps = self._iter_t0(tview)
+        return [dp for dp in dps if not self._is_upperlimit_dp(dp)]
+
+    def _get_upperlimits_any_id(self, tview: TransientView) -> list[DataPoint]:
+        dps = self._iter_t0(tview)
+        return [dp for dp in dps if self._is_upperlimit_dp(dp)]
+
     def process(
         self, gen: Generator[TransientView, T3Send, None], t3s: None | T3Store = None
     ) -> UBson | UnitResult:
         buffer = io.BytesIO()
         with PdfPages(self.pdf_path or buffer) as pdf:
             for tran_view in gen:
-                if not tran_view.get_photopoints():
+                photopoints = self._get_photopoints_any_id(tran_view)
+                if not photopoints:
                     self.logger.debug("No photopoints", extra={"stock": tran_view.id})
                     continue
 
-                sncosmo_table = self.get_flux_table(tran_view.get_photopoints())  # type: ignore
+                sncosmo_table = self.get_flux_table(photopoints)
+
                 sncosmo_table = sncosmo_table[sncosmo_table["flux"] > 0]
                 if sncosmo_table is None or len(sncosmo_table) == 0:
                     self.logger.debug("No pos flux", extra={"stock": tran_view.id})
                     continue
 
+                (ra, dec) = self.get_pos(photopoints)
+                name = " ".join(map(str, self.get_stock_name(photopoints)))
                 ampelid = tran_view.id
-                (ra, dec) = self.get_pos(tran_view.get_photopoints())  # type: ignore
-                name = " ".join(map(str, self.get_stock_name(tran_view.get_photopoints())))  # type: ignore
 
-                ulim_table = get_upperlimit_table(tran_view.get_upperlimits())
+                upperlimits = self._get_upperlimits_any_id(tran_view)
+                ulim_table = get_upperlimit_table(upperlimits)
 
                 title = f"{self.titleprefix}: {name!r}-{ampelid!r} @ RA {ra:.3f} Dec {dec:.3f}"
 
@@ -968,8 +1127,13 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                 classprobs = self.classprobs_from_t2(tran_view)
 
                 tnsname = None
-                if isinstance(tran_view.extra, dict) and "TNSReports" in tran_view.extra:
-                    tnsname = next(iter(tran_view.extra["TNSReports"])).get("objname", None)
+                if (
+                    isinstance(tran_view.extra, dict)
+                    and "TNSReports" in tran_view.extra
+                ):
+                    tnsname = next(iter(tran_view.extra["TNSReports"])).get(
+                        "objname", None
+                    )
 
                 cutouts = None
                 if self.include_cutouts and isinstance(tran_view.extra, dict):
@@ -1005,7 +1169,9 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                 )
                 pdf.savefig()
                 if self.save_png and self.image_cache_dir:
-                    plt.savefig(os.path.join(self.image_cache_dir, str(tran_view.id) + ".png"))
+                    plt.savefig(
+                        os.path.join(self.image_cache_dir, str(tran_view.id) + ".png")
+                    )
                 plt.close()
 
         if (
@@ -1015,7 +1181,7 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
             and os.path.isfile(self.pdf_path)
         ):
             assert self.webclient is not None
-            
+
             new_file = self.webclient.files_upload_v2(
                 title="My Test Text File", filename="test.pdf", file=self.pdf_path
             )
