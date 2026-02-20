@@ -31,6 +31,9 @@ class DecentVroFilter(CatalogMatchUnit, AbsAlertFilter):
     # History
     min_ndet: int  # number of previous detections
     max_ndet: None | int  # number of previous detections
+    min_ndet_cadence: float | None = (
+        None  # time over which to coalesce previous detections when counting [days]
+    )
     min_tspan: float  # minimum duration of alert detection history [days]
     max_tspan: float  # maximum duration of alert detection history [days]
 
@@ -217,11 +220,27 @@ class DecentVroFilter(CatalogMatchUnit, AbsAlertFilter):
             )
             return None
 
-        if len(pps) < self.min_ndet:
-            self.logger.debug(None, extra={"nDet": len(pps)})
+        if self.min_ndet_cadence is not None:
+            # thin detections to only count those separated by at least
+            # min_ndet_cadence, to avoid counting multiple detections of the
+            # same transient in a single night, for example from rapidfire
+            # observations of the same field.
+            thinned_pps: list[dict] = []
+            for pp in sorted(pps, key=lambda x: x["midpointMjdTai"]):
+                if (
+                    not thinned_pps
+                    or (pp["midpointMjdTai"] - thinned_pps[-1]["midpointMjdTai"])
+                    >= self.min_ndet_cadence
+                ):
+                    thinned_pps.append(pp)
+        else:
+            thinned_pps = pps
+
+        if len(thinned_pps) < self.min_ndet:
+            self.logger.debug(None, extra={"nDet": len(thinned_pps)})
             return None
-        if self.max_ndet and len(pps) > self.max_ndet:
-            self.logger.debug(None, extra={"nDet": len(pps)})
+        if self.max_ndet and len(thinned_pps) > self.max_ndet:
+            self.logger.debug(None, extra={"nDet": len(thinned_pps)})
             return None
 
         # cut on length of detection history
