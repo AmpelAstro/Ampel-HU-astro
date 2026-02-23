@@ -11,13 +11,14 @@ from collections import OrderedDict
 from collections.abc import Sequence
 from functools import cached_property, partial
 from io import BytesIO
-from math import acos, cos, pi, sin
+from math import pi
 from typing import Any
 from urllib.parse import urlparse, urlunparse
 
 import backoff
 import numpy as np
 import requests
+from astropy.coordinates import angular_separation
 from astropy.io.votable import parse_single_table
 from astropy.table import Table
 from pandas import read_csv
@@ -238,15 +239,9 @@ class T2LSPhotoZTap(AbsPointT2Unit):
 
         for el in match_dict:
             if "dec" in el and "ra" in el:
-                el["dist2transient"] = (
-                    acos(
-                        sin(target_dec * c) * sin(el["dec"] * c)
-                        + cos(target_dec * c)
-                        * cos(el["dec"] * c)
-                        * cos((target_ra - el["ra"]) * c)
-                    )
-                    * 206264.8062
-                )  # to arcsecs
+                el["dist2transient"] = angular_separation(
+                    target_ra * c, target_dec * c, el["ra"] * c, el["dec"] * c
+                ) * (3600 / c)  # to arcsecs
             else:
                 el["dist2transient"] = None
 
