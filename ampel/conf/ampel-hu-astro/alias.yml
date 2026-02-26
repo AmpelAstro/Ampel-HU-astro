@@ -137,11 +137,87 @@ t2:
         post_filter:
           z:
             $lte: 0.03
-            $gte: 0.002
+            $gte: 0.011
         keys_to_append:
           - ObjType
           - Velocity
           - z
+  '%T2CatalogMatch_nearby':
+    catalogs:
+      DESIDR1:
+        keys_to_append:
+        - z
+        - spectype
+        - subtype
+        - ra
+        - dec
+        - desi_target
+        - mag_g
+        - mag_r
+        - mag_z
+        post_filter: null
+        pre_filter: null
+        rs_arcsec: 10.0
+        use: extcats
+      DESIDR1_stars:
+        keys_to_append:
+        - z
+        - spectype
+        - subtype
+        - ra
+        - dec
+        - desi_target
+        - mag_g
+        - mag_r
+        - mag_z
+        post_filter: null
+        pre_filter: null
+        rs_arcsec: 3.0
+        use: extcats
+      GLADEv23:
+        keys_to_append:
+        - z
+        - dist
+        - dist_err
+        - flag1
+        - flag2
+        - flag3
+        rs_arcsec: 10
+        use: extcats
+      NEDLVS:
+        keys_to_append:
+        - objname
+        - objtype
+        - z
+        - z_unc
+        - z_tech
+        - z_qual
+        - z_qual_flag
+        - ebv
+        post_filter: null
+        pre_filter: null
+        rs_arcsec: 10.0
+        use: extcats
+      NEDz_extcats:
+        keys_to_append:
+        - ObjType
+        - Velocity
+        - z
+        post_filter:
+          z:
+            $gte: 0.011
+            $lte: 0.03
+        pre_filter: null
+        rs_arcsec: 60.0
+        use: extcats
+      SDSS_spec:
+        all: false
+        keys_to_append:
+        - z
+        - bptclass
+        - subclass
+        rs_arcsec: 10.0
+        use: extcats
   '%T2CatalogMatch_general':
     catalogs:
       AAVSOVSX:
@@ -247,6 +323,9 @@ t2:
         - z
         rs_arcsec: 10.0
         use: catsHTM
+        post_filter:
+          z:
+            $gte: 0.011
       NEDz_extcats:
         keys_to_append:
         - ObjType
@@ -254,7 +333,7 @@ t2:
         - z
         post_filter:
           z:
-            $gte: 0.002
+            $gte: 0.011
             $lte: 0.03
         pre_filter: null
         rs_arcsec: 60.0
