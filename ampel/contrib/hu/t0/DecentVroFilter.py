@@ -34,6 +34,9 @@ class DecentVroFilter(CatalogMatchUnit, AbsAlertFilter):
     min_ndet_cadence: float | None = (
         None  # time over which to coalesce previous detections when counting [days]
     )
+    min_ndet_snr: float | None = (
+        None  # minimum SNR for previous detections to be counted
+    )
     min_tspan: float  # minimum duration of alert detection history [days]
     max_tspan: float  # maximum duration of alert detection history [days]
 
@@ -242,6 +245,11 @@ class DecentVroFilter(CatalogMatchUnit, AbsAlertFilter):
                     thinned_pps.append(pp)
         else:
             thinned_pps = pps
+
+        if self.min_ndet_snr is not None:
+            thinned_pps = [
+                pp for pp in thinned_pps if pp.get("snr", 0) >= self.min_ndet_snr
+            ]
 
         if len(thinned_pps) < self.min_ndet:
             self.logger.debug(None, extra={"nDet": len(thinned_pps)})
