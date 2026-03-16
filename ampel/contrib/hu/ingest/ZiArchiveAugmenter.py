@@ -73,14 +73,19 @@ class ZiArchiveAugmenter(AbsArchiveAugmenter, ArchiveUnit):
     def get_alerts(
         self, dps: list[DataPoint], jd_center: float, time_pre: float, time_post: float
     ) -> AmpelAlert | None:
+        detections = [
+            dp for dp in dps if "ra" in dp["body"]
+        ]  # TODO: refine detection definition
         ra, dec = mean_position(
-            [dp["body"]["ra"] for dp in dps], [dp["body"]["dec"] for dp in dps]
+            [dp["body"]["ra"] for dp in detections],
+            [dp["body"]["dec"] for dp in detections],
         )
         url = f"/alerts/cone_search?ra={ra}&dec={dec}&radius={self.radius_arcsec / 3600}&jd_start={jd_center - time_pre}&jd_end={jd_center + time_post}"
-        response = self.session.get(url)
-        response.raise_for_status()
-        queried_alerts = response.json()
-        if len(queried_alerts) == 0:
+        queried_alerts = self.session.get(url)
+        queried_detections = [
+            a for a in queried_alerts if "ra" in a
+        ]  # TODO: refine detection definition
+        if len(queried_detections) == 0:
             return None
-        closest_ztf_alerts = self.select_closest_ztf_source(queried_alerts, ra, dec)
+        closest_ztf_alerts = self.select_closest_ztf_source(queried_detections, ra, dec)
         return ZiAlertSupplier.shape_alert_dict(closest_ztf_alerts)
