@@ -82,5 +82,5 @@ class ZiArchiveAugmenter(AbsArchiveAugmenter, ArchiveUnit):
         queried_alerts = response.json()
         if len(queried_alerts) == 0:
             return None
-        closest_ztf_alerts = self.select_closest_ztf_source(response.json(), ra, dec)
+        closest_ztf_alerts = self.select_closest_ztf_source(queried_alerts, ra, dec)
         return ZiAlertSupplier.shape_alert_dict(closest_ztf_alerts)
