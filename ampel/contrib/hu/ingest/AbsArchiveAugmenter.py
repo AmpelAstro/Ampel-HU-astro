@@ -7,7 +7,7 @@ from ampel.model.UnitModel import UnitModel
 from ampel.types import StockId, Tag
 
 
-class AbsArchiveAugmenter(AbsT0Muxer):
+class AbsArchiveAugmenter(AbsT0Muxer, abstract=True):
     """
     Add datapoints from archived alerts.
     """
