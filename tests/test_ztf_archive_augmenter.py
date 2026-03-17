@@ -9,7 +9,6 @@ import pytest
 from ampel.alert.load.TarAlertLoader import TarAlertLoader
 from ampel.contrib.hu.ingest.ZiArchiveAugmenter import ZiArchiveAugmenter
 from ampel.log.AmpelLogger import DEBUG, AmpelLogger
-from ampel.test.conftest import _patch_mongo, mock_context
 from ampel.ztf.alert.ZiAlertSupplier import ZiAlertSupplier
 from ampel.ztf.ingest.ZiDataPointShaper import ZiDataPointShaperBase
 
