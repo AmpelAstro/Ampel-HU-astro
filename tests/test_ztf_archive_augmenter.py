@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 from functools import partial
 
+import numpy as np
 import pytest
 import fastavro
 
@@ -81,7 +82,7 @@ def test_ztf_archive_augmenter(alerts, mock_context):
             context=mock_context,
             logger=logger,
             tag="ZTF",
-            shaper=shaper,
+            augmenting_shaper=shaper,
             archive_token=token,
         )
 
@@ -89,3 +90,15 @@ def test_ztf_archive_augmenter(alerts, mock_context):
         muxer.session.get = get_archive_result
 
         c, i = muxer.process(dps, stock_id=alert.stock)
+
+        # check that all and only the correct archive points were added
+        archive_result = get_archive_result()
+        correct_archive_candids = [
+            a["candid"] for a in archive_result if a["objectId"] == ZTF_TEST_NAME
+        ]
+        selected_candids = [ic["id"] for ic in c]
+        assert all(
+            np.isin(selected_candids, correct_archive_candids)
+            | np.isin(selected_candids, [dp["id"] for dp in dps])
+        )
+        assert all(np.isin(correct_archive_candids, selected_candids))
