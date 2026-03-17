@@ -9,7 +9,10 @@ from ampel.types import StockId, Tag
 
 class AbsArchiveAugmenter(AbsT0Muxer, abstract=True):
     """
-    Add datapoints from archived alerts.
+    Augment alerts with data from another alert source. This explicitly assumes
+    that the source of the primary stream is deeper than the source of the
+    augmenting data. This means that all objects detected in the primary stream
+    should also be detected by the augmenting stream.
     """
 
     #: Number of days of history to add, relative to the earliest point in the
@@ -20,7 +23,7 @@ class AbsArchiveAugmenter(AbsT0Muxer, abstract=True):
     #:Warning: could interfer if further alserts added ex through ZiMongoMuxer
     future_days: float = 0
 
-    shaper: UnitModel | str
+    augmenting_shaper: UnitModel | str
 
     tag: Tag
 
@@ -38,10 +41,10 @@ class AbsArchiveAugmenter(AbsT0Muxer, abstract=True):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
-        self._shaper = self.context.loader.new_logical_unit(
-            model=UnitModel(unit=self.shaper)
-            if isinstance(self.shaper, str)
-            else self.shaper,
+        self._augmenting_shaper = self.context.loader.new_logical_unit(
+            model=UnitModel(unit=self.augmenting_shaper)
+            if isinstance(self.augmenting_shaper, str)
+            else self.augmenting_shaper,
             logger=self.logger,
             sub_type=AbsT0Unit,
         )
@@ -76,22 +79,20 @@ class AbsArchiveAugmenter(AbsT0Muxer, abstract=True):
         archive_alert = self.get_alerts(
             dps, alert_jd, self.history_days, self.future_days
         )
+        # TODO: check if these ztf alerts are already in the database.
+        #   In that case we'd have to check if they are associated to any other alert
+        #   from the primary survey and if that association is better or worse.
+
         if not archive_alert:
             # nothing found in archive
             return dps, dps
-        archive_dps = self._shaper.process(archive_alert.datapoints, stock_id)
+
+        archive_dps = self._augmenting_shaper.process(
+            archive_alert.datapoints, stock_id
+        )
 
         # Create combined state of alert and archive
         # Add all dps because the archive has data from a different instrument
-        jds_alert = [dp["body"]["jd"] for dp in dps]
-        extended_dps = sorted(
-            dps + [dp for dp in archive_dps if dp["body"]["jd"] not in jds_alert],
-            key=lambda d: d["body"]["jd"],
-        )
-
-        # TODO:
-        #  check the DB content, both to extend
-        #  the state and avoid duplicate inserts. Would then also need to
-        #  check for superseeded dps.
+        extended_dps = sorted(dps + archive_dps, key=lambda d: d["body"]["jd"])
 
         return extended_dps, extended_dps
