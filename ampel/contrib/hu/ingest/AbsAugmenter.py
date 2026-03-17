@@ -1,13 +1,16 @@
 from ampel.abstract.AbsT0Muxer import AbsT0Muxer
 from ampel.abstract.AbsT0Unit import AbsT0Unit
 from ampel.alert.AmpelAlert import AmpelAlert
+from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
 from ampel.content.DataPoint import DataPoint
+from ampel.core.ContextUnit import ContextUnit
+from ampel.log import AmpelLogger
 from ampel.model.UnitModel import UnitModel
 from ampel.types import StockId, Tag
 
 
-class AbsArchiveAugmenter(AbsT0Muxer, abstract=True):
+class AbsAugmenter(AmpelABC, ContextUnit, abstract=True):
     """
     Augment alerts with data from another alert source. This explicitly assumes
     that the source of the primary stream is deeper than the source of the
@@ -25,20 +28,13 @@ class AbsArchiveAugmenter(AbsT0Muxer, abstract=True):
     #:Warning: could interfer if further alserts added ex through ZiMongoMuxer
     future_days: float = 0
 
+    # process augmented datapoints
+    mux: UnitModel | str
     augmenting_shaper: UnitModel | str
 
     tag: Tag
 
-    # Standard projection used when checking DB for existing PPS/ULS
-    projection: dict[str, int] = {
-        "_id": 1,
-        "tag": 1,
-        "excl": 1,
-        "body.jd": 1,
-        "body.fid": 1,
-        "body.rcid": 1,
-        "body.magpsf": 1,
-    }
+    logger: AmpelLogger
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
@@ -50,11 +46,17 @@ class AbsArchiveAugmenter(AbsT0Muxer, abstract=True):
             logger=self.logger,
             sub_type=AbsT0Unit,
         )
+        self._muxer = self.context.loader.new_context_unit(
+            model=UnitModel(unit=self.mux) if isinstance(self.mux, str) else self.mux,
+            logger=self.logger,
+            context=self.context,
+            sub_type=AbsT0Muxer,
+        )
 
         self._t0_col = self.context.db.get_collection("t0", "w")
 
     @abstractmethod
-    def get_alerts(
+    def augment(
         self, dps: list[DataPoint], jd_center: float, time_pre: float, time_post: float
     ) -> AmpelAlert | None: ...
 
@@ -77,24 +79,23 @@ class AbsArchiveAugmenter(AbsT0Muxer, abstract=True):
             dp["body"]["jd"] for dp in dps if dp["id"] > 0 and "ZTF" in dp["tag"]
         )
 
-        # Obtain archive alert
-        archive_alert = self.get_alerts(
-            dps, alert_jd, self.history_days, self.future_days
+        # Obtain augment alert
+        augment_alert = self.augment(dps, alert_jd, self.history_days, self.future_days)
+
+        if not augment_alert:
+            # nothing found in archive
+            return dps, dps
+
+        augment_dps = self._augmenting_shaper.process(
+            augment_alert.datapoints, augment_alert.stock
+        )
+
+        # the muxer should check the database for already inserted datapoints
+        augment_insert, augment_combine = self._muxer.process(
+            augment_dps, augment_alert.stock
         )
         # TODO: check if these ztf alerts are already in the database.
         #   In that case we'd have to check if they are associated to any other alert
         #   from the primary survey and if that association is better or worse.
 
-        if not archive_alert:
-            # nothing found in archive
-            return dps, dps
-
-        archive_dps = self._augmenting_shaper.process(
-            archive_alert.datapoints, stock_id
-        )
-
-        # Create combined state of alert and archive
-        # Add all dps because the archive has data from a different instrument
-        extended_dps = sorted(dps + archive_dps, key=lambda d: d["body"]["jd"])
-
-        return extended_dps, extended_dps
+        return augment_insert, augment_combine

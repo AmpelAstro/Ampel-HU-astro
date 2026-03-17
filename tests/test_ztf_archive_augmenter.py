@@ -75,12 +75,14 @@ def test_ztf_archive_augmenter(alerts, mock_context):
         logger = AmpelLogger.get_logger(console=dict(level=DEBUG))
         shaper = {"unit": "ZiDataPointShaper"}
         token = {"label": "ztf/archive/token", "value": ""}
+        muxer = "ZiMongoMuxer"
         muxer = ZiArchiveAugmenter(
             context=mock_context,
             logger=logger,
             tag="ZTF",
             augmenting_shaper=shaper,
             archive_token=token,
+            mux=muxer,
         )
 
         # patch archive call

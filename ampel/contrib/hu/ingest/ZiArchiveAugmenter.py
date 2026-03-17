@@ -4,7 +4,7 @@ import numpy as np
 
 from ampel.alert.AmpelAlert import AmpelAlert
 from ampel.content.DataPoint import DataPoint
-from ampel.contrib.hu.ingest.AbsArchiveAugmenter import AbsArchiveAugmenter
+from ampel.contrib.hu.ingest.AbsAugmenter import AbsAugmenter
 from ampel.types import Tag
 from ampel.view.ReadOnlyDict import ReadOnlyDict
 from ampel.ztf.base.ArchiveUnit import ArchiveUnit
@@ -25,7 +25,7 @@ def mean_position(ra: list[float], dec: list[float]) -> tuple[float, float]:
     return np.degrees(mean_ra), np.degrees(mean_dec)
 
 
-class ZiArchiveAugmenter(AbsArchiveAugmenter, ArchiveUnit):
+class ZiArchiveAugmenter(AbsAugmenter, ArchiveUnit):
     """
     Add datapoints from archived ZTF alerts.
     """
@@ -69,7 +69,7 @@ class ZiArchiveAugmenter(AbsArchiveAugmenter, ArchiveUnit):
             sorted_alerts_dict[closest_ztf_name], key=lambda x: x["candidate"]["jd"]
         ), min_distance
 
-    def get_alerts(
+    def augment(
         self, dps: list[DataPoint], jd_center: float, time_pre: float, time_post: float
     ) -> AmpelAlert | None:
         detections = [
