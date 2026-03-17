@@ -13,6 +13,8 @@ class AbsArchiveAugmenter(AbsT0Muxer, abstract=True):
     that the source of the primary stream is deeper than the source of the
     augmenting data. This means that all objects detected in the primary stream
     should also be detected by the augmenting stream.
+    TODO: Ideally the matches would be recorded in the database. Maybe a resource should
+        be defined where a suitable mongo db can be specified?
     """
 
     #: Number of days of history to add, relative to the earliest point in the
