@@ -1,19 +1,17 @@
 import json
-from pathlib import Path
 from functools import partial
+from pathlib import Path
 
+import fastavro
 import numpy as np
 import pytest
-import fastavro
 
+from ampel.alert.load.TarAlertLoader import TarAlertLoader
 from ampel.contrib.hu.ingest.ZiArchiveAugmenter import ZiArchiveAugmenter
 from ampel.log.AmpelLogger import DEBUG, AmpelLogger
-from ampel.test.conftest import mock_context, _patch_mongo
+from ampel.test.conftest import _patch_mongo, mock_context
 from ampel.ztf.alert.ZiAlertSupplier import ZiAlertSupplier
-from ampel.ztf.dev.ZTFAlert import ZTFAlert
 from ampel.ztf.ingest.ZiDataPointShaper import ZiDataPointShaperBase
-from ampel.alert.load.TarAlertLoader import TarAlertLoader
-
 
 DATA_DIR = Path(__file__).parent / "data"
 ZTF_TEST_NAME = "ZTF18abxhyqv"
