@@ -168,6 +168,6 @@ class SimplePositionalAugmenter(AbsAugmenter, abstract=True):
             * np.exp(distance_to_closest_ztf_source**2 / (2 * sigma_sq_rad))
             + 1
         )
-        # TODO: save association probability somehwere (database specified in resouces?)
+        # TODO: save association probability somewhere (database specified in resources?)
 
         return self.shape_alert_dict(ztf_alerts_from_closest_object)
