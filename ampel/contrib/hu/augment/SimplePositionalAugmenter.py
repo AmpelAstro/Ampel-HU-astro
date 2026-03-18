@@ -9,7 +9,7 @@ from ampel.contrib.hu.augment.AbsAugmenter import AbsAugmenter
 from ampel.types import Tag
 
 ARCSEC_IN_RAD = np.pi / 180 / 3600
-SQDEG_IN_SR = (np.pi / 180) * 2
+SQDEG_IN_SR = (np.pi / 180) ** 2
 
 
 def mean_position(
@@ -61,12 +61,15 @@ class SimplePositionalAugmenter(AbsAugmenter, abstract=True):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        sigma_sq_rad = (self.sigma1**2 * self.sigma2**2) * ARCSEC_IN_RAD**2
-        self._rho1 = self.nu1 / SQDEG_IN_SR
-        self._radius_arcsec = np.sqrt(
-            np.log((1 / self.min_posterior - 1) / (self._rho1 * sigma_sq_rad) * 2)
-            * 2
-            * sigma_sq_rad
+        sigma_sq_rad = (self.sigma1**2 + self.sigma2**2) * ARCSEC_IN_RAD**2
+        self._rho1 = 4 * np.pi * self.nu1 / SQDEG_IN_SR
+        self._radius_arcsec = (
+            np.sqrt(
+                np.log((1 / self.min_posterior - 1) / (self._rho1 * sigma_sq_rad) * 2)
+                * 2
+                * sigma_sq_rad
+            )
+            / ARCSEC_IN_RAD
         )
 
     @abstractmethod
