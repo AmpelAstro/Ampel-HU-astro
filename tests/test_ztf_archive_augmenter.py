@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 from ampel.alert.load.TarAlertLoader import TarAlertLoader
-from ampel.contrib.hu.ingest.ZiArchiveAugmenter import ZiArchiveAugmenter
+from ampel.contrib.hu.augment.ZiArchiveAugmenter import ZiArchiveAugmenter
 from ampel.log.AmpelLogger import DEBUG, AmpelLogger
 from ampel.ztf.alert.ZiAlertSupplier import ZiAlertSupplier
 from ampel.ztf.ingest.ZiDataPointShaper import ZiDataPointShaperBase
@@ -83,6 +83,9 @@ def test_ztf_archive_augmenter(alerts, mock_context):
             augmenting_shaper=shaper,
             archive_token=token,
             mux=muxer,
+            nu1=25,  # sources per sqdeg
+            sigma1=0.1,  # resolution in arcsec of primary survey
+            sigma2=0.1,  # resolution in arcsec of secondary survey (both ZTF in this case)
         )
 
         # patch archive call
