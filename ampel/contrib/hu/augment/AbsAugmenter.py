@@ -84,7 +84,7 @@ class AbsAugmenter(AmpelABC, ContextUnit, abstract=True):
 
         if not augment_alert:
             # nothing found in archive
-            return dps, dps
+            return [], []
 
         augment_dps = self._augmenting_shaper.process(
             augment_alert.datapoints, augment_alert.stock
