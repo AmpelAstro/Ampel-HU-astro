@@ -76,22 +76,35 @@ def test_ztf_archive_augmenter(alerts, mock_context):
         shaper = {"unit": "ZiDataPointShaper"}
         token = {"label": "ztf/archive/token", "value": ""}
         muxer = "ZiMongoMuxer"
-        muxer = ZiArchiveAugmenter(
+        sig1 = 0.1
+        sig2 = 0.2
+        nu1 = 1e5
+        min_p = 0.9
+        augmenter = ZiArchiveAugmenter(
             context=mock_context,
             logger=logger,
             tag="ZTF",
             augmenting_shaper=shaper,
             archive_token=token,
             mux=muxer,
-            nu1=25,  # sources per sqdeg
-            sigma1=0.1,  # resolution in arcsec of primary survey
-            sigma2=0.1,  # resolution in arcsec of secondary survey (both ZTF in this case)
+            min_posterior=min_p,
+            nu1=nu1,  # sources per sqdeg
+            sigma1=sig1,  # resolution in arcsec of primary survey
+            sigma2=sig2,  # resolution in arcsec of secondary survey (both ZTF in this case)
         )
 
-        # patch archive call
-        muxer.session.get = get_archive_result
+        # double check math
+        rho1 = 4 * np.pi * nu1 / (np.pi / 180) ** 2
+        sig1sig2 = (sig1**2 + sig2**2) * (np.pi / 180 / 3600) ** 2
+        psi_rad = np.sqrt(np.log((1 / min_p - 1) / rho1 * 2 / sig1sig2) * 2 * sig1sig2)
+        psi_arcsec = psi_rad * 180 * 3600 / np.pi
+        rel_diff = (psi_arcsec - augmenter._radius_arcsec) / psi_arcsec
+        assert abs(rel_diff) < 1e-15
 
-        c, i = muxer.process(dps, stock_id=alert.stock)
+        # patch archive call
+        augmenter.session.get = get_archive_result
+
+        c, i = augmenter.process(dps, stock_id=alert.stock)
 
         # check that all and only the correct archive points were added
         archive_result = get_archive_result()
