@@ -4,7 +4,7 @@ import numpy as np
 
 from ampel.alert.AmpelAlert import AmpelAlert
 from ampel.content.DataPoint import DataPoint
-from ampel.contrib.hu.ingest.AbsAugmenter import AbsAugmenter
+from ampel.contrib.hu.augment.AbsAugmenter import AbsAugmenter
 from ampel.types import Tag
 from ampel.view.ReadOnlyDict import ReadOnlyDict
 from ampel.ztf.base.ArchiveUnit import ArchiveUnit
