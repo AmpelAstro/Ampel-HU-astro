@@ -10,9 +10,9 @@ from ampel.model.UnitModel import UnitModel
 from ampel.types import StockId, Tag
 
 
-class AbsAugmenter(AmpelABC, ContextUnit, abstract=True):
+class AbsAdder(AmpelABC, ContextUnit, abstract=True):
     """
-    Augment alerts with data from another alert source. This explicitly assumes
+    Add alerts from another alert source. This explicitly assumes
     that the source of the primary stream is deeper than the source of the
     augmenting data. This means that all objects detected in the primary stream
     should also be detected by the augmenting stream.
@@ -39,7 +39,7 @@ class AbsAugmenter(AmpelABC, ContextUnit, abstract=True):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
-        self._augmenting_shaper = self.context.loader.new_logical_unit(
+        self._adding_shaper = self.context.loader.new_logical_unit(
             model=UnitModel(unit=self.augmenting_shaper)
             if isinstance(self.augmenting_shaper, str)
             else self.augmenting_shaper,
@@ -56,7 +56,7 @@ class AbsAugmenter(AmpelABC, ContextUnit, abstract=True):
         self._t0_col = self.context.db.get_collection("t0", "w")
 
     @abstractmethod
-    def augment(
+    def add(
         self, dps: list[DataPoint], jd_center: float, time_pre: float, time_post: float
     ) -> AmpelAlert | None: ...
 
@@ -80,13 +80,13 @@ class AbsAugmenter(AmpelABC, ContextUnit, abstract=True):
         )
 
         # Obtain augment alert
-        augment_alert = self.augment(dps, alert_jd, self.history_days, self.future_days)
+        augment_alert = self.add(dps, alert_jd, self.history_days, self.future_days)
 
         if not augment_alert:
             # nothing found in archive
             return [], []
 
-        augment_dps = self._augmenting_shaper.process(
+        augment_dps = self._adding_shaper.process(
             augment_alert.datapoints, augment_alert.stock
         )
 

@@ -5,7 +5,7 @@ import numpy as np
 from ampel.alert.AmpelAlert import AmpelAlert
 from ampel.base.decorator import abstractmethod
 from ampel.content.DataPoint import DataPoint
-from ampel.contrib.hu.augment.AbsAugmenter import AbsAugmenter
+from ampel.contrib.hu.t0.AbsAdder import AbsAdder
 from ampel.types import Tag
 
 ARCSEC_IN_RAD = np.pi / 180 / 3600
@@ -37,7 +37,7 @@ def mean_position(
     )
 
 
-class SimplePositionalAugmenter(AbsAugmenter, abstract=True):
+class SimpleClosestAdder(AbsAdder, abstract=True):
     """
     Augment based on the position of alerts.
     Based on https://www.overleaf.com/read/hpbjsjrrxpym#b8d122
@@ -134,7 +134,7 @@ class SimplePositionalAugmenter(AbsAugmenter, abstract=True):
             associated_position,
         )
 
-    def augment(
+    def add(
         self, dps: list[DataPoint], jd_center: float, time_pre: float, time_post: float
     ) -> AmpelAlert | None:
         # only use detection of the primary stream
