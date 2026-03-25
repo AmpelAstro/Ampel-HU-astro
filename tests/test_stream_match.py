@@ -3,6 +3,7 @@ from functools import partial
 from pathlib import Path
 
 import fastavro
+import matplotlib.pyplot as plt
 import mongomock
 import numpy as np
 import pymongo
@@ -111,7 +112,7 @@ def test_ztf_archive_adder(alerts, ztf_archive_adder):
         assert all(np.isin(correct_archive_candids, selected_candids))
 
 
-def test_positional_stream_combine(alerts, ztf_archive_adder, monkeypatch):
+def test_positional_stream_combine(alerts, ztf_archive_adder, monkeypatch, tmp_path):
     logger = AmpelLogger.get_logger(console=dict(level=DEBUG))
     sig1 = 0.1
     sig2 = 0.2
@@ -137,7 +138,7 @@ def test_positional_stream_combine(alerts, ztf_archive_adder, monkeypatch):
     # patch tag
     ztf_archive_adder.tag = secondary_tag
 
-    for alert in alerts():
+    for i, alert in enumerate(alerts()):
         dps = ZiDataPointShaperBase().process(alert.datapoints, alert.stock)
         for dp in dps:
             dp["tag"] = [primary_tag, *list(dp["tag"])]
@@ -145,6 +146,32 @@ def test_positional_stream_combine(alerts, ztf_archive_adder, monkeypatch):
         for dp in archive_dps:
             dp["tag"] = [secondary_tag, *list(dp["tag"])]
         t1res = t1.combine(dps + archive_dps)
+
+        fig, ax = plt.subplots()
+        ax.scatter(
+            [dp["body"]["ra"] for dp in dps if "ra" in dp["body"]],
+            [dp["body"]["dec"] for dp in dps if "dec" in dp["body"]],
+            label="alert",
+            marker="x",
+        )
+        ax.scatter(
+            [
+                dp["body"]["ra"]
+                for dp in archive_dps
+                if "ra" in dp["body"] and dp["id"] in t1res.dps
+            ],
+            [
+                dp["body"]["dec"]
+                for dp in archive_dps
+                if "dec" in dp["body"] and dp["id"] in t1res.dps
+            ],
+            label="archive",
+            marker="s",
+        )
+        ax.set_aspect("equal")
+        ax.legend()
+        fig.savefig(tmp_path / f"{i}.png")
+        plt.close()
 
         # check that the right source was selected
         assert to_ztf_id(t1res.meta["stock"]) == ZTF_TEST_NAME
