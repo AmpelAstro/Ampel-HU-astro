@@ -11,6 +11,7 @@ from hashlib import md5
 
 import numpy as np
 import pymongo
+from pymongo.errors import DuplicateKeyError
 
 from ampel.abstract.AbsT1CombineUnit import AbsT1CombineUnit
 from ampel.content.DataPoint import DataPoint
@@ -80,6 +81,7 @@ class T1PositionalStreamCombine(AbsT1CombineUnit, ContextUnit):
             col.create_index(
                 "primary_stock", partialFilterExpression={"superseded": False}
             )
+            col.create_index("match_id", unique=True)
 
         self._col = self._client[self.database_name][self.collection_name]
 
@@ -183,17 +185,25 @@ class T1PositionalStreamCombine(AbsT1CombineUnit, ContextUnit):
                 [self._prior_hash, *selected_dps], separators=(",", ":")
             ).encode()
         ).hexdigest()
-        col.insert_one(
-            {
-                "primary_stock": primary_stock,
-                "secondary_stock": secondary_stock,
-                "dist": dist,
-                "posterior": posterior,
-                "superseded": False,
-                "superseded_by": None,
-                "match_id": match_id,
-            }
-        )
+        body = {
+            "primary_stock": primary_stock,
+            "secondary_stock": secondary_stock,
+            "dist": dist,
+            "posterior": posterior,
+            "superseded": False,
+            "superseded_by": None,
+            "match_id": match_id,
+        }
+        try:
+            col.insert_one(body)
+
+        # case the match already exists in the database, e.g. for a re-run
+        except DuplicateKeyError:
+            d = col.find_one({"match_id": match_id})
+            for k, v in d.items():
+                assert body[k] == v, (
+                    f"Match {match_id} already exists in database but with different values! {k}: {body[k]} vs {v}"
+                )
 
         # supersede previous association
         col.update_many(
