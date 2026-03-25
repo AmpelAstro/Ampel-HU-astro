@@ -7,7 +7,8 @@ import numpy as np
 import pytest
 
 from ampel.alert.load.TarAlertLoader import TarAlertLoader
-from ampel.contrib.hu.augment.ZiArchiveAugmenter import ZiArchiveAugmenter
+from ampel.contrib.hu.t0.ZiArchiveAdder import ZiArchiveAdder
+from ampel.contrib.hu.t1.T1PositionalStreamCombine import T1PositionalStreamCombine
 from ampel.log.AmpelLogger import DEBUG, AmpelLogger
 from ampel.ztf.alert.ZiAlertSupplier import ZiAlertSupplier
 from ampel.ztf.ingest.ZiDataPointShaper import ZiDataPointShaperBase
@@ -68,50 +69,81 @@ def get_archive_result(*args, **kwargs):
         return json.load(f)
 
 
-def test_ztf_archive_augmenter(alerts, mock_context):
+@pytest.fixture
+def ztf_archive_adder(mock_context):
+    logger = AmpelLogger.get_logger(console=dict(level=DEBUG))
+    shaper = {"unit": "ZiDataPointShaper"}
+    token = {"label": "ztf/archive/token", "value": ""}
+    muxer = "ZiMongoMuxer"
+    adder = ZiArchiveAdder(
+        context=mock_context,
+        logger=logger,
+        tag="ZTF",
+        augmenting_shaper=shaper,
+        archive_token=token,
+        mux=muxer,
+        radius_arcsec=1,
+    )
+    adder.session.get = get_archive_result
+    return adder
+
+
+def test_ztf_archive_adder(alerts, ztf_archive_adder):
+    """Just test functionality of the ZiArchiveAdder"""
+    adder = ztf_archive_adder
     for alert in alerts():
         # convert to DataPoint
         dps = ZiDataPointShaperBase().process(alert.datapoints, alert.stock)
-        logger = AmpelLogger.get_logger(console=dict(level=DEBUG))
-        shaper = {"unit": "ZiDataPointShaper"}
-        token = {"label": "ztf/archive/token", "value": ""}
-        muxer = "ZiMongoMuxer"
-        sig1 = 0.1
-        sig2 = 0.2
-        nu1 = 1e5
-        min_p = 0.9
-        augmenter = ZiArchiveAugmenter(
-            context=mock_context,
-            logger=logger,
-            tag="ZTF",
-            augmenting_shaper=shaper,
-            archive_token=token,
-            mux=muxer,
-            min_posterior=min_p,
-            nu1=nu1,  # sources per sqdeg
-            sigma1=sig1,  # resolution in arcsec of primary survey
-            sigma2=sig2,  # resolution in arcsec of secondary survey (both ZTF in this case)
+
+        i, c = adder.process(dps, stock_id=alert.stock)
+
+        # check that all and only the correct archive points were added
+        archive_result = get_archive_result()
+        correct_archive_candids = [a["candid"] for a in archive_result]
+        selected_candids = [ic["id"] for ic in c]
+        assert all(
+            np.isin(selected_candids, correct_archive_candids)
+            | np.isin(selected_candids, [dp["id"] for dp in dps])
         )
+        assert all(np.isin(correct_archive_candids, selected_candids))
 
-        # double check math
-        rho1 = 4 * np.pi * nu1 / (np.pi / 180) ** 2
-        sig1sig2 = (sig1**2 + sig2**2) * (np.pi / 180 / 3600) ** 2
-        psi_rad = np.sqrt(np.log((1 / min_p - 1) / rho1 * 2 / sig1sig2) * 2 * sig1sig2)
-        psi_arcsec = psi_rad * 180 * 3600 / np.pi
-        rel_diff = (psi_arcsec - augmenter._radius_arcsec) / psi_arcsec
-        assert abs(rel_diff) < 1e-15
 
-        # patch archive call
-        augmenter.session.get = get_archive_result
+def test_positional_stream_combine(alerts, ztf_archive_adder):
+    logger = AmpelLogger.get_logger(console=dict(level=DEBUG))
+    sig1 = 0.1
+    sig2 = 0.2
+    nu1 = 1e5
+    min_p = 0.9
+    primary_tag = "ZTF1"
+    secondary_tag = "ZTF2"
+    t1 = T1PositionalStreamCombine(
+        logger=logger,
+        sig1=sig1,
+        sig2=sig2,
+        nu1=nu1,
+        min_posterior=min_p,
+        primary_tag=primary_tag,
+        secondary_tag=secondary_tag,
+    )
 
-        c, i = augmenter.process(dps, stock_id=alert.stock)
+    # patch tag
+    ztf_archive_adder.tag = secondary_tag
+
+    for alert in alerts():
+        dps = ZiDataPointShaperBase().process(alert.datapoints, alert.stock)
+        _, archive_dps = ztf_archive_adder.process(dps, stock_id=alert.stock)
+        t1res = t1.combine(dps + archive_dps)
+
+        # check that the right source was selected
+        assert t1res.meta["stock"] == ZTF_TEST_NAME
+        assert t1res.meta["p_association"] > min_p
 
         # check that all and only the correct archive points were added
         archive_result = get_archive_result()
         correct_archive_candids = [
             a["candid"] for a in archive_result if a["objectId"] == ZTF_TEST_NAME
         ]
-        selected_candids = [ic["id"] for ic in c]
+        selected_candids = [ic["id"] for ic in t1res.dps]
         assert all(
             np.isin(selected_candids, correct_archive_candids)
             | np.isin(selected_candids, [dp["id"] for dp in dps])
