@@ -166,8 +166,8 @@ class T1PositionalStreamCombine(AbsT1CombineUnit):
 
         # calculate position of primary stream
         ra, dec, dra, ddec = mean_position(
-            [dp["body"]["ra"] for dp in primary_dps],
-            [dp["body"]["dec"] for dp in primary_dps],
+            [dp["body"]["ra"] for dp in primary_dps if "ra" in dp["body"]],
+            [dp["body"]["dec"] for dp in primary_dps if "dec" in dp["body"]],
         )
 
         # select closest source from secondary stream
