@@ -73,7 +73,6 @@ class T1PositionalStreamCombine(AbsT1CombineUnit, ContextUnit):
         # if database does not exist or was just dropped because self.reset_db
         if self.database_name not in self._client.list_database_names():
             col = self._client[self.database_name][self.collection_name]
-            col.create_index("primary_stock")
             col.create_index("secondary_stock")
 
         self._col = self._client[self.database_name][self.collection_name]
@@ -134,48 +133,28 @@ class T1PositionalStreamCombine(AbsT1CombineUnit, ContextUnit):
             for dp in datapoints_list
             if self._primary_operator([t in self.primary_tag for t in dp["tag"]])
         ]
-        secondary_stocks = np.unique([dp["stock"] for dp in secondary_dps])
 
-        # check if primary stock has already a match
-        prv_match = None
-        col = self._col
-        for d in col.find({"primary_stock": primary_stock}):
-            if prv_match:
-                raise RuntimeError(
-                    f"Corrupt match database: more than one match found for {primary_stock}!"
-                )
-            prv_match = d
+        # calculate position of primary stream
+        ra, dec, dra, ddec = mean_position(
+            [dp["body"]["ra"] for dp in primary_dps],
+            [dp["body"]["dec"] for dp in primary_dps],
+        )
 
-        # if there was a previous match, get associated data
-        if prv_match:
-            # make sure the previous match is in the selected data
-            if prv_match["secondary_stock"] in secondary_stocks:
-                posterior = prv_match["p_association"]
-                secondary_stock = prv_match["secondary_stock"]
-                dist = prv_match["dist"]
+        # select closest source from secondary stream
+        closest_dps, pos, dist = self.select_closest_source(secondary_dps, ra, dec)
+        secondary_stock = closest_dps[0]["stock"]
 
-        # if no match proceed with calculation
-        else:
-            # calculate position of primary stream
-            ra, dec, dra, ddec = mean_position(
-                [dp["body"]["ra"] for dp in primary_dps],
-                [dp["body"]["dec"] for dp in primary_dps],
-            )
-
-            # select closest source from secondary stream
-            closest_dps, pos, dist = self.select_closest_source(secondary_dps, ra, dec)
-            secondary_stock = closest_dps[0]["stock"]
-
-            # calculate posterior association probability
-            sigma1_sq = dra**2 + ddec**2
-            sigma2_sq = pos[2] ** 2 + pos[3] ** 2
-            sigma_sq_rad = (sigma1_sq + sigma2_sq) * SQDEG_IN_SR
-            posterior = 1 / (
-                self._rho1 * sigma_sq_rad / 2 * np.exp(dist**2 / (2 * sigma_sq_rad)) + 1
-            )
+        # calculate posterior association probability
+        sigma1_sq = dra**2 + ddec**2
+        sigma2_sq = pos[2] ** 2 + pos[3] ** 2
+        sigma_sq_rad = (sigma1_sq + sigma2_sq) * SQDEG_IN_SR
+        posterior = 1 / (
+            self._rho1 * sigma_sq_rad / 2 * np.exp(dist**2 / (2 * sigma_sq_rad)) + 1
+        )
 
         # check if secondary stock is already better associated to another source
         prv_match_secondary = None
+        col = self._col
         for d in col.find({"secondary_stock": secondary_stock}):
             if prv_match_secondary:
                 raise RuntimeError(
@@ -185,14 +164,6 @@ class T1PositionalStreamCombine(AbsT1CombineUnit, ContextUnit):
 
         # if the association is better, the primary source has no match
         if prv_match_secondary and (prv_match_secondary["p_association"] > posterior):
-            # update database accordingly
-            if prv_match:
-                col.update_one(
-                    {"primary_stock": primary_stock},
-                    {"$set": {"superseded": prv_match_secondary["secondary_stock"]}},
-                )
-
-            # combine only data from primary stream
             return T1CombineResult(dps=[dp["id"] for dp in primary_dps])
 
         # note the association in the database
