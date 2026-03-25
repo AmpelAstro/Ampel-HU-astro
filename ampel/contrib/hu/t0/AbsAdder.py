@@ -32,8 +32,6 @@ class AbsAdder(AmpelABC, ContextUnit, abstract=True):
     mux: UnitModel | str
     augmenting_shaper: UnitModel | str
 
-    tag: Tag
-
     logger: AmpelLogger
 
     def __init__(self, **kwargs) -> None:
