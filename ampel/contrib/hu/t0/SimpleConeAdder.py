@@ -1,14 +1,9 @@
-import numpy as np
-
 from ampel.alert.AmpelAlert import AmpelAlert
 from ampel.base.decorator import abstractmethod
 from ampel.content.DataPoint import DataPoint
 from ampel.contrib.hu.t0.AbsAdder import AbsAdder
 from ampel.contrib.hu.util.meanpos import mean_position
 from ampel.types import Tag
-
-ARCSEC_IN_RAD = np.pi / 180 / 3600
-SQDEG_IN_SR = (np.pi / 180) ** 2
 
 
 class SimpleConeAdder(AbsAdder, abstract=True):
