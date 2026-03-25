@@ -7,7 +7,7 @@ from ampel.content.DataPoint import DataPoint
 from ampel.core.ContextUnit import ContextUnit
 from ampel.log import AmpelLogger
 from ampel.model.UnitModel import UnitModel
-from ampel.types import StockId, Tag
+from ampel.types import StockId
 
 
 class AbsAdder(AmpelABC, ContextUnit, abstract=True):
