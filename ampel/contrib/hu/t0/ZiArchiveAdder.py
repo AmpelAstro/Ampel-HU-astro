@@ -44,12 +44,14 @@ class ZiArchiveAdder(SimpleConeAdder, ArchiveUnit):
         return queried_detections
 
     def shape_alert_dict(self, dp: list[dict]) -> list[AmpelAlert]:
-        candids = np.unique([d["candid"] for d in dp])
+        objids = np.unique([d["objectId"] for d in dp])
 
         alerts = []
-        for candid in candids:
+        for objid in objids:
             idp = sorted(
-                filter(lambda d: d["candid"] == candid if "candid" in d else False, dp),
+                filter(
+                    lambda d: d["objectId"] == objid if "objectId" in d else False, dp
+                ),
                 key=lambda x: x["candidate"]["jd"],
             )
             latest_dp = idp[-1]
