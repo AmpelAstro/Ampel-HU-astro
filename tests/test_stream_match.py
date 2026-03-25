@@ -15,6 +15,7 @@ from ampel.log.AmpelLogger import DEBUG, AmpelLogger
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.ztf.alert.ZiAlertSupplier import ZiAlertSupplier
 from ampel.ztf.ingest.ZiDataPointShaper import ZiDataPointShaperBase
+from ampel.ztf.util.ZTFIdMapper import to_ztf_id
 
 DATA_DIR = Path(__file__).parent / "data"
 ZTF_TEST_NAME = "ZTF18abxhyqv"
@@ -146,7 +147,7 @@ def test_positional_stream_combine(alerts, ztf_archive_adder, monkeypatch):
         t1res = t1.combine(dps + archive_dps)
 
         # check that the right source was selected
-        assert t1res.meta["stock"] == ZTF_TEST_NAME
+        assert to_ztf_id(t1res.meta["stock"]) == ZTF_TEST_NAME
         assert t1res.meta["p_association"] > min_p
 
         # check that all and only the correct archive points were added
