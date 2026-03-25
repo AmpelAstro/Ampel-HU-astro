@@ -1,11 +1,11 @@
 from ampel.alert.AmpelAlert import AmpelAlert
-from ampel.contrib.hu.t0.SimpleClosestAdder import SimpleClosestAdder
+from ampel.contrib.hu.t0.SimpleConeAdder import SimpleConeAdder
 from ampel.view.ReadOnlyDict import ReadOnlyDict
 from ampel.ztf.base.ArchiveUnit import ArchiveUnit
 from ampel.ztf.util.ZTFIdMapper import to_ampel_id
 
 
-class ZiArchiveAdder(SimpleClosestAdder, ArchiveUnit):
+class ZiArchiveAdder(SimpleConeAdder, ArchiveUnit):
     """
     Add datapoints from archived ZTF alerts.
     """
