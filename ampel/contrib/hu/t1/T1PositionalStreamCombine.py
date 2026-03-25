@@ -84,8 +84,9 @@ class T1PositionalStreamCombine(AbsT1CombineUnit):
 
         self._col = self._client[self.database_name][self.collection_name]
 
+    @staticmethod
     def select_closest_source(
-        self, datapoints: list[DataPoint], ra_ref: float, dec_ref: float
+        datapoints: list[DataPoint], ra_ref: float, dec_ref: float
     ) -> tuple[list[DataPoint], tuple[float, float, float, float], float]:
         # sort the alerts per source name
         source_names = np.unique([dp["stock"] for dp in datapoints])
