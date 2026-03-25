@@ -13,9 +13,6 @@ class SimpleConeAdder(AbsAdder, abstract=True):
 
     radius_arcsec: float
 
-    # tag to add to the alert
-    tag: Tag | None | list[Tag] = None
-
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
