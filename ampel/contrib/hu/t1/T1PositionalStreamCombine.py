@@ -8,6 +8,7 @@
 # Last Modified By:    Jannis Necker <jannis.necker@gmail.com>
 import json
 from hashlib import md5
+from typing import Callable
 
 import numpy as np
 import pymongo
@@ -45,10 +46,10 @@ class T1PositionalStreamCombine(AbsT1CombineUnit):
     sigma2: float
 
     # tag(s) of the primary stream
-    primary_tag: AnyOf[Tag] | AllOf[Tag]
+    primary_tag: AnyOf[Tag] | AllOf[Tag] | Tag
 
     # tag(s) of the secondary streams to be included
-    secondary_tag: AnyOf[Tag] | AllOf[Tag]
+    secondary_tag: AnyOf[Tag] | AllOf[Tag] | Tag
 
     # MongoDB to save matches
     mongo_uri: str
@@ -58,8 +59,14 @@ class T1PositionalStreamCombine(AbsT1CombineUnit):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._primary_operator = all if isinstance(self.primary_tag, AllOf) else any
-        self._secondary_operator = all if isinstance(self.secondary_tag, AllOf) else any
+
+        # compile primary tag and operator
+        self._primary_operator, self._primary_tag = self._compile_operator(
+            self.primary_tag
+        )
+        self._secondary_operator, self._secondary_tag = self._compile_operator(
+            self.secondary_tag
+        )
         self._rho1 = 4 * np.pi * self.nu1 / SQDEG_IN_SR
 
         # identify the prior in the database
@@ -83,6 +90,21 @@ class T1PositionalStreamCombine(AbsT1CombineUnit):
             col.create_index("match_id", unique=True)
 
         self._col = self._client[self.database_name][self.collection_name]
+
+    @staticmethod
+    def _compile_operator(
+        tag_spec: AnyOf[Tag] | AllOf[Tag] | Tag,
+    ) -> tuple[Callable, set[Tag]]:
+        if isinstance(tag_spec, AnyOf):
+            operator = any
+            tags = set(tag_spec.any_of)
+        elif isinstance(tag_spec, AllOf):
+            operator = all
+            tags = set(tag_spec.all_of)
+        else:
+            operator = any
+            tags = {tag_spec}
+        return operator, tags
 
     @staticmethod
     def select_closest_source(
@@ -133,13 +155,13 @@ class T1PositionalStreamCombine(AbsT1CombineUnit):
         primary_dps = [
             dp
             for dp in datapoints_list
-            if self._primary_operator([t in self.primary_tag for t in dp["tag"]])
+            if self._primary_operator([t in dp["tag"] for t in self._primary_tag])
         ]
         primary_stock = primary_dps[0]["stock"]
         secondary_dps = [
             dp
             for dp in datapoints_list
-            if self._primary_operator([t in self.primary_tag for t in dp["tag"]])
+            if self._secondary_operator([t in dp["tag"] for t in self._secondary_tag])
         ]
 
         # calculate position of primary stream
