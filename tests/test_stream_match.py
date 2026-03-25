@@ -3,13 +3,16 @@ from functools import partial
 from pathlib import Path
 
 import fastavro
+import mongomock
 import numpy as np
+import pymongo
 import pytest
 
 from ampel.alert.load.TarAlertLoader import TarAlertLoader
 from ampel.contrib.hu.t0.ZiArchiveAdder import ZiArchiveAdder
 from ampel.contrib.hu.t1.T1PositionalStreamCombine import T1PositionalStreamCombine
 from ampel.log.AmpelLogger import DEBUG, AmpelLogger
+from ampel.model.operator.AnyOf import AnyOf
 from ampel.ztf.alert.ZiAlertSupplier import ZiAlertSupplier
 from ampel.ztf.ingest.ZiDataPointShaper import ZiDataPointShaperBase
 
@@ -78,7 +81,6 @@ def ztf_archive_adder(mock_context):
     adder = ZiArchiveAdder(
         context=mock_context,
         logger=logger,
-        tag="ZTF",
         augmenting_shaper=shaper,
         archive_token=token,
         mux=muxer,
@@ -108,7 +110,7 @@ def test_ztf_archive_adder(alerts, ztf_archive_adder):
         assert all(np.isin(correct_archive_candids, selected_candids))
 
 
-def test_positional_stream_combine(alerts, ztf_archive_adder):
+def test_positional_stream_combine(alerts, ztf_archive_adder, monkeypatch):
     logger = AmpelLogger.get_logger(console=dict(level=DEBUG))
     sig1 = 0.1
     sig2 = 0.2
@@ -116,14 +118,19 @@ def test_positional_stream_combine(alerts, ztf_archive_adder):
     min_p = 0.9
     primary_tag = "ZTF1"
     secondary_tag = "ZTF2"
+
+    monkeypatch.setattr(pymongo, "MongoClient", mongomock.MongoClient)
+
     t1 = T1PositionalStreamCombine(
         logger=logger,
-        sig1=sig1,
-        sig2=sig2,
+        sigma1=sig1,
+        sigma2=sig2,
         nu1=nu1,
         min_posterior=min_p,
-        primary_tag=primary_tag,
-        secondary_tag=secondary_tag,
+        primary_tag=AnyOf(any_of=[primary_tag]),
+        secondary_tag=AnyOf(any_of=[secondary_tag]),
+        mongo_uri="mongodb://localhost:27017",
+        database_name="test_db",
     )
 
     # patch tag
@@ -131,7 +138,11 @@ def test_positional_stream_combine(alerts, ztf_archive_adder):
 
     for alert in alerts():
         dps = ZiDataPointShaperBase().process(alert.datapoints, alert.stock)
+        for dp in dps:
+            dp["tag"] = [primary_tag, *list(dp["tag"])]
         _, archive_dps = ztf_archive_adder.process(dps, stock_id=alert.stock)
+        for dp in archive_dps:
+            dp["tag"] = [secondary_tag, *list(dp["tag"])]
         t1res = t1.combine(dps + archive_dps)
 
         # check that the right source was selected
