@@ -213,5 +213,6 @@ class T1PositionalStreamCombine(AbsT1CombineUnit):
         # combine data from primary stream and secondary source
         return T1CombineResult(
             dps=selected_dps,
+            # this is no meta info and should better be stored in a body!
             meta={"stock": closest_dps[0]["stock"], "p_association": posterior},
         )
