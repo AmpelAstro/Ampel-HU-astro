@@ -16,7 +16,6 @@ from pymongo.errors import DuplicateKeyError
 from ampel.abstract.AbsT1CombineUnit import AbsT1CombineUnit
 from ampel.content.DataPoint import DataPoint
 from ampel.contrib.hu.util.meanpos import mean_position
-from ampel.core.ContextUnit import ContextUnit
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.struct.T1CombineResult import T1CombineResult
@@ -26,7 +25,7 @@ ARCSEC_IN_RAD = np.pi / 180 / 3600
 SQDEG_IN_SR = (np.pi / 180) ** 2
 
 
-class T1PositionalStreamCombine(AbsT1CombineUnit, ContextUnit):
+class T1PositionalStreamCombine(AbsT1CombineUnit):
     """
     Combine based on the position of alerts.
     Based on https://www.overleaf.com/read/hpbjsjrrxpym#b8d122
