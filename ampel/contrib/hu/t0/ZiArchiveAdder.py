@@ -1,3 +1,5 @@
+import numpy as np
+
 from ampel.alert.AmpelAlert import AmpelAlert
 from ampel.contrib.hu.t0.SimpleConeAdder import SimpleConeAdder
 from ampel.view.ReadOnlyDict import ReadOnlyDict
@@ -41,12 +43,22 @@ class ZiArchiveAdder(SimpleConeAdder, ArchiveUnit):
         ]  # TODO: refine detection definition
         return queried_detections
 
-    def shape_alert_dict(self, dp: dict):
-        latest_alert_from_closest_source = dp[-1]
-        return AmpelAlert(
-            id=latest_alert_from_closest_source["candid"],
-            stock=to_ampel_id(latest_alert_from_closest_source["objectId"]),
-            datapoints=tuple(d["candidate"] for d in dp),
-            extra=ReadOnlyDict({"name": latest_alert_from_closest_source["objectId"]}),
-            tag=self.tag,
-        )
+    def shape_alert_dict(self, dp: list[dict]) -> list[AmpelAlert]:
+        candids = np.unique([d["candid"] for d in dp])
+
+        alerts = []
+        for candid in candids:
+            idp = sorted(
+                filter(lambda d: d["candid"] == candid if "candid" in d else False, dp),
+                key=lambda x: x["candidate"]["jd"],
+            )
+            latest_dp = idp[-1]
+            alert = AmpelAlert(
+                id=latest_dp["candid"],
+                stock=to_ampel_id(latest_dp["objectId"]),
+                datapoints=tuple(d["candidate"] for d in idp),
+                extra=ReadOnlyDict({"name": latest_dp["objectId"]}),
+            )
+            alerts.append(alert)
+
+        return alerts

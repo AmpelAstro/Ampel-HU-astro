@@ -56,7 +56,7 @@ class AbsAdder(AmpelABC, ContextUnit, abstract=True):
     @abstractmethod
     def add(
         self, dps: list[DataPoint], jd_center: float, time_pre: float, time_post: float
-    ) -> AmpelAlert | None: ...
+    ) -> list[AmpelAlert] | None: ...
 
     def process(
         self, dps: list[DataPoint], stock_id: None | StockId = None
@@ -78,22 +78,22 @@ class AbsAdder(AmpelABC, ContextUnit, abstract=True):
         )
 
         # Obtain augment alert
-        augment_alert = self.add(dps, alert_jd, self.history_days, self.future_days)
+        add_alerts = self.add(dps, alert_jd, self.history_days, self.future_days)
 
-        if not augment_alert:
+        if not add_alerts:
             # nothing found in archive
             return [], []
 
-        augment_dps = self._adding_shaper.process(
-            augment_alert.datapoints, augment_alert.stock
-        )
+        # process datapoints for individual alerts independently
+        add_insert = []
+        add_combine = []
+        for a in add_alerts:
+            add_dps = self._adding_shaper.process(a.datapoints, a.stock)
 
-        # the muxer should check the database for already inserted datapoints
-        augment_insert, augment_combine = self._muxer.process(
-            augment_dps, augment_alert.stock
-        )
-        # TODO: check if these ztf alerts are already in the database.
-        #   In that case we'd have to check if they are associated to any other alert
-        #   from the primary survey and if that association is better or worse.
+            # the muxer should check the database for already inserted datapoints
+            mux_res = self._muxer.process(add_dps, a.stock)
 
-        return augment_insert, augment_combine
+            add_insert.extend(mux_res[0])
+            add_combine.extend(mux_res[1])
+
+        return add_insert, add_combine

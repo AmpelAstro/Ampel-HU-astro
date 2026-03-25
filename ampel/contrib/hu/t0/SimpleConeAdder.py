@@ -36,11 +36,11 @@ class SimpleConeAdder(AbsAdder, abstract=True):
     ) -> list[dict]: ...
 
     @abstractmethod
-    def shape_alert_dict(self, dp: dict) -> AmpelAlert: ...
+    def shape_alert_dict(self, dp: list[dict]) -> list[AmpelAlert]: ...
 
     def add(
         self, dps: list[DataPoint], jd_center: float, time_pre: float, time_post: float
-    ) -> AmpelAlert | None:
+    ) -> list[AmpelAlert] | None:
         # only use detection of the primary stream
         detections = [
             dp for dp in dps if "ra" in dp["body"]
