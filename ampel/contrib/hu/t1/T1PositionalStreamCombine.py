@@ -6,7 +6,8 @@
 # Date:                24.03.2026
 # Last Modified Date:  24.03.2026
 # Last Modified By:    Jannis Necker <jannis.necker@gmail.com>
-
+import json
+from hashlib import md5
 
 import numpy as np
 import pymongo
@@ -73,7 +74,12 @@ class T1PositionalStreamCombine(AbsT1CombineUnit, ContextUnit):
         # if database does not exist or was just dropped because self.reset_db
         if self.database_name not in self._client.list_database_names():
             col = self._client[self.database_name][self.collection_name]
-            col.create_index("secondary_stock")
+            col.create_index(
+                "secondary_stock", partialFilterExpression={"superseded": False}
+            )
+            col.create_index(
+                "primary_stock", partialFilterExpression={"superseded": False}
+            )
 
         self._col = self._client[self.database_name][self.collection_name]
 
@@ -155,7 +161,7 @@ class T1PositionalStreamCombine(AbsT1CombineUnit, ContextUnit):
         # check if secondary stock is already better associated to another source
         prv_match_secondary = None
         col = self._col
-        for d in col.find({"secondary_stock": secondary_stock}):
+        for d in col.find({"secondary_stock": secondary_stock, "superseded": False}):
             if prv_match_secondary:
                 raise RuntimeError(
                     f"Corrupt match database: more than one match found for {secondary_stock}!"
@@ -163,21 +169,40 @@ class T1PositionalStreamCombine(AbsT1CombineUnit, ContextUnit):
             prv_match_secondary = d
 
         # if the association is better, the primary source has no match
-        if prv_match_secondary and (prv_match_secondary["p_association"] > posterior):
+        if (
+            prv_match_secondary
+            and (prv_match_secondary["primary_stock"] != primary_stock)
+            and (prv_match_secondary["p_association"] > posterior)
+        ):
             return T1CombineResult(dps=[dp["id"] for dp in primary_dps])
 
         # note the association in the database
+        selected_dps = [dp["id"] for dp in primary_dps + closest_dps]
+        match_id = md5(
+            json.dumps(
+                [self._prior_hash, *selected_dps], separators=(",", ":")
+            ).encode()
+        ).hexdigest()
         col.insert_one(
             {
                 "primary_stock": primary_stock,
                 "secondary_stock": secondary_stock,
                 "dist": dist,
                 "posterior": posterior,
+                "superseded": False,
+                "superseded_by": None,
+                "match_id": match_id,
             }
+        )
+
+        # supersede previous association
+        col.update_many(
+            {"primary_stock": primary_stock, "superseded": False},
+            {"$set": {"superseded": True, "superseded_by": match_id}},
         )
 
         # combine data from primary stream and secondary source
         return T1CombineResult(
-            dps=[dp["id"] for dp in primary_dps + closest_dps],
+            dps=selected_dps,
             meta={"stock": closest_dps[0]["stock"], "p_association": posterior},
         )
