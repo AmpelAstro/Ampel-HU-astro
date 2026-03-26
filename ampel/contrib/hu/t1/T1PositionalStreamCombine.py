@@ -24,6 +24,7 @@ from ampel.types import Tag
 
 ARCSEC_IN_RAD = np.pi / 180 / 3600
 SQDEG_IN_SR = (np.pi / 180) ** 2
+FWHM_TO_STD = 1 / (2 * np.sqrt(2 * np.log(2)))
 
 
 class T1PositionalStreamCombine(AbsT1CombineUnit):
@@ -106,46 +107,6 @@ class T1PositionalStreamCombine(AbsT1CombineUnit):
             tags = {tag_spec}
         return operator, tags
 
-    @staticmethod
-    def select_closest_source(
-        datapoints: list[DataPoint], ra_ref: float, dec_ref: float
-    ) -> tuple[list[DataPoint], tuple[float, float, float, float], float]:
-        # sort the alerts per source name
-        source_names = np.unique([dp["stock"] for dp in datapoints])
-        sorted_dps_dict = {
-            zn: [dp for dp in datapoints if dp["stock"] == zn] for zn in source_names
-        }
-
-        # loop over all sources and find the closest one
-        min_distance = np.inf
-        closest_source_name = None
-        associated_mp = None
-        for zn, ads in sorted_dps_dict.items():
-            mp = mean_position(
-                [dp["body"]["ra"] for dp in ads],
-                [dp["body"]["dec"] for dp in ads],
-            )
-            distance = np.sqrt(
-                (np.radians(mp[0]) - np.radians(ra_ref)) ** 2
-                * np.cos(np.radians(dec_ref)) ** 2
-                + (np.radians(mp[1]) - np.radians(dec_ref)) ** 2
-            )
-            if distance < min_distance:
-                min_distance = distance
-                closest_source_name = zn
-                associated_mp = mp
-
-        if closest_source_name is None:
-            # We checked earlier already that there are some alerts so this should not happen
-            raise ValueError("No source found!")
-
-        # selecting the alerts for the closest source
-        return (
-            sorted(sorted_dps_dict[closest_source_name], key=lambda x: x["body"]["jd"]),
-            associated_mp,
-            min_distance,
-        )
-
     def combine(self, datapoints_list: list[DataPoint]) -> T1CombineResult:
         """
         :param datapoints_list: list of datapoints to combine
@@ -170,17 +131,52 @@ class T1PositionalStreamCombine(AbsT1CombineUnit):
             [dp["body"]["dec"] for dp in primary_dps if "dec" in dp["body"]],
         )
 
-        # select closest source from secondary stream
-        closest_dps, pos, dist = self.select_closest_source(secondary_dps, ra, dec)
-        secondary_stock = closest_dps[0]["stock"]
+        # sort the alerts per source name
+        source_names = np.unique([dp["stock"] for dp in secondary_dps])
+        sorted_dps_dict = {
+            zn: [dp for dp in secondary_dps if dp["stock"] == zn] for zn in source_names
+        }
 
-        # calculate posterior association probability
-        sigma1_sq = dra**2 + ddec**2
-        sigma2_sq = pos[2] ** 2 + pos[3] ** 2
-        sigma_sq_rad = (sigma1_sq + sigma2_sq) * SQDEG_IN_SR
-        posterior = 1 / (
-            self._rho1 * sigma_sq_rad / 2 * np.exp(dist**2 / (2 * sigma_sq_rad)) + 1
-        )
+        # loop over all sources and find the closest one
+        posteriors = []
+        for zn, ads in sorted_dps_dict.items():
+            mp = mean_position(
+                [dp["body"]["ra"] for dp in ads],
+                [dp["body"]["dec"] for dp in ads],
+            )
+
+            # fallback for a single datapoint
+            if len(ads) == 1:
+                std_from_fwhm = ads[0]["body"]["fwhm"] * FWHM_TO_STD
+                mp = mp[0], mp[1], std_from_fwhm, std_from_fwhm
+
+            distance = np.sqrt(
+                (np.radians(mp[0]) - np.radians(ra)) ** 2 * np.cos(np.radians(dec)) ** 2
+                + (np.radians(mp[1]) - np.radians(dec)) ** 2
+            )
+
+            # calculate posterior association probability
+            sigma1_sq = dra**2 + ddec**2
+            sigma2_sq = mp[2] ** 2 + mp[3] ** 2
+            sigma_sq_rad = (sigma1_sq + sigma2_sq) * SQDEG_IN_SR
+            posterior = 1 / (
+                self._rho1 * sigma_sq_rad / 2 * np.exp(distance**2 / (2 * sigma_sq_rad))
+                + 1
+            )
+
+            posteriors.append((zn, posterior, distance))
+
+        posteriors = np.array(posteriors)
+        posterior_beyond_threshold = posteriors[:, 1] > self.min_posterior
+        no_match_res = T1CombineResult(dps=[dp["id"] for dp in primary_dps])
+
+        # if there is no good match combine only datapoints from primary stream
+        if sum(posterior_beyond_threshold) == 0:
+            return no_match_res
+
+        # select best matching source from secondary stream
+        best_match = posteriors[np.argmax(posteriors[:, 1])]
+        secondary_stock = best_match[0]
 
         # check if secondary stock is already better associated to another source
         prv_match_secondary = None
@@ -196,12 +192,13 @@ class T1PositionalStreamCombine(AbsT1CombineUnit):
         if (
             prv_match_secondary
             and (prv_match_secondary["primary_stock"] != primary_stock)
-            and (prv_match_secondary["p_association"] > posterior)
+            and (prv_match_secondary["p_association"] > best_match[1])
         ):
             return T1CombineResult(dps=[dp["id"] for dp in primary_dps])
 
         # note the association in the database
-        selected_dps = [dp["id"] for dp in primary_dps + closest_dps]
+        selected_secondary_dps = sorted_dps_dict[best_match[0]]
+        selected_dps = [dp["id"] for dp in primary_dps + selected_secondary_dps]
         match_id = md5(
             json.dumps(
                 [self._prior_hash, *selected_dps], separators=(",", ":")
@@ -210,8 +207,8 @@ class T1PositionalStreamCombine(AbsT1CombineUnit):
         body = {
             "primary_stock": primary_stock,
             "secondary_stock": secondary_stock,
-            "dist": dist,
-            "posterior": posterior,
+            "dist": best_match[2],
+            "posterior": best_match[1],
             "superseded": False,
             "superseded_by": None,
             "match_id": match_id,
@@ -237,5 +234,8 @@ class T1PositionalStreamCombine(AbsT1CombineUnit):
         return T1CombineResult(
             dps=selected_dps,
             # this is no meta info and should better be stored in a body!
-            meta={"stock": closest_dps[0]["stock"], "p_association": posterior},
+            meta={
+                "stock": selected_secondary_dps[0]["stock"],
+                "p_association": best_match[1],
+            },
         )
