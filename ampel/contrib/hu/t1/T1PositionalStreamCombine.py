@@ -7,8 +7,8 @@
 # Last Modified Date:  24.03.2026
 # Last Modified By:    Jannis Necker <jannis.necker@gmail.com>
 import json
+from collections.abc import Callable
 from hashlib import md5
-from typing import Callable
 
 import numpy as np
 import pymongo
