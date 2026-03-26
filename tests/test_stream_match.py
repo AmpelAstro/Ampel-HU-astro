@@ -153,6 +153,7 @@ def test_positional_stream_combine(alerts, ztf_archive_adder, monkeypatch, tmp_p
             [dp["body"]["dec"] for dp in dps if "dec" in dp["body"]],
             label="alert",
             marker="x",
+            zorder=10,
         )
         ax.scatter(
             [
@@ -179,10 +180,17 @@ def test_positional_stream_combine(alerts, ztf_archive_adder, monkeypatch, tmp_p
 
         # check that all and only the correct archive points were added
         archive_result = get_archive_result()
-        correct_archive_candids = [
-            a["candid"] for a in archive_result if a["objectId"] == ZTF_TEST_NAME
+        de_muxed_dp_ids = [
+            1388394243115015014,
+            1388290453115015012,
+            1324402953115015007,
         ]
-        selected_candids = [ic["id"] for ic in t1res.dps]
+        correct_archive_candids = [
+            a["candid"]
+            for a in archive_result
+            if (a["objectId"] == ZTF_TEST_NAME) and (a["candid"] not in de_muxed_dp_ids)
+        ]
+        selected_candids = [ic["id"] for ic in archive_dps if ic["id"] in t1res.dps]
         assert all(
             np.isin(selected_candids, correct_archive_candids)
             | np.isin(selected_candids, [dp["id"] for dp in dps])
