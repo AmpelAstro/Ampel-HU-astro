@@ -194,7 +194,7 @@ class T1PositionalStreamCombine(AbsT1CombineUnit):
             and (prv_match_secondary["primary_stock"] != primary_stock)
             and (prv_match_secondary["p_association"] > best_match[1])
         ):
-            return T1CombineResult(dps=[dp["id"] for dp in primary_dps])
+            return no_match_res
 
         # note the association in the database
         selected_secondary_dps = sorted_dps_dict[best_match[0]]
