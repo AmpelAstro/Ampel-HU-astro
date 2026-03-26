@@ -53,8 +53,9 @@ class ZiArchiveAdder(SimpleConeAdder, ArchiveUnit):
                     lambda d: d["objectId"] == objid if "objectId" in d else False, dp
                 ),
                 key=lambda x: x["candidate"]["jd"],
+                reverse=True,
             )
-            latest_dp = idp[-1]
+            latest_dp = idp[0]
             alert = AmpelAlert(
                 id=latest_dp["candid"],
                 stock=to_ampel_id(latest_dp["objectId"]),
