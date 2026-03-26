@@ -12,18 +12,6 @@ class ZiArchiveAdder(SimpleConeAdder, ArchiveUnit):
     Add datapoints from archived ZTF alerts.
     """
 
-    def name_from_alert(self, dp: dict) -> str:
-        return dp["objectId"]
-
-    def ra_from_alert(self, dp: dict) -> float:
-        return float(dp["candidate"]["ra"])
-
-    def dec_from_alert(self, dp: dict) -> float:
-        return float(dp["candidate"]["dec"])
-
-    def jd_from_alert(self, dp: dict) -> float:
-        return float(dp["candidate"]["jd"])
-
     def cone_search(
         self,
         ra: float,

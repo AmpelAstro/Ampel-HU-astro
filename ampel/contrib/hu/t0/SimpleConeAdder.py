@@ -3,7 +3,6 @@ from ampel.base.decorator import abstractmethod
 from ampel.content.DataPoint import DataPoint
 from ampel.contrib.hu.t0.AbsAdder import AbsAdder
 from ampel.contrib.hu.util.meanpos import mean_position
-from ampel.types import Tag
 
 
 class SimpleConeAdder(AbsAdder, abstract=True):
@@ -15,15 +14,6 @@ class SimpleConeAdder(AbsAdder, abstract=True):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-
-    @abstractmethod
-    def name_from_alert(self, dp: dict) -> str: ...
-    @abstractmethod
-    def ra_from_alert(self, dp: dict) -> float: ...
-    @abstractmethod
-    def dec_from_alert(self, dp: dict) -> float: ...
-    @abstractmethod
-    def jd_from_alert(self, dp: dict) -> float: ...
 
     @abstractmethod
     def cone_search(
