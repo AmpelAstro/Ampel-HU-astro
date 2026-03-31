@@ -110,8 +110,10 @@ class T1PositionalStreamCombine(AbsT1CombineUnit):
         }
 
         # loop over all sources and find the closest one
-        posteriors = []
-        for zn, ads in sorted_dps_dict.items():
+        matching_result = np.zeros(
+            len(sorted_dps_dict), dtype=[("zn", "int"), ("p", "<f4"), ("dist", "<f4")]
+        )  # zn, posterior, distance
+        for i, (zn, ads) in enumerate(sorted_dps_dict.items()):
             mp = mean_position(
                 [dp["body"]["ra"] for dp in ads],
                 [dp["body"]["dec"] for dp in ads],
@@ -136,25 +138,26 @@ class T1PositionalStreamCombine(AbsT1CombineUnit):
                 + 1
             )
 
-            posteriors.append((zn, posterior, distance))
+            matching_result[i] = (zn, posterior, distance / ARCSEC_IN_RAD)
 
-        posteriors = np.array(posteriors)
-        posterior_beyond_threshold = posteriors[:, 1] > self.min_posterior
+        posterior_beyond_threshold = matching_result["p"] > self.min_posterior
 
         # if there is no good match combine only datapoints from primary stream
         if sum(posterior_beyond_threshold) == 0:
             return T1CombineResult(dps=[dp["id"] for dp in primary_dps])
 
         # select best matching source from secondary stream
-        best_match_index = np.argmax(posteriors[:, 1])
-        best_match = posteriors[best_match_index]
+        best_match_index = np.argmax(matching_result["p"])
+        best_match = matching_result[best_match_index]
 
         # note the association in the database
         selected_dps = [dp["id"] for dp in primary_dps + sorted_dps_dict[best_match[0]]]
         body = {
             "primary_stock": primary_stock,
             "best_match": best_match.tolist(),
-            "other_matches": np.delete(posteriors, best_match_index, axis=0).tolist(),
+            "other_matches": np.delete(
+                matching_result, best_match_index, axis=0
+            ).tolist(),
         }
 
         # combine data from primary stream and secondary source
