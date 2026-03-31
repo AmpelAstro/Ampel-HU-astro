@@ -121,8 +121,6 @@ def test_positional_stream_combine(alerts, ztf_archive_adder, monkeypatch, tmp_p
     primary_tag = "ZTF1"
     secondary_tag = "ZTF2"
 
-    monkeypatch.setattr(pymongo, "MongoClient", mongomock.MongoClient)
-
     t1 = T1PositionalStreamCombine(
         logger=logger,
         sigma1=sig1,
@@ -131,8 +129,6 @@ def test_positional_stream_combine(alerts, ztf_archive_adder, monkeypatch, tmp_p
         min_posterior=min_p,
         primary_tag=AnyOf(any_of=[primary_tag]),
         secondary_tag=AnyOf(any_of=[secondary_tag]),
-        mongo_uri="mongodb://localhost:27017",
-        database_name="test_db",
     )
 
     # patch tag
@@ -175,8 +171,8 @@ def test_positional_stream_combine(alerts, ztf_archive_adder, monkeypatch, tmp_p
         plt.close()
 
         # check that the right source was selected
-        assert to_ztf_id(t1res.meta["stock"]) == ZTF_TEST_NAME
-        assert t1res.meta["p_association"] > min_p
+        assert to_ztf_id(t1res.body["best_match"][0]) == ZTF_TEST_NAME
+        assert t1res.body["best_match"][1] > min_p
 
         # check that all and only the correct archive points were added
         archive_result = get_archive_result()
