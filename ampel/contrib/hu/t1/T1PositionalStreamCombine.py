@@ -11,8 +11,6 @@ from collections.abc import Callable
 from hashlib import md5
 
 import numpy as np
-import pymongo
-from pymongo.errors import DuplicateKeyError
 
 from ampel.abstract.AbsT1CombineUnit import AbsT1CombineUnit
 from ampel.content.DataPoint import DataPoint
@@ -52,12 +50,6 @@ class T1PositionalStreamCombine(AbsT1CombineUnit):
     # tag(s) of the secondary streams to be included
     secondary_tag: AnyOf[Tag] | AllOf[Tag] | Tag
 
-    # MongoDB to save matches
-    mongo_uri: str | None = None
-    database_name: str | None = None
-    collection_name: str | None = "associations"
-    reset_db: bool = False
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -73,28 +65,6 @@ class T1PositionalStreamCombine(AbsT1CombineUnit):
         # identify the prior in the database
         # for now it can just be the prior value
         self._prior_hash = self.nu1
-
-        # set up Mongo collection to store matches
-        if self.mongo_uri:
-            client = pymongo.MongoClient(self.mongo_uri)
-            if (self.database_name in client.list_database_names()) and self.reset_db:
-                client.drop_database(self.database_name)
-
-            # if database does not exist or was just dropped because self.reset_db
-            if self.database_name not in client.list_database_names():
-                col = client[self.database_name][self.collection_name]
-                col.create_index(
-                    "secondary_stock", partialFilterExpression={"superseded": False}
-                )
-                col.create_index(
-                    "primary_stock", partialFilterExpression={"superseded": False}
-                )
-                col.create_index("match_id", unique=True)
-
-            self._col = client[self.database_name][self.collection_name]
-
-        else:
-            self._col = None
 
     @staticmethod
     def _compile_operator(
@@ -182,26 +152,6 @@ class T1PositionalStreamCombine(AbsT1CombineUnit):
         best_match = posteriors[np.argmax(posteriors[:, 1])]
         secondary_stock = best_match[0]
 
-        # check if secondary stock is already better associated to another source
-        prv_match_secondary = None
-        if col := self._col:
-            for d in col.find(
-                {"secondary_stock": secondary_stock, "superseded": False}
-            ):
-                if prv_match_secondary:
-                    raise RuntimeError(
-                        f"Corrupt match database: more than one match found for {secondary_stock}!"
-                    )
-                prv_match_secondary = d
-
-        # if the association is better, the primary source has no match
-        if (
-            prv_match_secondary
-            and (prv_match_secondary["primary_stock"] != primary_stock)
-            and (prv_match_secondary["p_association"] > best_match[1])
-        ):
-            return no_match_res
-
         # note the association in the database
         selected_secondary_dps = sorted_dps_dict[best_match[0]]
         selected_dps = [dp["id"] for dp in primary_dps + selected_secondary_dps]
@@ -219,24 +169,6 @@ class T1PositionalStreamCombine(AbsT1CombineUnit):
             "superseded_by": None,
             "match_id": match_id,
         }
-
-        if col:
-            try:
-                col.insert_one(body)
-
-            # case the match already exists in the database, e.g. for a re-run
-            except DuplicateKeyError:
-                d = col.find_one({"match_id": match_id})
-                for k, v in d.items():
-                    assert body[k] == v, (
-                        f"Match {match_id} already exists in database but with different values! {k}: {body[k]} vs {v}"
-                    )
-
-            # supersede previous association
-            col.update_many(
-                {"primary_stock": primary_stock, "superseded": False},
-                {"$set": {"superseded": True, "superseded_by": match_id}},
-            )
 
         # combine data from primary stream and secondary source
         return T1CombineResult(
