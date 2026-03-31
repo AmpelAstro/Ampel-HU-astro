@@ -6,9 +6,7 @@
 # Date:                24.03.2026
 # Last Modified Date:  24.03.2026
 # Last Modified By:    Jannis Necker <jannis.necker@gmail.com>
-import json
 from collections.abc import Callable
-from hashlib import md5
 
 import numpy as np
 
@@ -142,40 +140,25 @@ class T1PositionalStreamCombine(AbsT1CombineUnit):
 
         posteriors = np.array(posteriors)
         posterior_beyond_threshold = posteriors[:, 1] > self.min_posterior
-        no_match_res = T1CombineResult(dps=[dp["id"] for dp in primary_dps])
 
         # if there is no good match combine only datapoints from primary stream
         if sum(posterior_beyond_threshold) == 0:
-            return no_match_res
+            return T1CombineResult(dps=[dp["id"] for dp in primary_dps])
 
         # select best matching source from secondary stream
-        best_match = posteriors[np.argmax(posteriors[:, 1])]
-        secondary_stock = best_match[0]
+        best_match_index = np.argmax(posteriors[:, 1])
+        best_match = posteriors[best_match_index]
 
         # note the association in the database
-        selected_secondary_dps = sorted_dps_dict[best_match[0]]
-        selected_dps = [dp["id"] for dp in primary_dps + selected_secondary_dps]
-        match_id = md5(
-            json.dumps(
-                [self._prior_hash, *selected_dps], separators=(",", ":")
-            ).encode()
-        ).hexdigest()
+        selected_dps = [dp["id"] for dp in primary_dps + sorted_dps_dict[best_match[0]]]
         body = {
             "primary_stock": primary_stock,
-            "secondary_stock": secondary_stock,
-            "dist": best_match[2],
-            "posterior": best_match[1],
-            "superseded": False,
-            "superseded_by": None,
-            "match_id": match_id,
+            "best_match": best_match.tolist(),
+            "other_matches": np.delete(posteriors, best_match_index, axis=0).tolist(),
         }
 
         # combine data from primary stream and secondary source
         return T1CombineResult(
             dps=selected_dps,
-            # this is no meta info and should better be stored in a body!
-            body={
-                "stock": selected_secondary_dps[0]["stock"],
-                "p_association": best_match[1],
-            },
+            body=body,
         )
