@@ -2347,9 +2347,30 @@ class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
 
         return out
 
+    @backoff.on_exception(
+        backoff.expo,
+        (requests.ConnectionError, requests.Timeout),
+        max_tries=5,
+        factor=2,
+    )
+    @backoff.on_exception(
+        backoff.expo,
+        requests.HTTPError,
+        giveup=lambda e: (
+            not isinstance(e, requests.HTTPError)
+            or e.response is None
+            or e.response.status_code not in {502, 503, 504, 429, 408}
+        ),
+        max_time=60,
+    )
     def _download_lsst_cutout(self, dia_source_id: int) -> dict[str, bytes] | None:
         """
-        Download a cutout from the LSST archive
+        Download a cutout from the LSST archive.
+
+        Behavior:
+        - 404 -> no cutout available -> return None
+        - temporary network / server problems -> retry
+        - persistent timeout / server failure -> raise and stop job
         """
         response = self._http_session.get(
             f"{self.lsst_archive_url.rstrip('/')}/alert/{dia_source_id}/cutouts",
