@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # File:                ampel/contrib/hu/alert/load/ParquetAlertLoader.py
 # License:             BSD-3-Clause
-# Author:              Jakob van Santen 
+# Author:              Jakob van Santen
 # Date:                23.02.2026
 # Last Modified Date:  02.04.2026
 # Last Modified By:    Felix Fischer <felix.martin.fischer@desy.de>
@@ -11,9 +11,18 @@ import re
 from collections.abc import Iterator
 from typing import Any
 
-import pyarrow.dataset as ds  # type: ignore[import-untyped]
-
 from ampel.abstract.AbsAlertLoader import AbsAlertLoader
+
+
+def _get_pyarrow_dataset() -> Any:
+    try:
+        import pyarrow.dataset as ds  # type: ignore[import-not-found,import-untyped]
+    except ImportError as exc:
+        raise ImportError(
+            "ParquetAlertLoader requires the optional dependency 'pyarrow'. "
+            "Please install it to use this loader."
+        ) from exc
+    return ds
 
 
 def _parse_condition(condition: str | None) -> Any | None:
@@ -25,6 +34,7 @@ def _parse_condition(condition: str | None) -> Any | None:
     if not condition:
         return None
 
+    ds = _get_pyarrow_dataset()
     parts = re.split(r"\n|\band\b", condition, flags=re.IGNORECASE)
 
     filt = None
@@ -95,6 +105,8 @@ class ParquetAlertLoader(AbsAlertLoader[dict]):
         Note: We now use pyarrow.dataset.scanner(filter=...) instead of ParquetFile,
         to enable Arrow-level filtering.
         """
+        ds = _get_pyarrow_dataset()
+
         super().__init__(**kwargs)
 
         dataset = ds.dataset(self.path, format="parquet")
