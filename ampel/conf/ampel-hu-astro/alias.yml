@@ -137,18 +137,13 @@ t2:
         post_filter:
           z:
             $lte: 0.03
-            $gte: 0.002
+            $gte: 0.011
         keys_to_append:
           - ObjType
           - Velocity
           - z
-  '%T2CatalogMatch_general':
+  '%T2CatalogMatch_nearby':
     catalogs:
-      AAVSOVSX:
-        keys_to_append:
-        - TYPE
-        rs_arcsec: 3
-        use: extcats
       DESIDR1:
         keys_to_append:
         - z
@@ -179,8 +174,93 @@ t2:
         pre_filter: null
         rs_arcsec: 3.0
         use: extcats
+      GLADEv23:
+        keys_to_append:
+        - z
+        - dist
+        - dist_err
+        - flag1
+        - flag2
+        - flag3
+        rs_arcsec: 10
+        use: extcats
+      NEDLVS:
+        keys_to_append:
+        - objname
+        - objtype
+        - z
+        - z_unc
+        - z_tech
+        - z_qual
+        - z_qual_flag
+        - ebv
+        post_filter: null
+        pre_filter: null
+        rs_arcsec: 10.0
+        use: extcats
+      NEDz_extcats:
+        keys_to_append:
+        - ObjType
+        - Velocity
+        - z
+        post_filter:
+          z:
+            $gte: 0.011
+            $lte: 0.03
+        pre_filter: null
+        rs_arcsec: 60.0
+        use: extcats
+      SDSS_spec:
+        all: false
+        keys_to_append:
+        - z
+        - bptclass
+        - subclass
+        rs_arcsec: 10.0
+        use: extcats
+  '%T2CatalogMatch_general':
+    catalogs:
+      AAVSOVSX:
+        keys_to_append:
+        - TYPE
+        rs_arcsec: 3
+        use: extcats
+      DESIDR1:
+        keys_to_append:
+        - z
+        - zunc
+        - spectype
+        - subtype
+        - ra
+        - dec
+        - desi_target
+        - mag_g
+        - mag_r
+        - mag_z
+        post_filter: null
+        pre_filter: null
+        rs_arcsec: 10.0
+        use: extcats
+      DESIDR1_stars:
+        keys_to_append:
+        - z
+        - zunc
+        - spectype
+        - subtype
+        - ra
+        - dec
+        - desi_target
+        - mag_g
+        - mag_r
+        - mag_z
+        post_filter: null
+        pre_filter: null
+        rs_arcsec: 3.0
+        use: extcats
       GAIADR2:
         keys_to_append:
+        - RA
+        - Dec
         - Mag_G
         - PMRA
         - ErrPMRA
@@ -194,7 +274,10 @@ t2:
         use: catsHTM
       GLADEv23:
         keys_to_append:
+        - ra
+        - dec
         - z
+        - zunc
         - dist
         - dist_err
         - flag1
@@ -213,29 +296,32 @@ t2:
       LSPhotoZZou:
         all: false
         keys_to_append:
-        - photoz
-        - ra
-        - dec
-        - e_photoz
-        - specz
-        - _6
-        - logMassBest
-        - logMassInf
-        - logMassSup
+          - photoz
+          - e_photoz
+          - specz
+          - ra
+          - dec
+          - _6
+          - ID
+          - logMassBest
+          - logMassInf
+          - logMassSup
         post_filter: null
         pre_filter: null
         rs_arcsec: 10.0
         use: extcats
       NEDLVS:
         keys_to_append:
-        - objname
-        - objtype
-        - z
-        - z_unc
-        - z_tech
-        - z_qual
-        - z_qual_flag
-        - ebv
+          - ra
+          - dec
+          - objname
+          - objtype
+          - z
+          - z_unc
+          - z_tech
+          - z_qual
+          - z_qual_flag
+          - ebv
         post_filter: null
         pre_filter: null
         rs_arcsec: 10.0
@@ -247,18 +333,42 @@ t2:
         - z
         rs_arcsec: 10.0
         use: catsHTM
+        post_filter:
+          z:
+            $gte: 0.011
       NEDz_extcats:
         keys_to_append:
+        - RA
+        - Dec
         - ObjType
         - Velocity
         - z
+        - zunc
         post_filter:
           z:
-            $gte: 0.002
+            $gte: 0.011
             $lte: 0.03
         pre_filter: null
         rs_arcsec: 60.0
         use: extcats
+      NED2026:
+        keys_to_append:
+          - ra
+          - dec
+          - objid
+          - prefname
+          - pretype
+          - z
+          - zunc
+          - zflag
+          - n_zdf
+          - n_spectra
+          - bhextin
+        post_filter: null
+        pre_filter: null
+        rs_arcsec: 10.0
+        use: extcats
+
       PS1:
         keys_to_append:
         - gPSFMag
@@ -275,12 +385,12 @@ t2:
         use: catsHTM
       PS1_photoz:
         keys_to_append:
-        - raMean
-        - decMean
-        - z_phot
-        - z_photErr
-        - z_phot0
-        - _2
+          - raMean
+          - decMean
+          - z_phot
+          - z_photErr
+          - z_phot0
+          - _2
         post_filter: null
         pre_filter: null
         rs_arcsec: 10.0
@@ -294,7 +404,10 @@ t2:
       SDSS_spec:
         all: false
         keys_to_append:
+        - ra
+        - dec
         - z
+        - zerr
         - bptclass
         - subclass
         rs_arcsec: 10.0
@@ -342,6 +455,7 @@ t2:
       twoMPZ:
         keys_to_append:
         - zPhoto
+        - zPhotoErr
         - ra
         - dec
         - zSpec

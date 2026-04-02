@@ -34,8 +34,18 @@ class DecentVroFilter(CatalogMatchUnit, AbsAlertFilter):
     min_ndet_cadence: float | None = (
         None  # time over which to coalesce previous detections when counting [days]
     )
+    min_ndet_snr: float | None = (
+        None  # minimum SNR for previous detections to be counted
+    )
     min_tspan: float  # minimum duration of alert detection history [days]
     max_tspan: float  # maximum duration of alert detection history [days]
+
+    # Rejects alert with multiple recent detections.
+    # Can be caused by hitting the same field, so multiple photopoints in
+    # the same band will not provide new information but polute the system.
+    # min separation between this visit and the last in the same band
+    # Set to zero to disable this cut.
+    min_visit_sep: float = 0.0
 
     # Segments removed (for now)
     # min_archive_tspan: float = 0.0  # minimum duration of alert detection history [days]
@@ -236,6 +246,11 @@ class DecentVroFilter(CatalogMatchUnit, AbsAlertFilter):
         else:
             thinned_pps = pps
 
+        if self.min_ndet_snr is not None:
+            thinned_pps = [
+                pp for pp in thinned_pps if pp.get("snr", 0) >= self.min_ndet_snr
+            ]
+
         if len(thinned_pps) < self.min_ndet:
             self.logger.debug(None, extra={"nDet": len(thinned_pps)})
             return None
@@ -250,6 +265,22 @@ class DecentVroFilter(CatalogMatchUnit, AbsAlertFilter):
         if not (self.min_tspan <= det_tspan <= self.max_tspan):
             self.logger.debug(None, extra={"tSpan": det_tspan})
             return None
+        # Check for a minimal time separation in same band to avoid multiple detections in the same field to pollute the system.
+        if self.min_visit_sep > 0:
+            latest_band = latest.get("band", None)
+            for pp in pps[1:]:
+                if (
+                    pp.get("band", None) == latest_band
+                    and (last_det - pp["midpointMjdTai"]) < self.min_visit_sep
+                ):
+                    self.logger.debug(
+                        None,
+                        extra={
+                            "visitSep": last_det - pp["midpointMjdTai"],
+                            "band": latest_band,
+                        },
+                    )
+                    return None
 
         ## Solar System / Minor Planet
 
