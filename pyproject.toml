@@ -40,6 +40,7 @@ dependencies = [
     "more-itertools (>=10.8.0,<11.0.0)",
     "uncertainties (>=3.2.3,<4.0.0)",
     "scikit-learn (>=1.8.0,<2.0.0)",
+    "pyarrow (>=23.0.1,<24.0.0)",
 ]
 
 [project.optional-dependencies]
@@ -90,6 +91,7 @@ dev = [
     "scipy-stubs (>=1.16.3.3,<2.0.0.0)",
     "types-seaborn (>=0.13.2.20251214,<0.14.0.0)",
     "syrupy (>=5.0.0,<6.0.0)",
+    "pyarrow-stubs (>=20.0.0.20251215,<21.0.0.0)",
 ]
 
 [tool.poetry]

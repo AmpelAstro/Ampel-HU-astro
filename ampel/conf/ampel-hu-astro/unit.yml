@@ -1,5 +1,6 @@
 - ampel.contrib.hu.alert.DynamicShaperAlertConsumer
 - ampel.contrib.hu.alert.load.WiseFileAlertLoader
+- ampel.contrib.hu.alert.load.ParquetAlertLoader
 - ampel.contrib.hu.alert.NeoWisePhotometryAlertSupplier
 - ampel.contrib.hu.ingest.ZiGWDataPointShaper
 - ampel.contrib.hu.t0.DecentVroFilter
