@@ -11,6 +11,7 @@ from collections.abc import Mapping, Sequence
 from typing import Any, Literal
 
 import numpy as np
+from astropy.cosmology import FlatLambdaCDM
 
 from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.content.DataPoint import DataPoint
@@ -46,6 +47,12 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
 
     # Redshift estimates associated with each region ( only rough guideline!!! )
     category_precision: list[float] = [0.0003, 0.003, 0.01, 0.02, 0.04, 0.1, 0.3]
+
+    # Maximum physical host offset in kpc
+    max_host_offset_kpc: float = 25.0
+
+    # Cosmology used to convert kpc <-> arcsec
+    cosmo = FlatLambdaCDM(H0=70, Om0=0.3)
 
     # CatalogMatch(Local) results might be overriden,
     # for example if specialized catalog is being used
@@ -87,9 +94,117 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
         ]
     ]
 
+    def _is_close_match(self, dist: float, z: float, half: bool = False) -> bool:
+        """
+        Distance/redshift cut based on a maximum physical host offset.
+        half=True corresponds to half the full cut.
+        """
+
+        if z <= 0 or dist < 0:
+            return False
+
+        max_offset_kpc = self.max_host_offset_kpc / 2 if half else self.max_host_offset_kpc
+
+        kpc_per_arcsec = self.cosmo.kpc_proper_per_arcmin(z).value / 60.0
+        max_dist_arcsec = max_offset_kpc / kpc_per_arcsec
+
+        return dist < max_dist_arcsec
+
+    def _append_group_with_unc(
+        self,
+        group_z: list[list[float]],
+        group_dist: list[list[float]],
+        group_unc: list[list[float]],
+        z: float,
+        dist: float,
+        z_unc: float,
+        close_group: int,
+        medium_group: int,
+        far_group: int = 6,
+    ) -> None:
+        """
+        Append a redshift/distance/uncertainty triple to the appropriate quality group.
+        Group indices are zero-based.
+        """
+        if self._is_close_match(dist, z, half=True):
+            group_z[close_group].append(z)
+            group_dist[close_group].append(dist)
+            group_unc[close_group].append(z_unc)
+        elif self._is_close_match(dist, z, half=False):
+            group_z[medium_group].append(z)
+            group_dist[medium_group].append(dist)
+            group_unc[medium_group].append(z_unc)
+        else:
+            group_z[far_group].append(z)
+            group_dist[far_group].append(dist)
+            group_unc[far_group].append(z_unc)
+
+    def _normalize_unc(self, unc: None | float) -> None | float:
+        """
+        Normalize redshift uncertainty for weighting.
+
+        In some catalogs (for example NED2026), zunc=0 can occur for what is effectively
+        a negligibly small uncertainty. In this context, treat this as a very small
+        uncertainty, i.e. approximately maximal weight.
+        """
+
+        if unc is None:
+            return None
+
+        if unc == 0:
+            return 1e-6
+
+        if unc < 0:
+            return None
+
+        return float(unc)
+
+    def _weighted_mean(self, values: Sequence[float], uncs: Sequence[float]) -> float:
+        """
+        Compute inverse-variance weighted mean using per-measurement uncertainties.
+        """
+
+        if len(values) == 0:
+            raise ValueError("Cannot compute weighted mean of empty sequence")
+
+        if len(values) != len(uncs):
+            raise ValueError("values and uncs must have the same length")
+
+        valid_pairs = [
+            (val, norm_unc)
+            for val, unc in zip(values, uncs, strict=False)
+            if (norm_unc := self._normalize_unc(unc)) is not None
+        ]
+        if len(valid_pairs) == 0:
+            raise ValueError("No usable uncertainties available for weighted mean")
+
+        valid_values = np.array([val for val, _ in valid_pairs], dtype=float)
+        weights = np.array(
+            [1.0 / (unc * unc) for _, unc in valid_pairs],
+            dtype=float,
+        )
+
+        return float(np.average(valid_values, weights=weights))
+
+    def _combined_weighted_unc(self, uncs: Sequence[float]) -> float:
+        """
+        Return uncertainty of the inverse-variance weighted mean.
+        """
+
+        valid_uncs = [
+            norm_unc
+            for unc in uncs
+            if (norm_unc := self._normalize_unc(unc)) is not None
+        ]
+        if len(valid_uncs) == 0:
+            raise ValueError("No usable uncertainties available")
+
+        weights = np.array([1.0 / (unc * unc) for unc in valid_uncs], dtype=float)
+        return float(np.sqrt(1.0 / np.sum(weights)))
+
     def _get_lsphotoz_groupz(
         self, t2_res: Mapping[str, Any]
-    ) -> tuple[list[list[float]], list[list[float]]]:
+    ) -> tuple[list[list[float]], list[list[float]], list[list[float]]]:
         """
         Parse output from T2LSPhotoZTap and investigate whether any matches fulfill group
         redshift criteria.
@@ -100,6 +215,7 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
 
         group_z: list[list[float]] = [[], [], [], [], [], [], []]
         group_dist: list[list[float]] = [[], [], [], [], [], [], []]
+        group_unc: list[list[float]] = [[], [], [], [], [], [], []]
         for lsdata in t2_res.values():
             if lsdata is None:
                 continue
@@ -113,51 +229,22 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
                 )
                 continue
 
-            # First investigate LS spectroscopic redshift
-            if lsdata["z_spec"] is not None and lsdata["z_spec"] > -1:
-                if lsdata["z_spec"] < 0.03:
-                    # Group I
-                    group_z[0].append(lsdata["z_spec"])
-                    group_dist[0].append(lsdata["dist2transient"])
-                elif lsdata["z_spec"] < 0.15:
-                    # Group II
-                    group_z[1].append(lsdata["z_spec"])
-                    group_dist[1].append(lsdata["dist2transient"])
-                elif lsdata["z_spec"] < 0.4:
-                    # Group III
-                    group_z[2].append(lsdata["z_spec"])
-                    group_dist[2].append(lsdata["dist2transient"])
-                else:
-                    # Group V
-                    group_z[4].append(lsdata["z_spec"])
-                    group_dist[4].append(lsdata["dist2transient"])
-            self.logger.debug(f"LS debug spec: {lsdata} yield {group_z}")
-
-            # Now, photometric redshifts
+            # LS Spec is included in NED, so only photometric redshifts
             if lsdata["z_phot_median"] is not None and lsdata["z_phot_median"] > -1:
-                if lsdata["z_phot_median"] < 0.1:
-                    # Group IV
-                    group_z[3].append(lsdata["z_phot_median"])
-                    group_dist[3].append(lsdata["dist2transient"])
-                elif lsdata["z_phot_median"] < 0.2:
-                    # Group V
-                    group_z[4].append(lsdata["z_phot_median"])
-                    group_dist[4].append(lsdata["dist2transient"])
-                elif lsdata["z_phot_median"] < 0.4:
-                    # Group VI
-                    group_z[5].append(lsdata["z_phot_median"])
-                    group_dist[5].append(lsdata["dist2transient"])
-                else:
-                    # Group VII
-                    group_z[6].append(lsdata["z_phot_median"])
-                    group_dist[6].append(lsdata["dist2transient"])
+                dist = lsdata["dist2transient"]
+                z = lsdata["z_phot_median"]
+                z_unc = self._normalize_unc(lsdata.get("z_phot_std"))
+                if z_unc is not None:
+                    self._append_group_with_unc(
+                        group_z, group_dist, group_unc, z, dist, z_unc, 2, 5
+                    )
             self.logger.debug(f"LS debug phot: {lsdata} yield {group_z}")
 
-        return group_z, group_dist
+        return group_z, group_dist, group_unc
 
     def _get_catalogmatch_groupz(
         self, t2_res: Mapping[str, Any]
-    ) -> tuple[list[list[float]], list[list[float]]]:
+    ) -> tuple[list[list[float]], list[list[float]], list[list[float]]]:
         """
         Parse output from T2CatalogMatch.
 
@@ -170,6 +257,7 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
 
         group_z: list[list[float]] = [[], [], [], [], [], [], []]
         group_dist: list[list[float]] = [[], [], [], [], [], [], []]
+        group_unc: list[list[float]] = [[], [], [], [], [], [], []]
 
         for cat_name, cat_matches in t2_res.items():
             if cat_matches is None or cat_matches is False:
@@ -185,116 +273,48 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
             for cat_match in cat_match_list:
                 # All catalogs have different structure, so doing this individually
 
-                if cat_name == "NEDz_extcats":
-                    # at some point: verify whether 0.03 was the NEDz_extcats cut.
-                    if cat_match["dist2transient"] < 2 and cat_match["z"] < 0.03:
-                        group_z[0].append(cat_match["z"])
-                        group_dist[0].append(cat_match["dist2transient"])
-                    elif cat_match["dist2transient"] < 20 and cat_match["z"] < 0.05:
-                        group_z[2].append(cat_match["z"])
-                        group_dist[2].append(cat_match["dist2transient"])
-                    else:
-                        group_z[3].append(cat_match["z"])
-                        group_dist[3].append(cat_match["dist2transient"])
-
-                    # Implicit restriction as tests where done with this max matching radius
-
-                if cat_name == "SDSS_spec" and cat_match["dist2transient"] < 10:
-                    group_z[1].append(cat_match["z"])
-                    group_dist[1].append(cat_match["dist2transient"])
-                # Implicit restriction as tests where done with this max matching radius
-                if (
-                    cat_name == "GLADEv23"
-                    and cat_match["dist2transient"] < 10
-                    and cat_match["z"] is not None
-                ):
-                    if cat_match["z"] < 0.05:
-                        group_z[2].append(cat_match["z"])
-                        group_dist[2].append(cat_match["dist2transient"])
-                    else:
-                        group_z[3].append(cat_match["z"])
-                        group_dist[3].append(cat_match["dist2transient"])
+                if cat_name == "NED2026" and cat_match["z"] is not None:
+                    dist = cat_match["dist2transient"]
+                    z = cat_match["z"]
+                    z_unc = self._normalize_unc(cat_match.get("zunc"))
+                    if z_unc is not None:
+                        self._append_group_with_unc(
+                            group_z, group_dist, group_unc, z, dist, z_unc, 0, 3
+                        )
 
                 if cat_name == "LSPhotoZZou":
+                    dist = cat_match["dist2transient"]
+
                     # Spec
                     if cat_match["specz"] is not None and cat_match["specz"] > -0.1:
-                        if (
-                            cat_match["specz"] < 0.15
-                            and cat_match["dist2transient"] < 10
-                        ):
-                            group_z[1].append(cat_match["specz"])
-                            group_dist[1].append(cat_match["dist2transient"])
-                        elif cat_match["specz"] < 0.2:
-                            group_z[2].append(cat_match["specz"])
-                            group_dist[2].append(cat_match["dist2transient"])
-                        else:
-                            group_z[4].append(cat_match["specz"])
-                            group_dist[4].append(cat_match["dist2transient"])
+                        z = float(cat_match["specz"])
+                        z_unc = self._normalize_unc(1e-6)
+                        if z_unc is not None:
+                            self._append_group_with_unc(
+                                group_z, group_dist, group_unc, z, dist, z_unc, 1, 4
+                            )
 
                     # Photo-z
                     if cat_match["photoz"] is not None and cat_match["photoz"] > -0.1:
-                        if cat_match["photoz"] < 0.1:
-                            group_z[3].append(cat_match["photoz"])
-                            group_dist[3].append(cat_match["dist2transient"])
-                        elif cat_match["photoz"] < 0.2:
-                            group_z[4].append(cat_match["photoz"])
-                            group_dist[4].append(cat_match["dist2transient"])
-                        elif cat_match["photoz"] < 0.4:
-                            group_z[5].append(cat_match["photoz"])
-                            group_dist[5].append(cat_match["dist2transient"])
-                        else:
-                            group_z[6].append(cat_match["photoz"])
-                            group_dist[6].append(cat_match["dist2transient"])
+                        z = float(cat_match["photoz"])
+                        z_unc = self._normalize_unc(cat_match.get("e_photoz"))
+                        if z_unc is not None:
+                            self._append_group_with_unc(
+                                group_z, group_dist, group_unc, z, dist, z_unc, 2, 5
+                            )
 
-                if cat_name == "wiseScosPhotoz" and (
-                    cat_match["zPhoto_Corr"] is not None
-                    and cat_match["zPhoto_Corr"] > -0.1
-                ):
-                    if cat_match["zPhoto_Corr"] < 0.2:
-                        group_z[4].append(cat_match["zPhoto_Corr"])
-                        group_dist[4].append(cat_match["dist2transient"])
-                    else:
-                        group_z[5].append(cat_match["zPhoto_Corr"])
-                        group_dist[5].append(cat_match["dist2transient"])
 
-                if cat_name == "twoMPZ":
-                    # Photoz
-                    if cat_match["zPhoto"] is not None and cat_match["zPhoto"] > -0.1:
-                        if cat_match["zPhoto"] < 0.03:
-                            group_z[2].append(cat_match["zPhoto"])
-                            group_dist[2].append(cat_match["dist2transient"])
-                        else:
-                            group_z[3].append(cat_match["zPhoto"])
-                            group_dist[3].append(cat_match["dist2transient"])
-                    # Specz
-                    if cat_match["zSpec"] is not None and cat_match["zSpec"] > -0.1:
-                        group_z[1].append(cat_match["zSpec"])
-                        group_dist[1].append(cat_match["dist2transient"])
+                if cat_name == "PS1_photoz" and cat_match["z_phot"] is not None:
+                    z = float(cat_match["z_phot"]) / 1000
+                    dist = cat_match["dist2transient"]
+                    z_unc_raw = cat_match.get("z_photErr")
 
-                if cat_name == "PS1_photoz":
-                    ps1_z_phot = float(cat_match["z_phot"]) / 1000
-                    if cat_match["z_phot"] is not None and ps1_z_phot > -0.1:
-                        if ps1_z_phot < 0.1:
-                            group_z[3].append(ps1_z_phot)
-                            group_dist[3].append(cat_match["dist2transient"])
-                        elif ps1_z_phot < 0.2:
-                            group_z[4].append(ps1_z_phot)
-                            group_dist[4].append(cat_match["dist2transient"])
-                        elif ps1_z_phot < 0.4:
-                            group_z[5].append(ps1_z_phot)
-                            group_dist[5].append(cat_match["dist2transient"])
-                        else:
-                            group_z[6].append(ps1_z_phot)
-                            group_dist[6].append(cat_match["dist2transient"])
-
-                # Implicit restriction as tests where done with this max matching radius
-                if (
-                    cat_name == "NEDz"
-                    and cat_match["dist2transient"] < 10
-                    and cat_match["z"] < 0.4
-                ):
-                    group_z[2].append(cat_match["z"])
-                    group_dist[2].append(cat_match["dist2transient"])
+                    if z > -0.1 and z_unc_raw is not None:
+                        z_unc = self._normalize_unc(float(z_unc_raw) / 1000)
+                        if z_unc is not None:
+                            self._append_group_with_unc(
+                                group_z, group_dist, group_unc, z, dist, z_unc, 2, 5
+                            )
 
                 # Also check for manual override
                 if self.catalogmatch_override:
@@ -302,20 +322,31 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
                         if or_catname == cat_name:
                             try:
                                 cat_z = float(cat_match[or_catdict["z_keyword"]])
+                                cat_unc = self._normalize_unc(
+                                    float(cat_match[or_catdict["z_unc_keyword"]])
+                                )
                                 if (
                                     float(cat_match["dist2transient"])
                                     < or_catdict["max_distance"]
                                     and cat_z < or_catdict["max_redshift"]
+                                    and cat_unc is not None
                                 ):
-                                    group_z[or_catdict["z_group"] - 1].append(cat_z)
-                            except ValueError:
+                                    group_idx = or_catdict["z_group"] - 1
+                                    group_z[group_idx].append(cat_z)
+                                    group_dist[group_idx].append(
+                                        float(cat_match["dist2transient"])
+                                    )
+                                    group_unc[group_idx].append(cat_unc)
+                            except (ValueError, KeyError, TypeError):
                                 self.logger.info(
                                     "Cannot parse z", extra={"catdict": cat_match}
                                 )
 
-        return group_z, group_dist
+        return group_z, group_dist, group_unc
 
-    def _get_matchbts_groupz(self, t2_res: Mapping[str, Any]) -> list[list[float]]:
+    def _get_matchbts_groupz(
+        self, t2_res: Mapping[str, Any]
+    ) -> tuple[list[list[float]], list[list[float]]]:
         """
         Parse output from T2MatchBTS.
 
@@ -327,6 +358,7 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
         """
 
         group_z: list[list[float]] = [[], [], [], [], [], [], []]
+        group_unc: list[list[float]] = [[], [], [], [], [], [], []]
 
         if (
             isinstance(bts_redshift := t2_res.get("bts_redshift"), str)
@@ -339,12 +371,14 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
 
             if decimals > 2:
                 group_z[0].append(z)
+                group_unc[0].append(10 ** (-decimals))
             else:
                 group_z[1].append(z)
+                group_unc[1].append(10 ** (-decimals))
 
         self.logger.debug(f" bts match yield {group_z}")
 
-        return group_z
+        return group_z, group_unc
 
     def get_ampelZ(self, t2_views: Sequence[T2DocView]) -> dict[str, UBson]:
         """
@@ -361,6 +395,7 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
         # found in each category. These will be added to sn redshifts
         group_redshifts: list[list[float]] = [[], [], [], [], [], [], []]
         group_distances: list[list[float]] = [[], [], [], [], [], [], []]
+        group_redshift_uncs: list[list[float]] = [[], [], [], [], [], [], []]
 
         # Loop through t2_views and collect information.
         for t2_view in t2_views:
@@ -368,11 +403,12 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
             t2_res = get_payload(t2_view)
 
             if t2_view.unit == "T2LSPhotoZTap":
-                new_zs, new_dists = self._get_lsphotoz_groupz(t2_res)
+                new_zs, new_dists, new_uncs = self._get_lsphotoz_groupz(t2_res)
             elif t2_view.unit in {"T2CatalogMatch", "T2CatalogMatchLocal"}:
-                new_zs, new_dists = self._get_catalogmatch_groupz(t2_res)
+                new_zs, new_dists, new_uncs = self._get_catalogmatch_groupz(t2_res)
             elif t2_view.unit == "T2MatchBTS":
-                new_zs = self._get_matchbts_groupz(t2_res)
+                new_zs, new_uncs = self._get_matchbts_groupz(t2_res)
+                new_dists = [[], [], [], [], [], [], []]
             else:
                 self.logger.error(f"No instructions for dealing with {t2_view.unit}")
                 return {}
@@ -382,24 +418,36 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
                     group_redshifts[k].extend(new_zs[k])
                 if len(new_dists[k]) > 0:
                     group_distances[k].extend(new_dists[k])
+                if len(new_uncs[k]) > 0:
+                    group_redshift_uncs[k].extend(new_uncs[k])
             self.logger.debug(f"group_z after {t2_view.unit}: {group_redshifts}")
 
         # Check for best match
         t2_output: dict[str, UBson] = {
             "group_zs": group_redshifts,
             "group_dists": group_distances,
+            "group_z_uncs": group_redshift_uncs,
         }
         for k in range(7):
             if (k + 1) > self.max_redshift_category:
                 # No matches with sufficient precision
                 break
-            if len(group_redshifts[k]) > 0:
-                t2_output["ampel_z"] = float(np.mean(group_redshifts[k]))
-                t2_output["group_z_precision"] = self.category_precision[k]
+            if len(group_redshifts[k]) > 0 and len(group_redshift_uncs[k]) > 0:
+                t2_output["ampel_z"] = self._weighted_mean(
+                    group_redshifts[k], group_redshift_uncs[k]
+                )
+                t2_output["group_z_precision"] = self._combined_weighted_unc(
+                    group_redshift_uncs[k]
+                )
                 t2_output["group_z_nbr"] = k + 1
-                t2_output["ampel_dist"] = float(
-                    np.mean(group_distances[k])
-                )  # distance transient to matched z sources NOT TO EARTH
+                if len(group_distances[k]) == len(group_redshift_uncs[k]) and len(group_distances[k]) > 0:
+                    t2_output["ampel_dist"] = self._weighted_mean(
+                        group_distances[k], group_redshift_uncs[k]
+                    )
+                elif len(group_distances[k]) > 0:
+                    t2_output["ampel_dist"] = float(
+                        np.mean(group_distances[k])
+                    )  # distance transient to matched z sources NOT TO EARTH
                 # We then do *not* look for higher group (more uncertain) matches
                 break
         if self.catalogmatch_override:

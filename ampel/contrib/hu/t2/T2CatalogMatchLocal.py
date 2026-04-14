@@ -4,8 +4,8 @@
 # License:             BSD-3-Clause
 # Author:              matteo.giomi@desy.de
 # Date:                24.08.2018
-# Last Modified Date:  2.12.2021
-# Last Modified By:    jn <jnordin@physik.hu-berlin.de>
+# Last Modified Date:  23.03.2026
+# Last Modified By:    Felix Fischer <felix.martin.fischer@desy.de>
 
 from functools import cached_property
 from typing import Any, ClassVar, Literal
@@ -69,7 +69,7 @@ class ExtcatsUnit:
 
 class ExtcatsCatalogModel(CatalogModel):
     catq_kwargs: dict[str, Any] = {}
-    use: Literal["extcats"]
+    use: Literal["extcats", "catsHTM"]
 
 
 class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
@@ -79,15 +79,27 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
     :param catalogs: each value specifies a catalog in extcats or catsHTM format
      and the query parameters.
 
+    :Output format:
+      - dict for closest_match=True
+      - list[dict] for closest_match=False
+      - False if no match is found
+
     .. note:: This requires access to a mongod hosting extcats databases and a
       filesystem containing catsHTM catalogs. For a similar unit that uses hosted
       services, see :class:`~ampel.ztf.t2.T2CatalogMatch`.
+
+    Update note:
+    Result normalization was refactored from a shared post-processing block into different
+    handling for extcats and catsHTM. This makes closest-match vs multi-match handling 
+    explicit and avoids intermediate conversions for single matches.
     """
 
     # run only on first datapoint by default
     eligible: ClassVar[DPSelection] = DPSelection(
         filter="PPSFilter", sort="jd", select="first"
     )
+
+    catshtm: Any
 
     # Each value specifies a catalog in extcats or catsHTM format and the query parameters
     catalogs: dict[str, ExtcatsCatalogModel]
@@ -118,9 +130,75 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
             catq = self.get_extcats_query(catalog, self.logger, **kwargs)
             self.catq_objects[catalog] = catq
         return catq
+    
+    def _serialize_src_row(self, one_src, keys_to_append: set[str]) -> dict[str, Any]:
+        """
+        Convert a single catalog row (astropy Row or similar) into a plain dict.
+
+        Used to provide consistent serialization across extcats and catsHTM.
+        """
+        to_add = {}
+        for field in keys_to_append:
+            try:
+                val = one_src[field].tolist()
+            except AttributeError:
+                val = one_src[field]
+            except KeyError:
+                continue
+            to_add[field] = val
+        return to_add
+    
+    def _normalize_closest_match(
+        self,
+        row,
+        dist,
+        keys_to_append: set[str],
+    ) -> dict[str, Any] | bool:
+        """
+        Normalize a single closest match result into a plain dict.
+
+        If the row is None, return False.
+        """
+        if row is None:
+            return False
+
+        out = {}
+        for field in keys_to_append:
+            if field == "dist2transient":
+                out[field] = dist
+                continue
+            try:
+                val = row[field].tolist()
+            except AttributeError:
+                try:
+                    val = row[field]
+                except Exception:
+                    continue
+            except KeyError:
+                continue
+            out[field] = val
+        return out
+    
+    def _normalize_multi_match(
+        self,
+        src,
+        keys_to_append: set[str],
+    ) -> list[dict[str, Any]] | bool:
+        """
+        Normalize a multi-match result into a list of plain dicts.
+
+        If src is None or empty, return False.
+        """
+        if src is None or len(src) == 0:
+            return False
+
+        out = [self._serialize_src_row(one_src, keys_to_append) for one_src in src]
+        return out if out else False
 
     def process(self, datapoint: DataPoint) -> UBson | UnitResult:
         """
+        Cross-match transient position against configured catalogs.
+
         :returns: example of a match in SDSS but not in NED:
 
         {
@@ -162,9 +240,8 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
                     catq_kwargs.get("dec_key", "dec"),
                 )
 
-            # how do you want to support the catalog?
+            # go into the respective catalog branch
             if cat_opts.use == "extcats":
-                # get the catalog query object and do the query
                 catq = self.init_extcats_query(catalog, **cat_opts.catq_kwargs)
 
                 if self.closest_match:
@@ -175,9 +252,21 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
                         pre_filter=cat_opts.pre_filter,
                         post_filter=cat_opts.post_filter,
                     )
-                    # Single row, cannot just add column
-                    src = Table(row)
-                    src.add_column(dist, name="dist2transient")
+
+                    keys_to_append = set(
+                        cat_opts.keys_to_append
+                        if cat_opts.keys_to_append
+                        else (row.colnames if row is not None else [])
+                    )
+                    keys_to_append.difference_update({"_id", "pos"})
+                    keys_to_append.add("dist2transient")
+
+                    out_dict[catalog] = self._normalize_closest_match(
+                        row=row,
+                        dist=dist,
+                        keys_to_append=keys_to_append,
+                    )
+
                 else:
                     src = catq.findwithin(
                         transient_ra,
@@ -186,8 +275,16 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
                         pre_filter=cat_opts.pre_filter,
                         post_filter=cat_opts.post_filter,
                     )
+
+                    keys_to_append = set(
+                        cat_opts.keys_to_append
+                        if cat_opts.keys_to_append
+                        else (src.colnames if src is not None else [])
+                    )
+                    keys_to_append.difference_update({"_id", "pos"})
+                    keys_to_append.add("dist2transient")
+
                     if src is not None:
-                        # get distances to all sources
                         dist = get_distances(
                             transient_ra,
                             transient_dec,
@@ -196,6 +293,11 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
                             dec_key,
                         )
                         src["dist2transient"] = dist
+
+                    out_dict[catalog] = self._normalize_multi_match(
+                        src=src,
+                        keys_to_append=keys_to_append,
+                    )
 
             elif cat_opts.use == "catsHTM":
                 # catshtm needs coordinates in radians
@@ -224,9 +326,19 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
                             ra_key,
                             dec_key,
                         )
-                        # Single row, cannot just add column
-                        src = Table(row)
-                        src.add_column(dist, name="dist2transient")
+
+                        keys_to_append = set(
+                            cat_opts.keys_to_append
+                            if cat_opts.keys_to_append
+                            else (row.colnames if row is not None else [])
+                        )
+                        keys_to_append.add("dist2transient")
+
+                        out_dict[catalog] = self._normalize_closest_match(
+                            row=row,
+                            dist=dist,
+                            keys_to_append=keys_to_append,
+                        )
 
                     else:
                         # get distances to all sources
@@ -239,53 +351,27 @@ class T2CatalogMatchLocal(ExtcatsUnit, AbsPointT2Unit):
                             dec_key,
                         )
                         src["dist2transient"] = dist
-            else:
-                raise ValueError(
-                    f"use option can not be {cat_opts.use} for catalog {catalog}. "
-                    f"valid are 'extcats' or 'catsHTM'"
-                )
 
-            if src is not None:
-                # if you found a cp add the required field from the catalog:
-                # if keys_to_append argument is given or if it is equal to 'all'
-                # then take all the columns in the catalog. Otherwise only add the
-                # requested ones.
+                        keys_to_append = set(
+                            cat_opts.keys_to_append
+                            if cat_opts.keys_to_append
+                            else (src.colnames if src is not None else [])
+                        )
+                        keys_to_append.add("dist2transient")
 
-                keys_to_append = set(
-                    cat_opts.keys_to_append if cat_opts.keys_to_append else src.colnames
-                )
-                if cat_opts.use == "extcats":
-                    keys_to_append.difference_update({"_id", "pos"})
-                # Always include dist2transient
-                keys_to_append.add("dist2transient")
+                        out_dict[catalog] = self._normalize_multi_match(
+                            src=src,
+                            keys_to_append=keys_to_append,
+                        )
 
-                out_dict[catalog] = []
+                else:
+                    self.logger.debug(
+                        f"no match found in catalog {catalog} within "
+                        f"{cat_opts.rs_arcsec:.2f} arcsec from transient"
+                    )
+                    out_dict[catalog] = False
 
-                # Can skip full loop if we know there are no errors or weird formats?
-                for one_src in src:
-                    to_add = {}
-                    for field in keys_to_append:
-                        try:
-                            val = one_src[field].tolist()
-                        except AttributeError:
-                            val = one_src[field]
-                        except KeyError:
-                            continue
-                        to_add[field] = val
-                    out_dict[catalog].append(to_add)
 
-                # To be backwards compatible we directly return dict if only one match was requested, a list otherwise
-                if self.closest_match:
-                    # Above checks should have returned a dict with exactly one entry
-                    assert len(out_dict[catalog]) == 1
-                    out_dict[catalog] = out_dict[catalog][0]
-
-            else:
-                self.logger.debug(
-                    f"no match found in catalog {catalog} within "
-                    f"{cat_opts.rs_arcsec:.2f} arcsec from transient"
-                )
-                out_dict[catalog] = False
 
         # return the info as dictionary
         return out_dict
