@@ -1,0 +1,58 @@
+name: earlyreleasetest
+
+mongo:
+  prefix: vro_classififer
+  reset: false
+
+task:
+- title: PlotAllCandidates
+  unit: T3Processor
+  config:
+    raise_exc: true
+    supply:
+      unit: T3DefaultBufferSupplier
+      config:
+        select:
+          unit: T3StockSelector
+          config:
+            channel: earlyrelease_ext
+        load:
+          unit: T3SimpleDataLoader
+          config:
+            directives:
+              - STOCK
+              - T1
+              - T2DOC
+              - DATAPOINT
+            channel: earlyrelease_ext
+        #complement:
+        #- unit: LSSTCutoutImages
+        #  config:
+        #    eligible: brightest
+        #    insecure: true
+    stage:
+      unit: T3SimpleStager
+      config:
+        execute:
+          - unit: PlotTransientLightcurves
+            config:
+              pdf_path: /home/felix/Dokumente/Studium/PhD/LSST_Ampel/tmp/candidates_all.pdf
+              save_png: false
+              include_cutouts: true
+              internal_cutout_fetch: true
+              lsst_archive_insecure: true
+              cutout_eligible: brightest
+
+              stacking: true
+              stacking_window_hours: 2.0
+
+              include_model_lightcurves: true
+              modelcurve_unit: T2RunParsnipRiseDecline
+              parsnip_model_path: /home/felix/Dokumente/Studium/PhD/LSST_Ampel/tmp/parsnipModelAug10Pct30.h5
+              model_curve_zp_offset: 0
+
+              tabulator:
+              - unit: LSSTT2Tabulator
+                config:
+                  zp: 31.4
+
