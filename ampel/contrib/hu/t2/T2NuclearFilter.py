@@ -8,6 +8,7 @@
 # Last Modified By:    jannis.necker@gmail.com
 
 from collections.abc import Sequence
+from typing import TypedDict
 
 import numpy as np
 from astropy.coordinates.angles import angular_separation
@@ -20,6 +21,14 @@ from ampel.contrib.hu.util.catalog_match_position_units import (
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
 from ampel.view.T2DocView import T2DocView
+
+
+class NuclearFilterResult(TypedDict):
+    passed: bool
+    host_catalogs: list[str] | None
+    host_ra: float | None
+    host_dec: float | None
+    host_dist_arcsec: float | None
 
 
 class T2NuclearFilter(AbsTiedPointT2Unit):
@@ -59,12 +68,15 @@ class T2NuclearFilter(AbsTiedPointT2Unit):
                     }
                 )
 
-        # set up result structure
-        res = {"closest_matches": None, "pass": False, "dist": None}
-
         # If there are no matches within self.match_dist_arcsec, return False
         if not matches:
-            return res
+            return NuclearFilterResult(
+                passed=False,
+                host_ra=None,
+                host_dec=None,
+                host_dist_arcsec=None,
+                host_catalogs=None,
+            )
 
         # normalize keys
         matches = {
@@ -127,8 +139,12 @@ class T2NuclearFilter(AbsTiedPointT2Unit):
         matched_catalogs = match_map["name"][
             separations < np.radians(self.group_matches_within_arcsec / 3600)
         ]
-        res["closest_matches"] = matched_catalogs.tolist()
-        res["pass"] = bool(dist <= md)
-        res["dist"] = dist
+        passed = bool(dist <= md)
 
-        return res
+        return NuclearFilterResult(
+            passed=passed,
+            host_ra=np.degrees(match_map["ra_rad"][best_match_id]),
+            host_dec=np.degrees(match_map["dec_rad"][best_match_id]),
+            host_dist_arcsec=np.degrees(match_map["dist"][best_match_id]) * 3600,
+            host_catalogs=matched_catalogs.tolist(),
+        )
