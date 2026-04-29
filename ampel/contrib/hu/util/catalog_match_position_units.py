@@ -44,4 +44,7 @@ def get_catalog_position_unit_map() -> dict:
     # check sanity
     assert all([v["ra"]["unit"] == v["dec"]["unit"] for v in mapping.values()])
 
+    # add NEDz
+    mapping["NEDz"] = mapping["NEDz_extcats"]
+
     return mapping
