@@ -558,7 +558,7 @@ t2:
         use: catsHTM
       GLADEv23:
         keys_to_append:
-          - ra
+          - RA
           - dec
           - z
           - zunc
