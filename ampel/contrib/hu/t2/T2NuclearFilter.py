@@ -76,6 +76,12 @@ class T2NuclearFilter(AbsTiedPointT2Unit):
             matches["PS1_photoz"]["ra"] = matches["PS1_photoz"]["ramean"]
             matches["PS1_photoz"]["dec"] = matches["PS1_photoz"]["decmean"]
 
+        # remove matches with unknown units
+        for m in matches:
+            if m not in self._known_mapping:
+                self.logger.info(f"Removing {m} from matches because unit is unknown")
+                matches.pop(m)
+
         # convert to radians where necessary
         for name in matches:
             for k in ["ra", "dec"]:
