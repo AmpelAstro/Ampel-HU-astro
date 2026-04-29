@@ -1,7 +1,7 @@
 name: earlyreleasetest
 
 mongo:
-  prefix: vro_classififer
+  prefix: nucelar_stream
   reset: true
 
 channel:
@@ -29,7 +29,7 @@ task:
         loader:
           unit: ParquetAlertLoader
           config:
-            path: /home/felix/Dokumente/Studium/PhD/LSST_Ampel/data/lsst-alerts-2026-03-10-r0.95.parquet
+            path: /Users/jannisnecker/Downloads/lsst-alerts-2026-03-02--2026-03-10-r0.95.parquet
             condition:
               diaObject.nDiaSources >= 10
               and diaObject.nDiaSources < 200
@@ -56,7 +56,6 @@ task:
           gaia_excessnoise_sig_max: 10 
           gaia_pm_signif: 5 
           gaia_plx_signif: 5 
-          gaia_veto_gmag_min: 9 
           gaia_veto_gmag_max: 20
           gaia_veto_gmag_min: 9
 
@@ -101,15 +100,15 @@ task:
                       zp: 31.4
                 unit: T2TabulatorRiseDecline
 
-              - unit: T2FlagsRiseDecline
-                config:
-                  t2_dependency:
-                  - unit: T2TabulatorRiseDecline
-                    config: *risedec_config
-                    link_override:
-                      filter: LSSTObjFilter
-                      select: last
-                      sort: diaObjectId
+#              - unit: T2FlagsRiseDecline
+#                config:
+#                  t2_dependency:
+#                  - unit: T2TabulatorRiseDecline
+#                    config: *risedec_config
+#                    link_override:
+#                      filter: LSSTObjFilter
+#                      select: last
+#                      sort: diaObjectId
 
               - unit: T2DigestRedshifts
                 config: &digest_config
@@ -127,110 +126,168 @@ task:
                       select: last
                       sort: diaObjectId
                     unit: T2LSPhotoZTap
-              - unit: T2RunParsnipRiseDecline
-                config: &parsnip_config
-                  add_parsnip_from: sn+2ulens+dwarfs
-                  classifier_name: elasticcv2
-                  classifier_version: '0.1'
-                  parsnip_zeropoint_offset: -3.9
-                  paths_parsnip:
-                    sn+2ulens+dwarfs:
-                      # https://box.hu-berlin.de/f/78d7594841da4653a743/?dl=1
-                      # box name: parsnipModelAug10Pct30.h5
-                      # old name: model1-30pct-sn+2ulens+dwarfs-mw.h5
-                      model: /home/felix/Dokumente/Studium/PhD/LSST_Ampel/tmp/parsnipModelAug10Pct30.h5
-                      # https://box.hu-berlin.de/f/d1cec88c0bec4123b208/?dl=1
-                      # box name: parsnipClassifierAug10Pct30.pkl 
-                      # old name: model1-30pct-sn+2ulens+dwarfs-mw-aug10.pkl
-                      classifier: /home/felix/Dokumente/Studium/PhD/LSST_Ampel/tmp/parsnipClassifierAug10Pct30.pkl
-                  paths_xgbbinary: {}
-                  paths_xgbmulti: {}
-                  redshift_kind: T2DigestRedshifts
-                  max_redshift_category: 7
-                  return_features: true
-                  significant_bands:
-                  - lsstg
-                  - lsstr
-                  - lssti
-                  - lsstz
-                  t2_dependency:
-                    - unit: T2CatalogMatch
-                      config: '%T2CatalogMatch_general'
-                      link_override:
-                        filter: LSSTObjFilter
-                        select: last
-                        sort: diaObjectId
-                    - unit: T2LSPhotoZTap
-                      config: *dl_config
-                      link_override:
-                        filter: LSSTObjFilter
-                        select: last
-                        sort: diaObjectId
-                  t_cadence: 6.0
-                  tabulator:
-                    - unit: LSSTT2Tabulator
-                      config:
-                        zp: 31.4
+#              - unit: T2RunParsnipRiseDecline
+#                config: &parsnip_config
+#                  add_parsnip_from: sn+2ulens+dwarfs
+#                  classifier_name: elasticcv2
+#                  classifier_version: '0.1'
+#                  parsnip_zeropoint_offset: -3.9
+#                  paths_parsnip:
+#                    sn+2ulens+dwarfs:
+#                      # https://box.hu-berlin.de/f/78d7594841da4653a743/?dl=1
+#                      # box name: parsnipModelAug10Pct30.h5
+#                      # old name: model1-30pct-sn+2ulens+dwarfs-mw.h5
+#                      model: /home/felix/Dokumente/Studium/PhD/LSST_Ampel/tmp/parsnipModelAug10Pct30.h5
+#                      # https://box.hu-berlin.de/f/d1cec88c0bec4123b208/?dl=1
+#                      # box name: parsnipClassifierAug10Pct30.pkl
+#                      # old name: model1-30pct-sn+2ulens+dwarfs-mw-aug10.pkl
+#                      classifier: /home/felix/Dokumente/Studium/PhD/LSST_Ampel/tmp/parsnipClassifierAug10Pct30.pkl
+#                  paths_xgbbinary: {}
+#                  paths_xgbmulti: {}
+#                  redshift_kind: T2DigestRedshifts
+#                  max_redshift_category: 7
+#                  return_features: true
+#                  significant_bands:
+#                  - lsstg
+#                  - lsstr
+#                  - lssti
+#                  - lsstz
+#                  t2_dependency:
+#                    - unit: T2CatalogMatch
+#                      config: '%T2CatalogMatch_general'
+#                      link_override:
+#                        filter: LSSTObjFilter
+#                        select: last
+#                        sort: diaObjectId
+#                    - unit: T2LSPhotoZTap
+#                      config: *dl_config
+#                      link_override:
+#                        filter: LSSTObjFilter
+#                        select: last
+#                        sort: diaObjectId
+#                  t_cadence: 6.0
+#                  tabulator:
+#                    - unit: LSSTT2Tabulator
+#                      config:
+#                        zp: 31.4
 
 
-              - unit: T2LSSTReport
+#              - unit: T2LSSTReport
+#                config:
+#                  tabulator:
+#                  - unit: LSSTT2Tabulator
+#                    config:
+#                      zp: 31.4
+#                  t2_dependency:
+#                  - config: *digest_config
+#                    link_override:
+#                      filter: LSSTObjFilter
+#                      select: last
+#                      sort: diaObjectId
+#                    unit: T2DigestRedshifts
+#                  result_adapter:
+#                    unit: HopskotchAdapter
+#                    config:
+#                      broker: kafka.scimma.org
+#                      auth:
+#                        username:
+#                          label: scimma/user
+#                        password:
+#                          label: scimma/password
+#                      topic: ampel.lsst.reports-test
+#                      model: ampel.contrib.hu.model.LSSTReport.LSSTReport
+#              - unit: T2ClassificationReport
+#                config:
+#                  #report_t2s:
+#                  #- T2RunParsnipRiseDecline
+#                  summary_mode: full
+#                  tabulator:
+#                  - unit: LSSTT2Tabulator
+#                    config:
+#                      zp: 31.4
+#                  t2_dependency:
+#                  - config: *parsnip_config
+#                    link_override:
+#                      filter: LSSTObjFilter
+#                      select: last
+#                      sort: diaObjectId
+#                    unit: T2RunParsnipRiseDecline
+#              - unit: T2InfantReport
+#                config:
+#                  tabulator:
+#                  - unit: LSSTT2Tabulator
+#                    config:
+#                      zp: 31.4
+#                  t2_dependency:
+#                  - config: *digest_config
+#                    link_override:
+#                      filter: LSSTObjFilter
+#                      select: last
+#                      sort: diaObjectId
+#                    unit: T2DigestRedshifts
+#                  - config: *risedec_config
+#                    link_override:
+#                      filter: LSSTObjFilter
+#                      select: last
+#                      sort: diaObjectId
+#                    unit: T2TabulatorRiseDecline
+
+
+- title: Run T2s
+  unit: T2Worker
+  multiplier: 1
+  config:
+    send_beacon: false
+    raise_exc: true
+    unit_ids:
+    - T2GetDiaObject
+    - T2CatalogMatch
+    - T2LSPhotoZTap
+    - T2DigestRedshifts
+
+
+- title: PlotAllCandidates
+  unit: T3Processor
+  config:
+    raise_exc: true
+    supply:
+      unit: T3DefaultBufferSupplier
+      config:
+        select:
+          unit: T3StockSelector
+          config:
+            channel: earlyrelease_ext
+        load:
+          unit: T3SimpleDataLoader
+          config:
+            directives:
+              - STOCK
+              - T1
+              - T2DOC
+              - DATAPOINT
+            channel: earlyrelease_ext
+        #complement:
+        #- unit: LSSTCutoutImages
+        #  config:
+        #    eligible: brightest
+        #    insecure: true
+    stage:
+      unit: T3SimpleStager
+      config:
+        execute:
+          - unit: PlotTransientLightcurves
+            config:
+              pdf_path: /Users/jannisnecker/Desktop/nuclear_candidates.pdf
+              save_png: false
+              include_cutouts: false
+              internal_cutout_fetch: true
+              lsst_archive_insecure: true
+              cutout_eligible: brightest
+
+              stacking: true
+              stacking_window_hours: 2.0
+
+              tabulator:
+              - unit: LSSTT2Tabulator
                 config:
-                  tabulator:
-                  - unit: LSSTT2Tabulator
-                    config:
-                      zp: 31.4
-                  t2_dependency:
-                  - config: *digest_config
-                    link_override:
-                      filter: LSSTObjFilter
-                      select: last
-                      sort: diaObjectId
-                    unit: T2DigestRedshifts
-                  result_adapter:
-                    unit: HopskotchAdapter
-                    config:
-                      broker: kafka.scimma.org
-                      auth:
-                        username:
-                          label: scimma/user
-                        password:
-                          label: scimma/password
-                      topic: ampel.lsst.reports-test
-                      model: ampel.contrib.hu.model.LSSTReport.LSSTReport
-              - unit: T2ClassificationReport
-                config: 
-                  #report_t2s:
-                  #- T2RunParsnipRiseDecline
-                  summary_mode: full
-                  tabulator:
-                  - unit: LSSTT2Tabulator
-                    config:
-                      zp: 31.4
-                  t2_dependency:
-                  - config: *parsnip_config
-                    link_override:
-                      filter: LSSTObjFilter
-                      select: last
-                      sort: diaObjectId
-                    unit: T2RunParsnipRiseDecline
-              - unit: T2InfantReport
-                config: 
-                  tabulator:
-                  - unit: LSSTT2Tabulator
-                    config:
-                      zp: 31.4
-                  t2_dependency:
-                  - config: *digest_config
-                    link_override:
-                      filter: LSSTObjFilter
-                      select: last
-                      sort: diaObjectId
-                    unit: T2DigestRedshifts
-                  - config: *risedec_config
-                    link_override:
-                      filter: LSSTObjFilter
-                      select: last
-                      sort: diaObjectId
-                    unit: T2TabulatorRiseDecline
-
-
+                  zp: 31.4
