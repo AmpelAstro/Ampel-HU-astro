@@ -1,0 +1,1323 @@
+[
+  {
+    "name": "2WHSP",
+    "ra": [
+      {
+        "name": "RAJ2000",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "Dec",
+        "unit": null
+      },
+      {
+        "name": "DEJ2000",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "3FHL",
+    "ra": [
+      {
+        "name": "RAJ2000",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "DEJ2000",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "4FGL",
+    "ra": [
+      {
+        "name": "RAJ2000",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "DEJ2000",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "4LAC",
+    "ra": [
+      {
+        "name": "RAJ2000",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "DEJ2000",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "4LAC_lowlat",
+    "ra": [
+      {
+        "name": "RAJ2000",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "DEJ2000",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "AAVSOVSX",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "DEC",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "BZCAT",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "DEC",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "CRTS_DR1",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "Dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "DESIDR1",
+    "ra": [
+      {
+        "name": "ra",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "DESIDR1_stars",
+    "ra": [
+      {
+        "name": "ra",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "DESISV3",
+    "ra": [
+      {
+        "name": "ra",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "DESI_cfsfdp",
+    "ra": [
+      {
+        "name": "RAdeg",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "DEdeg",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "DESI_clumpr",
+    "ra": [
+      {
+        "name": "RA_central",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "DEC_central",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "GLADEv23",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "GROWTHMarshal",
+    "ra": [],
+    "dec": []
+  },
+  {
+    "name": "GammaCAT",
+    "ra": [
+      {
+        "name": "RAJ2000",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "DEJ2000",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "LAMOSTDR4",
+    "ra": [
+      {
+        "name": "ra",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "LSPhotoZZou",
+    "ra": [
+      {
+        "name": "ra",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "MPAlensing",
+    "ra": [
+      {
+        "name": "ra",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "NED2026",
+    "ra": [
+      {
+        "name": "ra",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "NEDLVS",
+    "ra": [
+      {
+        "name": "ra",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "NEDz_extcats",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "Dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "PS1_DR1",
+    "ra": [
+      {
+        "name": "raMean",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "decMean",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "PS1_photoz",
+    "ra": [
+      {
+        "name": "raMean",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "decMean",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "RASSEBCS",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "DEC",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "RomaBZCAT",
+    "ra": [
+      {
+        "name": "RAJ2000",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "DEJ2000",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "SDSS_dr9",
+    "ra": [
+      {
+        "name": "ra",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "SDSS_spec",
+    "ra": [
+      {
+        "name": "ra",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "SLED",
+    "ra": [
+      {
+        "name": "ra",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "TNS",
+    "ra": [],
+    "dec": []
+  },
+  {
+    "name": "VERITAS_BLAZARS:2WHSP",
+    "ra": [
+      {
+        "name": "RAJ2000",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "Dec",
+        "unit": null
+      },
+      {
+        "name": "DEJ2000",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "VERITAS_BLAZARS:3FHL",
+    "ra": [
+      {
+        "name": "RAJ2000",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "DEJ2000",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "VERITAS_BLAZARS:4FGL",
+    "ra": [
+      {
+        "name": "RAJ2000",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "DEJ2000",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "VERITAS_BLAZARS:4LAC",
+    "ra": [
+      {
+        "name": "RAJ2000",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "DEJ2000",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "VERITAS_BLAZARS:4LAC_lowlat",
+    "ra": [
+      {
+        "name": "RAJ2000",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "DEJ2000",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "VERITAS_BLAZARS:BeppoSAXblazars",
+    "ra": [
+      {
+        "name": "RAJ2000",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "DEJ2000",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "VERITAS_BLAZARS:FRICAT",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": null
+      },
+      {
+        "name": "RAJ2000",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "DEC",
+        "unit": null
+      },
+      {
+        "name": "DEJ2000",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "VERITAS_BLAZARS:FRIICAT",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": null
+      },
+      {
+        "name": "RAJ2000",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "DEC",
+        "unit": null
+      },
+      {
+        "name": "DEJ2000",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "VERITAS_BLAZARS:GammaCAT",
+    "ra": [
+      {
+        "name": "RAJ2000",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "DEJ2000",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "VERITAS_BLAZARS:MILLIQUAS",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": null
+      },
+      {
+        "name": "RAJ2000",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "DEC",
+        "unit": null
+      },
+      {
+        "name": "DEJ2000",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "VERITAS_BLAZARS:Plotkin10",
+    "ra": [
+      {
+        "name": "RAJ2000",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "DEJ2000",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "VERITAS_BLAZARS:RomaBZCAT",
+    "ra": [
+      {
+        "name": "RAJ2000",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "DEJ2000",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "VERITAS_BLAZARS:XRaySelBLL",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": null
+      },
+      {
+        "name": "RAJ2000",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "DEC",
+        "unit": null
+      },
+      {
+        "name": "DEJ2000",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "XRaySelBLL",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": null
+      },
+      {
+        "name": "RAJ2000",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "DEC",
+        "unit": null
+      },
+      {
+        "name": "DEJ2000",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "allWISE_skymotion",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "DEC",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "brescia",
+    "ra": [
+      {
+        "name": "ra",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "castleqso",
+    "ra": [
+      {
+        "name": "ra",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "cluslist",
+    "ra": [
+      {
+        "name": "ra",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "gaia2wd",
+    "ra": [
+      {
+        "name": "RAdeg",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "DEdeg",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "gaia_dr1_m13",
+    "ra": [
+      {
+        "name": "ra",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "hyperlens",
+    "ra": [
+      {
+        "name": "ra",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "ido_ellipticals",
+    "ra": [
+      {
+        "name": "ra",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "masterlens",
+    "ra": [],
+    "dec": []
+  },
+  {
+    "name": "milliquas",
+    "ra": [
+      {
+        "name": "ra",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "portsmouth",
+    "ra": [
+      {
+        "name": "ra",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "ptfvar",
+    "ra": [
+      {
+        "name": "ra",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "qsoVarPTF",
+    "ra": [
+      {
+        "name": "ra",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "redlenses",
+    "ra": [
+      {
+        "name": "ra",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "twoMPZ",
+    "ra": [
+      {
+        "name": "ra",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "varstars",
+    "ra": [
+      {
+        "name": "ra",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "voidGalPan",
+    "ra": [
+      {
+        "name": "ra",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "wiseScosPhotoz",
+    "ra": [
+      {
+        "name": "ra",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "wise_color",
+    "ra": [
+      {
+        "name": "ra",
+        "unit": null
+      }
+    ],
+    "dec": [
+      {
+        "name": "dec",
+        "unit": null
+      }
+    ]
+  },
+  {
+    "name": "TMASS",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": "rad"
+      }
+    ],
+    "dec": [
+      {
+        "name": "Dec",
+        "unit": "rad"
+      }
+    ]
+  },
+  {
+    "name": "TMASSxsc",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": "rad"
+      }
+    ],
+    "dec": [
+      {
+        "name": "Dec",
+        "unit": "rad"
+      }
+    ]
+  },
+  {
+    "name": "AKARI",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": "rad"
+      },
+      {
+        "name": "RA",
+        "unit": "arcsec"
+      }
+    ],
+    "dec": [
+      {
+        "name": "Dec",
+        "unit": "rad"
+      },
+      {
+        "name": "Dec",
+        "unit": "arcsec"
+      }
+    ]
+  },
+  {
+    "name": "APASS",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": "rad"
+      }
+    ],
+    "dec": [
+      {
+        "name": "Dec",
+        "unit": "rad"
+      }
+    ]
+  },
+  {
+    "name": "Cosmos",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": "rad"
+      }
+    ],
+    "dec": [
+      {
+        "name": "Dec",
+        "unit": "rad"
+      }
+    ]
+  },
+  {
+    "name": "DECaLS",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": "rad"
+      }
+    ],
+    "dec": [
+      {
+        "name": "Dec",
+        "unit": "rad"
+      }
+    ]
+  },
+  {
+    "name": "FIRST",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": "rad"
+      }
+    ],
+    "dec": [
+      {
+        "name": "Dec",
+        "unit": "rad"
+      }
+    ]
+  },
+  {
+    "name": "GAIADR1",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": "rad"
+      }
+    ],
+    "dec": [
+      {
+        "name": "Dec",
+        "unit": "rad"
+      }
+    ]
+  },
+  {
+    "name": "GAIADR2",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": "rad"
+      }
+    ],
+    "dec": [
+      {
+        "name": "Dec",
+        "unit": "rad"
+      }
+    ]
+  },
+  {
+    "name": "GALEX",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": "rad"
+      }
+    ],
+    "dec": [
+      {
+        "name": "Dec",
+        "unit": "rad"
+      }
+    ]
+  },
+  {
+    "name": "HSCv2",
+    "ra": [],
+    "dec": []
+  },
+  {
+    "name": "IPHAS",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": "rad"
+      }
+    ],
+    "dec": [
+      {
+        "name": "Dec",
+        "unit": "rad"
+      }
+    ]
+  },
+  {
+    "name": "NVSS",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": "rad"
+      }
+    ],
+    "dec": [
+      {
+        "name": "Dec",
+        "unit": "rad"
+      }
+    ]
+  },
+  {
+    "name": "PS1",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": "rad"
+      }
+    ],
+    "dec": [
+      {
+        "name": "Dec",
+        "unit": "rad"
+      }
+    ]
+  },
+  {
+    "name": "PTFpc",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": "rad"
+      }
+    ],
+    "dec": [
+      {
+        "name": "Dec",
+        "unit": "rad"
+      }
+    ]
+  },
+  {
+    "name": "ROSATfsc",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": "rad"
+      }
+    ],
+    "dec": [
+      {
+        "name": "Dec",
+        "unit": "rad"
+      }
+    ]
+  },
+  {
+    "name": "SDSSDR10",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": "rad"
+      }
+    ],
+    "dec": [
+      {
+        "name": "Dec",
+        "unit": "rad"
+      }
+    ]
+  },
+  {
+    "name": "SpecSDSS",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": "rad"
+      }
+    ],
+    "dec": [
+      {
+        "name": "Dec",
+        "unit": "rad"
+      }
+    ]
+  },
+  {
+    "name": "UCAC4",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": "rad"
+      }
+    ],
+    "dec": [
+      {
+        "name": "Dec",
+        "unit": "rad"
+      }
+    ]
+  },
+  {
+    "name": "UKIDSS",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": "rad"
+      }
+    ],
+    "dec": [
+      {
+        "name": "Dec",
+        "unit": "rad"
+      }
+    ]
+  },
+  {
+    "name": "VSTatlas",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": "rad"
+      }
+    ],
+    "dec": [
+      {
+        "name": "Dec",
+        "unit": "rad"
+      }
+    ]
+  },
+  {
+    "name": "VSTkids",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": "rad"
+      }
+    ],
+    "dec": [
+      {
+        "name": "Dec",
+        "unit": "rad"
+      }
+    ]
+  },
+  {
+    "name": "WISE",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": "rad"
+      }
+    ],
+    "dec": [
+      {
+        "name": "Dec",
+        "unit": "rad"
+      }
+    ]
+  },
+  {
+    "name": "XMM",
+    "ra": [
+      {
+        "name": "RA",
+        "unit": "deg"
+      }
+    ],
+    "dec": [
+      {
+        "name": "DEC",
+        "unit": "deg"
+      }
+    ]
+  }
+]

@@ -2,7 +2,7 @@ name: earlyreleasetest
 
 mongo:
   prefix: nucelar_stream
-  reset: true
+  reset: false
 
 channel:
 - name: earlyrelease_ext
@@ -79,23 +79,30 @@ task:
                     label: datalab/user
                   datalab_pwd: 
                     label: datalab/password
+                  match_radius: 1
                 ingest: 
                   filter: LSSTObjFilter
                   select: last
                   sort: diaObjectId
                 unit: T2LSPhotoZTap
-              - config: '%T2CatalogMatch_general'
+              - config: '%T2CatalogMatch_TDEmocracy'
                 ingest:
                   filter: LSSTObjFilter
                   select: last
                   sort: diaObjectId
                 unit: T2CatalogMatch
               - config:
+                  match_dist_arcsec: 1.0
+                  t2_dependency:
+                    - config: '%T2CatalogMatch_TDEmocracy'
+                      unit: T2CatalogMatch
+                    - config: *dl_config
+                      unit: T2LSPhotoZTap
                 ingest:
                   filter: LSSTObjFilter
                   select: last
                   sort: diaObjectId
-                unit: T2NuclearStream
+                unit: T2NuclearFilter
 
             combine:
             - unit: LSSTT1Combiner
@@ -131,11 +138,6 @@ task:
   config:
     send_beacon: false
     raise_exc: true
-    unit_ids:
-    - T2GetDiaObject
-    - T2CatalogMatch
-    - T2LSPhotoZTap
-    - T2DigestRedshifts
 
 
 - title: PlotAllCandidates
