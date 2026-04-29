@@ -33,10 +33,10 @@ class T2NuclearFilter(AbsTiedPointT2Unit):
         unit_mapping = get_catalog_position_unit_map()
         convert_to_rad = []
         for name, units in unit_mapping.items():
-            if ((u := units["ra"]) is None) or (u.lower().startswith("deg")):
+            if ((u := units["ra"]["unit"]) is None) or (u.lower().startswith("deg")):
                 convert_to_rad.append(name)
-        self._known_mapping = list(unit_mapping.values())
-        self._convert_to_rad = convert_to_rad
+        self._known_mapping = [*list(unit_mapping.keys()), "T2LSPhotoZTap"]
+        self._convert_to_rad = [*convert_to_rad, "T2LSPhotoZTap"]
 
     def process(
         self, datapoint: DataPoint, t2_views: Sequence[T2DocView]
