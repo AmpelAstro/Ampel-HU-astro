@@ -90,6 +90,13 @@ task:
                   select: last
                   sort: diaObjectId
                 unit: T2CatalogMatch
+              - config:
+                ingest:
+                  filter: LSSTObjFilter
+                  select: last
+                  sort: diaObjectId
+                unit: T2NuclearStream
+
             combine:
             - unit: LSSTT1Combiner
               state_t2:
