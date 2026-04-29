@@ -77,14 +77,15 @@ class T2NuclearFilter(AbsTiedPointT2Unit):
             matches["PS1_photoz"]["dec"] = matches["PS1_photoz"]["decmean"]
 
         # remove matches with unknown units
-        for m in matches:
-            if m not in self._known_mapping:
-                self.logger.info(f"Removing {m} from matches because unit is unknown")
-                matches.pop(m)
+        for m in [mm for mm in matches if mm not in self._known_mapping]:
+            self.logger.info(f"Removing {m} from matches because unit is unknown")
+            matches.pop(m)
 
         # convert to radians where necessary
         for name in matches:
             for k in ["ra", "dec"]:
+                if k not in matches[name]:
+                    raise KeyError(f"Key {k} not found in matches")
                 if name in self._convert_to_rad:
                     matches[name][k] = np.radians(float(matches[name][k]))
                 else:
@@ -127,7 +128,7 @@ class T2NuclearFilter(AbsTiedPointT2Unit):
             separations < np.radians(self.group_matches_within_arcsec / 3600)
         ]
         res["closest_matches"] = matched_catalogs.tolist()
-        res["pass"] = dist <= md
+        res["pass"] = bool(dist <= md)
         res["dist"] = dist
 
         return res
