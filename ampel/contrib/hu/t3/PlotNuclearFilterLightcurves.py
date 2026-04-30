@@ -41,6 +41,9 @@ from slack_sdk.errors import SlackApiError
 from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
 from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
 from ampel.content.DataPoint import DataPoint
+from ampel.contrib.hu.util.catalog_match_position_units import (
+    get_catalog_position_unit_map,
+)
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.struct.T3Store import T3Store
 from ampel.struct.UnitResult import UnitResult
@@ -1552,6 +1555,11 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
         # Keep this in sync with T2DigestRedshifts._get_catalogmatch_groupz()
         preferred_catalogs = DIGEST_REDSHIFT_CATALOGS
 
+        unit_mapping = get_catalog_position_unit_map()
+
+        # minimal entry to mock LS data structure results from T2LSPhotoZTap
+        unit_mapping["T2LSPhotoZTap"] = {"ra": {"unit": "deg"}}
+
         def _append_match(cat_name: str, entry: Mapping[str, Any]) -> None:
             ra_key = None
             dec_key = None
@@ -1581,6 +1589,12 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
             label = cat_name
             if cat_name == "T2LSPhotoZTap":
                 label = "LSPhotoZTap"
+
+            if (u := unit_mapping[cat_name]["ra"]["unit"]) is not None and (
+                u.lower().startswith("rad")
+            ):
+                ra_val = np.degrees(ra_val)
+                dec_val = np.degrees(dec_val)
 
             item: dict[str, Any] = {
                 "ra": ra_val,
