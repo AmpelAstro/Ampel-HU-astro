@@ -1101,7 +1101,7 @@ def plot_grouped_markers(
             continue
 
         ax.plot(
-            dra,
+            -dra,
             ddec,
             marker="o",
             markersize=6,
