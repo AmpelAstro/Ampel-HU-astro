@@ -1276,7 +1276,7 @@ def add_gap_crosshair(
     )
 
 
-class PlotTransientLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
+class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
     """
     Create a (pdf) plot summarizing lightcurves of candidates provided to the unit.
 
