@@ -145,6 +145,6 @@ class T2NuclearFilter(AbsTiedPointT2Unit):
             passed=passed,
             host_ra=np.degrees(match_map["ra_rad"][best_match_id]),
             host_dec=np.degrees(match_map["dec_rad"][best_match_id]),
-            host_dist_arcsec=np.degrees(match_map["dist"][best_match_id]) * 3600,
+            host_dist_arcsec=dist,
             host_catalogs=matched_catalogs.tolist(),
         )
