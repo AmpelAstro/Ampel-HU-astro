@@ -169,7 +169,7 @@ task:
       unit: T3SimpleStager
       config:
         execute:
-          - unit: PlotTransientLightcurves
+          - unit: PlotNuclearFilterLightcurves
             config:
               pdf_path: /Users/jannisnecker/Desktop/nuclear_candidates.pdf
               save_png: false
