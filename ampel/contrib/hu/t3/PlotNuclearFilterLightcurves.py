@@ -175,7 +175,7 @@ def fig_from_fluxtable(
         info.append("Photo-z:")
         info.extend(photz_list)
 
-    fig = plt.figure(figsize=(8, 5))
+    fig = plt.figure(figsize=(10, 5))
     lc_ax3 = None
 
     # Helper functions for layout
@@ -230,7 +230,7 @@ def fig_from_fluxtable(
             ncols=32,
             figure=fig,
             height_ratios=[1.0, 1.35],
-            width_ratios=[1] * 32,
+            width_ratios=[1] * 34,
         )
         fig.subplots_adjust(
             left=0.09,
@@ -262,7 +262,7 @@ def fig_from_fluxtable(
         cutouttemp = fig.add_subplot(gs[0, 6:12])
         cutoutdiff = fig.add_subplot(gs[0, 12:18])
         cutoutfinder = fig.add_subplot(gs[0, 18:24])
-        finderleg_ax = fig.add_subplot(gs[0, 24:28]) if has_matches else None
+        finderleg_ax = fig.add_subplot(gs[0, 24:34]) if has_matches else None
 
         # Bottom row: lightcurve + attributes text box
         lc_ax1 = fig.add_subplot(gs[1, 0:20])
@@ -276,7 +276,7 @@ def fig_from_fluxtable(
             cache_key=cutout_cache_key or name,
         )
 
-        finder_fov_arcsec = _finder_fov_arcsec(cutout_fov, factor=3.0)
+        finder_fov_arcsec = _finder_fov_arcsec(cutout_fov, factor=1.0)
         crosshair_gap_frac = _crosshair_gap_frac(cutout_fov, finder_fov_arcsec)
 
         render_finder_stamp(
@@ -294,7 +294,7 @@ def fig_from_fluxtable(
 
         attr_ax.text(
             0.0,
-            1.35,
+            1.25,
             "\n".join(info),
             va="top",
             ha="left",
@@ -339,8 +339,8 @@ def fig_from_fluxtable(
             cache_dir=finder_cache_dir,
             cache_key=name,
             size=240,
-            fov_arcsec=22,
-            crosshair_gap_frac=0.333,
+            fov_arcsec=10,
+            crosshair_gap_frac=0.1,
             matches=finder_matches,
             legend_ax=finderleg_ax,
         )
@@ -349,7 +349,7 @@ def fig_from_fluxtable(
 
         attr_ax.text(
             0.0,
-            1.35,
+            1.25,
             "\n".join(attr_lines),
             va="top",
             ha="left",
@@ -542,9 +542,7 @@ def fig_from_fluxtable(
     axes = [lc_ax1, lc_ax2, lc_ax3] if lc_ax3 is not None else [lc_ax1, lc_ax2]
 
     if title is not None:
-        fig.suptitle(title, x=0.5, y=0.95, va="bottom")
-
-    fig.tight_layout()
+        fig.suptitle(title, x=0.5, y=1, va="bottom")
 
     return fig, axes
 
@@ -929,7 +927,7 @@ def render_finder_stamp(
     cache_key: str,
     size: int = 240,
     fov_arcsec: float = 45,
-    crosshair_gap_frac: float = 0.2,
+    crosshair_gap_frac: float = 0.1,
     matches: list[dict[str, Any]] | None = None,
     legend_ax=None,
 ) -> None:
@@ -966,8 +964,14 @@ def render_finder_stamp(
         stamp, label = None, None
 
     if stamp is not None:
-        ax.imshow(stamp, aspect="equal", origin="upper")
-        add_gap_crosshair(ax, gap_frac=crosshair_gap_frac, lw=1.0, alpha=0.9)
+        half_fov = fov_arcsec / 2
+        ax.imshow(
+            stamp,
+            aspect="equal",
+            origin="upper",
+            extent=[-half_fov, half_fov, -half_fov, half_fov],
+        )
+        add_gap_crosshair(ax, gap_frac=crosshair_gap_frac, lw=0.5, alpha=0.9)
         if matches:
             groups = group_matches(matches, ra, dec)
             for m in matches:
@@ -979,8 +983,6 @@ def render_finder_stamp(
                 groups,
                 center_ra=ra,
                 center_dec=dec,
-                image_shape=np.asarray(stamp).shape,
-                fov_arcsec=fov_arcsec,
             )
 
             if legend_ax is not None:
@@ -992,8 +994,8 @@ def render_finder_stamp(
         )
         ax.set_title("Finder", fontdict={"fontsize": "small"})
 
-    ax.set_xticks([])
-    ax.set_yticks([])
+    ax.tick_params(axis="both", which="major", labelsize=6)
+    ax.tick_params(axis="both", which="minor", labelsize=6)
 
 
 def group_matches(matches, center_ra, center_dec, tol_arcsec=0.4):
@@ -1075,16 +1077,12 @@ def plot_grouped_markers(
     *,
     center_ra,
     center_dec,
-    image_shape,
-    fov_arcsec,
 ):
     """
     Project grouped RA/Dec positions into finder-image pixel coordinates and draw the
     colored circular markers. It also applies the RA-direction flip needed for the displayed
     finder orientation.
     """
-    ny, nx = image_shape[:2]
-    half_fov_deg = (fov_arcsec / 3600.0) / 2.0
     cosdec = np.cos(np.deg2rad(center_dec))
 
     for i, group in enumerate(groups):
@@ -1095,22 +1093,15 @@ def plot_grouped_markers(
         ra = float(m["ra"])
         dec = float(m["dec"])
 
-        dra = (ra - center_ra) * cosdec
-        ddec = dec - center_dec
+        dra = (ra - center_ra) * cosdec * 3600
+        ddec = (dec - center_dec) * 3600
 
-        # RA increases to the left in the displayed finder convention
-        x = -(dra / half_fov_deg) * (nx / 2.0) + (nx / 2.0)
-        y = -(ddec / half_fov_deg) * (ny / 2.0) + (ny / 2.0)
-
-        if not (np.isfinite(x) and np.isfinite(y)):
-            continue
-
-        if x < -5 or x > nx + 5 or y < -5 or y > ny + 5:
+        if not (np.isfinite(dra) and np.isfinite(ddec)):
             continue
 
         ax.plot(
-            x,
-            y,
+            -dra,
+            -ddec,
             marker="o",
             markersize=6,
             markerfacecolor="none",
