@@ -58,6 +58,7 @@ def fig_from_fluxtable(
     tnsname: str | None = None,
     fritzlink: bool = True,
     attributes: list[str] | None = None,
+    nuclear_filter_res: dict[str, Any] | None = None,
     photz_list: list[str] | None = None,
     cutouts: Mapping[str, Mapping[str, bytes]] | None = None,
     mag_range: None | list = None,
@@ -159,11 +160,18 @@ def fig_from_fluxtable(
         info.append("AmpelID:")
         info.append(f"{ampelid}")
 
-    info.append("------------------------")
+    sep = "------------------------"
+    info.append(sep)
+    if nuclear_filter_res:
+        passed = "passed" if nuclear_filter_res["passed"] else "failed"
+        info.append(f"Nuclear filter: {passed}")
+        if (host_dist := nuclear_filter_res["host_dist_arcsec"]) is not None:
+            info.append(f"Host dist: {host_dist:.2f}")
     if attributes:
+        info.append(sep)
         info.extend(attributes)
     if photz_list:
-        info.append("------------------------")
+        info.append(sep)
         info.append("Photo-z:")
         info.extend(photz_list)
 
@@ -233,6 +241,16 @@ def fig_from_fluxtable(
             hspace=0.45,
         )
         return gs
+
+    # merge nuclear filter res into finder mathes
+    if nuclear_filter_res and nuclear_filter_res["host_ra"] is not None:
+        finder_matches.append(
+            {
+                "label": "T2NuclearFilter",
+                "ra": nuclear_filter_res["host_ra"],
+                "dec": nuclear_filter_res["host_dec"],
+            }
+        )
 
     # Layout A: Cutouts + finder stamp.
     if has_cutouts:
@@ -524,7 +542,9 @@ def fig_from_fluxtable(
     axes = [lc_ax1, lc_ax2, lc_ax3] if lc_ax3 is not None else [lc_ax1, lc_ax2]
 
     if title is not None:
-        fig.suptitle(title)
+        fig.suptitle(title, x=0.5, y=0.95, va="bottom")
+
+    fig.tight_layout()
 
     return fig, axes
 
@@ -950,6 +970,9 @@ def render_finder_stamp(
         add_gap_crosshair(ax, gap_frac=crosshair_gap_frac, lw=1.0, alpha=0.9)
         if matches:
             groups = group_matches(matches, ra, dec)
+            for m in matches:
+                if m["label"] == "T2NuclearFilter":
+                    groups.append([m])
 
             plot_grouped_markers(
                 ax,
@@ -983,6 +1006,8 @@ def group_matches(matches, center_ra, center_dec, tol_arcsec=0.4):
     cosdec = np.cos(np.deg2rad(center_dec))
 
     for m in matches:
+        if m["label"] == "T2NuclearFilter":
+            continue
         try:
             ra = float(m["ra"])
             dec = float(m["dec"])
@@ -1522,18 +1547,7 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
             if t2res.get("ampel_z", 999) < nearby_z:
                 attributes.append("Nearby")
             dist2host = t2res["ampel_dist"]
-            attributes.append(f"Dist2host: {dist2host:.1f} arcsec")
-
-        t2res = tview.get_t2_body(unit="T2NuclearFilter")
-        if isinstance(t2res, dict):
-            for k, v in t2res.items():
-                if isinstance(v, float):
-                    vs = f"{v:.2f}"
-                elif isinstance(v, tuple):
-                    vs = ", ".join(v)
-                else:
-                    vs = str(v)
-                attributes.append(f"{k}: {vs}")
+            attributes.append(f"Dist2host: {dist2host:.2f} arcsec")
 
         return attributes, z
 
@@ -2113,6 +2127,7 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                     dec,
                     sncosmo_table,
                     ulim_table,
+                    nuclear_filter_res=tran_view.get_t2_body(unit="T2NuclearFilter"),
                     attributes=attributes,
                     photz_list=photz_list,
                     fritzlink=self.fritzlink,
