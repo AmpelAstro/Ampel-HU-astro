@@ -1524,6 +1524,17 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
             dist2host = t2res["ampel_dist"]
             attributes.append(f"Dist2host: {dist2host:.1f} arcsec")
 
+        t2res = tview.get_t2_body(unit="T2NuclearFilter")
+        if isinstance(t2res, dict):
+            for k, v in t2res.items():
+                if isinstance(v, float):
+                    vs = f"{v:.2f}"
+                elif isinstance(v, tuple):
+                    vs = ", ".join(v)
+                else:
+                    vs = str(v)
+                attributes.append(f"{k}: {vs}")
+
         return attributes, z
 
     def finder_matches_from_t2(self, tview: TransientView) -> list[dict[str, Any]]:
