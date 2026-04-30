@@ -41,10 +41,13 @@ def get_catalog_position_unit_map() -> dict:
         if len(v["ra"]) == 1 and len(v["dec"]) == 1
     }
 
+    # manually add NEDz
+    mapping["NEDz"] = {
+        "ra": {"name": "RA", "unit": "rad"},
+        "dec": {"name": "Dec", "unit": "rad"},
+    }
+
     # check sanity
     assert all([v["ra"]["unit"] == v["dec"]["unit"] for v in mapping.values()])
-
-    # add NEDz
-    mapping["NEDz"] = mapping["NEDz_extcats"]
 
     return mapping
