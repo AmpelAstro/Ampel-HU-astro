@@ -287,7 +287,7 @@ def fig_from_fluxtable(
             ra,
             dec,
             cache_dir=finder_cache_dir,
-            cache_key=name,
+            name=name,
             size=240,
             fov_arcsec=finder_fov_arcsec,
             crosshair_gap_frac=crosshair_gap_frac,
@@ -340,7 +340,7 @@ def fig_from_fluxtable(
             ra,
             dec,
             cache_dir=finder_cache_dir,
-            cache_key=name,
+            name=name,
             size=240,
             fov_arcsec=10,
             crosshair_gap_frac=0.1,
@@ -927,7 +927,7 @@ def render_finder_stamp(
     dec: float,
     *,
     cache_dir: str | None,
-    cache_key: str,
+    name: str,
     size: int = 240,
     fov_arcsec: float = 45,
     crosshair_gap_frac: float = 0.1,
@@ -943,11 +943,9 @@ def render_finder_stamp(
     - Grouping matches by their distance and plotting them as markers on the finder stamp.
     - Adding a legend with the grouped matches.
     """
-    stamp: np.ndarray | None = None
-    label: str | None = None
-    cache_path = None
     try:
         if cache_dir is not None:
+            cache_key = f"{name}-{ra:.4f}-{dec:.4f}-{size}-{fov_arcsec:.4f}"
             cache_path = os.path.join(cache_dir, f"{cache_key}_FINDER.npz")
             if os.path.isfile(cache_path):
                 cached = np.load(cache_path, allow_pickle=True)
@@ -1103,8 +1101,8 @@ def plot_grouped_markers(
             continue
 
         ax.plot(
-            -dra,
-            -ddec,
+            dra,
+            ddec,
             marker="o",
             markersize=6,
             markerfacecolor="none",
