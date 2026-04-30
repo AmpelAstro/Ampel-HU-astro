@@ -137,7 +137,7 @@ class T2NuclearFilter(AbsTiedPointT2Unit):
             * 3600
         )
         matched_catalogs = match_map["name"][
-            separations < np.radians(self.group_matches_within_arcsec / 3600)
+            separations <= self.group_matches_within_arcsec
         ]
         passed = bool(dist <= md)
 
