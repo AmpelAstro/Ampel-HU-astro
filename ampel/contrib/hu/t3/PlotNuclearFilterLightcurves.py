@@ -1208,7 +1208,7 @@ def get_finder_stamp(
         ]
 
     labels = {
-        "CDS/P/DESI-Legacy-Surveys/DR10/color": "DESI DR10",
+        "CDS/P/DESI-Legacy-Surveys/DR10/color": "LS DR10",
         "CDS/P/DES-DR2/ColorIRG": "DES",
         "CDS/P/Skymapper/DR4/color": "SkyMapper",
         "CDS/P/DECaLS/DR5/color": "DECaLS",
