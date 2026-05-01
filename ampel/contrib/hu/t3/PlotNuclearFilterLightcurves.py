@@ -21,6 +21,9 @@ import backoff
 import matplotlib.pyplot as plt
 import numpy as np
 import requests
+from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
+from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
+from ampel.view.TransientView import TransientView
 from astropy import units as u
 from astropy import visualization
 from astropy.cosmology import FlatLambdaCDM
@@ -35,20 +38,14 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import MultipleLocator
 from requests_toolbelt.sessions import BaseUrlSession
 from scipy import ndimage
-from slack_sdk import WebClient
-from slack_sdk.errors import SlackApiError
 
-from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
-from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
 from ampel.content.DataPoint import DataPoint
 from ampel.contrib.hu.util.catalog_match_position_units import (
     get_catalog_position_unit_map,
 )
-from ampel.secret.NamedSecret import NamedSecret
 from ampel.struct.T3Store import T3Store
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import T3Send, UBson
-from ampel.view.TransientView import TransientView
 
 
 def fig_from_fluxtable(
@@ -1304,7 +1301,6 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
       - Optional finder stamp including markers of closest match
       - Optional link to TNS (from TNSReports complement)
       - Optional Fritz link (disabled for LSST-only sources)
-      - Optional Slack upload
     """
 
     pdf_path: None | str = None  # Will create random if not set
@@ -1324,9 +1320,6 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
     ztf_archive_url: str | None = None
 
     fritzlink: bool = True
-    webclient: WebClient | None = None
-    slack_channel: str | None = None
-    slack_token: NamedSecret[str] | None = None
 
     stacking: bool = False
     stacking_window_hours: float = 2.0
@@ -1349,9 +1342,6 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
             os.makedirs(self.cutout_cache_dir, exist_ok=True)
         if not self.pdf_path:
             self.pdf_path = tempfile.mkstemp(".pdf", "candidates", self.save_dir)[1]
-
-        if self.slack_channel and self.slack_token is not None:
-            self.webclient = WebClient(self.slack_token.get())
 
         if self.ztf_archive_url is None:
             try:
@@ -2150,32 +2140,5 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                 if self.save_png:
                     plt.savefig(os.path.join(self.save_dir, str(tran_view.id) + ".png"))
                 plt.close(fig)
-
-        if (
-            self.slack_channel is not None
-            and self.slack_token is not None
-            and self.pdf_path is not None
-            and os.path.isfile(self.pdf_path)
-        ):
-            assert self.webclient is not None
-
-            new_file = self.webclient.files_upload_v2(
-                title="My Test Text File", filename="test.pdf", file=self.pdf_path
-            )
-            fileresp: dict[str, Any] = new_file.get("file", {})
-            if len(file_url := fileresp.get("permalink", "")) > 0:
-                self.webclient.chat_postMessage(
-                    channel=self.slack_channel,
-                    text=f"Here is the file: {file_url}",
-                )
-
-            try:
-                self.webclient.chat_postMessage(
-                    channel=self.slack_channel, text="Hello from your app! :tada:"
-                )
-            except SlackApiError as e:
-                self.logger.info(
-                    "Slack message failed", extra={"error": e.response.get("error")}
-                )
 
         return None
