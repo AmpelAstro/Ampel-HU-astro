@@ -107,13 +107,6 @@ task:
             combine:
             - unit: LSSTT1Combiner
               state_t2:
-              - config: &risedec_config
-                  tabulator:
-                  - unit: LSSTT2Tabulator
-                    config:
-                      zp: 31.4
-                unit: T2TabulatorRiseDecline
-
               - unit: T2DigestRedshifts
                 config: &digest_config
                   max_redshift_category: 7
