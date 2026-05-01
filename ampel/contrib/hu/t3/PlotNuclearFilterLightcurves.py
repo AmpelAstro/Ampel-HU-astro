@@ -21,9 +21,6 @@ import backoff
 import matplotlib.pyplot as plt
 import numpy as np
 import requests
-from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
-from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
-from ampel.view.TransientView import TransientView
 from astropy import units as u
 from astropy import visualization
 from astropy.cosmology import FlatLambdaCDM
@@ -39,6 +36,8 @@ from matplotlib.ticker import MultipleLocator
 from requests_toolbelt.sessions import BaseUrlSession
 from scipy import ndimage
 
+from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
+from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
 from ampel.content.DataPoint import DataPoint
 from ampel.contrib.hu.util.catalog_column_info import (
     get_catalog_position_unit_map,
@@ -46,6 +45,7 @@ from ampel.contrib.hu.util.catalog_column_info import (
 from ampel.struct.T3Store import T3Store
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import T3Send, UBson
+from ampel.view.TransientView import TransientView
 
 
 def fig_from_fluxtable(
@@ -65,7 +65,7 @@ def fig_from_fluxtable(
     z: float | None = None,
     zp: float = 25.0,
     legend: bool = True,
-    title: str = None,
+    title: None | str = None,
     grid_interval: None | int = None,
     t_0_jd: None | float = None,
     finder_cache_dir: None | str = ".",
@@ -167,6 +167,12 @@ def fig_from_fluxtable(
         info.append(f"Nuclear filter: {passed}")
         if (host_dist := nuclear_filter_res["host_dist_arcsec"]) is not None:
             info.append(f"Host dist: {host_dist:.2f}")
+            info.append("Types:")
+            for cat_name, cat_info in nuclear_filter_res["host_type"].items():
+                cat_info_details = "; ".join(
+                    [f"{v} ({k})" for k, v in cat_info.items()]
+                )
+                info.append(f"   {cat_name}: {cat_info_details}")
     if attributes:
         info.append(sep)
         info.extend(attributes)
