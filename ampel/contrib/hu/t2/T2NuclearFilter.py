@@ -17,6 +17,7 @@ from ampel.abstract.AbsTiedPointT2Unit import AbsTiedPointT2Unit
 from ampel.content.DataPoint import DataPoint
 from ampel.contrib.hu.util.catalog_column_info import (
     get_catalog_position_unit_map,
+    get_type_and_redshift_columns,
 )
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
@@ -29,6 +30,7 @@ class NuclearFilterResult(TypedDict):
     host_ra: float | None
     host_dec: float | None
     host_dist_arcsec: float | None
+    host_type: dict[str, dict[str, str]] | None
 
 
 class T2NuclearFilter(AbsTiedPointT2Unit):
@@ -46,6 +48,7 @@ class T2NuclearFilter(AbsTiedPointT2Unit):
                 convert_to_rad.append(name)
         self._known_mapping = [*list(unit_mapping.keys()), "T2LSPhotoZTap"]
         self._convert_to_rad = [*convert_to_rad, "T2LSPhotoZTap"]
+        self._redshift_columns, self._type_columns = get_type_and_redshift_columns()
 
     def process(
         self, datapoint: DataPoint, t2_views: Sequence[T2DocView]
@@ -76,6 +79,7 @@ class T2NuclearFilter(AbsTiedPointT2Unit):
                 host_dec=None,
                 host_dist_arcsec=None,
                 host_catalogs=None,
+                host_type=None,
             )
 
         # normalize keys
@@ -141,10 +145,16 @@ class T2NuclearFilter(AbsTiedPointT2Unit):
         ]
         passed = bool(dist <= md)
 
+        type_info = {
+            k: {kk: v[kk] for kk in self._type_columns if kk in v}
+            for k, v in matches.items()
+        }
+
         return NuclearFilterResult(
             passed=passed,
             host_ra=np.degrees(match_map["ra_rad"][best_match_id]),
             host_dec=np.degrees(match_map["dec_rad"][best_match_id]),
             host_dist_arcsec=dist,
             host_catalogs=matched_catalogs.tolist(),
+            host_type=type_info,
         )

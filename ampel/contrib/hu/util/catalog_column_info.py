@@ -51,3 +51,36 @@ def get_catalog_position_unit_map() -> dict:
     assert all([v["ra"]["unit"] == v["dec"]["unit"] for v in mapping.values()])
 
     return mapping
+
+
+def get_type_and_redshift_columns():
+    redshift_columns = [
+        "Redshift",
+        "REDSHIFT",
+        "z",
+        "zphot",
+        "zspec",
+        "spec_z",
+        "redshift",
+        "photoz",
+        "z_phot",
+    ]
+    type_columns = [
+        "CLASS",
+        "TYPE",
+        "VarType",
+        "spectype",
+        "classification",
+        "objtype",
+        "class",
+        "ObjType",
+        "pretype",
+        "bptclass_str",
+        "type",
+        "object_type",
+        "broad_type",
+        "bpt",
+        "PSTAR",
+        "PGALAXY",
+    ]
+    return redshift_columns, type_columns
