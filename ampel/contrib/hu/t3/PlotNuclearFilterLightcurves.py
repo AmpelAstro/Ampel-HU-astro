@@ -172,7 +172,8 @@ def fig_from_fluxtable(
                 cat_info_details = "; ".join(
                     [f"{v} ({k})" for k, v in cat_info.items()]
                 )
-                info.append(f"   {cat_name}: {cat_info_details}")
+                if len(cat_info_details):
+                    info.append(f"   {cat_name}: {cat_info_details}")
     if attributes:
         info.append(sep)
         info.extend(attributes)
