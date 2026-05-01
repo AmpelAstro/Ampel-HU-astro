@@ -40,7 +40,7 @@ from requests_toolbelt.sessions import BaseUrlSession
 from scipy import ndimage
 
 from ampel.content.DataPoint import DataPoint
-from ampel.contrib.hu.util.catalog_match_position_units import (
+from ampel.contrib.hu.util.catalog_column_info import (
     get_catalog_position_unit_map,
 )
 from ampel.struct.T3Store import T3Store

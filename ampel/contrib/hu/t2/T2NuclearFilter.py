@@ -15,7 +15,7 @@ from astropy.coordinates.angles import angular_separation
 
 from ampel.abstract.AbsTiedPointT2Unit import AbsTiedPointT2Unit
 from ampel.content.DataPoint import DataPoint
-from ampel.contrib.hu.util.catalog_match_position_units import (
+from ampel.contrib.hu.util.catalog_column_info import (
     get_catalog_position_unit_map,
 )
 from ampel.struct.UnitResult import UnitResult
