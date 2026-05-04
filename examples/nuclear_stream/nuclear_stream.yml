@@ -84,7 +84,7 @@ task:
                   filter: LSSTObjFilter
                   select: last
                   sort: diaObjectId
-                unit: T2LSPhotoZTap
+                unit: T2DatalabLSDR10Match
               - config: '%T2CatalogMatch_TDEmocracy'
                 ingest:
                   filter: LSSTObjFilter
