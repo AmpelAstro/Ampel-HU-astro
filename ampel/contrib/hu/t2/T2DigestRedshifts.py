@@ -66,11 +66,7 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
     redshift_kind: (
         None
         | Literal[
-            "T2MatchBTS",
-            "T2DigestRedshifts",
-            "T2ElasticcRedshiftSampler",
-            "AmpelZ",
-            "T2DatalabLSDR10Match",
+            "T2MatchBTS", "T2DigestRedshifts", "T2ElasticcRedshiftSampler", "AmpelZ"
         ]
     ) = None
 
@@ -86,7 +82,11 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
     t2_dependency: Sequence[
         StateT2Dependency[
             Literal[
-                "T2CatalogMatch", "T2LSPhotoZTap", "T2CatalogMatchLocal", "T2MatchBTS"
+                "T2CatalogMatch",
+                "T2LSPhotoZTap",
+                "T2CatalogMatchLocal",
+                "T2MatchBTS",
+                "T2DatalabLSDR10Match",
             ]
         ]
     ]
