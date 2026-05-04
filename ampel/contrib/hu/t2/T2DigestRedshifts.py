@@ -66,7 +66,11 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
     redshift_kind: (
         None
         | Literal[
-            "T2MatchBTS", "T2DigestRedshifts", "T2ElasticcRedshiftSampler", "AmpelZ"
+            "T2MatchBTS",
+            "T2DigestRedshifts",
+            "T2ElasticcRedshiftSampler",
+            "AmpelZ",
+            "T2DatalabLSDR10Match",
         ]
     ) = None
 

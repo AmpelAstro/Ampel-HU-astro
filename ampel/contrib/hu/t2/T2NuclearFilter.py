@@ -8,7 +8,7 @@
 # Last Modified By:    jannis.necker@gmail.com
 
 from collections.abc import Sequence
-from typing import TypedDict
+from typing import Literal, TypedDict
 
 import numpy as np
 from astropy.coordinates.angles import angular_separation
@@ -19,6 +19,7 @@ from ampel.contrib.hu.util.catalog_column_info import (
     get_catalog_position_unit_map,
     get_type_and_redshift_columns,
 )
+from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
 from ampel.view.T2DocView import T2DocView
@@ -37,6 +38,10 @@ class T2NuclearFilter(AbsTiedPointT2Unit):
     match_dist_arcsec: float
     group_matches_within_arcsec: float = 0.5
 
+    t2_dependency: Sequence[
+        StateT2Dependency[Literal["T2CatalogMatch", "T2DatalabLSDR10Match"]]
+    ]
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -46,8 +51,8 @@ class T2NuclearFilter(AbsTiedPointT2Unit):
         for name, units in unit_mapping.items():
             if ((u := units["ra"]["unit"]) is None) or (u.lower().startswith("deg")):
                 convert_to_rad.append(name)
-        self._known_mapping = [*list(unit_mapping.keys()), "T2LSPhotoZTap"]
-        self._convert_to_rad = [*convert_to_rad, "T2LSPhotoZTap"]
+        self._known_mapping = [*list(unit_mapping.keys()), "T2DatalabLSDR10Match"]
+        self._convert_to_rad = [*convert_to_rad, "T2DatalabLSDR10Match"]
         self._redshift_columns, self._type_columns = get_type_and_redshift_columns()
 
     def process(
@@ -60,7 +65,7 @@ class T2NuclearFilter(AbsTiedPointT2Unit):
         # with different configurations the matches will be overwritten!
         matches = {}
         for t2_view in t2_views:
-            if (t2_view.unit in {"T2CatalogMatch", "T2LSPhotoZTap"}) and (
+            if (t2_view.unit in {"T2CatalogMatch", "T2DatalabLSDR10Match"}) and (
                 body := t2_view.get_payload()
             ) is not None:
                 matches.update(
