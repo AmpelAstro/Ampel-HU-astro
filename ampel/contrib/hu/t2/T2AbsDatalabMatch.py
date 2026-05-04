@@ -213,14 +213,14 @@ class T2AbsDatalabMatch(AbsPointT2Unit, abstract=True):
         r = self.session.get(
             f"{self.datalab_query_url}/query",
             params={
-                "sql": self.query % (ra, dec, self.match_radius / 3600),
+                "sql": self.query() % (ra, dec, self.match_radius / 3600),
                 "ofmt": "csv",
                 "async": "False",
             },
             timeout=300,
         )
         if not r.ok:
-            self.logger.debug(f"DL query failed at {ra} {dec}")
+            self.logger.info(f"DL query failed at {ra} {dec}: {r.content.decode()}")
             return []
 
         # First convert to string and then to dict
@@ -290,7 +290,7 @@ class T2AbsDatalabMatch(AbsPointT2Unit, abstract=True):
             match_list = self.add_separation(match_list, transient_ra, transient_dec)
 
         # Return a T2 result (dict-like)
-        unit_name = self._model["unit"]
+        unit_name = self._model.__name__
         if len(match_list) > 0:
             if return_all:
                 return {f"{unit_name}{k}": item for k, item in enumerate(match_list)}
