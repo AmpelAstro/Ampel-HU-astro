@@ -150,7 +150,7 @@ def convert(inp, outfmt="pandas", verbose=False, **kwargs):
     return output
 
 
-class T2AbsDatalabMatch(AbsPointT2Unit):
+class T2AbsDatalabMatch(AbsPointT2Unit, abstract=True):
     """
     Query the NOIR DataLab service for photometric redshifts from the
     Legacy Survey.
