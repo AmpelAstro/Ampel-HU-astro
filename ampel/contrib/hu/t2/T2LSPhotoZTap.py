@@ -4,8 +4,8 @@
 # License           : BSD-3-Clause
 # Author            : jnordin
 # Date              : 20.04.2021
-# Last Modified Date: 21.04.2021
-# Last Modified By  : jnordin
+# Last Modified Date: 04.05.2026
+# Last Modified By  : Jannis Necker
 
 
 from ampel.contrib.hu.t2.T2AbsDatalabMatch import T2AbsDatalabMatch
