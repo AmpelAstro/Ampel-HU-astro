@@ -39,7 +39,7 @@ class T2NuclearFilter(AbsTiedPointT2Unit):
     group_matches_within_arcsec: float = 0.5
 
     t2_dependency: Sequence[
-        StateT2Dependency[Literal["T2CatalogMatch", "T2DatalabLSDR10Match"]]
+        StateT2Dependency[Literal["T2CatalogMatch", "T2LSPhotoZTap"]]
     ]
 
     def __init__(self, **kwargs):
@@ -51,8 +51,8 @@ class T2NuclearFilter(AbsTiedPointT2Unit):
         for name, units in unit_mapping.items():
             if ((u := units["ra"]["unit"]) is None) or (u.lower().startswith("deg")):
                 convert_to_rad.append(name)
-        self._known_mapping = [*list(unit_mapping.keys()), "T2DatalabLSDR10Match"]
-        self._convert_to_rad = [*convert_to_rad, "T2DatalabLSDR10Match"]
+        self._known_mapping = [*list(unit_mapping.keys()), "T2LSPhotoZTap"]
+        self._convert_to_rad = [*convert_to_rad, "T2LSPhotoZTap"]
         self._redshift_columns, self._type_columns = get_type_and_redshift_columns()
 
     def process(
@@ -65,7 +65,7 @@ class T2NuclearFilter(AbsTiedPointT2Unit):
         # with different configurations the matches will be overwritten!
         matches = {}
         for t2_view in t2_views:
-            if (t2_view.unit in {"T2CatalogMatch", "T2DatalabLSDR10Match"}) and (
+            if (t2_view.unit in {"T2CatalogMatch", "T2LSPhotoZTap"}) and (
                 body := t2_view.get_payload()
             ) is not None:
                 matches.update(

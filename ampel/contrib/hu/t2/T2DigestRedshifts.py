@@ -86,7 +86,6 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
                 "T2LSPhotoZTap",
                 "T2CatalogMatchLocal",
                 "T2MatchBTS",
-                "T2DatalabLSDR10Match",
             ]
         ]
     ]
