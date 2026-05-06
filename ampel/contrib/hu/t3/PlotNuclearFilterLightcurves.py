@@ -210,24 +210,6 @@ def fig_from_fluxtable(
                 cutout_fov = float(fov)
         return cutout_fov
 
-    def _finder_fov_arcsec(cutout_fov: float | None, factor: float) -> float:
-        """
-        Compute the finder stamp field-of-view in arcseconds from a cutout FOV.
-        Uses a multiplicative factor and clips to a conservative range to avoid extreme values.
-        """
-        if cutout_fov is None:
-            return 45.0
-        return float(np.clip(factor * cutout_fov, 10, 1200))
-
-    def _crosshair_gap_frac(cutout_fov: float | None, finder_fov: float) -> float:
-        """
-        Fractional width of the central crosshair gap so that it matches the
-        cutout FoV on the sky.
-        """
-        if cutout_fov is None or not np.isfinite(cutout_fov) or finder_fov <= 0:
-            return 0.2
-        return float(np.clip(cutout_fov / finder_fov, 0.05, 0.9))
-
     def _setup_gs_2x32(fig):
         """
         Create and space the common 2x32 GridSpec used for layouts with cutous.
@@ -237,7 +219,7 @@ def fig_from_fluxtable(
             ncols=32,
             figure=fig,
             height_ratios=[1.0, 1.35],
-            width_ratios=[1] * 34,
+            width_ratios=[1] * 32,
         )
         fig.subplots_adjust(
             left=0.09,
@@ -283,9 +265,6 @@ def fig_from_fluxtable(
             cache_key=cutout_cache_key or name,
         )
 
-        finder_fov_arcsec = _finder_fov_arcsec(cutout_fov, factor=1.0)
-        crosshair_gap_frac = _crosshair_gap_frac(cutout_fov, finder_fov_arcsec)
-
         render_finder_stamp(
             cutoutfinder,
             ra,
@@ -293,8 +272,8 @@ def fig_from_fluxtable(
             cache_dir=finder_cache_dir,
             name=name,
             size=240,
-            fov_arcsec=finder_fov_arcsec,
-            crosshair_gap_frac=crosshair_gap_frac,
+            fov_arcsec=cutout_fov,
+            crosshair_gap_frac=0.1,
             matches=finder_matches,
             legend_ax=finderleg_ax,
         )
