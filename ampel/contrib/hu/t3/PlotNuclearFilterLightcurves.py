@@ -970,8 +970,20 @@ def render_finder_stamp(
 
     if stamp is not None:
         half_fov = fov_arcsec / 2
+
+        # normalize to one
+        stamp = stamp / stamp.max()
+        # calculate intensity and scale to arbitrary high number
+        intensity = np.sum(stamp, axis=2)
+        # scale with arcsinh: linear for small values, log for high
+        ratio = np.ones_like(intensity)
+        np.divide(intensity, np.arcsinh(intensity), where=intensity > 0, out=ratio)
+        # scale image accordingly
+        stamp = stamp / ratio[:, :, np.newaxis].repeat(3, axis=2)
+        stamp = stamp / stamp.max()
+
         ax.imshow(
-            stamp,
+            np.asinh(stamp.data),
             aspect="equal",
             origin="upper",
             extent=[-half_fov, half_fov, -half_fov, half_fov],
