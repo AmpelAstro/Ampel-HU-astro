@@ -1123,7 +1123,7 @@ def plot_grouped_markers(
             markersize=6,
             markerfacecolor="none",
             markeredgecolor=color,
-            markeredgewidth=1.5,
+            markeredgewidth=0.5,
             zorder=5,
         )
 
