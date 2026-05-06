@@ -155,6 +155,11 @@ class T2NuclearFilter(AbsTiedPointT2Unit):
             for k, v in matches.items()
         }
 
+        if ("T2LSPhotoZTap" in type_info) and (
+            type_info["T2LSPhotoZTap"] in {"DUP", "PSF"}
+        ):
+            passed = False
+
         return NuclearFilterResult(
             passed=passed,
             host_ra=np.degrees(match_map["ra_rad"][best_match_id]),
