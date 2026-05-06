@@ -47,6 +47,7 @@ task:
           min_reliability: 0.95
           #min_ndet_snr: 10
           min_ndet: 3
+          min_ndet_snr: 5
           #max_ndet: 200
           #min_ndet_cadence: 0.3
           min_tspan: 0.5
@@ -106,7 +107,7 @@ task:
                   sort: diaObjectId
                 unit: T2CatalogMatch
               - config:
-                  match_dist_arcsec: 1.0
+                  match_dist_arcsec: 0.5
                   t2_dependency:
                     - config: '%T2CatalogMatch_TDEmocracy'
                       unit: T2CatalogMatch
