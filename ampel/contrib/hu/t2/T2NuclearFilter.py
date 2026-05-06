@@ -156,7 +156,7 @@ class T2NuclearFilter(AbsTiedPointT2Unit):
         }
 
         if ("T2LSPhotoZTap" in type_info) and (
-            type_info["T2LSPhotoZTap"] in {"DUP", "PSF"}
+            type_info["T2LSPhotoZTap"]["type"] in {"DUP", "PSF"}
         ):
             passed = False
 
