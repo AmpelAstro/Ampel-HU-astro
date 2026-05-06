@@ -1325,6 +1325,8 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
 
     local_catalogs: list[str] = []  # Names of local catalogs to include
 
+    min_snr: float = 5
+
     def post_init(self) -> None:
         """
         Post-initialization routine for PlotTransientLightcurves.
@@ -2046,9 +2048,11 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                     self.logger.debug("No flux table", extra={"stock": tran_view.id})
                     continue
 
-                sncosmo_table = sncosmo_table[sncosmo_table["flux"] > 0]
+                snr = sncosmo_table["flux"] / sncosmo_table["fluxerr"]
+
+                sncosmo_table = sncosmo_table[snr > self.min_snr]
                 if len(sncosmo_table) == 0:
-                    self.logger.debug("No pos flux", extra={"stock": tran_view.id})
+                    self.logger.debug("No detections", extra={"stock": tran_view.id})
                     continue
 
                 (ra, dec) = self.get_pos(photopoints)
