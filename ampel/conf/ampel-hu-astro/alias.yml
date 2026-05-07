@@ -683,7 +683,7 @@ t2:
           - _2
         post_filter: null
         pre_filter: null
-        rs_arcsec: 10.0
+        rs_arcsec: 1
         use: extcats
       SDSSDR10:
         keys_to_append:
