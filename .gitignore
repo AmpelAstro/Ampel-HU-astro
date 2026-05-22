@@ -18,3 +18,6 @@ __pycache__
 *.pkl
 examples/artifacts
 examples/parsnipPlot
+cutout_cache
+finder_cache
+.idea
