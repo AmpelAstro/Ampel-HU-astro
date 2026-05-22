@@ -59,12 +59,12 @@ class Classification(AmpelBaseModel):
 
 
 class Host(AmpelBaseModel):
-    name: str
-    source: str
-    redshift: float
+    name: str | None
+    source: str | list[str]
+    redshift: float | None
     redshift_error: float | None = None
     distance: float
-    info: str | None = None
+    info: str | dict[str, dict[str, str]] | None = None
 
 
 class Feature(AmpelBaseModel):
