@@ -1,7 +1,7 @@
 name: earlyreleasetest
 
 mongo:
-  prefix: nucelar_stream
+  prefix: nucelar_stream_archive
   reset: false
 
 channel:
@@ -20,7 +20,7 @@ task:
 
   unit: AlertConsumer
   config:
-    iter_max: 50000
+    iter_max: 5000
     compiler_opts: LSSTCompilerOptions
     supplier:
       unit: LSSTAlertSupplier
@@ -29,12 +29,28 @@ task:
         loader:
           unit: ParquetAlertLoader
           config:
-            path: /Users/jannisnecker/Downloads/lsst-alerts-2026-03-02--2026-03-10-r0.95.parquet
-            condition:
-              diaObject.nDiaSources >= 10
-              and diaObject.nDiaSources < 200
-              and diaSource.snr >= 5
-              and diaSource.reliability >= 0.95
+            path: /cephfs/users/neckerja/scratch/rubicube/alert_dumps/lsst-alerts-2026-03-02--2026-03-10-r0.95.parquet
+#          unit: LSSTArchiveAlertLoader
+#          config:
+#            archive_url: "https://ampel-dev.ia.zeuthen.desy.de/api/lsst/archive/v1/"
+#            # Oct 1 - 60949
+#            # Nov 1 - 60980
+#            # Dec 1 - 61010
+#            # Jan 10 - 61050
+#            # Feb 1 - 61072
+#            # Mar 1 - 61100
+#            # Apr 1 - 61131
+#            # May 1 - 61161
+#            # Jun 1 - 61192
+#            # Jul 1 - 61222
+#            # Aug 1 - 61253
+#            # Sep 1 - 61284
+#            # Oct 1 - 61314
+#            # Nov 1 - 61345
+#            # Dec 1 - 61375
+#            condition: "diaSource.reliability>0.95 AND diaSource.midpointMjdTai>=61178  AND diaObject.nDiaSources>=3"
+#            order_by: "diaSource.visit"
+#            insecure: true
 
     shaper: {unit: LSSTDataPointShaper}
     directives:
@@ -106,7 +122,11 @@ task:
                   select: last
                   sort: diaObjectId
                 unit: T2CatalogMatch
-              - config:
+
+            combine:
+            - unit: LSSTT1Combiner
+              state_t2:
+              - config: &nuclear_filter_config
                   match_dist_arcsec: 0.5
                   t2_dependency:
                     - config: '%T2CatalogMatch_TDEmocracy'
@@ -118,10 +138,6 @@ task:
                   select: last
                   sort: diaObjectId
                 unit: T2NuclearFilter
-
-            combine:
-            - unit: LSSTT1Combiner
-              state_t2:
               - unit: T2DigestRedshifts
                 config: &digest_config
                   max_redshift_category: 7
@@ -138,6 +154,28 @@ task:
                       select: last
                       sort: diaObjectId
                     unit: T2LSPhotoZTap
+              - unit: T2NuclearReport
+                config:
+                  t2_dependency:
+                      - config: *nuclear_filter_config
+                        unit: T2NuclearFilter
+                      - config: *digest_config
+                        unit: T2DigestRedshifts
+                  tabulator:
+                    - unit: LSSTT2Tabulator
+                      config:
+                        zp: 31.4
+                  result_adapter:
+                    unit: HopskotchAdapter
+                    config:
+                      broker: kafka.scimma.org
+                      auth:
+                        username:
+                          label: scimma/neckerja/user
+                        password:
+                          label: scimma/neckerja/password
+                      topic: ampel.ampel.lsst.test_nuclear
+                      model: ampel.contrib.hu.model.LSSTReport.LSSTReport
 
 
 - title: Run T2s
@@ -179,9 +217,9 @@ task:
         execute:
           - unit: PlotNuclearFilterLightcurves
             config:
-              pdf_path: /Users/jannisnecker/Desktop/nuclear_candidates.pdf
+              pdf_path: /cephfs/users/neckerja/scratch/rubicube/nuclear_candidates.pdf
               save_png: false
-              include_cutouts: false
+              include_cutouts: true
               internal_cutout_fetch: true
               lsst_archive_insecure: true
               cutout_eligible: brightest

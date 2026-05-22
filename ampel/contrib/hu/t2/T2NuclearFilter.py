@@ -13,8 +13,9 @@ from typing import Literal, TypedDict
 import numpy as np
 from astropy.coordinates.angles import angular_separation
 
-from ampel.abstract.AbsTiedPointT2Unit import AbsTiedPointT2Unit
+from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.content.DataPoint import DataPoint
+from ampel.content.T1Document import T1Document
 from ampel.contrib.hu.util.catalog_column_info import (
     get_catalog_position_unit_map,
     get_type_and_redshift_columns,
@@ -34,7 +35,7 @@ class NuclearFilterResult(TypedDict):
     host_type: dict[str, dict[str, str]] | None
 
 
-class T2NuclearFilter(AbsTiedPointT2Unit):
+class T2NuclearFilter(AbsTiedStateT2Unit):
     match_dist_arcsec: float
     group_matches_within_arcsec: float = 0.5
 
@@ -56,7 +57,10 @@ class T2NuclearFilter(AbsTiedPointT2Unit):
         self._redshift_columns, self._type_columns = get_type_and_redshift_columns()
 
     def process(
-        self, datapoint: DataPoint, t2_views: Sequence[T2DocView]
+        self,
+        compound: T1Document,
+        datapoints: Sequence[DataPoint],
+        t2_views: Sequence[T2DocView],
     ) -> UBson | UnitResult:
         md = self.match_dist_arcsec
 
