@@ -145,12 +145,12 @@ def fig_from_fluxtable(
         "ztfr": {"label": "ZTF r", "c": "red"},
         "ztfi": {"label": "ZTF i", "c": "orange"},
         # LSST
-        "lsstu": {"label": "LSST u", "c": "purple"},
-        "lsstg": {"label": "LSST g", "c": "blue"},
-        "lsstr": {"label": "LSST r", "c": "green"},
+        "lsstu": {"label": "LSST u", "c": "blue"},
+        "lsstg": {"label": "LSST g", "c": "green"},
+        "lsstr": {"label": "LSST r", "c": "red"},
         "lssti": {"label": "LSST i", "c": "orange"},
-        "lsstz": {"label": "LSST z", "c": "red"},
-        "lssty": {"label": "LSST y", "c": "darkred"},
+        "lsstz": {"label": "LSST z", "c": "darkred"},
+        "lssty": {"label": "LSST y", "c": "brown"},
     }
 
     # General info box
