@@ -11,10 +11,10 @@ import base64
 import gzip
 import io
 import os
-import tempfile
 from collections.abc import Generator, Iterable, Mapping, Sequence
 from contextlib import suppress
 from gzip import BadGzipFile
+from pathlib import Path
 from typing import Any
 
 import backoff
@@ -1301,12 +1301,11 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
       - Optional Fritz link (disabled for LSST-only sources)
     """
 
-    pdf_path: None | str = None  # Will create random if not set
+    out_dir: Path
     titleprefix: str = "AMPEL: "
     save_png: bool = False
     finder_cache_dir: str | None = "./finder_cache"
     cutout_cache_dir: str | None = "./cutout_cache"
-    save_dir: str = "./images"
 
     include_cutouts: bool = False
     internal_cutout_fetch: bool = False
@@ -1335,13 +1334,11 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
         Slack WebClient (if enabled), and initializes ParsnipSncosmoSource
         if include_model_lightcurves is True.
         """
-        os.makedirs(self.save_dir, exist_ok=True)
+        self.out_dir.mkdir(parents=True, exist_ok=True)
         if self.finder_cache_dir:
             os.makedirs(self.finder_cache_dir, exist_ok=True)
         if self.cutout_cache_dir:
             os.makedirs(self.cutout_cache_dir, exist_ok=True)
-        if not self.pdf_path:
-            self.pdf_path = tempfile.mkstemp(".pdf", "candidates", self.save_dir)[1]
 
         if self.ztf_archive_url is None:
             try:
@@ -2035,8 +2032,10 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
         prior methods, and feeds them to fig_from_fluxtable. It then saves the resulting figure as a PDF.
         Optionally, it uploads the PDF to Slack.
         """
-        buffer = io.BytesIO()
-        with PdfPages(self.pdf_path or buffer) as pdf:
+        with (
+            PdfPages(self.out_dir / "nuclear_filter_passed") as passed_pdf,
+            PdfPages(self.out_dir / "nuclear_filter_failed") as failed_pdf,
+        ):
             for tran_view in gen:
                 photopoints = self._get_photopoints_any_id(tran_view)
                 if not photopoints:
@@ -2114,7 +2113,7 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                                 break
 
                 finder_matches = self.finder_matches_from_t2(tran_view)
-
+                nuclear_filter_res = tran_view.get_t2_body(unit="T2NuclearFilter")
                 fig, _axes = fig_from_fluxtable(
                     name,
                     str(ampelid),
@@ -2122,7 +2121,7 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                     dec,
                     sncosmo_table,
                     ulim_table,
-                    nuclear_filter_res=tran_view.get_t2_body(unit="T2NuclearFilter"),
+                    nuclear_filter_res=nuclear_filter_res,
                     attributes=attributes,
                     photz_list=photz_list,
                     fritzlink=self.fritzlink,
@@ -2138,9 +2137,12 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                     finder_matches=finder_matches,
                     title=title,
                 )
-                pdf.savefig(fig)
+                if nuclear_filter_res["passed"]:
+                    passed_pdf.savefig(fig)
+                else:
+                    failed_pdf.savefig(fig)
                 if self.save_png:
-                    plt.savefig(os.path.join(self.save_dir, str(tran_view.id) + ".png"))
+                    plt.savefig(os.path.join(self.out_dir, str(tran_view.id) + ".png"))
                 plt.close(fig)
 
         return None
