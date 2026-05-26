@@ -33,7 +33,7 @@ class T2NuclearReport(T2LSSTReport):
 
         host = Host(
             name="T2NuclearFilter",
-            redshift=digest_redshifts["ampel_z"],
+            redshift=digest_redshifts.get("ampel_z"),
             distance=nuclear_filter["host_dist_arcsec"],
             source=nuclear_filter["host_catalogs"],
             info=type_info,
