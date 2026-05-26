@@ -1,7 +1,7 @@
 name: earlyreleasetest
 
 mongo:
-  prefix: nucelar_stream_archive
+  prefix: nucelar_stream_test
   reset: false
 
 channel:
@@ -52,7 +52,49 @@ task:
 #            order_by: "diaSource.visit"
 #            insecure: true
 
-    shaper: {unit: LSSTDataPointShaper}
+    shaper:
+      unit: LSSTDataPointShaper
+      config:
+        fields:
+          diaSource:
+            include: [
+              "band",
+              "dec",
+              "decErr",
+              "isNegative",
+              "midpointMjdTai",
+              "psfFlux",
+              "psfFluxErr",
+              "ra",
+              "raErr",
+              "snr",
+              "visit",
+              "diaSourceId"
+              ]
+          diaForcedSource:
+            include: [
+              "band",
+              "dec",
+              "midpointMjdTai",
+              "psfFlux",
+              "psfFluxErr",
+              "ra",
+              "visit",
+              "diaForcedSourceId",
+              ]
+          diaObject:
+            include: [
+              "dec",
+              "decErr",
+              "ra_dec_Cov",
+              "ra",
+              "radecMjdTai",
+              "raErr",
+              "diaObjectId",
+              "nDiaSources",
+              ]
+
+
     directives:
     - channel: earlyrelease_ext
 
@@ -131,6 +173,10 @@ task:
                   t2_dependency:
                     - config: '%T2CatalogMatch_TDEmocracy'
                       unit: T2CatalogMatch
+                      link_override: &latest
+                        filter: LSSTObjFilter
+                        select: last
+                        sort: diaObjectId
                     - config: *dl_config
                       unit: T2LSPhotoZTap
                 ingest:
@@ -143,16 +189,10 @@ task:
                   max_redshift_category: 7
                   t2_dependency:
                   - config: '%T2CatalogMatch_general'
-                    link_override:
-                      filter: LSSTObjFilter
-                      select: last
-                      sort: diaObjectId
+                    link_override: *latest
                     unit: T2CatalogMatch
                   - config: *dl_config
-                    link_override:
-                      filter: LSSTObjFilter
-                      select: last
-                      sort: diaObjectId
+                    link_override: *latest
                     unit: T2LSPhotoZTap
               - unit: T2NuclearReport
                 config:
@@ -217,7 +257,7 @@ task:
         execute:
           - unit: PlotNuclearFilterLightcurves
             config:
-              pdf_path: /cephfs/users/neckerja/scratch/rubicube/nuclear_candidates.pdf
+              out_dir: /cephfs/users/neckerja/scratch/rubicube/nuclear_candidates
               save_png: false
               include_cutouts: true
               internal_cutout_fetch: true
