@@ -14,15 +14,18 @@ import os
 from collections.abc import Generator, Iterable, Mapping, Sequence
 from contextlib import suppress
 from gzip import BadGzipFile
+from itertools import cycle
 from pathlib import Path
 from typing import Any
 
 import backoff
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import requests
 from astropy import units as u
 from astropy import visualization
+from astropy.coordinates import SkyCoord
 from astropy.cosmology import FlatLambdaCDM
 from astropy.io import fits
 from astropy.table import Table
@@ -42,10 +45,26 @@ from ampel.content.DataPoint import DataPoint
 from ampel.contrib.hu.util.catalog_column_info import (
     get_catalog_position_unit_map,
 )
+from ampel.lsst.view.LSSTT2Tabulator import LSST_BANDPASSES
 from ampel.struct.T3Store import T3Store
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import T3Send, UBson
 from ampel.view.TransientView import TransientView
+
+# Keys as provided by tabulators
+BANDPASSES = {
+    # ZTF
+    "ztfg": {"label": "ZTF g", "c": "green"},
+    "ztfr": {"label": "ZTF r", "c": "red"},
+    "ztfi": {"label": "ZTF i", "c": "orange"},
+    # LSST
+    "lsstu": {"label": "LSST u", "c": "blue"},
+    "lsstg": {"label": "LSST g", "c": "green"},
+    "lsstr": {"label": "LSST r", "c": "red"},
+    "lssti": {"label": "LSST i", "c": "orange"},
+    "lsstz": {"label": "LSST z", "c": "darkred"},
+    "lssty": {"label": "LSST y", "c": "brown"},
+}
 
 
 def fig_from_fluxtable(
@@ -54,6 +73,7 @@ def fig_from_fluxtable(
     ra: float,
     dec: float,
     fluxtable: Table,
+    position_table: Table,
     ztfulims: Table | None = None,
     tnsname: str | None = None,
     fritzlink: bool = True,
@@ -138,21 +158,6 @@ def fig_from_fluxtable(
     if z is not None and np.isnan(z):
         z = None
 
-    # Keys as provided by tabulators
-    BANDPASSES = {
-        # ZTF
-        "ztfg": {"label": "ZTF g", "c": "green"},
-        "ztfr": {"label": "ZTF r", "c": "red"},
-        "ztfi": {"label": "ZTF i", "c": "orange"},
-        # LSST
-        "lsstu": {"label": "LSST u", "c": "blue"},
-        "lsstg": {"label": "LSST g", "c": "green"},
-        "lsstr": {"label": "LSST r", "c": "red"},
-        "lssti": {"label": "LSST i", "c": "orange"},
-        "lsstz": {"label": "LSST z", "c": "darkred"},
-        "lssty": {"label": "LSST y", "c": "brown"},
-    }
-
     # General info box
     info: list[str] = [f"ID: {name}", f"RA: {ra:.4f}", f"Dec: {dec:.4f}"]
 
@@ -210,27 +215,6 @@ def fig_from_fluxtable(
                 cutout_fov = float(fov)
         return cutout_fov
 
-    def _setup_gs_2x32(fig):
-        """
-        Create and space the common 2x32 GridSpec used for layouts with cutous.
-        """
-        gs = GridSpec(
-            nrows=2,
-            ncols=32,
-            figure=fig,
-            height_ratios=[1.0, 1.35],
-            width_ratios=[1] * 32,
-        )
-        fig.subplots_adjust(
-            left=0.09,
-            right=0.98,
-            top=0.93,
-            bottom=0.10,
-            wspace=0.35,
-            hspace=0.45,
-        )
-        return gs
-
     # merge nuclear filter res into finder mathes
     if nuclear_filter_res and nuclear_filter_res["host_ra"] is not None:
         finder_matches.append(
@@ -241,17 +225,33 @@ def fig_from_fluxtable(
             }
         )
 
+    gs = GridSpec(
+        nrows=2,
+        ncols=38,
+        figure=fig,
+        height_ratios=[1.0, 1.35],
+        width_ratios=[1] * 38,
+    )
+    fig.subplots_adjust(
+        left=0.09,
+        right=0.98,
+        top=0.93,
+        bottom=0.10,
+        wspace=0.35,
+        hspace=0.45,
+    )
+
     # Layout A: Cutouts + finder stamp.
     if has_cutouts:
         assert cutouts is not None
-        gs = _setup_gs_2x32(fig)
 
         # Top row: cutouts + finder + finder legend
         cutoutsci = fig.add_subplot(gs[0, 0:6])
         cutouttemp = fig.add_subplot(gs[0, 6:12])
         cutoutdiff = fig.add_subplot(gs[0, 12:18])
-        cutoutfinder = fig.add_subplot(gs[0, 18:24])
-        finderleg_ax = fig.add_subplot(gs[0, 24:34]) if has_matches else None
+        scatterax = fig.add_subplot(gs[0, 18:24])
+        cutoutfinder = fig.add_subplot(gs[0, 24:30])
+        finderleg_ax = fig.add_subplot(gs[0, 30:38]) if has_matches else None
 
         # Bottom row: lightcurve + attributes text box
         lc_ax1 = fig.add_subplot(gs[1, 0:20])
@@ -265,85 +265,53 @@ def fig_from_fluxtable(
             cache_key=cutout_cache_key or name,
         )
 
-        render_finder_stamp(
-            cutoutfinder,
-            ra,
-            dec,
-            cache_dir=finder_cache_dir,
-            name=name,
-            size=240,
-            fov_arcsec=cutout_fov,
-            crosshair_gap_frac=0.1,
-            matches=finder_matches,
-            legend_ax=finderleg_ax,
-        )
-
-        attr_ax.text(
-            0.0,
-            1.25,
-            "\n".join(info),
-            va="top",
-            ha="left",
-            fontsize=8.5,
-            alpha=0.6,
-            wrap=True,
-        )
-
     # Layout B: Lightcurve + finder + text box (no cutouts).
     else:
-        gs = GridSpec(
-            nrows=2,
-            ncols=32,
-            figure=fig,
-            height_ratios=[1.0, 1.35],
-            width_ratios=[1] * 32,
-        )
-        fig.subplots_adjust(
-            left=0.09,
-            right=0.98,
-            top=0.83,
-            bottom=0.10,
-            wspace=0.35,
-            hspace=0.45,
-        )
-
         # Left: lightcurve over full height
         lc_ax1 = fig.add_subplot(gs[:, 0:19])
 
         # Right top: finder + optional legend
-        cutoutfinder = fig.add_subplot(gs[0, 23:29])
-        finderleg_ax = fig.add_subplot(gs[0, 29:32]) if has_matches else None
+        scatterax = fig.add_subplot(gs[0, 23:29])
+        cutoutfinder = fig.add_subplot(gs[0, 29:35])
+        finderleg_ax = fig.add_subplot(gs[0, 35:]) if has_matches else None
 
         # Right bottom: info / class probabilities
         attr_ax = fig.add_subplot(gs[1, 23:32])
         attr_ax.axis("off")
+        cutout_fov = 10
 
-        render_finder_stamp(
-            cutoutfinder,
-            ra,
-            dec,
-            cache_dir=finder_cache_dir,
-            name=name,
-            size=240,
-            fov_arcsec=10,
-            crosshair_gap_frac=0.1,
-            matches=finder_matches,
-            legend_ax=finderleg_ax,
-        )
+    render_finder_stamp(
+        cutoutfinder,
+        ra,
+        dec,
+        cache_dir=finder_cache_dir,
+        name=name,
+        size=240,
+        fov_arcsec=cutout_fov,
+        crosshair_gap_frac=0.1,
+        matches=finder_matches,
+        legend_ax=finderleg_ax,
+    )
 
-        attr_lines = list(info)
+    offset_scatterplot(
+        ax=scatterax,
+        mean_ra=ra,
+        mean_dec=dec,
+        positions=position_table,
+        fov_arcsec=0.3,
+    )
+    cutoutfinder.indicate_inset_zoom(scatterax)
 
-        attr_ax.text(
-            0.0,
-            1.25,
-            "\n".join(attr_lines),
-            va="top",
-            ha="left",
-            fontsize=8.5,
-            alpha=0.6,
-            wrap=True,
-            transform=attr_ax.transAxes,
-        )
+    attr_ax.text(
+        0.0,
+        1.25,
+        "\n".join(info),
+        va="top",
+        ha="left",
+        fontsize=8.5,
+        alpha=0.6,
+        wrap=True,
+    )
 
     # If redshift is given, calculate absolute magnitude via luminosity distance
     if z is not None:
@@ -897,6 +865,48 @@ def create_stamp_plot(
     ax.set_yticks([])
     ax.set_title(cutout_type, fontdict={"fontsize": "small"})
     return cutout_fov
+
+
+########################################
+# Positional scatterplot               #
+########################################
+
+
+def offset_scatterplot(
+    ax: plt.Axes,
+    mean_ra: float,
+    mean_dec: float,
+    positions: Table,
+    fov_arcsec: float,
+):
+    coords = SkyCoord(positions["ra"], positions["dec"], unit="deg")
+    center = SkyCoord(ra=mean_ra, dec=mean_dec, unit="deg")
+    dra, ddec = coords.spherical_offsets_to(center)
+    dra = dra.to_value("arcsec")
+    ddec = ddec.to_value("arcsec")
+
+    for b in np.unique(positions["band"]):
+        m = positions["band"] == b
+        ax.errorbar(
+            dra[m],
+            ddec[m],
+            xerr=positions["raErr"][m],
+            yerr=positions["decErr"][m],
+            fmt=".",
+            c=BANDPASSES[b]["c"],
+            zorder=10,
+        )
+    ax.set_aspect("equal")
+    ax.set_ylim(-fov_arcsec / 2, fov_arcsec / 2)
+    ax.set_xlim(-fov_arcsec / 2, fov_arcsec / 2)
+
+    circle_radii = np.arange(0.1, fov_arcsec / 2, 0.1)
+    lws = cycle([0.1, 0.5])
+    for r, lw in zip(circle_radii, lws, strict=False):
+        ax.add_patch(plt.Circle((0, 0), r, lw=lw, ec="grey", fc="none", zorder=1))
+    ax.axvline(0, lw=0.1, c="grey", zorder=1)
+    ax.axhline(0, lw=0.1, c="grey", zorder=1)
+    ax.set_axis_off()
 
 
 ########################################
@@ -2032,9 +2042,11 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
         prior methods, and feeds them to fig_from_fluxtable. It then saves the resulting figure as a PDF.
         Optionally, it uploads the PDF to Slack.
         """
+
+        mean_pos_offsets = []
         with (
-            PdfPages(self.out_dir / "nuclear_filter_passed") as passed_pdf,
-            PdfPages(self.out_dir / "nuclear_filter_failed") as failed_pdf,
+            PdfPages(self.out_dir / "nuclear_filter_passed.pdf") as passed_pdf,
+            PdfPages(self.out_dir / "nuclear_filter_failed.pdf") as failed_pdf,
         ):
             for tran_view in gen:
                 photopoints = self._get_photopoints_any_id(tran_view)
@@ -2042,7 +2054,48 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                     self.logger.debug("No photopoints", extra={"stock": tran_view.id})
                     continue
 
+                lsst_obj = [
+                    dp
+                    for dp in tran_view.t0
+                    if ("diaObjectId" in dp["body"]) and ("psfFlux" not in dp["body"])
+                ]
+                # ampel selects the diaObject with the most sources
+                lsst_obj = sorted(lsst_obj, key=lambda x: x["body"]["nDiaSources"])[-1]
+                obj_pos = SkyCoord(
+                    lsst_obj["body"]["ra"], lsst_obj["body"]["dec"], unit="deg"
+                )
+
+                sources = [dp for dp in tran_view.t0 if ("diaSourceId" in dp["body"])]
+                assert len(sources) == lsst_obj["body"]["nDiaSources"]
+
+                source_positions = SkyCoord(
+                    [(dp["body"]["ra"], dp["body"]["dec"]) for dp in sources],
+                    unit="deg",
+                )
+                mean_position = SkyCoord(
+                    source_positions.represent_as("cartesian").sum()
+                    / len(source_positions)
+                )
+                mean_position.representation_type = "spherical"
+                mean_pos_offsets.append(
+                    (
+                        obj_pos.separation(mean_position).to_value("arcsec"),
+                        lsst_obj["body"]["nDiaSources"],
+                    )
+                )
+
                 sncosmo_table = self.get_flux_table(photopoints)
+
+                position_table = Table(
+                    {
+                        "ra": source_positions.ra.to_value("deg"),
+                        "dec": source_positions.dec.to_value("deg"),
+                        "raErr": [dp["body"]["raErr"] for dp in sources],
+                        "decErr": [dp["body"]["decErr"] for dp in sources],
+                        "band": [LSST_BANDPASSES[dp["body"]["band"]] for dp in sources],
+                    }
+                )
+
                 if sncosmo_table is None or len(sncosmo_table) == 0:
                     self.logger.debug("No flux table", extra={"stock": tran_view.id})
                     continue
@@ -2054,7 +2107,9 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                     self.logger.debug("No detections", extra={"stock": tran_view.id})
                     continue
 
-                (ra, dec) = self.get_pos(photopoints)
+                ra = obj_pos.ra.to_value("deg")
+                dec = obj_pos.dec.to_value("deg")
+
                 name = " ".join(map(str, self.get_stock_name(photopoints)))
                 ampelid = tran_view.id
 
@@ -2119,8 +2174,9 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                     str(ampelid),
                     ra,
                     dec,
-                    sncosmo_table,
-                    ulim_table,
+                    fluxtable=sncosmo_table,
+                    ztfulims=ulim_table,
+                    position_table=position_table,
                     nuclear_filter_res=nuclear_filter_res,
                     attributes=attributes,
                     photz_list=photz_list,
@@ -2144,5 +2200,20 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                 if self.save_png:
                     plt.savefig(os.path.join(self.out_dir, str(tran_view.id) + ".png"))
                 plt.close(fig)
+
+        offsets = pd.DataFrame(
+            mean_pos_offsets, columns=["mean_pos_offset", "nDiaSources"]
+        )
+
+        fig, ax = plt.subplots()
+        ax.hist(np.log10(offsets.mean_pos_offset), bins=50)
+        ax.set_xlabel(r"$\log_{10}$offset [arcsec]")
+        ax.set_ylabel("counts")
+        fig.savefig(self.out_dir / "mean_pos_offsets.pdf")
+        plt.close()
+
+        fig, ax = plt.subplots()
+        ax.scatter(offsets.mean_pos_offset, offsets.nDiaSources)
+        ax.set_xscale("log")
 
         return None
