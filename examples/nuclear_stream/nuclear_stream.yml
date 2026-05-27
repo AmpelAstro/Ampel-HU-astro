@@ -81,6 +81,7 @@ task:
               "ra",
               "visit",
               "diaForcedSourceId",
+              "diaObjectId"
               ]
           diaObject:
             include: [
