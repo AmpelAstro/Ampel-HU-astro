@@ -25,6 +25,7 @@ task:
     supplier:
       unit: LSSTAlertSupplier
       config:
+        forced_source_overwrite: false
         deserialize: null
         loader:
           unit: ParquetAlertLoader

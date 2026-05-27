@@ -298,7 +298,7 @@ def fig_from_fluxtable(
         mean_ra=ra,
         mean_dec=dec,
         positions=position_table,
-        fov_arcsec=0.3,
+        radius_arcsec=0.5,
     )
     cutoutfinder.indicate_inset_zoom(scatterax)
 
@@ -877,7 +877,7 @@ def offset_scatterplot(
     mean_ra: float,
     mean_dec: float,
     positions: Table,
-    fov_arcsec: float,
+    radius_arcsec: float,
 ):
     coords = SkyCoord(positions["ra"], positions["dec"], unit="deg")
     center = SkyCoord(ra=mean_ra, dec=mean_dec, unit="deg")
@@ -890,17 +890,21 @@ def offset_scatterplot(
         ax.errorbar(
             dra[m],
             ddec[m],
-            xerr=positions["raErr"][m],
-            yerr=positions["decErr"][m],
+            xerr=positions["raErr"][m] * 3600,
+            yerr=positions["decErr"][m] * 3600,
             fmt=".",
             c=BANDPASSES[b]["c"],
             zorder=10,
+            elinewidth=0.3,
+            alpha=0.2,
+            mec="none",
+            ms=1,
         )
     ax.set_aspect("equal")
-    ax.set_ylim(-fov_arcsec / 2, fov_arcsec / 2)
-    ax.set_xlim(-fov_arcsec / 2, fov_arcsec / 2)
+    ax.set_ylim(-radius_arcsec, radius_arcsec)
+    ax.set_xlim(-radius_arcsec, radius_arcsec)
 
-    circle_radii = np.arange(0.1, fov_arcsec / 2, 0.1)
+    circle_radii = np.arange(0.1, radius_arcsec, 0.1)
     lws = cycle([0.1, 0.5])
     for r, lw in zip(circle_radii, lws, strict=False):
         ax.add_patch(plt.Circle((0, 0), r, lw=lw, ec="grey", fc="none", zorder=1))
@@ -2054,19 +2058,19 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                     self.logger.debug("No photopoints", extra={"stock": tran_view.id})
                     continue
 
-                lsst_obj = [
+                lsst_objs = [
                     dp
                     for dp in tran_view.t0
                     if ("diaObjectId" in dp["body"]) and ("psfFlux" not in dp["body"])
                 ]
                 # ampel selects the diaObject with the most sources
-                lsst_obj = sorted(lsst_obj, key=lambda x: x["body"]["nDiaSources"])[-1]
+                lsst_obj = sorted(lsst_objs, key=lambda x: x["body"]["nDiaSources"])[-1]
                 obj_pos = SkyCoord(
                     lsst_obj["body"]["ra"], lsst_obj["body"]["dec"], unit="deg"
                 )
 
                 sources = [dp for dp in tran_view.t0 if ("diaSourceId" in dp["body"])]
-                assert len(sources) == lsst_obj["body"]["nDiaSources"]
+                assert len(sources) >= lsst_obj["body"]["nDiaSources"]
 
                 source_positions = SkyCoord(
                     [(dp["body"]["ra"], dp["body"]["dec"]) for dp in sources],
@@ -2206,8 +2210,8 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
         )
 
         fig, ax = plt.subplots()
-        ax.hist(np.log10(offsets.mean_pos_offset), bins=50)
-        ax.set_xlabel(r"$\log_{10}$offset [arcsec]")
+        ax.hist(offsets.mean_pos_offset, bins=50)
+        ax.set_xlabel(r"offset [arcsec]")
         ax.set_ylabel("counts")
         fig.savefig(self.out_dir / "mean_pos_offsets.pdf")
         plt.close()
