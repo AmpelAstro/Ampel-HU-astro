@@ -1305,6 +1305,12 @@ def add_gap_crosshair(
     )
 
 
+def mean_position(coords: SkyCoord) -> SkyCoord:
+    _mean = SkyCoord(coords.represent_as("cartesian").sum() / len(coords))
+    _mean.representation_type = "spherical"
+    return _mean
+
+
 class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
     """
     Create a (pdf) plot summarizing lightcurves of candidates provided to the unit.
@@ -2079,16 +2085,23 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                     [(dp["body"]["ra"], dp["body"]["dec"]) for dp in sources],
                     unit="deg",
                 )
-                mean_position = SkyCoord(
-                    source_positions.represent_as("cartesian").sum()
-                    / len(source_positions)
-                )
-                mean_position.representation_type = "spherical"
+                mean_pos_all = mean_position(source_positions)
+                if grpos := [
+                    c
+                    for c, dp in zip(source_positions, sources, strict=True)
+                    if dp["body"]["band"] in ["g", "r"]
+                ]:
+                    mean_pos_gr = mean_position(SkyCoord(grpos))
+                    gr_offset = obj_pos.separation(mean_pos_gr).to_value("arcsec")
+                else:
+                    mean_pos_gr = None
+                    gr_offset = None
                 collected_info.append(
                     (
                         obj_pos.ra.to_value("deg"),
                         obj_pos.dec.to_value("deg"),
-                        obj_pos.separation(mean_position).to_value("arcsec"),
+                        obj_pos.separation(mean_pos_all).to_value("arcsec"),
+                        gr_offset,
                         lsst_obj["body"]["nDiaSources"],
                     )
                 )
@@ -2211,7 +2224,8 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                 plt.close(fig)
 
         offsets = pd.DataFrame(
-            collected_info, columns=["ra", "dec", "mean_pos_offset", "nDiaSources"]
+            collected_info,
+            columns=["ra", "dec", "offset_all", "offset_gr", "nDiaSources"],
         )
 
         hp = HEALPix(nside=64, order="ring")
@@ -2231,14 +2245,12 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
         plt.close()
 
         fig, ax = plt.subplots()
-        ax.hist(offsets.mean_pos_offset, bins=50)
+        ax.hist(offsets.offset_all, bins=50, label="all")
+        ax.hist(offsets.offset_gr, bins=50, label="only g + r")
+        ax.legend()
         ax.set_xlabel(r"offset [arcsec]")
         ax.set_ylabel("counts")
         fig.savefig(self.out_dir / "mean_pos_offsets.pdf")
         plt.close()
-
-        fig, ax = plt.subplots()
-        ax.scatter(offsets.mean_pos_offset, offsets.nDiaSources)
-        ax.set_xscale("log")
 
         return None
