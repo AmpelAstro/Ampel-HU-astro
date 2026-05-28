@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any
 
 import backoff
+import ligo.skymap.plot
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -32,8 +33,10 @@ from astropy.table import Table
 from astropy.time import Time
 from astropy.wcs import WCS
 from astropy.wcs.utils import proj_plane_pixel_scales
+from astropy_healpix import HEALPix
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.colors import Normalize
+from matplotlib.cm import ScalarMappable
 from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import MultipleLocator
 from requests_toolbelt.sessions import BaseUrlSession
@@ -2047,7 +2050,7 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
         Optionally, it uploads the PDF to Slack.
         """
 
-        mean_pos_offsets = []
+        collected_info = []
         with (
             PdfPages(self.out_dir / "nuclear_filter_passed.pdf") as passed_pdf,
             PdfPages(self.out_dir / "nuclear_filter_failed.pdf") as failed_pdf,
@@ -2081,8 +2084,10 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                     / len(source_positions)
                 )
                 mean_position.representation_type = "spherical"
-                mean_pos_offsets.append(
+                collected_info.append(
                     (
+                        obj_pos.ra.to_value("deg"),
+                        obj_pos.dec.to_value("deg"),
                         obj_pos.separation(mean_position).to_value("arcsec"),
                         lsst_obj["body"]["nDiaSources"],
                     )
@@ -2206,8 +2211,24 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                 plt.close(fig)
 
         offsets = pd.DataFrame(
-            mean_pos_offsets, columns=["mean_pos_offset", "nDiaSources"]
+            collected_info, columns=["ra", "dec", "mean_pos_offset", "nDiaSources"]
         )
+
+        hp = HEALPix(nside=64, order="ring")
+        values = np.zeros(hp.npix, dtype=int)
+        pix_ind, count = np.unique(
+            hp.lonlat_to_healpix(offsets.ra.values * u.deg, offsets.dec.values * u.deg),
+            return_counts=True,
+        )
+        values[pix_ind] = count
+
+        fig, ax = plt.subplots(subplot_kw={"projection": "astro degrees mollweide"})
+        ax.imshow_hpx(values, cmap="cylon")
+        sm = ScalarMappable(norm=Normalize(vmin=0, vmax=max(values)), cmap="cylon")
+        cbar = plt.colorbar(sm, ax=ax, orientation="horizontal", pad=0.08)
+        cbar.set_label("Count")
+        fig.savefig(self.out_dir / "skymap.pdf")
+        plt.close()
 
         fig, ax = plt.subplots()
         ax.hist(offsets.mean_pos_offset, bins=50)
