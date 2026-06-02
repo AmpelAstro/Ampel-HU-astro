@@ -70,12 +70,50 @@ BANDPASSES = {
 }
 
 
+def calc_mag(data: Table, snr: float, fallback_zp):
+
+    # Prefer per-point zp from tabulator output, fallback to function argument
+    if "zp" in data.colnames:
+        zps = np.asarray(data["zp"], dtype=float)
+    else:
+        zps = np.full(len(data), float(fallback_zp), dtype=float)
+
+    # -- Transform flux to mags (AB) --
+    flux = np.asarray(data["flux"], dtype=float)
+    fluxerr = np.asarray(data["fluxerr"], dtype=float)
+
+    mag = np.full_like(flux, np.nan, dtype=float)
+    det_mask = flux / fluxerr >= snr
+    mag[det_mask] = -2.5 * np.log10(flux[det_mask]) + zps[det_mask]
+    data["mag"] = mag
+
+    # Asymmetric magnitude errors from flux±fluxerr
+    flux_plus = flux + fluxerr
+    flux_minus = flux - fluxerr
+
+    # Guard against non-positive fluxes (log undefined)
+    mag_plus = np.full_like(flux, np.nan, dtype=float)
+    mag_minus = np.full_like(flux, np.nan, dtype=float)
+
+    ok_plus = flux_plus > 0
+    ok_minus = flux_minus > 0
+
+    mag_plus[ok_plus] = -2.5 * np.log10(flux_plus[ok_plus]) + zps[ok_plus]
+    mag_minus[ok_minus] = -2.5 * np.log10(flux_minus[ok_minus]) + zps[ok_minus]
+
+    mag = np.asarray(data["mag"], dtype=float)
+
+    data["magerrmin"] = mag - mag_plus
+    data["magerrmax"] = mag_minus - mag
+
+
 def fig_from_fluxtable(
     name: str,
     ampelid: str,
     ra: float,
     dec: float,
     fluxtable: Table,
+    snr: float,
     position_table: Table,
     ztfulims: Table | None = None,
     tnsname: str | None = None,
@@ -127,36 +165,8 @@ def fig_from_fluxtable(
             window_hours=stacking_window_hours,
         )
 
-    # Prefer per-point zp from tabulator output, fallback to function argument
-    if "zp" in fluxtable.colnames:
-        zps = np.asarray(fluxtable["zp"], dtype=float)
-    else:
-        zps = np.full(len(fluxtable), float(zp), dtype=float)
-
-    # -- Transform flux to mags (AB) --
-    flux = np.asarray(fluxtable["flux"], dtype=float)
-    fluxerr = np.asarray(fluxtable["fluxerr"], dtype=float)
-
-    fluxtable["mag"] = -2.5 * np.log10(flux) + zps
-
-    # Asymmetric magnitude errors from flux±fluxerr
-    flux_plus = flux + fluxerr
-    flux_minus = flux - fluxerr
-
-    # Guard against non-positive fluxes (log undefined)
-    mag_plus = np.full_like(flux, np.nan, dtype=float)
-    mag_minus = np.full_like(flux, np.nan, dtype=float)
-
-    ok_plus = flux_plus > 0
-    ok_minus = flux_minus > 0
-
-    mag_plus[ok_plus] = -2.5 * np.log10(flux_plus[ok_plus]) + zps[ok_plus]
-    mag_minus[ok_minus] = -2.5 * np.log10(flux_minus[ok_minus]) + zps[ok_minus]
-
-    mag = np.asarray(fluxtable["mag"], dtype=float)
-
-    fluxtable["magerrmin"] = mag - mag_plus
-    fluxtable["magerrmax"] = mag_minus - mag
+    calc_mag(fluxtable, snr, zp)
+    calc_mag(raw_fluxtable, snr, zp)
 
     if z is not None and np.isnan(z):
         z = None
@@ -190,7 +200,7 @@ def fig_from_fluxtable(
         info.append("Photo-z:")
         info.extend(photz_list)
 
-    fig = plt.figure(figsize=(10, 5))
+    fig = plt.figure(figsize=(10, 7.9))
     lc_ax3 = None
 
     # Helper functions for layout
@@ -229,10 +239,10 @@ def fig_from_fluxtable(
         )
 
     gs = GridSpec(
-        nrows=2,
+        nrows=3,
         ncols=38,
         figure=fig,
-        height_ratios=[1.0, 1.35],
+        height_ratios=[1.0, 1.35, 1.35],
         width_ratios=[1] * 38,
     )
     fig.subplots_adjust(
@@ -258,6 +268,7 @@ def fig_from_fluxtable(
 
         # Bottom row: lightcurve + attributes text box
         lc_ax1 = fig.add_subplot(gs[1, 0:20])
+        lc_flux_ax = fig.add_subplot(gs[2, 0:20], sharex=lc_ax1)
         attr_ax = fig.add_subplot(gs[1, 24:32])
         attr_ax.axis("off")
 
@@ -271,7 +282,8 @@ def fig_from_fluxtable(
     # Layout B: Lightcurve + finder + text box (no cutouts).
     else:
         # Left: lightcurve over full height
-        lc_ax1 = fig.add_subplot(gs[:, 0:19])
+        lc_ax1 = fig.add_subplot(gs[:2, 0:19])
+        lc_flux_ax = fig.add_subplot(gs[2, 0:19], sharex=lc_ax1)
 
         # Right top: finder + optional legend
         scatterax = fig.add_subplot(gs[0, 23:29])
@@ -347,13 +359,18 @@ def fig_from_fluxtable(
         lc_ax1.xaxis.set_major_locator(MultipleLocator(grid_interval))
 
     lc_ax1.grid(visible=True, axis="both", alpha=0.5)
+    lc_flux_ax.grid(visible=True, axis="both", alpha=0.5)
     lc_ax1.set_ylabel("Magnitude [AB]")
-    lc_ax1.set_xlabel("JD")
+    lc_flux_ax.set_ylabel("Flux [nJy]")
+    lc_flux_ax.set_xlabel("JD")
 
     # Determine magnitude limits
     if mag_range is None:
-        max_mag = np.max(fluxtable["mag"]) + 0.3
-        min_mag = np.min(fluxtable["mag"]) - 0.3
+        max_mag = np.nanmax(fluxtable["mag"]) + 0.3
+        min_mag = np.nanmin(fluxtable["mag"]) - 0.3
+        if np.isnan(max_mag):
+            max_mag = np.nanmax(raw_fluxtable["mag"]) + 0.3
+            min_mag = np.nanmin(raw_fluxtable["mag"]) - 0.3
         lc_ax1.set_ylim((max_mag, min_mag))
     else:
         lc_ax1.set_ylim((np.max(mag_range), np.min(mag_range)))
@@ -364,36 +381,24 @@ def fig_from_fluxtable(
         if stacking and raw_fluxtable is not None:
             rawTab = raw_fluxtable[raw_fluxtable["band"] == fid]
             if len(rawTab) > 0:
-                # ensure mag columns exist for raw as well
-                raw_flux = np.asarray(rawTab["flux"], dtype=float)
-                raw_fluxerr = np.asarray(rawTab["fluxerr"], dtype=float)
-
-                if "zp" in rawTab.colnames:
-                    raw_zps = np.asarray(rawTab["zp"], dtype=float)
-                else:
-                    raw_zps = np.full(len(rawTab), float(zp), dtype=float)
-
-                raw_mag = -2.5 * np.log10(raw_flux) + raw_zps
-
-                raw_flux_plus = raw_flux + raw_fluxerr
-                raw_flux_minus = raw_flux - raw_fluxerr
-
-                raw_mag_plus = np.full_like(raw_flux, np.nan, dtype=float)
-                raw_mag_minus = np.full_like(raw_flux, np.nan, dtype=float)
-
-                okp = raw_flux_plus > 0
-                okm = raw_flux_minus > 0
-
-                raw_mag_plus[okp] = -2.5 * np.log10(raw_flux_plus[okp]) + raw_zps[okp]
-                raw_mag_minus[okm] = -2.5 * np.log10(raw_flux_minus[okm]) + raw_zps[okm]
-
-                raw_magerrmin = raw_mag - raw_mag_plus
-                raw_magerrmax = raw_mag_minus - raw_mag
-
+                # ensure mag columns
                 lc_ax1.errorbar(
                     rawTab["time"],
-                    raw_mag,
-                    yerr=[raw_magerrmin, raw_magerrmax],
+                    rawTab["mag"],
+                    yerr=[rawTab["magerrmin"], rawTab["magerrmax"]],
+                    color=BANDPASSES[fid]["c"],
+                    fmt=".",
+                    markersize=6,
+                    alpha=float(stacking_alpha),
+                    mec="black",
+                    mew=0.3,
+                    label=None,  # avoid duplicate legend entries
+                    zorder=1,
+                )
+                lc_flux_ax.errorbar(
+                    rawTab["time"],
+                    rawTab["flux"],
+                    yerr=rawTab["fluxerr"],
                     color=BANDPASSES[fid]["c"],
                     fmt=".",
                     markersize=6,
@@ -415,6 +420,17 @@ def fig_from_fluxtable(
                 fmt=".",
                 markersize=9,
                 label=BANDPASSES[fid]["label"],
+                mec="black",
+                mew=0.5,
+                zorder=2,
+            )
+            lc_flux_ax.errorbar(
+                tempTab["time"],
+                tempTab["flux"],
+                yerr=tempTab["fluxerr"],
+                color=BANDPASSES[fid]["c"],
+                fmt=".",
+                markersize=9,
                 mec="black",
                 mew=0.5,
                 zorder=2,
@@ -489,14 +505,18 @@ def fig_from_fluxtable(
     )
 
     lc_ax2.tick_params(axis="both", which="major", labelsize=8, rotation=30)
-    lc_ax1.tick_params(axis="x", which="major", labelsize=8, rotation=30)
-    lc_ax1.ticklabel_format(axis="x", style="plain")
+    lc_flux_ax.tick_params(axis="x", which="major", labelsize=8, rotation=30)
+    lc_flux_ax.ticklabel_format(axis="x", style="plain")
     lc_ax1.tick_params(axis="y", which="major", labelsize=9)
 
     if lc_ax3 is not None:
         lc_ax3.tick_params(axis="both", which="major", labelsize=9)
 
-    axes = [lc_ax1, lc_ax2, lc_ax3] if lc_ax3 is not None else [lc_ax1, lc_ax2]
+    axes = (
+        [lc_ax1, lc_ax2, lc_ax3, lc_flux_ax]
+        if lc_ax3 is not None
+        else [lc_ax1, lc_ax2, lc_flux_ax]
+    )
 
     if title is not None:
         fig.suptitle(title, x=0.5, y=1, va="bottom")
@@ -889,19 +909,33 @@ def offset_scatterplot(
     ddec = ddec.to_value("arcsec")
 
     for b in np.unique(positions["band"]):
-        m = positions["band"] == b
+        bm = positions["band"] == b
+        fm = positions["flux"] > 0
         ax.errorbar(
-            dra[m],
-            ddec[m],
-            xerr=positions["raErr"][m] * 3600,
-            yerr=positions["decErr"][m] * 3600,
+            dra[bm & fm],
+            ddec[bm & fm],
+            xerr=positions["raErr"][bm & fm] * 3600,
+            yerr=positions["decErr"][bm & fm] * 3600,
             fmt=".",
             c=BANDPASSES[b]["c"],
             zorder=10,
-            elinewidth=0.3,
-            alpha=0.2,
+            elinewidth=0.5,
+            alpha=0.4,
             mec="none",
-            ms=1,
+            ms=1.5,
+        )
+        ax.errorbar(
+            dra[bm & ~fm],
+            ddec[bm & ~fm],
+            xerr=positions["raErr"][bm & ~fm] * 3600,
+            yerr=positions["decErr"][bm & ~fm] * 3600,
+            fmt=".",
+            c=BANDPASSES[b]["c"],
+            zorder=10,
+            elinewidth=0.5,
+            alpha=0.4,
+            mec="k",
+            ms=1.5,
         )
     ax.set_aspect("equal")
     ax.set_ylim(-radius_arcsec, radius_arcsec)
@@ -2115,6 +2149,7 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                         "raErr": [dp["body"]["raErr"] for dp in sources],
                         "decErr": [dp["body"]["decErr"] for dp in sources],
                         "band": [LSST_BANDPASSES[dp["body"]["band"]] for dp in sources],
+                        "flux": [dp["body"]["psfFlux"] for dp in sources],
                     }
                 )
 
@@ -2124,8 +2159,7 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
 
                 snr = sncosmo_table["flux"] / sncosmo_table["fluxerr"]
 
-                sncosmo_table = sncosmo_table[snr > self.min_snr]
-                if len(sncosmo_table) == 0:
+                if not any(snr > self.min_snr):
                     self.logger.debug("No detections", extra={"stock": tran_view.id})
                     continue
 
@@ -2196,6 +2230,7 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                     str(ampelid),
                     ra,
                     dec,
+                    snr=self.min_snr,
                     fluxtable=sncosmo_table,
                     ztfulims=ulim_table,
                     position_table=position_table,
