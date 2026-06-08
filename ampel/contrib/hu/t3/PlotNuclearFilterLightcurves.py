@@ -35,8 +35,8 @@ from astropy.wcs import WCS
 from astropy.wcs.utils import proj_plane_pixel_scales
 from astropy_healpix import HEALPix
 from matplotlib.backends.backend_pdf import PdfPages
-from matplotlib.colors import Normalize
 from matplotlib.cm import ScalarMappable
+from matplotlib.colors import Normalize
 from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import MultipleLocator
 from requests_toolbelt.sessions import BaseUrlSession
@@ -265,6 +265,7 @@ def fig_from_fluxtable(
         scatterax = fig.add_subplot(gs[0, 18:24])
         cutoutfinder = fig.add_subplot(gs[0, 24:30])
         finderleg_ax = fig.add_subplot(gs[0, 30:38]) if has_matches else None
+        offset_scatter_catalog_ax = fig.add_subplot(gs[0, 30:36])
 
         # Bottom row: lightcurve + attributes text box
         lc_ax1 = fig.add_subplot(gs[1, 0:20])
@@ -286,15 +287,19 @@ def fig_from_fluxtable(
         lc_flux_ax = fig.add_subplot(gs[2, 0:19], sharex=lc_ax1)
 
         # Right top: finder + optional legend
-        scatterax = fig.add_subplot(gs[0, 23:29])
-        cutoutfinder = fig.add_subplot(gs[0, 29:35])
-        finderleg_ax = fig.add_subplot(gs[0, 35:]) if has_matches else None
+        scatterax = fig.add_subplot(gs[0, 20:26])
+        cutoutfinder = fig.add_subplot(gs[0, 26:32])
+        finderleg_ax = fig.add_subplot(gs[0, 32:]) if has_matches else None
+        offset_scatter_catalog_ax = fig.add_subplot(gs[0, 32:38])
 
         # Right bottom: info / class probabilities
         attr_ax = fig.add_subplot(gs[1, 23:32])
         attr_ax.axis("off")
         cutout_fov = 10
 
+    has_host = nuclear_filter_res["host_ra"] is not None
+    if not has_host:
+        offset_scatter_catalog_ax.axis("off")
     render_finder_stamp(
         cutoutfinder,
         ra,
@@ -305,7 +310,7 @@ def fig_from_fluxtable(
         fov_arcsec=cutout_fov,
         crosshair_gap_frac=0.1,
         matches=finder_matches,
-        legend_ax=finderleg_ax,
+        legend_ax=None if has_host else finderleg_ax,
     )
 
     offset_scatterplot(
@@ -316,6 +321,42 @@ def fig_from_fluxtable(
         radius_arcsec=0.5,
     )
     cutoutfinder.indicate_inset_zoom(scatterax)
+    scatterax.set_title("diaObject offset", fontdict={"fontsize": "small"})
+    cutoutfinder.tick_params(
+        axis="both",  # changes apply to the x-axis
+        which="both",  # both major and minor ticks are affected
+        bottom=True,  # ticks along the bottom edge are off
+        top=False,  # ticks along the top edge are off
+        left=False,
+        right=False,
+        labelbottom=True,
+        labelleft=False,
+    )
+    if has_host:
+        offset_scatterplot(
+            ax=offset_scatter_catalog_ax,
+            mean_ra=nuclear_filter_res["host_ra"],
+            mean_dec=nuclear_filter_res["host_dec"],
+            positions=position_table,
+            radius_arcsec=0.5,
+        )
+        host_pos = SkyCoord(
+            nuclear_filter_res["host_ra"], nuclear_filter_res["host_dec"], unit="deg"
+        )
+        mean_pos = SkyCoord(ra, dec, unit="deg")
+        ddra, ddec = mean_pos.spherical_offsets_to(host_pos)
+        ddra_arcsec = ddra.to_value("arcsec")
+        ddec_arcsec = ddec.to_value("arcsec")
+        bounds = (
+            -ddra_arcsec - 0.5,
+            ddec_arcsec - 0.5,
+            1,
+            1,
+        )
+        cutoutfinder.indicate_inset(inset_ax=offset_scatter_catalog_ax, bounds=bounds)
+        offset_scatter_catalog_ax.set_title(
+            "Host offset", fontdict={"fontsize": "small"}
+        )
 
     attr_ax.text(
         0.0,
@@ -906,7 +947,7 @@ def offset_scatterplot(
     center = SkyCoord(ra=mean_ra, dec=mean_dec, unit="deg")
     dra, ddec = coords.spherical_offsets_to(center)
     dra = dra.to_value("arcsec")
-    ddec = ddec.to_value("arcsec")
+    ddec = -ddec.to_value("arcsec")
 
     for b in np.unique(positions["band"]):
         bm = positions["band"] == b
@@ -947,7 +988,25 @@ def offset_scatterplot(
         ax.add_patch(plt.Circle((0, 0), r, lw=lw, ec="grey", fc="none", zorder=1))
     ax.axvline(0, lw=0.1, c="grey", zorder=1)
     ax.axhline(0, lw=0.1, c="grey", zorder=1)
-    ax.set_axis_off()
+
+    for l in ["top", "bottom", "left", "right"]:
+        ax.spines[l].set_color("grey")
+        ax.spines[l].set_alpha(0.3)
+
+    ax.tick_params(
+        axis="both",  # changes apply to the x-axis
+        which="both",  # both major and minor ticks are affected
+        bottom=True,  # ticks along the bottom edge are off
+        top=False,  # ticks along the top edge are off
+        left=False,
+        right=False,
+        labelbottom=True,
+        labelleft=False,
+        color="grey",
+        labelsize=6,
+    )
+    t = np.arange(0, radius_arcsec, 0.2)
+    ax.set_xticks(list(-t[1:][::-1]) + list(t))
 
 
 ########################################
@@ -1358,7 +1417,7 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
       - Optional Fritz link (disabled for LSST-only sources)
     """
 
-    out_dir: Path
+    out_dir: str
     titleprefix: str = "AMPEL: "
     save_png: bool = False
     finder_cache_dir: str | None = "./finder_cache"
@@ -1391,7 +1450,8 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
         Slack WebClient (if enabled), and initializes ParsnipSncosmoSource
         if include_model_lightcurves is True.
         """
-        self.out_dir.mkdir(parents=True, exist_ok=True)
+        self._out_dir = Path(self.out_dir)
+        self._out_dir.mkdir(parents=True, exist_ok=True)
         if self.finder_cache_dir:
             os.makedirs(self.finder_cache_dir, exist_ok=True)
         if self.cutout_cache_dir:
@@ -2089,11 +2149,12 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
         prior methods, and feeds them to fig_from_fluxtable. It then saves the resulting figure as a PDF.
         Optionally, it uploads the PDF to Slack.
         """
-
+        rubin_bands = [b for b in BANDPASSES if b.startswith("lsst")]
+        pos_filter_combo = rubin_bands + ["".join(rubin_bands)]
         collected_info = []
         with (
-            PdfPages(self.out_dir / "nuclear_filter_passed.pdf") as passed_pdf,
-            PdfPages(self.out_dir / "nuclear_filter_failed.pdf") as failed_pdf,
+            PdfPages(self._out_dir / "nuclear_filter_passed.pdf") as passed_pdf,
+            PdfPages(self._out_dir / "nuclear_filter_failed.pdf") as failed_pdf,
         ):
             for tran_view in gen:
                 photopoints = self._get_photopoints_any_id(tran_view)
@@ -2115,10 +2176,34 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                 sources = [dp for dp in tran_view.t0 if ("diaSourceId" in dp["body"])]
                 assert len(sources) >= lsst_obj["body"]["nDiaSources"]
 
+                nuclear_filter_res = tran_view.get_t2_body(unit="T2NuclearFilter")
+
+                sncosmo_table = self.get_flux_table(photopoints)
+
                 source_positions = SkyCoord(
                     [(dp["body"]["ra"], dp["body"]["dec"]) for dp in sources],
                     unit="deg",
                 )
+                position_table = Table(
+                    {
+                        "ra": source_positions.ra.to_value("deg"),
+                        "dec": source_positions.dec.to_value("deg"),
+                        "raErr": [dp["body"]["raErr"] for dp in sources],
+                        "decErr": [dp["body"]["decErr"] for dp in sources],
+                        "band": [LSST_BANDPASSES[dp["body"]["band"]] for dp in sources],
+                        "flux": [dp["body"]["psfFlux"] for dp in sources],
+                    }
+                )
+                seps = {}
+                for f in np.unique(position_table["band"]):
+                    m = position_table["band"] == f
+                    if any(m) and any(~m):
+                        seps[f] = (
+                            mean_position(source_positions[m])
+                            .separation(mean_position(source_positions[~m]))
+                            .to_value("arcsec")
+                        )
+
                 mean_pos_all = mean_position(source_positions)
                 if grpos := [
                     c
@@ -2130,6 +2215,8 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                 else:
                     mean_pos_gr = None
                     gr_offset = None
+
+                host_type = nuclear_filter_res["host_type"] or {}
                 collected_info.append(
                     (
                         obj_pos.ra.to_value("deg"),
@@ -2137,20 +2224,11 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                         obj_pos.separation(mean_pos_all).to_value("arcsec"),
                         gr_offset,
                         lsst_obj["body"]["nDiaSources"],
+                        nuclear_filter_res["passed"],
+                        host_type.get("T2LSPhotoZTap", {}).get("type"),
+                        host_type.get("milliquas", {}).get("broad_type"),
+                        *(seps.get(f) for f in rubin_bands),
                     )
-                )
-
-                sncosmo_table = self.get_flux_table(photopoints)
-
-                position_table = Table(
-                    {
-                        "ra": source_positions.ra.to_value("deg"),
-                        "dec": source_positions.dec.to_value("deg"),
-                        "raErr": [dp["body"]["raErr"] for dp in sources],
-                        "decErr": [dp["body"]["decErr"] for dp in sources],
-                        "band": [LSST_BANDPASSES[dp["body"]["band"]] for dp in sources],
-                        "flux": [dp["body"]["psfFlux"] for dp in sources],
-                    }
                 )
 
                 if sncosmo_table is None or len(sncosmo_table) == 0:
@@ -2223,7 +2301,6 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                                 )
                                 break
 
-                finder_matches = self.finder_matches_from_t2(tran_view)
                 nuclear_filter_res = tran_view.get_t2_body(unit="T2NuclearFilter")
                 fig, _axes = fig_from_fluxtable(
                     name,
@@ -2247,7 +2324,7 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                     stacking=self.stacking,
                     stacking_window_hours=self.stacking_window_hours,
                     stacking_alpha=self.stacking_alpha,
-                    finder_matches=finder_matches,
+                    finder_matches=[],
                     title=title,
                 )
                 if nuclear_filter_res["passed"]:
@@ -2255,12 +2332,22 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                 else:
                     failed_pdf.savefig(fig)
                 if self.save_png:
-                    plt.savefig(os.path.join(self.out_dir, str(tran_view.id) + ".png"))
+                    plt.savefig(os.path.join(self._out_dir, str(tran_view.id) + ".png"))
                 plt.close(fig)
 
         offsets = pd.DataFrame(
             collected_info,
-            columns=["ra", "dec", "offset_all", "offset_gr", "nDiaSources"],
+            columns=[
+                "ra",
+                "dec",
+                "offset_all",
+                "offset_gr",
+                "nDiaSources",
+                "nuclear_filter_res",
+                "ls_type",
+                "milliquas_type",
+                *[f"{b}_sep_factor" for b in rubin_bands],
+            ],
         )
 
         hp = HEALPix(nside=64, order="ring")
@@ -2276,7 +2363,7 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
         sm = ScalarMappable(norm=Normalize(vmin=0, vmax=max(values)), cmap="cylon")
         cbar = plt.colorbar(sm, ax=ax, orientation="horizontal", pad=0.08)
         cbar.set_label("Count")
-        fig.savefig(self.out_dir / "skymap.pdf")
+        fig.savefig(self._out_dir / "skymap.pdf")
         plt.close()
 
         fig, ax = plt.subplots()
@@ -2285,7 +2372,28 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
         ax.legend()
         ax.set_xlabel(r"offset [arcsec]")
         ax.set_ylabel("counts")
-        fig.savefig(self.out_dir / "mean_pos_offsets.pdf")
+        fig.savefig(self._out_dir / "mean_pos_offsets.pdf")
         plt.close()
 
-        return None
+        fig, axs = plt.subplots(
+            nrows=len(rubin_bands), figsize=(5, 7.5), sharex="all", sharey="all"
+        )
+        cs = [f"{b}_sep_factor" for b in rubin_bands]
+        dfc = offsets[cs]
+        m = dfc.notna().sum(axis=1) > 2  # at least three bands
+        for c, b, ax in zip(cs, rubin_bands, axs, strict=True):
+            ax.hist(
+                dfc.loc[m, c],
+                color=BANDPASSES[b]["c"],
+                label=BANDPASSES[b]["label"],
+                histtype="bar",
+                ec="white",
+                alpha=0.8,
+            )
+            ax.legend()
+        axs[-1].set_xlabel("Separation mean(band) - mean(other) [arcsec]")
+        fig.supylabel("counts")
+        fig.savefig(self._out_dir / "mean_pos_factors.pdf")
+        plt.close()
+
+        return offsets.to_dict(orient="records")
