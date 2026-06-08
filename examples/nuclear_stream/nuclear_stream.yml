@@ -20,7 +20,6 @@ task:
 
   unit: AlertConsumer
   config:
-    iter_max: 5000
     compiler_opts: LSSTCompilerOptions
     supplier:
       unit: LSSTAlertSupplier
@@ -30,7 +29,7 @@ task:
         loader:
           unit: ParquetAlertLoader
           config:
-            path: /cephfs/users/neckerja/scratch/rubicube/alert_dumps/lsst-alerts-2026-03-02--2026-03-10-r0.95.parquet
+            path: /cephfs/users/neckerja/scratch/rubicube/alert_dumps/lsst-alerts-2026-04-20--2026-05-07-r0.5.parquet
 #          unit: LSSTArchiveAlertLoader
 #          config:
 #            archive_url: "https://ampel-dev.ia.zeuthen.desy.de/api/lsst/archive/v1/"
@@ -70,7 +69,10 @@ task:
               "raErr",
               "snr",
               "visit",
-              "diaSourceId"
+              "diaSourceId",
+              "templateFlux",
+              "templateFluxErr",
+              "reliability"
               ]
           diaForcedSource:
             include: [
@@ -266,7 +268,7 @@ task:
               lsst_archive_insecure: true
               cutout_eligible: brightest
 
-              stacking: true
+              stacking: false
               stacking_window_hours: 2.0
 
               tabulator:
