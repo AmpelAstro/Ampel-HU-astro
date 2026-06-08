@@ -596,49 +596,6 @@ t2:
         pre_filter: null
         rs_arcsec: 1
         use: extcats
-      NEDLVS:
-        keys_to_append:
-          - ra
-          - dec
-          - objname
-          - objtype
-          - z
-          - z_unc
-          - z_tech
-          - z_qual
-          - z_qual_flag
-          - ebv
-        post_filter: null
-        pre_filter: null
-        rs_arcsec: 1
-        use: extcats
-      NEDz:
-        keys_to_append:
-          - ObjType
-          - Velocity
-          - z
-          - RA
-          - Dec
-        rs_arcsec: 1
-        use: catsHTM
-        post_filter:
-          z:
-            $gte: 0.011
-      NEDz_extcats:
-        keys_to_append:
-          - RA
-          - Dec
-          - ObjType
-          - Velocity
-          - z
-          - zunc
-        post_filter:
-          z:
-            $gte: 0.011
-            $lte: 0.03
-        pre_filter: null
-        rs_arcsec: 1
-        use: extcats
       NED2026:
         keys_to_append:
           - ra
