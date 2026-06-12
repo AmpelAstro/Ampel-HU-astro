@@ -163,10 +163,10 @@ USE_COLUMNS = [
     # morphology
     "TYPE",
     # WISE fluxes
-    # "FLUX_W1",
-    # "FLUX_W2",
-    # "FLUX_W3",
-    # "FLUX_W4",
+    "FLUX_W1",
+    "FLUX_W2",
+    "FLUX_W3",
+    "FLUX_W4",
     # redshift
     # "Z_SPEC",
     # "SURVEY",
@@ -188,11 +188,11 @@ def mongodumps_by_index(
         iter_filenames(data_dir, i, dr, sv), desc="making mongo dumps"
     ):
         if len(local_paths) != 2:
-            raise NotImplementedError("Only merging of tweo files is implemented!")
+            raise NotImplementedError("Only merging of two files is implemented!")
 
         merged_collection_name = local_paths[0].stem + "-merged"
         collection_names = []
-        export_fn = out_dir / local_paths[0].with_suffix(".bson").name
+        export_fn = out_dir / local_paths[0].with_suffix(".bson.gz").name
 
         if not export_fn.exists():
             logger.info(f"Making mongo dumps for {merged_collection_name}...")
@@ -242,16 +242,13 @@ def mongodumps_by_index(
             )
 
             logger.debug(f"Dumping {merged_collection_name} to {export_fn}")
-            export_fields = ",".join(
-                [c for c in USE_COLUMNS if c not in {"RELEASE", "BRICKID", "OBJID"}]
-            )
             export_cmd = [
-                "mongoexport",
+                "mongodump",
                 f'--uri="{mogno_uri}"',
                 f"--db={db_name}",
                 f"--collection={merged_collection_name}",
                 f"-o={export_fn}",
-                f"--fields={export_fields}",
+                "--gzip",
             ]
             subprocess.run(export_cmd, check=True)
             logger.debug("done")
