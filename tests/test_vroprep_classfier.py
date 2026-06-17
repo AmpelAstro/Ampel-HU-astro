@@ -81,6 +81,13 @@ def test_vroprep_classifier(
     cmd = JobCommand()
     job = JobModel(**alertprocessor_config)
 
+    # XXX HACK: manually set new DNS name for catalogmatch service
+    dict.__setitem__(
+        mock_context.config._config["resource"],
+        "ampel-catalogmatch/url",
+        "https://ampel-ztf.zeuthen.desy.de/api/catalogmatch/",
+    )
+
     for chan in job.channel:
         mock_context.add_channel(chan.channel)
 
