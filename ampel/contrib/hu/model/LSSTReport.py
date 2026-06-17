@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import Field
 
@@ -9,6 +9,8 @@ from ampel.base.AmpelBaseModel import AmpelBaseModel
 class PhotometricPoint(AmpelBaseModel):
     """Observed photometric point in an LSST alert report"""
 
+    id: Annotated[int, Field(description="diaSourceId or diaForcedSourceId")]
+    source: Annotated[Literal["LSST_DP", "LSST_FP"], Field(description="id source")]
     time: Annotated[float, Field(description="epoch of observation")]
     flux: Annotated[float, Field(description="observed flux")]
     fluxerr: Annotated[float, Field(description="flux uncertainty")]

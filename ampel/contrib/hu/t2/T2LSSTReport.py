@@ -99,6 +99,8 @@ class T2LSSTReport(AbsTiedStateT2Unit, AbsTabulatedT2Unit, abstract=True):
 
         photometry = [
             PhotometricPoint(
+                id=id,
+                source=source,
                 time=time,
                 flux=flux,
                 fluxerr=fluxerr,
@@ -106,9 +108,10 @@ class T2LSSTReport(AbsTiedStateT2Unit, AbsTabulatedT2Unit, abstract=True):
                 zp=zp,
                 zpsys=zpsys,
             )
-            for time, flux, fluxerr, band, zp, zpsys in self.get_flux_table(
+            # NB: this assumes that the flux table includes id and source columns, which only LSSTT2Tabulator does. If other tabulators are used, this may need to be adjusted.
+            for id, source, time, flux, fluxerr, band, zp, zpsys in self.get_flux_table(
                 datapoints
-            ).iterrows("time", "flux", "fluxerr", "band", "zp", "zpsys")
+            ).iterrows("id", "source", "time", "flux", "fluxerr", "band", "zp", "zpsys")
         ]
         # Fill object record from latest LSST_OBJ datapoint (diaObject)
         for dp in sorted(

@@ -31,22 +31,8 @@ def _get_model(value: Any) -> type[BaseModel]:
     raise TypeError("model must be a BaseModel subclass a fully-qualified name")
 
 
-class HopskotchProducer(AmpelUnit):
-    broker: str = "kafka.scimma.org"
-    auth: SASLAuthentication
-    topic: str
-
+class MessageSerializer(AmpelUnit):
     model: Annotated[type[BaseModel], BeforeValidator(_get_model)]
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-        self._producer = Producer(
-            broker_addresses=[self.broker],
-            topics=[self.topic],
-            auth=Auth(self.auth.username.get(), self.auth.password.get()),
-            automatic_offload=False,
-        )
 
     @cached_property
     def schema(self) -> dict:
@@ -58,9 +44,28 @@ class HopskotchProducer(AmpelUnit):
             )
         )
 
+    def serialize(self, record: dict) -> AvroBlob:
+        return AvroBlob(content=record, schema=self.schema, single_record=True)
+
+
+class HopskotchProducer(MessageSerializer):
+    broker: str = "kafka.scimma.org"
+    auth: SASLAuthentication
+    topic: str
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self._producer = Producer(
+            broker_addresses=[self.broker],
+            topics=[self.topic],
+            auth=Auth(self.auth.username.get(), self.auth.password.get()),
+            automatic_offload=False,
+        )
+
     def send(self, record: dict) -> None:
         self._producer.write(
-            message=AvroBlob(content=record, schema=self.schema, single_record=True),
+            message=self.serialize(record),
             topic=self.topic,
         )
 
