@@ -1,6 +1,6 @@
 [project]
 name = "ampel-hu-astro"
-version = "0.10.0a21"
+version = "0.10.0a22"
 description = "Astronomy units for the Ampel system from HU-Berlin"
 requires-python = ">=3.12, <4"
 authors = [
@@ -72,7 +72,7 @@ ztf = [
     "ampel-ztf (>=0.10.3a7,<0.11.0)",
     "ztfquery (>=1.28.0,<2.0.0)",
 ]
-lsst = ["ampel-lsst (>=0.10.1a13,<0.11)"]
+lsst = ["ampel-lsst (>=0.10.1a16,<0.11)"]
 hop = [
     "hop-client (>=0.12.1,<0.13.0)",
     "py-avro-schema (>=3.8.2,<4.0.0)",
