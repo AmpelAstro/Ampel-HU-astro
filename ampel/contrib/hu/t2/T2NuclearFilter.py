@@ -11,7 +11,9 @@ from collections.abc import Sequence
 from typing import Literal, TypedDict
 
 import numpy as np
+from astropy.coordinates import SkyCoord
 from astropy.coordinates.angles import angular_separation
+from scipy.stats import chi2
 
 from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.content.DataPoint import DataPoint
@@ -28,11 +30,16 @@ from ampel.view.T2DocView import T2DocView
 
 class NuclearFilterResult(TypedDict):
     passed: bool
+    mean_ra: float
+    mean_dec: float
+    sep90: float
+    sep1sig: float
     host_catalogs: list[str] | None
     host_ra: float | None
     host_dec: float | None
     host_dist_arcsec: float | None
     host_type: dict[str, dict[str, str]] | None
+    template_flux: dict[str, tuple[float, float, float]] | None
 
 
 class T2NuclearFilter(AbsTiedStateT2Unit):
@@ -55,6 +62,7 @@ class T2NuclearFilter(AbsTiedStateT2Unit):
         self._known_mapping = [*list(unit_mapping.keys()), "T2LSPhotoZTap"]
         self._convert_to_rad = [*convert_to_rad, "T2LSPhotoZTap"]
         self._redshift_columns, self._type_columns = get_type_and_redshift_columns()
+        self._percentile_2dsig = chi2.cdf(1, 2)
 
     def process(
         self,
@@ -80,15 +88,62 @@ class T2NuclearFilter(AbsTiedStateT2Unit):
                     }
                 )
 
+        # calculate mean position and variance
+        coords = SkyCoord(
+            *np.array(
+                [
+                    [dp["body"][k] for k in ["ra", "dec"]]
+                    for dp in datapoints
+                    if ("diaSourceId" in dp["body"])
+                ]
+            ).T,
+            unit="deg",
+        )
+        weights = np.array(
+            [1] * len(coords)
+        )  # TODO: figure weights out, (pos errors?, magnitiudes?)
+        mean_pos = SkyCoord(
+            (coords.represent_as("cartesian") * weights).sum() / sum(weights)
+        )
+        mean_pos.representation_type = "spherical"
+        separations_to_mean = coords.separation(mean_pos)
+        sep90 = np.quantile(separations_to_mean, 0.9).to_value("arcsec")
+        sep1sig = np.quantile(separations_to_mean, self._percentile_2dsig).to_value(
+            "arcsec"
+        )
+
+        mean_ra = mean_pos.ra.to_value("deg")
+        mean_dec = mean_pos.dec.to_value("deg")
+
+        # calculate template fluxes
+        template_flux = {
+            b: tuple(
+                np.quantile(
+                    [
+                        dp["body"]["templateFlux"]
+                        for dp in datapoints
+                        if ("templateFlux" in dp) and (dp["body"]["band"] == b)
+                    ],
+                    [0.5, 0.05, 0.95],
+                ).tolist()
+            )
+            for b in "ugrizy"
+        }
+
         # If there are no matches within self.match_dist_arcsec, return False
         if not matches:
             return NuclearFilterResult(
                 passed=False,
+                mean_ra=mean_ra,
+                mean_dec=mean_dec,
+                sep90=sep90,
+                sep1sig=sep1sig,
                 host_ra=None,
                 host_dec=None,
                 host_dist_arcsec=None,
                 host_catalogs=None,
                 host_type=None,
+                template_flux=template_flux,
             )
 
         # normalize keys
@@ -166,6 +221,10 @@ class T2NuclearFilter(AbsTiedStateT2Unit):
 
         return NuclearFilterResult(
             passed=passed,
+            mean_ra=mean_ra,
+            mean_dec=mean_dec,
+            sep90=sep90,
+            sep1sig=sep1sig,
             host_ra=np.degrees(match_map["ra_rad"][best_match_id]),
             host_dec=np.degrees(match_map["dec_rad"][best_match_id]),
             host_dist_arcsec=dist,
