@@ -29,7 +29,7 @@ from astropy import visualization
 from astropy.coordinates import SkyCoord
 from astropy.cosmology import FlatLambdaCDM
 from astropy.io import fits
-from astropy.table import Table
+from astropy.table import Table, vstack
 from astropy.time import Time
 from astropy.wcs import WCS
 from astropy.wcs.utils import proj_plane_pixel_scales
@@ -41,6 +41,7 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import MultipleLocator
 from requests_toolbelt.sessions import BaseUrlSession
 from scipy import ndimage
+from scipy.stats import chi2, kstest
 
 from ampel.abstract.AbsPhotoT3Unit import AbsPhotoT3Unit
 from ampel.abstract.AbsTabulatedT2Unit import AbsTabulatedT2Unit
@@ -51,7 +52,7 @@ from ampel.contrib.hu.util.catalog_column_info import (
 from ampel.lsst.view.LSSTT2Tabulator import LSST_BANDPASSES
 from ampel.struct.T3Store import T3Store
 from ampel.struct.UnitResult import UnitResult
-from ampel.types import T3Send, UBson
+from ampel.types import StockId, T3Send, UBson
 from ampel.view.TransientView import TransientView
 
 # Keys as provided by tabulators
@@ -199,6 +200,14 @@ def fig_from_fluxtable(
         info.append(sep)
         info.append("Photo-z:")
         info.extend(photz_list)
+
+    info.append(sep)
+    info.append("band   template [nJy]    reliability")
+    for band in np.unique(position_table["band"]):
+        pt = position_table[position_table["band"] == band]
+        fq = np.quantile(pt["template_flux"], [0.5, 0.05, 0.95])
+        rq = np.quantile(pt["reliability"], [0.5, 0.05, 0.95])
+        info.append(f"{band}  {fq[0]:14.2f}    {rq[0]:5.2f}")
 
     fig = plt.figure(figsize=(10, 7.9))
     lc_ax3 = None
@@ -367,6 +376,7 @@ def fig_from_fluxtable(
         fontsize=8.5,
         alpha=0.6,
         wrap=True,
+        fontfamily="monospace",
     )
 
     # If redshift is given, calculate absolute magnitude via luminosity distance
@@ -1442,6 +1452,12 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
 
     min_snr: float = 5
 
+    max_per_category: int = 100
+
+    max_iter: int | None = None
+
+    calibration_indices: list[StockId] | None = None
+
     def post_init(self) -> None:
         """
         Post-initialization routine for PlotTransientLightcurves.
@@ -2150,13 +2166,19 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
         Optionally, it uploads the PDF to Slack.
         """
         rubin_bands = [b for b in BANDPASSES if b.startswith("lsst")]
-        pos_filter_combo = rubin_bands + ["".join(rubin_bands)]
+        n_passed = 0
+        n_failed = 0
         collected_info = []
+        calibration_sources = {}
+        n_iter = 0
         with (
             PdfPages(self._out_dir / "nuclear_filter_passed.pdf") as passed_pdf,
             PdfPages(self._out_dir / "nuclear_filter_failed.pdf") as failed_pdf,
         ):
             for tran_view in gen:
+                if (self.max_iter is not None) and (n_iter > self.max_iter):
+                    break
+
                 photopoints = self._get_photopoints_any_id(tran_view)
                 if not photopoints:
                     self.logger.debug("No photopoints", extra={"stock": tran_view.id})
@@ -2176,22 +2198,43 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                 sources = [dp for dp in tran_view.t0 if ("diaSourceId" in dp["body"])]
                 assert len(sources) >= lsst_obj["body"]["nDiaSources"]
 
-                nuclear_filter_res = tran_view.get_t2_body(unit="T2NuclearFilter")
-
                 sncosmo_table = self.get_flux_table(photopoints)
 
                 source_positions = SkyCoord(
                     [(dp["body"]["ra"], dp["body"]["dec"]) for dp in sources],
                     unit="deg",
                 )
+
+                nuclear_filter_res = tran_view.get_t2_body(unit="T2NuclearFilter")
+                if nuclear_filter_res["host_ra"] is not None:
+                    host_pos = SkyCoord(
+                        nuclear_filter_res["host_ra"],
+                        nuclear_filter_res["host_dec"],
+                        unit="deg",
+                    )
+                    host_ddra, host_ddec = source_positions.spherical_offsets_to(
+                        host_pos
+                    )
+                    host_ddra = host_ddra.to_value("arcsec")
+                    host_ddec = host_ddec.to_value("arcsec")
+                    host_sep = source_positions.separation(host_pos).to_value("arcsec")
+                else:
+                    host_sep = host_ddec = host_ddra = [np.nan] * len(sources)
+
                 position_table = Table(
                     {
                         "ra": source_positions.ra.to_value("deg"),
                         "dec": source_positions.dec.to_value("deg"),
                         "raErr": [dp["body"]["raErr"] for dp in sources],
                         "decErr": [dp["body"]["decErr"] for dp in sources],
+                        "ra_dec_cov": [dp["body"]["ra_dec_Cov"] for dp in sources],
                         "band": [LSST_BANDPASSES[dp["body"]["band"]] for dp in sources],
                         "flux": [dp["body"]["psfFlux"] for dp in sources],
+                        "reliability": [dp["body"]["reliability"] for dp in sources],
+                        "template_flux": [dp["body"]["templateFlux"] for dp in sources],
+                        "host_ddra": host_ddra,
+                        "host_ddec": host_ddec,
+                        "host_sep": host_sep,
                     }
                 )
                 seps = {}
@@ -2231,6 +2274,11 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                     )
                 )
 
+                if (self.calibration_indices is not None) and (
+                    (s := tran_view.stock["stock"]) in self.calibration_indices
+                ):
+                    calibration_sources[s] = position_table
+
                 if sncosmo_table is None or len(sncosmo_table) == 0:
                     self.logger.debug("No flux table", extra={"stock": tran_view.id})
                     continue
@@ -2267,6 +2315,13 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                 cutouts = None
                 cutout_cache_key = None
 
+                nuclear_filter_res = tran_view.get_t2_body(unit="T2NuclearFilter")
+                passed = nuclear_filter_res["passed"]
+                if (passed and (n_passed >= self.max_per_category)) or (
+                    (not passed) and (n_failed >= self.max_per_category)
+                ):
+                    continue
+
                 if self.include_cutouts:
                     if self.internal_cutout_fetch:
                         cutouts, cutout_cache_key = (
@@ -2301,7 +2356,6 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                                 )
                                 break
 
-                nuclear_filter_res = tran_view.get_t2_body(unit="T2NuclearFilter")
                 fig, _axes = fig_from_fluxtable(
                     name,
                     str(ampelid),
@@ -2327,13 +2381,17 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
                     finder_matches=[],
                     title=title,
                 )
-                if nuclear_filter_res["passed"]:
+                if passed:
                     passed_pdf.savefig(fig)
+                    n_passed += 1
                 else:
                     failed_pdf.savefig(fig)
+                    n_failed += 1
                 if self.save_png:
                     plt.savefig(os.path.join(self._out_dir, str(tran_view.id) + ".png"))
                 plt.close(fig)
+
+                n_iter += 1
 
         offsets = pd.DataFrame(
             collected_info,
@@ -2382,18 +2440,63 @@ class PlotNuclearFilterLightcurves(AbsPhotoT3Unit, AbsTabulatedT2Unit):
         dfc = offsets[cs]
         m = dfc.notna().sum(axis=1) > 2  # at least three bands
         for c, b, ax in zip(cs, rubin_bands, axs, strict=True):
-            ax.hist(
-                dfc.loc[m, c],
-                color=BANDPASSES[b]["c"],
-                label=BANDPASSES[b]["label"],
-                histtype="bar",
-                ec="white",
-                alpha=0.8,
-            )
-            ax.legend()
+            data = dfc.loc[m, c]
+            if any(data):
+                ax.hist(
+                    data,
+                    color=BANDPASSES[b]["c"],
+                    label=BANDPASSES[b]["label"],
+                    histtype="bar",
+                    ec="white",
+                    alpha=0.8,
+                )
+                ax.legend()
         axs[-1].set_xlabel("Separation mean(band) - mean(other) [arcsec]")
         fig.supylabel("counts")
         fig.savefig(self._out_dir / "mean_pos_factors.pdf")
         plt.close()
+
+        if any(calibration_sources):
+            stacked_table = vstack(list(calibration_sources.values()))
+            chi2_2d_cdf = chi2(2).cdf
+
+            fig, axs = plt.subplots(
+                nrows=len(rubin_bands), figsize=(5, 7.5), sharex="all", sharey="all"
+            )
+            for b, ax in zip(rubin_bands, axs, strict=True):
+                g = stacked_table[stacked_table["band"] == b]
+                if len(g) > 0:
+                    err_2d_sq = (g["raErr"] ** 2 + g["decErr"] ** 2) * 3600**2
+                    chi2_values = g["host_sep"] ** 2 / err_2d_sq
+                    bins = np.linspace(0, min([5, max(chi2_values)]))
+                    if max(chi2_values) > 5:
+                        bins = list(bins) + [max(chi2_values)]
+                    ax.hist(
+                        chi2_values,
+                        density=True,
+                        label=b,
+                        color=BANDPASSES[b]["c"],
+                        bins=bins,
+                        cumulative=True,
+                    )
+                    ks_res = kstest(chi2_values, chi2_2d_cdf)
+                    ax.annotate(
+                        f"{ks_res.pvalue:.1e}",
+                        xy=(0, 1),
+                        xycoords="axes fraction",
+                        xytext=(2, -2),
+                        textcoords="offset points",
+                    )
+                    xx = np.linspace(0, max(chi2_values), 100)
+                    yy = chi2_2d_cdf(xx)
+                    ax.plot(xx, yy, ls="-", color="k")
+                    ax.legend(frameon=False)
+
+            xlim = axs[-1].get_xlim()
+            axs[-1].set_xlabel(r"$\Psi^2 / \delta_\mathrm{2d}^2$")
+            axs[-1].set_xlim(0, min([5, xlim[1]]))
+            fig.supylabel("density")
+            fig.savefig(self._out_dir / "offset_chi2.pdf")
+            plt.close()
 
         return offsets.to_dict(orient="records")
