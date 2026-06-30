@@ -442,10 +442,9 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
 
                     if cat_name == "WISE" and cat_match["dist2transient"] < 3:
                         # Only W1-W2 color
-                        if (
-                            cat_match.get("Mag_W1", -1) > 0
-                            and cat_match.get("Mag_W2", -1) > 0
-                        ):
+                        if (cat_match.get("Mag_W1") or -1) > 0 and (
+                            cat_match.get("Mag_W2") or -1
+                        ) > 0:
                             host_info["col_wise_w1w2"] = (
                                 cat_match["Mag_W1"] - cat_match["Mag_W2"]
                             )
