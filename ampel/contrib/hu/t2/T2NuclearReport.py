@@ -1,8 +1,9 @@
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from ampel.contrib.hu.model.LSSTReport import Host
+from ampel.contrib.hu.model.LSSTReport import Feature, Host
 from ampel.contrib.hu.t2.T2LSSTReport import T2LSSTReport
+from ampel.contrib.hu.t2.T2NuclearFilter import T2NuclearFilter
 
 
 class T2NuclearReport(T2LSSTReport):
@@ -39,4 +40,16 @@ class T2NuclearReport(T2LSSTReport):
             info=type_info,
         )
 
-        return [host]
+        template = Feature(
+            name="template_flux",
+            version=T2NuclearFilter.version,
+            features=nuclear_filter["template_flux"],
+        )
+
+        mean_position = Feature(
+            name="mean_position",
+            version=T2NuclearFilter.version,
+            features={k: nuclear_filter[k] for k in ["mean_ra", "mean_dec"]},
+        )
+
+        return [host, template, mean_position]
