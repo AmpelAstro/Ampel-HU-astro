@@ -50,6 +50,8 @@ class T2NuclearFilter(AbsTiedStateT2Unit):
         StateT2Dependency[Literal["T2CatalogMatch", "T2LSPhotoZTap"]]
     ]
 
+    version = "0.1"
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -230,4 +232,5 @@ class T2NuclearFilter(AbsTiedStateT2Unit):
             host_dist_arcsec=dist,
             host_catalogs=matched_catalogs.tolist(),
             host_type=type_info,
+            template_flux=template_flux,
         )
