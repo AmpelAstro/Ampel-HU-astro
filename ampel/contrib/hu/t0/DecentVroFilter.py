@@ -234,8 +234,7 @@ class DecentVroFilter(CatalogMatchUnit, AbsAlertFilter):
             return None
 
         if self.min_n_filters and (
-            (n_filters := np.unique([pp["band"] for pp in pps]).size)
-            < self.min_n_filters
+            (n_filters := len({pp["band"] for pp in pps})) < self.min_n_filters
         ):
             self.logger.debug(None, extra={"n_filters": n_filters})
             return None
