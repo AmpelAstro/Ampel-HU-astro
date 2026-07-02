@@ -139,7 +139,7 @@ class T2NedSNCosmo(AbsTiedLightCurveT2Unit, T2SNCosmo):
 
             elif isinstance(r, dict | UnitResult):
                 if isinstance(r, UnitResult):
-                    d: dict = r.body  # type: ignore
+                    d: dict = r.body
                     if isinstance(r.tag, int | str):
                         tags.append(r.tag)
                     elif isinstance(r.tag, list):
