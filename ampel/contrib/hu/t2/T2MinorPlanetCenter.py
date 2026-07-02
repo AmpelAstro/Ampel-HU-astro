@@ -142,15 +142,10 @@ class T2MinorPlanetCenter(AbsPointT2Unit):
             mags = []
             pass
 
-        if len(separations) == 0:
-            result = {t.jd: {"ndet": 0, "ang_distances_deg": None, "mags": None}}
-        else:
-            result = {
-                t.jd: {
-                    "ndet": len(separations),
-                    "ang_distances_deg": separations,
-                    "mags": mags,
-                }
+        return {
+            t.jd: {
+                "ndet": len(separations),
+                "ang_distances_deg": separations or None,
+                "mags": mags if separations else None,
             }
-
-        return result
+        }
