@@ -40,6 +40,9 @@ class DecentVroFilter(CatalogMatchUnit, AbsAlertFilter):
     min_tspan: float  # minimum duration of alert detection history [days]
     max_tspan: float  # maximum duration of alert detection history [days]
 
+    # Require observations in at least n filters
+    min_n_filters: None | int = None
+
     # Rejects alert with multiple recent detections.
     # Can be caused by hitting the same field, so multiple photopoints in
     # the same band will not provide new information but polute the system.
@@ -228,6 +231,12 @@ class DecentVroFilter(CatalogMatchUnit, AbsAlertFilter):
             self.logger.debug(
                 None, extra={"reliability": latest.get("reliability", None)}
             )
+            return None
+
+        if self.min_n_filters and (
+            (n_filters := len({pp["band"] for pp in pps})) < self.min_n_filters
+        ):
+            self.logger.debug(None, extra={"n_filters": n_filters})
             return None
 
         if self.min_ndet_cadence is not None:
