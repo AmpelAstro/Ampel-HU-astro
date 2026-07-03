@@ -122,14 +122,14 @@ task:
                   parsnip_zeropoint_offset: 0
                   paths_parsnip:
                     sn+2ulens+dwarfs:
-                      # https://box.hu-berlin.de/f/78d7594841da4653a743/?dl=1
-                      # box name: parsnipModelAug10Pct30.h5
-                      # old name: model1-30pct-sn+2ulens+dwarfs-mw.h5
-                      model: /Users/jnordin/github/ampelFeb25/Ampel-HU-astro/examples/parsnipModelAug10Pct30.h5
-                      # https://box.hu-berlin.de/f/d1cec88c0bec4123b208/?dl=1
-                      # box name: parsnipClassifierAug10Pct30.pkl 
-                      # old name: model1-30pct-sn+2ulens+dwarfs-mw-aug10.pkl
-                      classifier: /Users/jnordin/github/ampelFeb25/Ampel-HU-astro/examples/parsnipClassifierAug10Pct30.pkl
+                      model:
+                        name: parsnipModelAug10Pct30.h5
+                        url: https://zenodo.org/records/21134332/files/parsnipModelAug10Pct30.h5?download=1
+                        md5: 906be58422ad76b0eb9e3b433fa16caf
+                      classifier:
+                        name: parsnipClassifierAug10Pct30.pkl
+                        url: https://zenodo.org/records/21134332/files/parsnipClassifierAug10Pct30.pkl?download=1
+                        md5: dd4a75626d98ffd2d0e85a13fcb6171c
                   paths_xgbbinary: {}
                   paths_xgbmulti: {}
 #                  redshift_kind: null 

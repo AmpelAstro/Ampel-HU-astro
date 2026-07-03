@@ -8,6 +8,7 @@
 # Last Modified By:    jnordin@physik.hu-berlin.de
 
 import os
+from pathlib import Path
 from typing import Any
 
 import joblib
@@ -29,6 +30,7 @@ from ampel.contrib.hu.model.ParsnipRiseDeclineResult import (
     ParsnipResult,
     PredictionEntry,
 )
+from ampel.model.ExternalDataModel import ExternalDataModel
 from ampel.model.PlotSpec import PlotSpec
 from ampel.model.UnitModel import UnitModel
 
@@ -72,13 +74,22 @@ parsnip_taxonomy = {
 
 
 class ParsnipModelFiles(TypedDict):
-    model: str
-    classifier: str
+    model: str | ExternalDataModel
+    classifier: str | ExternalDataModel
 
 
 class XgbMultiModelFiles(TypedDict):
-    path: str
+    path: str | ExternalDataModel
     classes: list[int | str]
+
+
+def get_local_path(path: str | ExternalDataModel) -> Path:
+    """
+    Return the local path to a file, downloading it if necessary.
+    """
+    if isinstance(path, ExternalDataModel):
+        return path.local_path()
+    return Path(path)
 
 
 def create_parsnip_plot(
@@ -238,7 +249,7 @@ class T2BaseClassifier:
     classifier_version: str
 
     ## Paths to classifiers to load.
-    paths_xgbbinary: dict[str, str] = {}
+    paths_xgbbinary: dict[str, str | ExternalDataModel] = {}
     paths_xgbmulti: dict[str, XgbMultiModelFiles] = {}
     paths_parsnip: dict[str, ParsnipModelFiles] = {}
 
@@ -259,16 +270,24 @@ class T2BaseClassifier:
 
     def read_class_models(self) -> None:
         self._class_xgbbinary = {
-            label: joblib.load(path) for label, path in self.paths_xgbbinary.items()
+            label: joblib.load(get_local_path(path))
+            for label, path in self.paths_xgbbinary.items()
         }
         self._class_xgbmulti: dict[str, Any] = {
-            label: {**joblib.load(pathdir["path"]), "classes": pathdir["classes"]}
+            label: {
+                **joblib.load(get_local_path(pathdir["path"])),
+                "classes": pathdir["classes"],
+            }
             for label, pathdir in self.paths_xgbmulti.items()
         }
         self._class_parsnip = {
             label: {
-                "classifier": parsnip.Classifier.load(paths["classifier"]),
-                "model": parsnip.load_model(paths["model"], threads=1),
+                "classifier": parsnip.Classifier.load(
+                    get_local_path(paths["classifier"])
+                ),
+                "model": parsnip.load_model(
+                    str(get_local_path(paths["model"])), threads=1
+                ),
             }
             for label, paths in self.paths_parsnip.items()
         }
