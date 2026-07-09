@@ -71,3 +71,16 @@ def test_process(compound, datapoints, ampel_logger, mock_context):
     blob = message.serialize()["content"]
     assert isinstance(blob, bytes)
     assert message.deserialize(blob).content == message.content
+
+    # ensure that ids were not corrupted by secret rounding
+    dp = {
+        doc["body"]["diaSourceId"]: doc for doc in datapoints if "LSST_DP" in doc["tag"]
+    }
+    fp = {
+        doc["body"]["diaForcedSourceId"]: doc
+        for doc in datapoints
+        if "LSST_FP" in doc["tag"]
+    }
+    dps = {"LSST_DP": dp, "LSST_FP": fp}
+    for dp in message.content["photometry"]:
+        assert dp["id"] in dps[dp["source"]]

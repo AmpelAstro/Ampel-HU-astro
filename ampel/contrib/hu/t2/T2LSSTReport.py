@@ -99,7 +99,7 @@ class T2LSSTReport(AbsTiedStateT2Unit, AbsTabulatedT2Unit, abstract=True):
 
         photometry = [
             PhotometricPoint(
-                id=id,
+                id=int(id),
                 source=source,
                 time=time,
                 flux=flux,
