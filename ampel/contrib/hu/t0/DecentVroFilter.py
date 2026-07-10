@@ -295,7 +295,7 @@ class DecentVroFilter(CatalogMatchUnit, AbsAlertFilter):
             )
             return None
 
-        if (self.check_flags is not None) and any([latest[f] for f in self._check_flags]):
+        if (self._check_flags is not None) and any([latest[f] for f in self._check_flags]):
             self.logger.debug(None, extra={"set_flags": [f for f in self._check_flags if latest[f]]})
             return None
 
@@ -324,7 +324,7 @@ class DecentVroFilter(CatalogMatchUnit, AbsAlertFilter):
             thinned_pps = [
                 pp for pp in thinned_pps if pp.get("reliability", 0) >= self.min_reliability_per_source
             ]
-        if self.check_flags_per_source is not None:
+        if self._check_flags_per_source is not None:
             thinned_pps = [
                 pp for pp in thinned_pps if not any([pp[f] for f in self._check_flags_per_source])
             ]
