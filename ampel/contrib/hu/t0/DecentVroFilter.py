@@ -6,7 +6,7 @@
 # Last Modified Date:  24.09.2025
 # Last Modified By:    jno
 
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 from astropy.coordinates import SkyCoord
@@ -15,6 +15,43 @@ from astropy.table import Table
 from ampel.abstract.AbsAlertFilter import AbsAlertFilter
 from ampel.protocol.AmpelAlertProtocol import AmpelAlertProtocol
 from ampel.ztf.base.CatalogMatchUnit import CatalogMatchUnit
+
+RUBIN_ALERT_FLAGS = [
+    "centroid_flag",
+    "apFlux_flag",
+    "apFlux_flag_apertureTruncated",
+    "psfFlux_flag",
+    "psfFlux_flag_edge",
+    "psfFlux_flag_noGoodPixels",
+    "trail_flag_edge",
+    "forced_PsfFlux_flag",
+    "forced_PsfFlux_flag_edge",
+    "forced_PsfFlux_flag_noGoodPixels",
+    "shape_flag",
+    "shape_flag_no_pixels",
+    "shape_flag_not_contained",
+    "shape_flag_parent_source",
+    "pixelFlags",
+    "pixelFlags_bad",
+    "pixelFlags_cr",
+    "pixelFlags_crCenter",
+    "pixelFlags_edge",
+    "pixelFlags_nodata",
+    "pixelFlags_nodataCenter",
+    "pixelFlags_interpolated",
+    "pixelFlags_interpolatedCenter",
+    "pixelFlags_offimage",
+    "pixelFlags_saturated",
+    "pixelFlags_saturatedCenter",
+    "pixelFlags_suspect",
+    "pixelFlags_suspectCenter",
+    "pixelFlags_streak",
+    "pixelFlags_streakCenter",
+    "pixelFlags_injected",
+    "pixelFlags_injectedCenter",
+    "pixelFlags_injected_template",
+    "pixelFlags_injected_templateCenter",
+]
 
 
 class DecentVroFilter(CatalogMatchUnit, AbsAlertFilter):
@@ -58,11 +95,16 @@ class DecentVroFilter(CatalogMatchUnit, AbsAlertFilter):
 
     # Image quality, including Real-Bogus equivalents
     min_reliability: float = 0.0  # deep learning real bogus score
+    min_reliability_per_source: float = 0.0   # minimum reliability for previous detections to be counted
     # min_rb: float  # real bogus score
     # max_fwhm: float  # sexctrator FWHM (assume Gaussian) [pix]
     # max_elong: float  # Axis ratio of image: aimage / bimage
     # max_magdiff: float  # Difference: magap - magpsf [mag]
     # max_nbad: int  # number of bad pixels in a 5 x 5 pixel stamp
+
+    # check datapoint flags
+    check_flags: Literal["all"] | list[str] | None = None
+    check_flags_per_source: Literal["all"] | list[str] | None = None
 
     # Astro
     # min_sso_dist: float  # distance to nearest solar system object [arcsec]
@@ -103,6 +145,26 @@ class DecentVroFilter(CatalogMatchUnit, AbsAlertFilter):
         # To make this tenable we should create this list dynamically depending on what entries are required
         # by the filter. Now deciding not to include drb in this list, eg.
         self.keys_to_check = ("midpointMjdTai",)
+
+        # check flags for alert
+        if self.check_flags is None:
+            self._check_flags = None
+        else:
+            self._check_flags = (
+                RUBIN_ALERT_FLAGS
+                if isinstance(self.check_flags, str) and (self.check_flags == "all")
+                else self.check_flags
+            )
+
+        # check flags for each source
+        if self.check_flags_per_source is None:
+            self._check_flags_per_source = None
+        else:
+            self._check_flags_per_source = (
+                RUBIN_ALERT_FLAGS
+                if isinstance(self.check_flags_per_source, str) and (self.check_flags_per_source == "all")
+                else self.check_flags_per_source
+            )
 
     def _alert_has_keys(self, photop) -> bool:
         """
@@ -233,11 +295,10 @@ class DecentVroFilter(CatalogMatchUnit, AbsAlertFilter):
             )
             return None
 
-        if self.min_n_filters and (
-            (n_filters := len({pp["band"] for pp in pps})) < self.min_n_filters
-        ):
-            self.logger.debug(None, extra={"n_filters": n_filters})
+        if (self.check_flags is not None) and any([latest[f] for f in self._check_flags]):
+            self.logger.debug(None, extra={"set_flags": [f for f in self._check_flags if latest[f]]})
             return None
+
 
         if self.min_ndet_cadence is not None:
             # thin detections to only count those separated by at least
@@ -259,12 +320,26 @@ class DecentVroFilter(CatalogMatchUnit, AbsAlertFilter):
             thinned_pps = [
                 pp for pp in thinned_pps if pp.get("snr", 0) >= self.min_ndet_snr
             ]
+        if self.min_reliability_per_source is not None:
+            thinned_pps = [
+                pp for pp in thinned_pps if pp.get("reliability", 0) >= self.min_reliability_per_source
+            ]
+        if self.check_flags_per_source is not None:
+            thinned_pps = [
+                pp for pp in thinned_pps if not any([pp[f] for f in self._check_flags_per_source])
+            ]
 
         if len(thinned_pps) < self.min_ndet:
             self.logger.debug(None, extra={"nDet": len(thinned_pps)})
             return None
         if self.max_ndet and len(thinned_pps) > self.max_ndet:
             self.logger.debug(None, extra={"nDet": len(thinned_pps)})
+            return None
+
+        if self.min_n_filters and (
+            (n_filters := len({pp["band"] for pp in thinned_pps})) < self.min_n_filters
+        ):
+            self.logger.debug(None, extra={"n_filters": n_filters})
             return None
 
         # cut on length of detection history
