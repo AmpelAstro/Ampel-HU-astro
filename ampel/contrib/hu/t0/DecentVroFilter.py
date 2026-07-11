@@ -66,9 +66,9 @@ def validate_flags(value: Literal["all"] | list[str] | None) -> list[str] | None
     if isinstance(value, list):
         invalid_flags = [el for el in value if el not in RUBIN_ALERT_FLAGS]
         if invalid_flags:
-            raise ValueError(f"Invalid values for check_flags: {invalid_flags}")
+            raise ValueError(f"Invalid values for check_flags: {invalid_flags}! Valid choices are: {', '.join(RUBIN_ALERT_FLAGS)}")
         return value
-    raise ValueError(f"Invalid value for check_flags: {value}")
+    raise ValueError(f"Invalid value for check_flags: {value}! Valid choices are: {', '.join(RUBIN_ALERT_FLAGS)} or 'all'")
 
 
 class DecentVroFilter(CatalogMatchUnit, AbsAlertFilter):
