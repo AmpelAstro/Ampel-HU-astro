@@ -6,7 +6,7 @@
 # Last Modified Date:  24.09.2025
 # Last Modified By:    jno
 
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 import numpy as np
 from astropy.coordinates import SkyCoord
@@ -15,6 +15,8 @@ from astropy.table import Table
 from ampel.abstract.AbsAlertFilter import AbsAlertFilter
 from ampel.protocol.AmpelAlertProtocol import AmpelAlertProtocol
 from ampel.ztf.base.CatalogMatchUnit import CatalogMatchUnit
+
+from pydantic import BeforeValidator
 
 RUBIN_ALERT_FLAGS = [
     "centroid_flag",
@@ -52,6 +54,21 @@ RUBIN_ALERT_FLAGS = [
     "pixelFlags_injected_template",
     "pixelFlags_injected_templateCenter",
 ]
+
+
+def validate_flags(value: Literal["all"] | list[str] | None) -> list[str] | None:
+    if value is None:
+        return None
+    if isinstance(value, str):
+        if value == "all":
+            return RUBIN_ALERT_FLAGS
+        raise ValueError("Only valid string value allowed is 'all'!")
+    if isinstance(value, list):
+        invalid_flags = [el for el in value if el not in RUBIN_ALERT_FLAGS]
+        if invalid_flags:
+            raise ValueError(f"Invalid values for check_flags: {invalid_flags}")
+        return value
+    raise ValueError(f"Invalid value for check_flags: {value}")
 
 
 class DecentVroFilter(CatalogMatchUnit, AbsAlertFilter):
@@ -103,8 +120,8 @@ class DecentVroFilter(CatalogMatchUnit, AbsAlertFilter):
     # max_nbad: int  # number of bad pixels in a 5 x 5 pixel stamp
 
     # check datapoint flags
-    check_flags: Literal["all"] | list[str] | None = None
-    check_flags_per_source: Literal["all"] | list[str] | None = None
+    check_flags: Annotated[Literal["all"] | list[str] | None, BeforeValidator(validate_flags)] = None
+    check_flags_per_source: Annotated[Literal["all"] | list[str] | None, BeforeValidator(validate_flags)] = None
 
     # Astro
     # min_sso_dist: float  # distance to nearest solar system object [arcsec]
@@ -145,26 +162,6 @@ class DecentVroFilter(CatalogMatchUnit, AbsAlertFilter):
         # To make this tenable we should create this list dynamically depending on what entries are required
         # by the filter. Now deciding not to include drb in this list, eg.
         self.keys_to_check = ("midpointMjdTai",)
-
-        # check flags for alert
-        if self.check_flags is None:
-            self._check_flags = None
-        else:
-            self._check_flags = (
-                RUBIN_ALERT_FLAGS
-                if isinstance(self.check_flags, str) and (self.check_flags == "all")
-                else self.check_flags
-            )
-
-        # check flags for each source
-        if self.check_flags_per_source is None:
-            self._check_flags_per_source = None
-        else:
-            self._check_flags_per_source = (
-                RUBIN_ALERT_FLAGS
-                if isinstance(self.check_flags_per_source, str) and (self.check_flags_per_source == "all")
-                else self.check_flags_per_source
-            )
 
     def _alert_has_keys(self, photop) -> bool:
         """
@@ -295,8 +292,8 @@ class DecentVroFilter(CatalogMatchUnit, AbsAlertFilter):
             )
             return None
 
-        if (self._check_flags is not None) and any([latest[f] for f in self._check_flags]):
-            self.logger.debug(None, extra={"set_flags": [f for f in self._check_flags if latest[f]]})
+        if (self.check_flags is not None) and any([latest[f] for f in self.check_flags]):
+            self.logger.debug(None, extra={"set_flags": [f for f in self.check_flags if latest[f]]})
             return None
 
 
@@ -324,9 +321,9 @@ class DecentVroFilter(CatalogMatchUnit, AbsAlertFilter):
             thinned_pps = [
                 pp for pp in thinned_pps if pp.get("reliability", 0) >= self.min_reliability_per_source
             ]
-        if self._check_flags_per_source is not None:
+        if self.check_flags_per_source is not None:
             thinned_pps = [
-                pp for pp in thinned_pps if not any([pp[f] for f in self._check_flags_per_source])
+                pp for pp in thinned_pps if not any([pp[f] for f in self.check_flags_per_source])
             ]
 
         if len(thinned_pps) < self.min_ndet:
