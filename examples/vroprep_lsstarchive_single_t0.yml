@@ -29,10 +29,13 @@ task:
         loader:
           unit: LSSTArchiveAlertLoader
           config:
-            archive_url: "https://ampel-dev.ia.zeuthen.desy.de/api/lsst/archive/v1/"
+            archive_url: "https://lsst-archive.ampel.zeuthen.desy.de/api/lsst/archive/v1/"
             condition: "diaSource.diaObjectId=169562325793636358"
+            condition: "diaSourceId=170591508141966265"
+            condition: "diaSourceId=170644231270957635"
             order_by: "diaSource.visit"
-            insecure: true
+            # limit: 1
+            insecure: false
             # https://syncandshare.desy.de/public.php/dav/files/PKaDsw5xPYR6mx8
 #            folder: /Users/jnordin/data/lsst/earlyRelease/without-cutouts/2025-09-21/
 #            extension: "*avro"
@@ -42,21 +45,21 @@ task:
     directives:
     - channel: earlyrelease
 
-      filter:
-        unit: DecentVroFilter
-        on_stock_match: bypass
-        config:
-          min_ndet: 3
-          max_ndet: 99
-          min_tspan: 0.1
-          max_tspan: 100
-          min_abs_gal_lat: 7
-          gaia_excessnoise_sig_max: 999
-          gaia_plx_signif: 3
-          gaia_pm_signif: 3
-          gaia_rs: 20
-          gaia_veto_gmag_max: 20
-          gaia_veto_gmag_min: 9
+      # filter:
+      #   unit: DecentVroFilter
+      #   on_stock_match: bypass
+      #   config:
+      #     min_ndet: 3
+      #     max_ndet: 99
+      #     min_tspan: 0.1
+      #     max_tspan: 100
+      #     min_abs_gal_lat: 7
+      #     gaia_excessnoise_sig_max: 999
+      #     gaia_plx_signif: 3
+      #     gaia_pm_signif: 3
+      #     gaia_rs: 20
+      #     gaia_veto_gmag_max: 20
+      #     gaia_veto_gmag_min: 9
 
       ingest:
           mux:
@@ -77,16 +80,13 @@ task:
                     label: datalab/user
                   datalab_pwd: 
                     label: datalab/password
-                ingest:
+                ingest: &first
                   filter: LSSTObjFilter
-                  select: last
-                  sort: diaObjectId
+                  select: first
+                  sort: nDiaSources
                 unit: T2LSPhotoZTap
               - config: '%T2CatalogMatch_general'
-                ingest:
-                  filter: LSSTObjFilter
-                  select: last
-                  sort: diaObjectId
+                ingest: *first
                 unit: T2CatalogMatch
             combine:
             - unit: LSSTT1Combiner
@@ -102,16 +102,10 @@ task:
                   max_redshift_category: 7
                   t2_dependency:
                   - config: '%T2CatalogMatch_general'
-                    link_override:
-                      filter: LSSTObjFilter
-                      select: last
-                      sort: diaObjectId
+                    link_override: *first
                     unit: T2CatalogMatch
                   - config: *dl_config
-                    link_override:
-                      filter: LSSTObjFilter
-                      select: last
-                      sort: diaObjectId
+                    link_override: *first
                     unit: T2LSPhotoZTap
               - unit: T2RunParsnipRiseDecline
                 config: &parsnip_config
@@ -143,29 +137,26 @@ task:
                   - lsstz
                   t2_dependency:
                   - config: '%T2CatalogMatch_general'
-                    link_override:
-                      filter: LSSTObjFilter
-                      select: last
-                      sort: diaObjectId
+                    link_override: *first
                     unit: T2CatalogMatch
                   t_cadence: 6.0
                   tabulator:
                     - unit: LSSTT2Tabulator
                       config:
                         zp: 31.4
-              - unit: T2LSSTReport
-                config: 
-                  tabulator:
-                  - unit: LSSTT2Tabulator
-                    config:
-                      zp: 27.5
-                  t2_dependency:
-                  - config: *digest_config
-                    link_override:
-                      filter: LSSTObjFilter
-                      select: last
-                      sort: diaObjectId
-                    unit: T2DigestRedshifts
+              # - unit: T2LSSTReport
+              #   config: 
+              #     tabulator:
+              #     - unit: LSSTT2Tabulator
+              #       config:
+              #         zp: 27.5
+              #     t2_dependency:
+              #     - config: *digest_config
+              #       link_override:
+              #         filter: LSSTObjFilter
+              #         select: last
+              #         sort: diaObjectId
+              #       unit: T2DigestRedshifts
               - unit: T2ClassificationReport
                 config: 
                   summary_mode: elasticc_simple
@@ -175,10 +166,7 @@ task:
                       zp: 27.5
                   t2_dependency:
                   - config: *parsnip_config
-                    link_override:
-                      filter: LSSTObjFilter
-                      select: last
-                      sort: diaObjectId
+                    link_override: *first
                     unit: T2RunParsnipRiseDecline
               - unit: T2InfantReport
                 config: 
@@ -188,16 +176,10 @@ task:
                       zp: 27.5
                   t2_dependency:
                   - config: *digest_config
-                    link_override:
-                      filter: LSSTObjFilter
-                      select: last
-                      sort: diaObjectId
+                    link_override: *first
                     unit: T2DigestRedshifts
                   - config: *risedec_config
-                    link_override:
-                      filter: LSSTObjFilter
-                      select: last
-                      sort: diaObjectId
+                    link_override: *first
                     unit: T2TabulatorRiseDecline
 
 

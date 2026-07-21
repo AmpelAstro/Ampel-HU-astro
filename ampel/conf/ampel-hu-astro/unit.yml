@@ -3,7 +3,6 @@
 - ampel.contrib.hu.alert.load.ParquetAlertLoader
 - ampel.contrib.hu.alert.NeoWisePhotometryAlertSupplier
 - ampel.contrib.hu.ingest.ZiGWDataPointShaper
-- ampel.contrib.hu.t0.DecentVroFilter
 - ampel.contrib.hu.t0.LensedTransientFilter
 - ampel.contrib.hu.t0.PredetectionFilter
 - ampel.contrib.hu.t0.RandFilter
