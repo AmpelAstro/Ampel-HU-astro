@@ -6,8 +6,8 @@ import numpy as np
 import pytest
 
 from ampel.content.T1Document import T1Document
-from ampel.contrib.hu.t2.HopskotchAdapter import MessageSerializer
 from ampel.contrib.hu.t2.T2LSSTReport import Classification, T2LSSTReport
+from ampel.kafka.HopskotchAdapter import MessageSerializer
 
 
 @pytest.fixture
