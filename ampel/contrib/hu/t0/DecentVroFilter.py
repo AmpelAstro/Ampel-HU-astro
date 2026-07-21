@@ -91,6 +91,7 @@ class DecentVroFilter(CatalogMatchUnit, AbsAlertFilter):
     min_ndet_snr: float | None = (
         None  # minimum SNR for previous detections to be counted
     )
+    count_only_positive: bool = False  # require positive detection, count only positive detections in history
     min_tspan: float  # minimum duration of alert detection history [days]
     max_tspan: float  # maximum duration of alert detection history [days]
 
@@ -296,6 +297,9 @@ class DecentVroFilter(CatalogMatchUnit, AbsAlertFilter):
             self.logger.debug(None, extra={"set_flags": [f for f in self.check_flags if latest[f]]})
             return None
 
+        if self.count_only_positive and latest["isNegative"]:
+            self.logger.debug(None, extra={"isNegative": latest["isNegative"]})
+            return None
 
         if self.min_ndet_cadence is not None:
             # thin detections to only count those separated by at least
@@ -324,6 +328,10 @@ class DecentVroFilter(CatalogMatchUnit, AbsAlertFilter):
         if self.check_flags_per_source is not None:
             thinned_pps = [
                 pp for pp in thinned_pps if not any([pp[f] for f in self.check_flags_per_source])
+            ]
+        if self.count_only_positive:
+            thinned_pps = [
+                pp for pp in thinned_pps if not pp["isNegative"]
             ]
 
         if len(thinned_pps) < self.min_ndet:
