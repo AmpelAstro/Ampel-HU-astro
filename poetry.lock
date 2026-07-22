@@ -148,7 +148,7 @@ description = "Legacy Survey of Space and Time support for the Ampel system"
 optional = true
 python-versions = "<4,>=3.11"
 groups = ["main"]
-markers = "extra == \"elasticc\" or extra == \"lsst\""
+markers = "extra == \"elasticc\""
 files = [
     {file = "ampel_lsst-0.10.1a16-py3-none-any.whl", hash = "sha256:3d260b1074e16e31204525fca4bd1a99193edc805c68df2565df297018398027"},
     {file = "ampel_lsst-0.10.1a16.tar.gz", hash = "sha256:24de0734e2965ac73b2385f9288955067f8cf2737b45563415549b41ae8fcb37"},
@@ -162,6 +162,25 @@ ampel-photometry = ">=0.10.1,<0.11.0"
 confluent-kafka = {version = ">=2.12.2,<3.0.0", extras = ["schemaregistry"]}
 fastavro = ">=1.12.1,<2.0.0"
 requests = ">=2.32.5,<3.0.0"
+
+[[package]]
+name = "ampel-lsst"
+version = "0.10.1a19"
+description = "Legacy Survey of Space and Time support for the Ampel system"
+optional = true
+python-versions = "<4,>=3.11"
+groups = ["main"]
+markers = "extra == \"elasticc\" or extra == \"lsst\""
+files = [
+    {file = "ampel_lsst-0.10.1a19-py3-none-any.whl", hash = "sha256:43bea76b540d5a9d12b21df2e98383865e0ea253c53daec9822c60057fd2dbff"},
+    {file = "ampel_lsst-0.10.1a19.tar.gz", hash = "sha256:617c7a96ab9af6708894ae7b1b42f871126c53b4d74490d4c72d43a2da0da2a3"},
+]
+
+[package.dependencies]
+ampel-alerts = ">=0.10.3,<0.11.0"
+ampel-catalogmatch = ">=0.10.0a2,<0.11.0"
+ampel-interface = ">=0.10.4.post2,<0.11"
+ampel-photometry = ">=0.10.1,<0.11.0"
 
 [[package]]
 name = "ampel-photometry"
@@ -251,7 +270,7 @@ files = [
     {file = "anyio-4.12.1-py3-none-any.whl", hash = "sha256:d405828884fc140aa80a3c667b8beed277f1dfedec42ba031bd6ac3db606ab6c"},
     {file = "anyio-4.12.1.tar.gz", hash = "sha256:41cfcc3a4c85d3f05c932da7c26d0201ac36f72abd4435ba90d0464a3ffed703"},
 ]
-markers = {main = "extra == \"elasticc\" or extra == \"lsst\""}
+markers = {main = "extra == \"elasticc\""}
 
 [package.dependencies]
 idna = ">=2.8"
@@ -485,7 +504,7 @@ files = [
     {file = "attrs-25.4.0-py3-none-any.whl", hash = "sha256:adcf7e2a1fb3b36ac48d97835bb6d8ade15b8dcce26aba8bf1d14847b57a3373"},
     {file = "attrs-25.4.0.tar.gz", hash = "sha256:16d5969b87f0859ef33a48b35d55ac1be6e42ae49d5e853b597db70c35c57e11"},
 ]
-markers = {main = "extra == \"elasticc\" or extra == \"lsst\""}
+markers = {main = "extra == \"elasticc\""}
 
 [[package]]
 name = "authlib"
@@ -498,7 +517,7 @@ files = [
     {file = "authlib-1.6.6-py2.py3-none-any.whl", hash = "sha256:7d9e9bc535c13974313a87f53e8430eb6ea3d1cf6ae4f6efcd793f2e949143fd"},
     {file = "authlib-1.6.6.tar.gz", hash = "sha256:45770e8e056d0f283451d9996fbb59b70d45722b45d854d58f32878d0a40c38e"},
 ]
-markers = {main = "extra == \"elasticc\" or extra == \"lsst\""}
+markers = {main = "extra == \"elasticc\""}
 
 [package.dependencies]
 cryptography = "*"
@@ -656,7 +675,7 @@ files = [
     {file = "cachetools-6.2.5-py3-none-any.whl", hash = "sha256:db3ae5465e90befb7c74720dd9308d77a09b7cf13433570e07caa0845c30d5fe"},
     {file = "cachetools-6.2.5.tar.gz", hash = "sha256:6d8bfbba1ba94412fb9d9196c4da7a87e9d4928fffc5e93542965dca4740c77f"},
 ]
-markers = {main = "extra == \"elasticc\" or extra == \"lsst\""}
+markers = {main = "extra == \"elasticc\""}
 
 [[package]]
 name = "certifi"
@@ -763,7 +782,7 @@ files = [
     {file = "cffi-2.0.0-cp39-cp39-win_amd64.whl", hash = "sha256:b882b3df248017dba09d6b16defe9b5c407fe32fc7c65a9c69798e6175601be9"},
     {file = "cffi-2.0.0.tar.gz", hash = "sha256:44d1b5909021139fe36001ae048dbdde8214afa20200eda0f64c068cac5d5529"},
 ]
-markers = {main = "(platform_python_implementation != \"PyPy\" or extra == \"valkey\") and (extra == \"elasticc\" or extra == \"lsst\" or extra == \"ligo\" or extra == \"ztf\" or extra == \"valkey\")", dev = "platform_python_implementation != \"PyPy\""}
+markers = {main = "(platform_python_implementation != \"PyPy\" or extra == \"valkey\") and (extra == \"ligo\" or extra == \"ztf\" or extra == \"valkey\" or extra == \"elasticc\")", dev = "platform_python_implementation != \"PyPy\""}
 
 [package.dependencies]
 pycparser = {version = "*", markers = "implementation_name != \"PyPy\""}
@@ -1012,7 +1031,7 @@ files = [
     {file = "confluent_kafka-2.15.0-cp39-cp39-win_amd64.whl", hash = "sha256:31b8cc57794c0f048a6875280397bf4970744afe743d2d2208247a2f63ec8c7f"},
     {file = "confluent_kafka-2.15.0.tar.gz", hash = "sha256:7ad9bad1cbabf6713ec039b8204b48d322024fd11397eec88d912e048c732ba7"},
 ]
-markers = {main = "extra == \"elasticc\" or extra == \"lsst\""}
+markers = {main = "extra == \"elasticc\""}
 
 [package.dependencies]
 attrs = {version = ">=21.2.0", optional = true, markers = "extra == \"schemaregistry\""}
@@ -1192,7 +1211,7 @@ files = [
     {file = "cryptography-46.0.3-pp311-pypy311_pp73-win_amd64.whl", hash = "sha256:6b5063083824e5509fdba180721d55909ffacccc8adbec85268b48439423d78c"},
     {file = "cryptography-46.0.3.tar.gz", hash = "sha256:a8b17438104fed022ce745b362294d9ce35b4c2e45c1d958ad4a4b019285f4a1"},
 ]
-markers = {main = "extra == \"elasticc\" or extra == \"lsst\" or extra == \"ligo\" or extra == \"ztf\""}
+markers = {main = "extra == \"ligo\" or extra == \"ztf\" or extra == \"elasticc\""}
 
 [package.dependencies]
 cffi = {version = ">=2.0.0", markers = "python_full_version >= \"3.9.0\" and platform_python_implementation != \"PyPy\""}
@@ -1565,7 +1584,7 @@ files = [
     {file = "fastavro-1.12.2-cp39-cp39-win_amd64.whl", hash = "sha256:e235dfdabb51993bcd4a8f45c3a54f21a782f7f92b3def0648b0ace45a1b1ac7"},
     {file = "fastavro-1.12.2.tar.gz", hash = "sha256:3c79502d56cf6b76210032e1c53494ddfbc73c140bccf2ef4092b3f0825323ab"},
 ]
-markers = {main = "extra == \"elasticc\" or extra == \"lsst\" or extra == \"ligo\" or extra == \"ztf\""}
+markers = {main = "extra == \"ligo\" or extra == \"ztf\" or extra == \"elasticc\""}
 
 [package.extras]
 codecs = ["backports.zstd ; python_version < \"3.14\"", "cramjam", "lz4"]
@@ -1775,7 +1794,7 @@ files = [
     {file = "h11-0.16.0-py3-none-any.whl", hash = "sha256:63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86"},
     {file = "h11-0.16.0.tar.gz", hash = "sha256:4e35b956cf45792e4caa5885e69fba00bdbc6ffafbfa020300e549b208ee5ff1"},
 ]
-markers = {main = "extra == \"elasticc\" or extra == \"lsst\""}
+markers = {main = "extra == \"elasticc\""}
 
 [[package]]
 name = "h5py"
@@ -1924,7 +1943,7 @@ files = [
     {file = "httpcore-1.0.9-py3-none-any.whl", hash = "sha256:2d400746a40668fc9dec9810239072b40b4484b640a8c38fd654a024c7a1bf55"},
     {file = "httpcore-1.0.9.tar.gz", hash = "sha256:6e34463af53fd2ab5d807f399a9b45ea31c3dfa2276f15a2c3f00afff6e176e8"},
 ]
-markers = {main = "extra == \"elasticc\" or extra == \"lsst\""}
+markers = {main = "extra == \"elasticc\""}
 
 [package.dependencies]
 certifi = "*"
@@ -1947,7 +1966,7 @@ files = [
     {file = "httpx-0.28.1-py3-none-any.whl", hash = "sha256:d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad"},
     {file = "httpx-0.28.1.tar.gz", hash = "sha256:75e98c5f16b0f35b567856f597f06ff2270a374470a5c2392242528e3e3e42fc"},
 ]
-markers = {main = "extra == \"elasticc\" or extra == \"lsst\""}
+markers = {main = "extra == \"elasticc\""}
 
 [package.dependencies]
 anyio = "*"
@@ -5318,7 +5337,7 @@ files = [
     {file = "pycparser-3.0-py3-none-any.whl", hash = "sha256:b727414169a36b7d524c1c3e31839a521725078d7b2ff038656844266160a992"},
     {file = "pycparser-3.0.tar.gz", hash = "sha256:600f49d217304a5902ac3c37e1281c9fe94e4d0489de643a9504c5cdfdfc6b29"},
 ]
-markers = {main = "(platform_python_implementation != \"PyPy\" or extra == \"valkey\") and implementation_name != \"PyPy\" and (extra == \"elasticc\" or extra == \"lsst\" or extra == \"ligo\" or extra == \"ztf\" or extra == \"valkey\")", dev = "platform_python_implementation != \"PyPy\" and implementation_name != \"PyPy\"", notebook = "implementation_name != \"PyPy\""}
+markers = {main = "(platform_python_implementation != \"PyPy\" or extra == \"valkey\") and implementation_name != \"PyPy\" and (extra == \"ligo\" or extra == \"ztf\" or extra == \"valkey\" or extra == \"elasticc\")", dev = "platform_python_implementation != \"PyPy\" and implementation_name != \"PyPy\"", notebook = "implementation_name != \"PyPy\""}
 
 [[package]]
 name = "pydantic"
@@ -8094,4 +8113,4 @@ ztf = ["ampel-ztf", "ztfquery"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12, <4"
-content-hash = "6013b848720b109126692b8b36a53c8631a4deee9a10740e1b3584a561d028df"
+content-hash = "7d8fa1cec7658df58b053733a1973335c7b2772bba5f27d56f2b556d0ad93cca"

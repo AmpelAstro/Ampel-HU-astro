@@ -72,7 +72,7 @@ ztf = [
     "ampel-ztf (>=0.10.3a7,<0.11.0)",
     "ztfquery (>=1.28.0,<2.0.0)",
 ]
-lsst = ["ampel-lsst (>=0.10.1a16,<0.11)"]
+lsst = ["ampel-lsst (>=0.10.1a19,<0.11)"]
 lasair = ["lasair (>=0.1.2,<0.2.0)"]
 valkey = ["valkey-glide-sync (>=2.4.2,<3.0.0)"]
 [dependency-groups]
