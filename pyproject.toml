@@ -1,6 +1,6 @@
 [project]
 name = "ampel-hu-astro"
-version = "0.10.0a28"
+version = "0.10.0a29"
 description = "Astronomy units for the Ampel system from HU-Berlin"
 requires-python = ">=3.12, <4"
 authors = [
@@ -72,11 +72,7 @@ ztf = [
     "ampel-ztf (>=0.10.3a7,<0.11.0)",
     "ztfquery (>=1.28.0,<2.0.0)",
 ]
-lsst = ["ampel-lsst (>=0.10.1a16,<0.11)"]
-hop = [
-    "hop-client (>=0.12.1,<0.13.0)",
-    "py-avro-schema (>=3.8.2,<4.0.0)",
-]
+lsst = ["ampel-lsst (>=0.10.1a19,<0.11)"]
 lasair = ["lasair (>=0.1.2,<0.2.0)"]
 valkey = ["valkey-glide-sync (>=2.4.2,<3.0.0)"]
 [dependency-groups]
@@ -93,6 +89,7 @@ dev = [
     "types-seaborn (>=0.13.2.20251214,<0.14.0.0)",
     "syrupy (>=5.0.0,<6.0.0)",
     "pyarrow-stubs (>=20.0.0.20251215,<21.0.0.0)",
+    "ampel-kafka[hop] (>=0.10.0a0,<0.11.0)",
 ]
 
 [tool.poetry]

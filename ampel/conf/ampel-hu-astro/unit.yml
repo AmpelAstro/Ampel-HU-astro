@@ -3,7 +3,6 @@
 - ampel.contrib.hu.alert.load.ParquetAlertLoader
 - ampel.contrib.hu.alert.NeoWisePhotometryAlertSupplier
 - ampel.contrib.hu.ingest.ZiGWDataPointShaper
-- ampel.contrib.hu.t0.DecentVroFilter
 - ampel.contrib.hu.t0.LensedTransientFilter
 - ampel.contrib.hu.t0.PredetectionFilter
 - ampel.contrib.hu.t0.RandFilter
@@ -15,8 +14,6 @@
 - ampel.contrib.hu.t0.TimeDistributionFilter
 - ampel.contrib.hu.t0.TransientInClusterFilter
 - ampel.contrib.hu.t0.XShooterFilter
-- ampel.contrib.hu.t2.HopskotchAdapter
-- ampel.contrib.hu.t2.KafkaAdapter
 - ampel.contrib.hu.t2.T2BaseLightcurveFitter
 - ampel.contrib.hu.t2.T2BayesianBlocks
 - ampel.contrib.hu.t2.T2BrightSNProb
@@ -76,7 +73,6 @@
 - ampel.contrib.hu.t3.TransientInfoPrinter
 - ampel.contrib.hu.t3.TransientTablePublisher
 - ampel.contrib.hu.t3.TransientViewDumper
-- ampel.contrib.hu.t4.ElasticcTomBridge
 - ampel.contrib.hu.t4.HealpixTokenGenerator
 - ampel.contrib.hu.t4.RandomMapGenerator
 - ampel.contrib.hu.t4.StreamTokenGenerator

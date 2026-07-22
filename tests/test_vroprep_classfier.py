@@ -97,14 +97,18 @@ def test_vroprep_classifier(
     )
 
     tasks = cmd.load_tasks(mock_context, job, ampel_logger)
-    cmd.run_tasks(mock_context, job, tasks[:1], "jobtest", ampel_logger)
+    cmd.run_tasks(
+        mock_context, job, tasks[:1], "jobtest", ampel_logger, "console_verbose"
+    )
 
     doc = t2.find_one({"unit": "T2RunParsnipRiseDecline"})
     assert doc["code"] == -1
 
     assert t1.find_one({"link": doc["link"], "stock": doc["stock"]}) is not None
 
-    cmd.run_tasks(mock_context, job, tasks[1:], "jobtest", ampel_logger)
+    cmd.run_tasks(
+        mock_context, job, tasks[1:], "jobtest", ampel_logger, "console_verbose"
+    )
 
     doc = t2.find_one({"unit": "T2RunParsnipRiseDecline"})
     assert doc["code"] == 0
