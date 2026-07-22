@@ -161,7 +161,16 @@ USE_COLUMNS = [
     "RA",
     "DEC",
     # morphology
+    "SHAPE_R",
+    "SHAPE_E1",
+    "SHAPE_E2",
+    "SERSIC",
     "TYPE",
+    # Tractor fluxes
+    "FLUX_G",
+    "FLUX_R",
+    "FLUX_I",
+    "FLUX_Z",
     # WISE fluxes
     "FLUX_W1",
     "FLUX_W2",
@@ -171,7 +180,7 @@ USE_COLUMNS = [
     # "Z_SPEC",
     # "SURVEY",
     # "Z_PHOT_MEDIAN",
-    "Z_PHOT_MEAN",
+    "Z_PHOT_MEAN_I",
     # "Z_PHOT_L68",
     # "Z_PHOT_U68",
     "Z_PHOT_STD",
