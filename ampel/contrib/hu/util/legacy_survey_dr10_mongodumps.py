@@ -188,7 +188,13 @@ USE_COLUMNS = [
 
 
 def mongodumps_by_index(
-    data_dir: Path, i: int | list[int], dr: int, sv: int, mogno_uri: str, db_name: str
+    data_dir: Path,
+    i: int | list[int],
+    dr: int,
+    sv: int,
+    mogno_uri: str,
+    db_name: str,
+    clear_raw_data: bool = False,
 ):
     client = MongoClient(mogno_uri)
     db = client[db_name]
@@ -216,9 +222,8 @@ def mongodumps_by_index(
                 remove_cols = [c for c in t.colnames if c not in USE_COLUMNS]
                 t.remove_columns(remove_cols)
 
-                if not temp_csv.exists():  # TODO: remove! only testing
-                    # write to temporary csv for mongoimport
-                    t.write(temp_csv, format="ascii.csv")
+                # write to temporary csv for mongoimport
+                t.write(temp_csv, format="ascii.csv")
 
                 collection_name = local_path.stem
                 if collection_name not in db.list_collection_names():  # TODO: remove!
@@ -266,6 +271,11 @@ def mongodumps_by_index(
                 logger.debug(f"dropping collection {c}")
                 db.drop_collection(c)
 
+            if clear_raw_data:
+                for local_path in local_paths:
+                    logger.debug(f"removing {local_path}")
+                    local_path.unlink()
+
 
 if __name__ == "__main__":
     parser = ArgumentParser(
@@ -276,15 +286,21 @@ if __name__ == "__main__":
         type=Path,
         help="Directory to download files to",
     )
+    parser.add_argument("dr", type=int, help="data release number")
+    parser.add_argument("sv", type=int, help="subversion of data release")
     parser.add_argument(
-        "indices",
+        "--indices",
         metavar="N",
         type=int,
         nargs="+",
         help="Indices of the lightcurve files to download.",
+        default=None,
     )
-    parser.add_argument("dr", type=int, help="data release number")
-    parser.add_argument("sv", type=int, help="subversion of data release")
+    parser.add_argument(
+        "--index-range",
+        action="store_true",
+        help="Interpret index as start and stop of range",
+    )
     parser.add_argument(
         "--skip-download", action="store_true", help="skip downloading files"
     )
@@ -296,19 +312,42 @@ if __name__ == "__main__":
     parser.add_argument(
         "--db-name", type=str, help="mongo db name, required for mongo actions"
     )
+    parser.add_argument(
+        "--clear-raw-data",
+        action="store_true",
+        help="clear raw data after export completed",
+    )
     parser.add_argument("--log-level", default="INFO", help="Set the logging level")
     args = parser.parse_args()
     logging.basicConfig(level=args.log_level.upper())
     logging.getLogger("pymongo").setLevel("INFO")
 
+    if args.clear_raw_data:
+        input(
+            "WARNING!\nYou are about to clear all raw, downloaded data after the export completed per chunk.\n"
+            "Continue? (Press enter)"
+        )
+
+    if args.indices is not None:
+        if args.index_range:
+            assert len(args.indices) == 2, (
+                "If index-range is set, indices must have length 2!"
+            )
+            indices = list(range(args.indices[0], args.indices[1] + 1))
+        else:
+            indices = args.indices
+    else:
+        filenames = get_filenames(args.dir, args.dr, args.sv)
+        indices = list(range(len(filenames)))
+
     start = time.time()
-    downloaded_files = download_file_by_index(args.dir, args.indices, args.dr, args.sv)
+    downloaded_files = download_file_by_index(args.dir, indices, args.dr, args.sv)
     for file in np.atleast_1d(downloaded_files):
         logger.info(f"Downloaded: {file}")
 
     if args.mongo_uri:
         mongodumps_by_index(
-            args.dir, args.indices, args.dr, args.sv, args.mongo_uri, args.db_name
+            args.dir, indices, args.dr, args.sv, args.mongo_uri, args.db_name
         )
 
     end = time.time()
