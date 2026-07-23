@@ -4,8 +4,10 @@ import subprocess
 import time
 import warnings
 from argparse import ArgumentParser
-from collections.abc import Generator
+from collections.abc import Generator, Sequence
+from itertools import batched
 from pathlib import Path
+from shutil import which
 
 import numpy as np
 import requests
@@ -22,9 +24,13 @@ def get_data_dir(data_dir: Path, dr: int):
     return data_dir / f"legacy_survey_dr{dr}"
 
 
+def marker(fn: Path) -> Path:
+    return fn.parent / (fn.name + ".done")
+
+
 def get_filenames(data_dir: Path, dr: int, sv: int) -> list[tuple[str, str]]:
     data_dir = get_data_dir(data_dir, dr)
-    cache_file = data_dir / "lc_filenames.txt"
+    cache_file = data_dir / f"{dr}.{sv}_lc_filenames.txt"
     version = f"{dr}.{sv}"
     if not cache_file.exists():
         url = BASE_URL.format(DR=dr) + version + "/"
@@ -86,27 +92,62 @@ def iter_filenames(
         yield i_filenames, sub_paths
 
 
+def temp_path(fn: Path) -> Path:
+    return fn.parent / (fn.name + ".tmp")
+
+
 def download_file_by_index(
-    data_dir: Path, i: int | list[int], dr: int, sv: int
+    data_dir: Path, i: int | Sequence[int], dr: int, sv: int
 ) -> tuple[Path, ...] | list[tuple[Path, Path]]:
     paths: list[tuple[Path, ...]] = []
+
+    # assemble download file for aria2
+    if isinstance(i, int):
+        i = [i]
+    download_file_ctn = ""
     for i_filenames, sub_paths in iter_filenames(data_dir, i, dr, sv):
         for sub_filename, local_path in zip(i_filenames, sub_paths, strict=True):
-            if not local_path.exists():
+            if not local_path.exists() and not marker(local_path).exists():
                 url = BASE_URL.format(DR=dr) + sub_filename
-                logger.info(f"Downloading {url} to {local_path}...")
-                response = requests.get(url, stream=True)
-                response.raise_for_status()
-                with open(local_path, "wb") as f:
-                    for chunk in tqdm(
-                        response.iter_content(chunk_size=int(2**20)),
-                        desc=f"Downloading {sub_filename}",
-                        unit="MB",
-                        unit_scale=True,
-                    ):
-                        f.write(chunk)
+                local_temp_path = temp_path(local_path)
+                download_file_ctn += (
+                    f"{url}\n"
+                    f"  dir={local_temp_path.parent}\n"
+                    f"  out={local_temp_path.name}\n"
+                )
 
         paths.append(tuple(sub_paths))
+
+    if len(download_file_ctn):
+        download_fn = (
+            get_data_dir(data_dir, dr)
+            / f"{dr}.{sv}_download_files"
+            / ("_".join([str(ii) for ii in i]) + ".download")
+        )
+        logger.debug(f"writing download instructions to {download_fn}")
+        download_fn.parent.mkdir(parents=True, exist_ok=True)
+        download_fn.write_text(download_file_ctn)
+
+        logger.debug("executing aria2")
+        aria2 = which("aria2c")
+        if not aria2:
+            raise RuntimeError("aria2 not installed!")
+        download_cmd = [str(aria2), "-i", str(download_fn), "-c", "-j", "10"]
+        subprocess.run(download_cmd, check=True)
+
+        logger.debug("done, moving temporary files to permanent")
+        for i_filenames, sub_paths in iter_filenames(data_dir, i, dr, sv):
+            for _, local_path in zip(i_filenames, sub_paths, strict=True):
+                local_temp_path = temp_path(local_path)
+                if not local_path.exists() and not marker(local_path).exists():
+                    if not local_temp_path.exists():
+                        raise FileNotFoundError(
+                            f"{local_temp_path} not found! Something must have gone wrong with the download"
+                        )
+                    logger.debug(f"moving {local_temp_path} to {local_path}")
+                    local_temp_path.rename(local_path)
+    else:
+        logger.debug("all files already downloaded or done")
 
     return paths[0] if len(paths) == 1 else paths
 
@@ -189,7 +230,7 @@ USE_COLUMNS = [
 
 def mongodumps_by_index(
     data_dir: Path,
-    i: int | list[int],
+    i: int | Sequence[int],
     dr: int,
     sv: int,
     mogno_uri: str,
@@ -274,6 +315,7 @@ def mongodumps_by_index(
             if clear_raw_data:
                 for local_path in local_paths:
                     logger.debug(f"removing {local_path}")
+                    marker(local_path).write_text("done")
                     local_path.unlink()
 
 
@@ -317,6 +359,12 @@ if __name__ == "__main__":
         action="store_true",
         help="clear raw data after export completed",
     )
+    parser.add_argument(
+        "--chunk-size",
+        type=int,
+        help="how many sweep files to process per chunk",
+        default=1,
+    )
     parser.add_argument("--log-level", default="INFO", help="Set the logging level")
     args = parser.parse_args()
     logging.basicConfig(level=args.log_level.upper())
@@ -341,14 +389,25 @@ if __name__ == "__main__":
         indices = list(range(len(filenames)))
 
     start = time.time()
-    downloaded_files = download_file_by_index(args.dir, indices, args.dr, args.sv)
-    for file in np.atleast_1d(downloaded_files):
-        logger.info(f"Downloaded: {file}")
-
-    if args.mongo_uri:
-        mongodumps_by_index(
-            args.dir, indices, args.dr, args.sv, args.mongo_uri, args.db_name
+    n_chunks = len(indices) // args.chunk_size
+    for batched_indices in tqdm(
+        batched(indices, args.chunk_size), desc="processing chunks", total=n_chunks
+    ):
+        downloaded_files = download_file_by_index(
+            args.dir, batched_indices, args.dr, args.sv
         )
+        for file in np.atleast_1d(downloaded_files):
+            logger.info(f"Downloaded: {file}")
+
+        if args.mongo_uri:
+            mongodumps_by_index(
+                args.dir,
+                batched_indices,
+                args.dr,
+                args.sv,
+                args.mongo_uri,
+                args.db_name,
+            )
 
     end = time.time()
-    logger.info(f"Took {end - start} seconds")
+    logger.info(f"Took {end - start} seconds in total")
