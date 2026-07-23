@@ -76,7 +76,6 @@ requires an access token if data is to be retrieved.
 - [T2Observability](ampel/contrib/hu/t2/T2Observability.py): cross match the position of a transient to those of sources in a set of catalogs and attach the required information to the transient..
 - [T2RiseDeclineStat](ampel/contrib/hu/t2/T2RiseDeclineStat.py)
 - [T2RunParsnip](ampel/contrib/hu/t2/T2RunParsnip.py): Gathers information and runs the parsnip model and classifier.
-- [T2RunParsnipRiseDecline](ampel/contrib/hu/t2/T2RunParsnipRiseDecline.py)
 - [T2RunPossis](ampel/contrib/hu/t2/T2RunPossis.py): Load a POSSIS kilnova model and fit to a LightCurve object as process is called.
 - [T2RunSncosmo](ampel/contrib/hu/t2/T2RunSncosmo.py): Gathers information and runs Sncosmo.
 - [T2RunSnoopy](ampel/contrib/hu/t2/T2RunSnoopy.py): Gathers information and runs snoopy.
