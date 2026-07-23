@@ -127,12 +127,22 @@ def download_file_by_index(
         logger.debug(f"writing download instructions to {download_fn}")
         download_fn.parent.mkdir(parents=True, exist_ok=True)
         download_fn.write_text(download_file_ctn)
+        log_file = download_fn.parent / (download_fn.name + ".log")
 
         logger.debug("executing aria2")
         aria2 = which("aria2c")
         if not aria2:
             raise RuntimeError("aria2 not installed!")
-        download_cmd = [str(aria2), "-i", str(download_fn), "-c", "-j", "10"]
+        download_cmd = [
+            str(aria2),
+            "-i",
+            str(download_fn),
+            "-c",
+            "-j",
+            "10",
+            "-l",
+            str(log_file),
+        ]
         subprocess.run(download_cmd, check=True)
 
         logger.debug("done, moving temporary files to permanent")
