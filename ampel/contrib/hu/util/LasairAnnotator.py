@@ -31,9 +31,10 @@ class LasairAnnotator:
 
     @cached_property
     def lasair_client(self) -> lasair.lasair_client:
+        v = "-ztf" if self.lasair_version == "ztf" else ""
         return lasair.lasair_client(
             self.lasair_api_token.get(),
-            endpoint=f"https://lasair-{self.lasair_version}.lsst.ac.uk/api",
+            endpoint=f"https://lasair{v}.lsst.ac.uk/api",
         )
 
     def annotate(
