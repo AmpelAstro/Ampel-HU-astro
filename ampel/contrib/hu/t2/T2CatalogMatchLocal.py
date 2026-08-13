@@ -20,12 +20,12 @@ from pymongo import MongoClient
 from pymongo.errors import AutoReconnect
 
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
+from ampel.catalogmatch.t2.T2CatalogMatch import CatalogModel
 from ampel.content.DataPoint import DataPoint
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.model.DPSelection import DPSelection
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import UBson
-from ampel.ztf.t2.T2CatalogMatch import CatalogModel
 
 
 class ExtcatsUnit:
