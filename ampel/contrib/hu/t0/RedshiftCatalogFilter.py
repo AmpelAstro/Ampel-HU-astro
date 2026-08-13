@@ -10,8 +10,8 @@
 from functools import partial
 from typing import Literal
 
+from ampel.catalogmatch.base.CatalogMatchUnit import ConeSearchRequest
 from ampel.protocol.AmpelAlertProtocol import AmpelAlertProtocol
-from ampel.ztf.base.CatalogMatchUnit import ConeSearchRequest
 from ampel.ztf.t0.DecentFilter import DecentFilter
 
 
