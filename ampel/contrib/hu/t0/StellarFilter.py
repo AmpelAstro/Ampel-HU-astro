@@ -14,7 +14,7 @@ from astropy.coordinates import SkyCoord
 from astropy.table import Table
 
 from ampel.abstract.AbsAlertFilter import AbsAlertFilter
-from ampel.catalogmatch.CatalogMatchUnit import CatalogMatchUnit
+from ampel.catalogmatch.base.CatalogMatchUnit import CatalogMatchUnit
 from ampel.protocol.AmpelAlertProtocol import AmpelAlertProtocol
 
 

@@ -7,7 +7,7 @@
 # Last Modified Date:  19.03.2021
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
-from ampel.catalogmatch.CatalogMatchFilter import CatalogMatchFilter
+from ampel.catalogmatch.base.CatalogMatchFilter import CatalogMatchFilter
 
 
 class LensedTransientFilter(CatalogMatchFilter):
