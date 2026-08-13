@@ -51,7 +51,6 @@ requires an access token if data is to be retrieved.
 ### T2 units (augment):
 - [T2BayesianBlocks](ampel/contrib/hu/t2/T2BayesianBlocks.py): T2 unit for running a bayesian block search algorithm to highlight excess regions.
 - [T2BrightSNProb](ampel/contrib/hu/t2/T2BrightSNProb.py): Derive a number of simple metrics describing the rise, peak and decline of a lc.
-- [T2CatalogMatchLocal](ampel/contrib/hu/t2/T2CatalogMatchLocal.py): Cross matches the position of a transient to those of sources in a set of catalogs.
 - [T2ClassificationReport](ampel/contrib/hu/t2/T2ClassificationReport.py): Require and propagate classification information from ParsnipRiseDecline..
 - [T2DemoLightcurveFitter](ampel/contrib/hu/t2/T2DemoLightcurveFitter.py): Demonstration class showing how methods of T2BaseLightcurveFitter can be used develop a specific classifier.
 - [T2DigestRedshifts](ampel/contrib/hu/t2/T2DigestRedshifts.py): Compare potential matches from different T2 units providing redshifts.
