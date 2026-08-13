@@ -40,6 +40,16 @@ t2_compute:
     filter: LSSTObjFilter
     select: last
     sort: diaObjectId
+- unit: T2LSPhotoZTap
+  config: &dl_config
+    datalab_user:
+      label: datalab/user
+    datalab_pwd:
+      label: datalab/password
+  ingest:
+    filter: LSSTObjFilter
+    select: last
+    sort: diaObjectId
 - &T2RunParsnipRiseDecline
   unit: T2RunParsnipRiseDecline
   config:
