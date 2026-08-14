@@ -11,7 +11,7 @@ from collections.abc import Sequence
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
 from ampel.contrib.hu.t2.T2ClassificationReport import T2ClassificationReport
-from ampel.contrib.hu.util.LasairAnnotator import LasairAnnotator
+from ampel.lasair.LasairAnnotator import LasairAnnotator
 from ampel.struct.UnitResult import UnitResult
 from ampel.view.T2DocView import T2DocView
 
