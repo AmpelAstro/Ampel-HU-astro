@@ -1,6 +1,6 @@
 [project]
 name = "ampel-hu-astro"
-version = "0.10.0a31"
+version = "0.10.0a32"
 description = "Astronomy units for the Ampel system from HU-Berlin"
 requires-python = ">=3.12, <4"
 authors = [
@@ -72,7 +72,7 @@ ztf = [
     "ztfquery (>=1.28.0,<2.0.0)",
 ]
 lsst = ["ampel-lsst (>=0.10.1a24,<0.11)"]
-lasair = ["lasair (>=0.1.2,<0.2.0)"]
+lasair = ["ampel-lasair (>=0.10.0a0,<0.11.0)"]
 [dependency-groups]
 dev = [
     "pytest-ampel-core (>=0.10.0a7,<0.11)",
