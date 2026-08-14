@@ -72,7 +72,6 @@ ztf = [
     "ztfquery (>=1.28.0,<2.0.0)",
 ]
 lsst = ["ampel-lsst (>=0.10.1a24,<0.11)"]
-lasair = ["lasair (>=0.1.2,<0.2.0)"]
 [dependency-groups]
 dev = [
     "pytest-ampel-core (>=0.10.0a7,<0.11)",
