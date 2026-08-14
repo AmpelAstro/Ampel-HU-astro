@@ -176,21 +176,6 @@ task:
                     select: first
                     sort: jd
                   unit: T2RunParsnipRiseDecline
-            - unit: T2LasairReport
-              config: 
-                lasair_topic: AMPEL
-                lasair_version: ztf
-                lasair_api_token: 
-                  label: lasair/jno/ztf
-                tabulator:
-                - unit: ZTFT2Tabulator
-                t2_dependency:
-                - config: *parsnip_config
-                  link_override:
-                    filter: PPSFilter
-                    select: first
-                    sort: jd
-                  unit: T2RunParsnipRiseDecline
             unit: ZiT1Combiner
 
 
