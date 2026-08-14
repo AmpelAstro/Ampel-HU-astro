@@ -142,6 +142,23 @@ requests = ">=2.34.2,<3.0.0"
 hop = ["hop-client (>=0.12.1,<0.13.0)", "py-avro-schema (>=3.8.2,<4.0.0)"]
 
 [[package]]
+name = "ampel-lasair"
+version = "0.10.0a1"
+description = "Lasair broker support for the Ampel system."
+optional = true
+python-versions = "<4,>=3.11"
+groups = ["main"]
+markers = "extra == \"lasair\""
+files = [
+    {file = "ampel_lasair-0.10.0a1-py3-none-any.whl", hash = "sha256:06158729025763b8b6bcbfc7e1340a59401a5eb72212f8c5ac845b4ab148ed6f"},
+    {file = "ampel_lasair-0.10.0a1.tar.gz", hash = "sha256:d2ae263fcb3754159f255cfa2eebea40def71a7d5e46dc98817975f21e77fe95"},
+]
+
+[package.dependencies]
+ampel-interface = ">=0.10.4.post2,<0.11"
+lasair = "*"
+
+[[package]]
 name = "ampel-lsst"
 version = "0.10.1a24"
 description = "Legacy Survey of Space and Time support for the Ampel system"
@@ -8009,7 +8026,7 @@ tests = ["coverage", "pytest"]
 [extras]
 elasticc = ["ampel-lsst", "astro-parsnip", "extinction", "light-curve", "timeout-decorator", "xgboost"]
 extcats = ["extcats"]
-lasair = ["lasair"]
+lasair = ["ampel-lasair"]
 ligo = ["ampel-ztf", "healpy", "iminuit", "ligo-gracedb", "sfdmap2", "sncosmo"]
 lsst = ["ampel-lsst"]
 slack = ["slack-sdk"]
@@ -8020,4 +8037,4 @@ ztf = ["ampel-ztf", "ztfquery"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12, <4"
-content-hash = "a62e1945648816b3b8d2b69f392c0b1838731666d4e9241c887b212f69286a12"
+content-hash = "1dd9a2631516ffe61a7eec8c9607c8b24a9cbc96a85a65d02dda2440b4e19c53"
