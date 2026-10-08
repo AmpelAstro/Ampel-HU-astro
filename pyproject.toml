@@ -37,7 +37,7 @@ dependencies = [
     "pandas (>=2.3.3,<3.0.0)",
     "seaborn (>=0.13.2)",
     "adjusttext (>=1.3.0,<2.0.0)",
-    "more-itertools (>=10.8.0,<11.0.0)",
+    "more-itertools (>=11.1.0,<11.2.0)",
     "uncertainties (>=3.2.3,<4.0.0)",
     "scikit-learn (>=1.8.0,<2.0.0)",
 ]
