@@ -124,6 +124,28 @@ def create_parsnip_plot(
         plt.close(fig)
 
 
+def parsnip_model_zmax(model: parsnip.ParsnipModel) -> float:
+    """Highest redshift a parsnip model can evaluate without crashing.
+
+    Parsnip interpolates precomputed per-band weights on a fixed grid. At
+    redshift z the interpolation index is shifted by
+    ``log10(1 + z) / band_interpolate_spacing`` in wavelength-log space, and
+    the shift is read both at ``int_locs`` and ``int_locs + 1``. Beyond the
+    grid end this raises an IndexError (
+    e.g. ``index 25522 is out of bounds for dimension 0 with size 25485``).
+
+    This returns the largest redshift whose shifted index still leaves one
+    element of headroom for the ``+ 1`` neighbour.
+    """
+    n = model.band_interpolate_weights.shape[-1]
+    loc_max = float(model.band_interpolate_locations.max())
+    spacing = float(model.band_interpolate_spacing)
+    budget = (n - 2) - loc_max
+    if budget <= 0 or spacing <= 0:
+        return 0.0
+    return 10 ** (budget * spacing) - 1
+
+
 def run_parsnip_zsample(
     sncosmo_table: Table,
     zs: list[float],
@@ -361,13 +383,30 @@ class T2BaseClassifier:
         Also limit to max model redshift.
         """
 
-        zw = [1.0 / len(zsample) for z in zsample] if zweights is None else zweights
+        model = self._class_parsnip[model_label]["model"]
+
+        # Restrict to redshifts the model's band-weight grid can evaluate.
+        # Above this limit parsnip's interpolation index runs off the end of
+        # the grid and raises an IndexError (see parsnip_model_zmax).
+        zmax = parsnip_model_zmax(model)
+        if zweights is None:
+            pairs = [(z, 1.0 / len(zsample)) for z in zsample if z <= zmax]
+        else:
+            pairs = [
+                (z, w) for z, w in zip(zsample, zweights, strict=True) if z <= zmax
+            ]
+
+        if not pairs:
+            # All sampled redshifts exceed the model range: nothing to fit.
+            return ParsnipFailure(model=model_label, failed="RedshiftOutOfRange")
+
+        zs, zw = map(list, zip(*pairs, strict=True))
 
         return run_parsnip_zsample(
             lctable,
-            zsample,
+            zs,
             zw,
-            model=self._class_parsnip[model_label]["model"],
+            model=model,
             classifier=self._class_parsnip[model_label]["classifier"],
             label=model_label,
             plot=self.parsnipplot_properties,
