@@ -48,7 +48,7 @@ elasticc = [
     "astro-parsnip (>=1.4.3,<2.0.0)",
     "timeout-decorator (>=0.5.0,<0.6.0)",
     "ampel-lsst",
-    "light-curve (>=0.13.1,<0.14.0)",
+    "light-curve (>=0.14.0,<0.15.0)",
     "extinction (>=0.4.8,<0.5.0)",
 ]
 extcats = ["extcats (>=2.5.0,<3.0.0)"]
