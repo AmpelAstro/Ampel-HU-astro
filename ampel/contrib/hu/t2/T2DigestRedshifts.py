@@ -66,7 +66,11 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
     redshift_kind: (
         None
         | Literal[
-            "T2MatchBTS", "T2DigestRedshifts", "T2ElasticcRedshiftSampler", "AmpelZ"
+            "T2MatchBTS",
+            "T2DigestRedshifts",
+            "T2ElasticcRedshiftSampler",
+            "AmpelZ",
+            "VroRedshiftSampler",
         ]
     ) = None
 
@@ -491,6 +495,61 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
 
         t2_res: UBson | dict[str, Any] = {}
         if self.redshift_kind in [
+            "VroRedshiftSampler",
+        ]:
+            # "Educated" guess at what redshifts to use for classifications
+            # considering poor VRO/LSST catalog coverage.
+            # Spectroscopic redshifts are fitted as single values, as usual.
+            # Photometric values will be explored using a sample, similar to the ElasticcRedshiftSampler.
+            t2_res = self.get_ampelZ(t2_views)
+            if (
+                isinstance(t2_res, dict)
+                and "ampel_z" in t2_res
+                and t2_res["ampel_z"] is not None
+                and t2_res["group_z_nbr"] <= 3
+            ):
+                self.logger.debug(
+                    f"Using single VRO redshift {t2_res['ampel_z']} from group {t2_res['group_z_nbr']}"
+                )
+                z = [float(t2_res["ampel_z"])]
+                z_source = "AMPELz_group" + str(t2_res["group_z_nbr"])
+            elif (
+                isinstance(t2_res, dict)
+                and "ampel_z" in t2_res
+                and t2_res["ampel_z"] is not None
+                and t2_res["group_z_nbr"] <= self.max_redshift_category
+            ):
+                self.logger.debug(
+                    f"Creating VRO redshift samples from {t2_res['ampel_z']} from group {t2_res['group_z_nbr']}"
+                )
+                self.logger.debug(f"Nominal precision {t2_res['group_z_precision']}")
+                z_source = "AMPELz_group" + str(t2_res["group_z_nbr"])
+                z = [float(t2_res["ampel_z"])]
+                if z[0] <= 0.4:
+                    # Moderate redshift, use 3 samples based on group precision
+                    z_weights = [0.25, 0.5, 0.25]
+                    z = [
+                        z[0] - t2_res["group_z_precision"],
+                        z[0],
+                        z[0] + t2_res["group_z_precision"],
+                    ]
+                elif 0.4 < z[0] < 1.0:
+                    # High redshift, use 4 samples.
+                    # Three based on precision, one additional fixed at 0.3
+                    z_weights = [0.2, 0.4, 0.2, 0.2]
+                    z = [
+                        z[0] - t2_res["group_z_precision"],
+                        z[0],
+                        z[0] + t2_res["group_z_precision"],
+                        0.3,
+                    ]
+                else:
+                    # Very high z, add one low z at 0.5 for comparison
+                    z_weights = [0.5, 0.5]
+                    z = [z[0], 0.5]
+                self.logger.debug(f"Redshift samples: {z} with weights {z_weights}")
+
+        elif self.redshift_kind in [
             "T2DigestRedshifts",
             "AmpelZ",
         ]:
@@ -505,7 +564,6 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
                 z_source = "AMPELz_group" + str(t2_res["group_z_nbr"])
         elif self.redshift_kind in [
             "T2MatchBTS",
-            "T2DigestRedshifts",
             "T2ElasticcRedshiftSampler",
         ]:
             for t2_view in t2_views:

@@ -2,7 +2,7 @@ name: earlyreleasetest
 
 mongo:
   prefix: vro_infant
-  reset: false
+  reset: true
 
 channel:
 - name:  earlyrelease
@@ -22,7 +22,7 @@ task:
 
   unit: AlertConsumer
   extra:
-    iter_max: 500000
+    iter_max: 500
   supplier:
     unit: LSSTAlertSupplier
     config:
@@ -40,10 +40,10 @@ task:
       on_stock_match: bypass
       config:
         min_reliability: 0.99
-        min_ndet: 1
-        max_ndet: 3
+        min_ndet: 2
+        max_ndet: 2
         min_tspan: 0.
-        max_tspan: 2
+        max_tspan: 1
         min_abs_gal_lat: 7
         gaia_excessnoise_sig_max: 999
         gaia_plx_signif: 3
