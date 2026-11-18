@@ -2,7 +2,7 @@ name: earlyreleasetest
 
 mongo:
   prefix: vro_infant
-  reset: true
+  reset: false
 
 channel:
 - name:  earlyrelease
@@ -22,7 +22,7 @@ task:
 
   unit: AlertConsumer
   extra:
-    iter_max: 500
+    iter_max: 500000000
   supplier:
     unit: LSSTAlertSupplier
     config:
@@ -31,6 +31,10 @@ task:
         unit: ParquetAlertLoader
         config:
           path: /Users/jnordin/data/lsst/lsst-alerts-2026-02-24-r0.95.parquet
+#          path: /Users/jnordin/data/lsst/lsst-alerts-2026-02-27--2026-03-01-r0.95.parquet
+#          path: /Users/jnordin/data/lsst/lsst-alerts-2026-03-02--2026-03-10-r0.95.parquet
+#          path: /Users/jnordin/data/lsst/lsst-alerts-2026022200000-2026022200119.parquet
+#          path: /Users/jnordin/data/lsst/lsst-alerts-20261029.parquet          
 
   directives:
   - channel: earlyrelease
@@ -41,9 +45,9 @@ task:
       config:
         min_reliability: 0.99
         min_ndet: 2
-        max_ndet: 2
+        max_ndet: 3
         min_tspan: 0.
-        max_tspan: 1
+        max_tspan: 3
         min_abs_gal_lat: 7
         gaia_excessnoise_sig_max: 999
         gaia_plx_signif: 3
@@ -101,6 +105,23 @@ task:
             - flag3
             rs_arcsec: 10
             use: extcats
+          LSPhotoZZou:
+            all: false
+            keys_to_append:
+            - photoz
+            - e_photoz
+            - specz
+            - ra
+            - dec
+            - _6
+            - ID
+            - logMassBest
+            - logMassInf
+            - logMassSup
+            post_filter: null
+            pre_filter: null
+            rs_arcsec: 10.0
+            use: extcats
           NEDLVS:
             keys_to_append:
             - objname
@@ -126,6 +147,23 @@ task:
                 $lte: 0.03
             pre_filter: null
             rs_arcsec: 60.0
+            use: extcats
+          NED2026:
+            keys_to_append:
+            - ra
+            - dec
+            - objid
+            - prefname
+            - pretype
+            - z
+            - zunc
+            - zflag
+            - n_zdf
+            - n_spectra
+            - bhextin
+            post_filter: null
+            pre_filter: null
+            rs_arcsec: 10.0
             use: extcats
           SDSS_spec:
             all: false
