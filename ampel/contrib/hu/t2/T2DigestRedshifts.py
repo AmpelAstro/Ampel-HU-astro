@@ -206,6 +206,18 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
                 if cat_name == "SDSS_spec" and cat_match["dist2transient"] < 10:
                     group_z[1].append(cat_match["z"])
                     group_dist[1].append(cat_match["dist2transient"])
+
+                # DESIDR1 not directly studied with the others, but assumed to be similar to SDSS_spec, so put in group I
+                if cat_name == "DESIDR1" and cat_match["dist2transient"] < 10:
+                    group_z[1].append(cat_match["z"])
+                    group_dist[1].append(cat_match["dist2transient"])
+
+                # NED2026 also not directly verified, and possibly contain zs of different origin.
+                # Adding to third group for now, but should be checked in more detail.
+                if cat_name == "NED2026" and cat_match["dist2transient"] < 10:
+                    group_z[2].append(cat_match["z"])
+                    group_dist[2].append(cat_match["dist2transient"])
+
                 # Implicit restriction as tests where done with this max matching radius
                 if (
                     cat_name == "GLADEv23"
@@ -544,9 +556,9 @@ class T2DigestRedshifts(AbsTiedStateT2Unit):
                         0.3,
                     ]
                 else:
-                    # Very high z, add one low z at 0.5 for comparison
-                    z_weights = [0.5, 0.5]
-                    z = [z[0], 0.5]
+                    # Very high z, add lower z for comparison
+                    z_weights = [0.4, 0.3, 0.3]
+                    z = [z[0], 0.3, 0.5]
                 self.logger.debug(f"Redshift samples: {z} with weights {z_weights}")
 
         elif self.redshift_kind in [

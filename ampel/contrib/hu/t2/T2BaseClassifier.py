@@ -180,6 +180,7 @@ def run_parsnip_zsample(
         use_lc.meta["redshift"] = redshift
         lcs.append(use_lc)
     lc_dataset = lcdata.from_light_curves(lcs)
+
     try:
         lc_predictions = model.predict_dataset(lc_dataset)
     except ValueError:
@@ -399,6 +400,10 @@ class T2BaseClassifier:
         if not pairs:
             # All sampled redshifts exceed the model range: nothing to fit.
             return ParsnipFailure(model=model_label, failed="RedshiftOutOfRange")
+
+        # Explicit sort by redshift as the parsnip lcsample does this internally
+        sorted_pairs = sorted(pairs, key=lambda x: x[0])
+        pairs = sorted_pairs
 
         zs, zw = map(list, zip(*pairs, strict=True))
 

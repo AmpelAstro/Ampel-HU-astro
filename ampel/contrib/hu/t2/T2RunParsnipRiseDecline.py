@@ -73,8 +73,7 @@ def get_probability_evolution(
         ]
         if len(classifications) == 0:
             continue
-        # if len(classifications) > 1:
-        #    print("get_probability_evolution warning - grabbing random class results")
+
         if classifications[-1]["features"]["ndet"] == 0:
             continue
         time = classifications[-1]["features"]["jd_last"]
@@ -147,7 +146,7 @@ class T2RunParsnipRiseDecline(
         # Will also correct for MW extinction, if chosen.
         # fitdatainfo contains redshift, if requested
         (flux_table, fitdatainfo) = self.get_fitdata(list(datapoints), t2_views)
-
+        # print('T2RunParsnipRiseDecline: got flux table with', len(flux_table) if flux_table else 0,'datapoints and fitdatainfo', fitdatainfo)
         t2_body: dict[str, Any] = {
             "fitdatainfo": fitdatainfo,
         }
